@@ -27,6 +27,9 @@ imports = [
 
     neofetch
     nnn # terminal file manager
+    exercism
+    stack
+    ranger
 
     # archives
     zip

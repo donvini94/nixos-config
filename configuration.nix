@@ -105,10 +105,16 @@
   coreutils
   fd
   clang
+  pferd
+  blueberry
+  steam
   brightnessctl
   pinentry
   pinentry-rofi
   starship
+  pcmanfm
+  xfce.thunar
+  gparted
   grim
   slurp
   wl-clipboard
@@ -157,6 +163,7 @@ fonts.packages = with pkgs; [
      enableSSHSupport = true;
    };
   services.pcscd.enable = true;
+  services.mullvad-vpn.enable = true;
 
   # List services that you want to enable:
 
