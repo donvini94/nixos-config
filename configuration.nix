@@ -100,7 +100,6 @@
     clang
     pferd
     blueberry
-    steam
     unar
 
     brightnessctl
@@ -143,6 +142,10 @@
   fonts.packages = with pkgs;
     [ (nerdfonts.override { fonts = [ "FiraCode" "DroidSansMono" "Hack" ]; }) ];
 
+  programs.steam = {
+    enable = true;
+  };
+  hardware.opengl.driSupport32Bit = true; # Enables support for 32bit libs that steam uses
   programs.hyprland = {
     enable = true;
     xwayland.enable = true;
