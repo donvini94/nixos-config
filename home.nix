@@ -41,7 +41,6 @@ imports = [
     ripgrep # recursively searches directories for a regex pattern
     jq # A lightweight and flexible command-line JSON processor
     yq-go # yaml processer https://github.com/mikefarah/yq
-    exa # A modern replacement for ‘ls’
     fzf # A command-line fuzzy finder
     mathpix-snipping-tool
 
@@ -59,12 +58,14 @@ imports = [
     file
     which
     tree
+    helix
     gnused
     gnutar
     gawk
     zstd
     gnupg
     mpv
+    sxiv
 
     # nix related
     #
@@ -87,12 +88,12 @@ imports = [
     rofi-wayland
 
     # communication
-    signal-desktop
     telegram-desktop
     discord
     fractal-next
     thunderbirdPackages.thunderbird-115
     zoom-us
+    slack
 
 
     btop  # replacement of htop/nmon
@@ -104,6 +105,10 @@ imports = [
     ltrace # library call monitoring
     lsof # list open files
 
+
+    # Python
+    python311
+    python311Packages.pip
     # system tools
     sysstat
     lm_sensors # for `sensors` command
@@ -121,6 +126,10 @@ imports = [
       gcloud.disabled = true;
       line_break.disabled = true;
     };
+  };
+
+  programs.nushell = {
+    enable = true;
   };
 
 
@@ -141,6 +150,19 @@ imports = [
 
   programs.kitty = {
     enable = true;
+    keybindings = {
+      "ctrl+t" = "new_tab";
+      "ctrl+w" = "close_tab";
+      "ctrl+j" = "next_tab";
+      "ctrl+k" = "previous_tab";
+    };
+    settings = {
+      confirm_os_window_close = 0;
+      tab_bar_style = "powerline";
+      tab_powerline_style = "slanted";
+    };
+    theme = "Doom One";
+    extraConfig = "shell nu";
   };
 
 

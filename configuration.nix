@@ -97,6 +97,7 @@
   git
   vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
   neovim
+  helix
   wget
   curl
   psmisc
@@ -107,6 +108,7 @@
   clang
   pferd
   blueberry
+  yazi
   steam
   brightnessctl
   pinentry
@@ -132,6 +134,7 @@
   haskell-language-server
   ghc
   mullvad-vpn
+  signal-desktop
   ];
 
   environment.variables.EDITOR = "nvim";
@@ -164,7 +167,7 @@ fonts.packages = with pkgs; [
    };
   services.pcscd.enable = true;
   services.mullvad-vpn.enable = true;
-
+  services.logind.lidSwitchExternalPower = "ignore";
   # List services that you want to enable:
 
   # Enable the OpenSSH daemon.
