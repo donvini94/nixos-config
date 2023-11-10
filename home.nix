@@ -1,19 +1,18 @@
 { inputs, lib, config, pkgs, ... }:
 
-
 {
 
-imports = [
-#    inputs.hyprland.homeManagerModules.default
-];
+  imports = [
+    #    inputs.hyprland.homeManagerModules.default
+  ];
 
   home.username = "vincenzo";
   home.homeDirectory = "/home/vincenzo";
   # set cursor size and dpi for 4k monitor
-#  xresources.properties = {
-#    "Xcursor.size" = 16;
-#    "Xft.dpi" = 172;
-#  };
+  #  xresources.properties = {
+  #    "Xcursor.size" = 16;
+  #    "Xft.dpi" = 172;
+  #  };
 
   programs.git = {
     enable = true;
@@ -47,12 +46,12 @@ imports = [
     # networking tools
     mtr # A network diagnostic tool
     iperf3
-    dnsutils  # `dig` + `nslookup`
+    dnsutils # `dig` + `nslookup`
     ldns # replacement of `dig`, it provide the command `drill`
     aria2 # A lightweight multi-protocol & multi-source command-line download utility
     socat # replacement of openbsd-netcat
     nmap # A utility for network discovery and security auditing
-    ipcalc  # it is a calculator for the IPv4/v6 addresses
+    ipcalc # it is a calculator for the IPv4/v6 addresses
 
     # misc
     file
@@ -95,8 +94,7 @@ imports = [
     zoom-us
     slack
 
-
-    btop  # replacement of htop/nmon
+    btop # replacement of htop/nmon
     iotop # io monitoring
     iftop # network monitoring
 
@@ -104,7 +102,6 @@ imports = [
     strace # system call monitoring
     ltrace # library call monitoring
     lsof # list open files
-
 
     # Python
     python311
@@ -121,7 +118,7 @@ imports = [
   programs.starship = {
     enable = true;
     settings = {
-      add_newline = false;
+      add_newline = true;
       aws.disabled = true;
       gcloud.disabled = true;
       line_break.disabled = true;
@@ -130,24 +127,29 @@ imports = [
 
   programs.nushell = {
     enable = true;
+    shellAliases = { vim = "nvim"; };
+    extraConfig = ''
+            let carapace_completer = {|spans|
+            carapace $spans.0 nushell $spans | from json
+            }
+      $env.config = {
+             show_banner: false,
+             completions: {
+             case_sensitive: false # case-sensitive completions
+             quick: true    # set to false to prevent auto-selecting completions
+             partial: true    # set to false to prevent partial filling of the prompt
+             algorithm: "fuzzy"    # prefix or fuzzy
+             external: {
+             # set to false to prevent nushell looking into $env.PATH to find more suggestions
+                 enable: true
+             # set to lower can improve completion performance at the cost of omitting some options
+                 max_results: 100
+                 completer: $carapace_completer # check 'carapace_completer'
+               }
+             }
+            }
+    '';
   };
-
-
-  # alacritty - a cross-platform, GPU-accelerated terminal emulator
-  programs.alacritty = {
-    enable = true;
-    # custom settings
-    settings = {
-      env.TERM = "xterm-256color";
-      font = {
-        size = 12;
-        draw_bold_text_with_bright_colors = true;
-      };
-      scrolling.multiplier = 5;
-      selection.save_to_clipboard = true;
-    };
-  };
-
   programs.kitty = {
     enable = true;
     keybindings = {
@@ -165,6 +167,23 @@ imports = [
     extraConfig = "shell nu";
   };
 
+  programs.yazi = {
+    enable = true;
+    enableNushellIntegration = true;
+    settings = {
+      manager = {
+        sort_by = "natural";
+        sort_sensitive = false;
+        sort_dir_first = true;
+        sort_reverse = false;
+        linemode = "size";
+      };
+    };
+    #keymap = {};
+
+  };
+  programs.carapace.enable = true;
+  programs.carapace.enableNushellIntegration = true;
 
   programs.wofi.enable = true;
 
@@ -174,14 +193,9 @@ imports = [
     bashrcExtra = ''
       export PATH="$PATH:$HOME/bin:$HOME/.local/bin:$HOME/go/bin:$HOME/.config/emacs/bin/doom"
     '';
-
-    # set some aliases, feel free to add more or remove some
-    shellAliases = {
-    };
   };
 
   programs.home-manager.enable = true;
-
 
   services = {
     udiskie.enable = true;

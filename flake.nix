@@ -20,7 +20,7 @@
       "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
     ];
   };
- 
+
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     home-manager = {
@@ -39,12 +39,12 @@
     nixosConfigurations = {
       asgar = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
-        specialArgs = { inherit inputs ;};
+        specialArgs = { inherit inputs; };
 
-       modules = [
+        modules = [
           ./configuration.nix
-#          hyprland.nixosModules.default
-#          { programs.hyprland.enable = true;}
+          #          hyprland.nixosModules.default
+          #          { programs.hyprland.enable = true;}
           home-manager.nixosModules.home-manager
           {
             home-manager.useGlobalPkgs = true;
@@ -56,13 +56,17 @@
 
       homeConfigurations = {
         "vincenzo@asgar" = home-manager.lib.homeManagerConfiguration {
-        pkgs = nixpkgs.legacyPackages.x86_64-linux; # Home-manager requires 'pkgs' instance
-        extraSpecialArgs = { inherit inputs; }; # Pass flake inputs to our config
-        # > Our main home-manager configuration file <
-        modules = [ ./home.nix
-        hyprland.homeManagerModules.default
-        {wayland.windowManager.hyprland.enable = true;}
-                  ];
+          pkgs =
+            nixpkgs.legacyPackages.x86_64-linux; # Home-manager requires 'pkgs' instance
+          extraSpecialArgs = {
+            inherit inputs;
+          }; # Pass flake inputs to our config
+          # > Our main home-manager configuration file <
+          modules = [
+            ./home.nix
+            hyprland.homeManagerModules.default
+            { wayland.windowManager.hyprland.enable = true; }
+          ];
         };
       };
     };

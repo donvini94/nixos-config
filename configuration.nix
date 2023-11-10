@@ -5,10 +5,9 @@
 { inputs, lib, config, pkgs, ... }:
 
 {
-  imports =
-    [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
-    ];
+  imports = [ # Include the results of the hardware scan.
+    ./hardware-configuration.nix
+  ];
 
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.configurationLimit = 10;
@@ -35,29 +34,28 @@
   hardware.bluetooth.enable = true;
   security.rtkit.enable = true;
 
-
   services = {
     emacs.enable = true;
     printing.enable = true;
     xserver = {
-    enable = true;
-    layout = "us";
-    xkbVariant = "";
-    desktopManager.plasma5.enable = true;
-    displayManager.sddm.enable = true;
-  };
-  pipewire = {
-    enable = true;
-    alsa.enable = true;
-    alsa.support32Bit = true;
-    pulse.enable = true;
-    # If you want to use JACK applications, uncomment this
-    #jack.enable = true;
+      enable = true;
+      layout = "us";
+      xkbVariant = "";
+      desktopManager.plasma5.enable = true;
+      displayManager.sddm.enable = true;
+    };
+    pipewire = {
+      enable = true;
+      alsa.enable = true;
+      alsa.support32Bit = true;
+      pulse.enable = true;
+      # If you want to use JACK applications, uncomment this
+      #jack.enable = true;
 
-    # use the example session manager (no others are packaged yet so this is enabled by default,
-    # no need to redefine it in your config for now)
-    #media-session.enable = true;
-  };
+      # use the example session manager (no others are packaged yet so this is enabled by default,
+      # no need to redefine it in your config for now)
+      #media-session.enable = true;
+    };
   };
 
   # Enable touchpad support (enabled default in most desktopManager).
@@ -67,10 +65,7 @@
     isNormalUser = true;
     description = "Vincenzo Pace";
     extraGroups = [ "networkmanager" "wheel" ];
-    packages = with pkgs; [
-      firefox
-      kate
-    ];
+    packages = with pkgs; [ firefox kate ];
   };
 
   nixpkgs.config.allowUnfree = true;
@@ -83,88 +78,84 @@
       automatic = true;
       dates = "weekly";
       options = "--delete-older-than 1w";
- };
+    };
   };
 
   # add user's shell into /etc/shells
-  environment.shells = with pkgs; [
-    bash
-    nushell
-  ];
+  environment.shells = with pkgs; [ bash nushell ];
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-  git
-  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-  neovim
-  helix
-  wget
-  curl
-  psmisc
-  emacs29
-  ripgrep
-  coreutils
-  fd
-  clang
-  pferd
-  blueberry
-  yazi
-  steam
-  brightnessctl
-  pinentry
-  pinentry-rofi
-  starship
-  pcmanfm
-  xfce.thunar
-  gparted
-  grim
-  slurp
-  wl-clipboard
-  networkmanagerapplet
-  wlogout
-  oxygenfonts
-  texlive.combined.scheme-full
-  magic-wormhole
-  pavucontrol
-  rust-analyzer
-  rustup
-  rustfmt
-  jdk17
-  cabal-install
-  haskell-language-server
-  ghc
-  mullvad-vpn
-  signal-desktop
+    git
+    vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
+    neovim
+    helix
+    wget
+    curl
+    psmisc
+    emacs29
+    ripgrep
+    coreutils
+    fd
+    clang
+    pferd
+    blueberry
+    steam
+    unar
+
+    brightnessctl
+    pinentry
+    pinentry-rofi
+    starship
+    pcmanfm
+    xfce.thunar
+    gparted
+    grim
+    slurp
+    wl-clipboard
+    networkmanagerapplet
+    wlogout
+    oxygenfonts
+    texlive.combined.scheme-full
+    magic-wormhole
+    pavucontrol
+    rust-analyzer
+    rustup
+    rustfmt
+    jdk17
+    cabal-install
+    haskell-language-server
+    ghc
+    mullvad-vpn
+    signal-desktop
   ];
 
   environment.variables.EDITOR = "nvim";
 
-#  xdg.portal = {
-#    enable = true;
-#    wlr.enable = true;
-#    extraPortals = with pkgs; [
-#      xdg-desktop-portal-wlr
-#    ];
-#  };
+  #  xdg.portal = {
+  #    enable = true;
+  #    wlr.enable = true;
+  #    extraPortals = with pkgs; [
+  #      xdg-desktop-portal-wlr
+  #    ];
+  #  };
 
-fonts.packages = with pkgs; [
-  (nerdfonts.override { fonts = [ "FiraCode" "DroidSansMono" "Hack" ]; })
-];
-
+  fonts.packages = with pkgs;
+    [ (nerdfonts.override { fonts = [ "FiraCode" "DroidSansMono" "Hack" ]; }) ];
 
   programs.hyprland = {
     enable = true;
     xwayland.enable = true;
-   # package = inputs.hyprland.packages.${pkgs.system}.hyprland;
+    # package = inputs.hyprland.packages.${pkgs.system}.hyprland;
   };
   environment.sessionVariables.NIXOS_OZONE_WL = "1";
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
   # programs.mtr.enable = true;
-   programs.gnupg.agent = {
-     enable = true;
-     enableSSHSupport = true;
-   };
+  programs.gnupg.agent = {
+    enable = true;
+    enableSSHSupport = true;
+  };
   services.pcscd.enable = true;
   services.mullvad-vpn.enable = true;
   services.logind.lidSwitchExternalPower = "ignore";
