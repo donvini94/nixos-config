@@ -146,6 +146,7 @@
     enable = true;
   };
   hardware.opengl.driSupport32Bit = true; # Enables support for 32bit libs that steam uses
+
   programs.hyprland = {
     enable = true;
     xwayland.enable = true;
@@ -162,6 +163,7 @@
   services.pcscd.enable = true;
   services.mullvad-vpn.enable = true;
   services.logind.lidSwitchExternalPower = "ignore";
+  services.pipewire.wireplumber.enable = true;
   # List services that you want to enable:
 
   # Enable the OpenSSH daemon.
