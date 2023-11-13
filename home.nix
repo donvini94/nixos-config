@@ -179,6 +179,10 @@
         sort_reverse = false;
         linemode = "size";
       };
+      preview = {
+        max_width = 20000;
+        max_height = 10000;
+      };
     };
     #keymap = {};
 
