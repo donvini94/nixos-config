@@ -127,6 +127,10 @@
     ghc
     mullvad-vpn
     signal-desktop
+    qt5ct
+    qt6ct
+    nwg-look
+    font-awesome
   ];
 
   environment.variables.EDITOR = "nvim";
