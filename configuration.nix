@@ -57,10 +57,6 @@
       #media-session.enable = true;
     };
   };
-
-  # Enable touchpad support (enabled default in most desktopManager).
-  # services.xserver.libinput.enable = true;
-
   users.users.vincenzo = {
     isNormalUser = true;
     description = "Vincenzo Pace";
@@ -131,6 +127,8 @@
     qt6ct
     nwg-look
     font-awesome
+    cht-sh
+    swaylock
   ];
 
   environment.variables.EDITOR = "nvim";
@@ -146,10 +144,16 @@
   fonts.packages = with pkgs;
     [ (nerdfonts.override { fonts = [ "FiraCode" "DroidSansMono" "Hack" ]; }) ];
 
-  programs.steam = {
-    enable = true;
-  };
-  hardware.opengl.driSupport32Bit = true; # Enables support for 32bit libs that steam uses
+  security.pam.services.swaylock = {};
+  programs.steam = { enable = true; };
+  hardware.opengl.driSupport32Bit =
+    true; # Enables support for 32bit libs that steam uses
+  hardware.opengl.extraPackages = with pkgs; [
+    intel-media-driver # LIBVA_DRIVER_NAME=iHD
+    vaapiIntel # LIBVA_DRIVER_NAME=i965 (older but works better for Firefox/Chromium)
+    vaapiVdpau
+    libvdpau-va-gl
+  ];
 
   programs.hyprland = {
     enable = true;

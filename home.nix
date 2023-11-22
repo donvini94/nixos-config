@@ -8,11 +8,6 @@
 
   home.username = "vincenzo";
   home.homeDirectory = "/home/vincenzo";
-  # set cursor size and dpi for 4k monitor
-  #  xresources.properties = {
-  #    "Xcursor.size" = 16;
-  #    "Xft.dpi" = 172;
-  #  };
 
   programs.git = {
     enable = true;
@@ -25,7 +20,6 @@
   home.packages = with pkgs; [
 
     neofetch
-    nnn # terminal file manager
     exercism
     stack
     ranger
@@ -67,10 +61,6 @@
     mpv
     sxiv
 
-    # nix related
-    #
-    # it provides the command `nom` works just like `nix`
-    # with more details log output
     nix-output-monitor
     nixfmt
 
@@ -79,7 +69,6 @@
     zathura
     pass-wayland
     rofi-pass
-    vimiv-qt
     anki
     waybar
     dunst
@@ -90,7 +79,6 @@
     # communication
     telegram-desktop
     discord
-    fractal-next
     thunderbirdPackages.thunderbird-115
     zoom-us
     slack
@@ -128,7 +116,13 @@
 
   programs.nushell = {
     enable = true;
-    shellAliases = { vim = "nvim"; };
+    shellAliases = {
+      vim = "nvim";
+      nano = "nvim";
+      e = "nvim";
+      cheat = "cht.sh";
+      c = "cht.sh";
+    };
     extraConfig = ''
             let carapace_completer = {|spans|
             carapace $spans.0 nushell $spans | from json
@@ -151,6 +145,7 @@
             }
     '';
   };
+
   programs.kitty = {
     enable = true;
     keybindings = {
