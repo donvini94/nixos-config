@@ -70,6 +70,7 @@
     settings.experimental-features = [ "nix-command" "flakes" ];
     settings.trusted-users = [ "vincenzo" ];
     settings.auto-optimise-store = true;
+    optimise.automatic = true;
     gc = {
       automatic = true;
       dates = "weekly";
@@ -121,14 +122,21 @@
     cabal-install
     haskell-language-server
     ghc
+    ghcid
     mullvad-vpn
-    signal-desktop
     qt5ct
     qt6ct
     nwg-look
     font-awesome
     cht-sh
     swaylock
+    btrfs-progs
+
+    noto-fonts-cjk
+    noto-fonts-cjk-sans
+    noto-fonts-cjk-serif
+    kochi-substitute
+    iosevka
   ];
 
   environment.variables.EDITOR = "nvim";
@@ -145,9 +153,9 @@
     [ (nerdfonts.override { fonts = [ "FiraCode" "DroidSansMono" "Hack" ]; }) ];
 
   security.pam.services.swaylock = {};
-  programs.steam = { enable = true; };
-  hardware.opengl.driSupport32Bit =
-    true; # Enables support for 32bit libs that steam uses
+  # programs.steam = { enable = true; };
+  # hardware.opengl.driSupport32Bit =
+  #   true; # Enables support for 32bit libs that steam uses
   hardware.opengl.extraPackages = with pkgs; [
     intel-media-driver # LIBVA_DRIVER_NAME=iHD
     vaapiIntel # LIBVA_DRIVER_NAME=i965 (older but works better for Firefox/Chromium)
@@ -173,7 +181,7 @@
   services.logind.lidSwitchExternalPower = "ignore";
   services.pipewire.wireplumber.enable = true;
   # List services that you want to enable:
-
+  security.pam.services.login.enableKwallet = true;
   # Enable the OpenSSH daemon.
   # services.openssh.enable = true;
 

@@ -41,5 +41,5 @@
 
   # Recommended from T480 hardwareconfig github
   services.throttled.enable = lib.mkDefault true;
-  #  services.fstrim.enable = lib.mkDefault true;
+  services.fstrim.enable = lib.mkDefault true;
 }

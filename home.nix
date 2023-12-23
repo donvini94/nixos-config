@@ -36,7 +36,6 @@
     yq-go # yaml processer https://github.com/mikefarah/yq
     fzf # A command-line fuzzy finder
     zoxide
-    mathpix-snipping-tool
 
     # networking tools
     mtr # A network diagnostic tool
@@ -80,8 +79,8 @@
     telegram-desktop
     discord
     thunderbirdPackages.thunderbird-115
-    zoom-us
     slack
+    signal-desktop
 
     btop # replacement of htop/nmon
     iotop # io monitoring
@@ -159,7 +158,7 @@
       tab_bar_style = "powerline";
       tab_powerline_style = "slanted";
     };
-    theme = "Doom One";
+    theme = "Modus Vivendi";
     extraConfig = "shell nu";
   };
 
@@ -175,8 +174,9 @@
         linemode = "size";
       };
       preview = {
-        max_width = 20000;
-        max_height = 10000;
+        max_width = 800;
+        max_height = 400;
+        cache_dir = "~/.cache/yazi/";
       };
     };
     #keymap = {};
