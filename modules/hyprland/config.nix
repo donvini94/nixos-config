@@ -112,7 +112,7 @@
       bind = $mod, V, togglefloating,
       bind = $mod, R, exec, wofi --show drun
       bind = $mod, S, exec, grim -g "$(slurp)" - | wl-copy
-      bind = $mod, L, exec, swaylock --image ~/Pictures/w3_ultrawide.png
+      bind = $mod, L, exec, swaylock
       #bind = $mod, P, pseudo, # dwindle
       bind = $mod_SHIFT, Escape, exec, wlogout -p layer-shell
 

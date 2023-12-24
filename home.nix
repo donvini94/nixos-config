@@ -7,9 +7,11 @@
     ./hm-modules/kitty.nix
     ./hm-modules/yazi.nix
     ./hm-modules/nushell.nix
+    ./hm-modules/zathura.nix
     ./hm-modules/mpv.nix
     ./hm-modules/starship.nix
     ./modules/hyprland/config.nix
+    ./hm-modules/swaylock.nix
   ];
 
   programs.home-manager.enable = true;

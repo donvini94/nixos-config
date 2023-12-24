@@ -17,11 +17,7 @@
 
       displayManager = {
         defaultSession = "hyprland";
-        lightdm.enable = false;
-        gdm = {
-          enable = true;
-          wayland = true;
-        };
+        lightdm.enable = true;
       };
     };
   };
@@ -38,8 +34,6 @@
     waybar # the status bar
     swww # the wallpaper
     swayidle # the idle timeout
-    swaylock # locking the screen
-    swaylock-effects
     wlogout # logout menu
     wl-clipboard # copying and pasting
 
@@ -65,12 +59,4 @@
   ];
 
   # fix https://github.com/ryan4yin/nix-config/issues/10
-  security.pam.services.swaylock = { };
 }
-
-
-
-
-
-
-

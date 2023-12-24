@@ -66,8 +66,8 @@
     xdg-desktop-portal-hyprland
 
     brightnessctl
-    #pinentry
-    #pinentry-rofi
+    pinentry
+    pinentry-rofi
     gparted
     texlive.combined.scheme-full
     pavucontrol
