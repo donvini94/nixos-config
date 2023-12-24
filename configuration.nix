@@ -5,7 +5,7 @@
     ./hardware-configuration.nix
     ./modules/packages.nix
     ./modules/fonts.nix
-    ./modules/hyprland.nix
+    ./modules/hyprland/default.nix
     ./modules/programming.nix
     ./hosts/asgar.nix
   ];

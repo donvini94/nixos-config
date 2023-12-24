@@ -8,7 +8,11 @@
     ./hm-modules/yazi.nix
     ./hm-modules/nushell.nix
     ./hm-modules/starship.nix
+    ./modules/hyprland/config.nix
   ];
+
+  programs.home-manager.enable = true;
+  nixpkgs.config.allowUnfree = true;
 
   home = {
     username = "vincenzo";
@@ -22,10 +26,7 @@
     userEmail = "vincenzo.pace@mailbox.org";
   };
 
-  nixpkgs.config.allowUnfree = true;
   fonts.fontconfig.enable = true;
-
-  programs.wofi.enable = true;
 
   programs.bash = {
     enable = true;
@@ -34,8 +35,6 @@
       export PATH="$PATH:$HOME/bin:$HOME/.local/bin:$HOME/go/bin:$HOME/.config/emacs/bin/doom"
     '';
   };
-
-  programs.home-manager.enable = true;
 
   services = {
     udiskie.enable = true; # Automounter for removable media
