@@ -7,6 +7,7 @@
     ./hm-modules/kitty.nix
     ./hm-modules/yazi.nix
     ./hm-modules/nushell.nix
+    ./hm-modules/mpv.nix
     ./hm-modules/starship.nix
     ./modules/hyprland/config.nix
   ];

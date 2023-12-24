@@ -7,7 +7,7 @@
       exec-once = dunst
       exec-once = waybar
       exec-once = swww init 
-      exec-once = swww img /home/vincenzo/Pictures/w3_ultrawide.png
+      exec-once = swww img /~/nixos-config/wallpapers/w3_ultrawide.png
       exec-once = emacs --daemon
       exec-once = nm-applet --indicator &
 
@@ -15,17 +15,8 @@
       monitor=,preferred,auto,auto
       monitor=eDP-1,1920x1080@60,0x0,1
 
-      # See https://wiki.hyprland.org/Configuring/Keywords/ for more
-      # Execute your favorite apps at launch
-      # exec-once = waybar & hyprpaper & firefox
-
-      # Source a file (multi-file configs)
-      # source = ~/.config/hypr/myColors.conf
-
-      # Some default env vars.
       env = XCURSOR_SIZE,24
 
-      # For all categories, see https://wiki.hyprland.org/Configuring/Variables/
       input {
           kb_layout = us
           follow_mouse = 1
@@ -42,7 +33,6 @@
       }
 
       general {
-          # See https://wiki.hyprland.org/Configuring/Variables/ for more
           gaps_in = 5
           gaps_out = 5
           border_size = 2
@@ -52,7 +42,6 @@
       }
 
       decoration {
-          # See https://wiki.hyprland.org/Configuring/Variables/ for more
           rounding = 16
           blur {
               enabled = true
@@ -98,8 +87,6 @@
           workspace_swipe = off
       }
 
-      # Example per-device config
-      # See https://wiki.hyprland.org/Configuring/Keywords/#executing for more
       device:epic-mouse-v1 {
           sensitivity = -0.5
       }
@@ -116,10 +103,8 @@
       windowrulev2 = opacity 0.9 0.9,class:^(discord)$
       windowrulev2 = opacity 0.9 0.9,class:^(Slack)$
 
-      # See https://wiki.hyprland.org/Configuring/Keywords/ for more
+
       $mod = SUPER
-
-
       bind = $mod, Return, exec, kitty
       bind = $mod, Q, killactive,
       bind = $mod, E, exec, emacsclient -c
