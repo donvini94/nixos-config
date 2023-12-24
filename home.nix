@@ -38,7 +38,7 @@
   programs.home-manager.enable = true;
 
   services = {
-    udiskie.enable = true;
+    udiskie.enable = true; # Automounter for removable media
     syncthing.enable = true;
   };
 
