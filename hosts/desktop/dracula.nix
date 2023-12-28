@@ -1,7 +1,6 @@
-{ inputs, config, lib, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 {
-imports = [ inputs.disko.nixosModules.disko ];
   networking.hostName = "dracula";
   environment.systemPackages = [
     pkgs.jellyfin
@@ -53,7 +52,7 @@ imports = [ inputs.disko.nixosModules.disko ];
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-amd" ];
   boot.extraModulePackages = [ ];
-
+ 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
   # (the default) this is the recommended approach. When using systemd-networkd it's
   # still possible to use this option, but it's recommended to use it in conjunction
@@ -64,9 +63,27 @@ imports = [ inputs.disko.nixosModules.disko ];
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 
+  fileSystems."/" =
+    { device = "/dev/disk/by-uuid/0c498a05-9bd4-448c-a4c3-6be118e6e0ef";
+      fsType = "ext4";
+    };
+
+  fileSystems."/boot" =
+    { device = "/dev/disk/by-uuid/C742-9F5D";
+      fsType = "vfat";
+    };
+
+  swapDevices = [ ];
+
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
+environment = {
+variables = {
+NIXOS_OZONE_WL = "1";
+GBM_BACKEND = "nvidia-drm";
+};
+};
     system.stateVersion = "23.11";
 }
