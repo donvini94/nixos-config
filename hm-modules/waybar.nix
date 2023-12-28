@@ -65,7 +65,7 @@
 
         "network#interface" = {
           format-ethernet = "󰣶  {ifname}";
-          format-wifi = "󰖩 {ifname}";
+          format-wifi = " {essid} ({signalStrength}%) 󰖩";
           tooltip = true;
           tooltip-format = "{ipaddr}";
           on-click = "kitty -e 'nmtui'";

@@ -2,7 +2,6 @@
 
 {
   imports = [
-    ./hardware-configuration.nix
     ./modules/packages.nix
     ./modules/fonts.nix
     ./modules/hyprland/default.nix
