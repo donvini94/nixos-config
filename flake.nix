@@ -28,6 +28,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    disko.url = "github:nix-community/disko";
+    disko.inputs.nixpkgs.follows = "nixpkgs";
+
     hyprland.url = "github:hyprwm/Hyprland";
     hyprland-contrib = {
       url = "github:hyprwm/contrib";
@@ -35,7 +38,7 @@
     };
   };
 
-  outputs = { nixpkgs, home-manager, hyprland, ... }@inputs: {
+  outputs = { nixpkgs, home-manager, hyprland, disko, ... }@inputs: {
     nixosConfigurations = {
       asgar = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
@@ -71,7 +74,7 @@
         ];
       };
 
-      nixosConfigurations.alucard = nixpkgs.lib.nixosSystem {
+      alucard = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         specialArgs = { inherit inputs; };
         modules = [ ./hosts/server/alucard.nix ];

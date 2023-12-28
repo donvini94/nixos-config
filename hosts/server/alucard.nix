@@ -1,7 +1,7 @@
 { inputs, config, lib, pkgs, modulesPath, ... }:
 
 {
-  imports = [ (modulesPath + "/profiles/qemu-guest.nix") ];
+  imports = [ (modulesPath + "/profiles/qemu-guest.nix") ./disk-config.nix ];
 
   boot.initrd.availableKernelModules =
     [ "ata_piix" "uhci_hcd" "virtio_pci" "sr_mod" "virtio_blk" ];
