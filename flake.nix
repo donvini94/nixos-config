@@ -33,11 +33,9 @@
       url = "github:hyprwm/contrib";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-  disko.url = "github:nix-community/disko";
-  disko.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { nixpkgs, home-manager, hyprland, disko,... }@inputs: {
+  outputs = { nixpkgs, home-manager, hyprland, ... }@inputs: {
     nixosConfigurations = {
       asgar = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
@@ -63,6 +61,8 @@
           ./configuration.nix
           ./hosts/desktop/dracula.nix
           home-manager.nixosModules.home-manager
+hyprland.nixosModules.default
+{programs.hyprland.enable = true;}
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;

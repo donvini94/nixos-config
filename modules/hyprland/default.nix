@@ -2,7 +2,7 @@
   xdg.portal = {
     enable = true;
     wlr.enable = true;
-    extraPortals = with pkgs; [ xdg-desktop-portal-hyprland ];
+    extraPortals = with pkgs; [ xdg-desktop-portal-wlr ];
   };
 
   environment.pathsToLink =
@@ -17,13 +17,16 @@
 
       displayManager = {
         defaultSession = "hyprland";
-        lightdm.enable = true;
+        gdm.enable = true;
       };
     };
   };
 
   programs = {
-    hyprland = { enable = true; };
+    hyprland = { 
+
+xwayland.enable = true;
+ };
     # monitor backlight control
     light.enable = true;
 
