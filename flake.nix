@@ -33,9 +33,11 @@
       url = "github:hyprwm/contrib";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+  disko.url = "github:nix-community/disko";
+  disko.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { nixpkgs, home-manager, hyprland, ... }@inputs: {
+  outputs = { nixpkgs, home-manager, hyprland, disko,... }@inputs: {
     nixosConfigurations = {
       asgar = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";

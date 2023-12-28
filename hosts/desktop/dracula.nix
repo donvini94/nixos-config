@@ -1,14 +1,14 @@
-{ config, lib, pkgs, ... }:
+{ inputs, config, lib, pkgs, ... }:
 
 {
-
+imports = [ inputs.disko.nixosModules.disko ];
   networking.hostName = "dracula";
   environment.systemPackages = [
     pkgs.jellyfin
     pkgs.jellyfin-web
     pkgs.jellyfin-ffmpeg
   ];
-  services.Jellyfin.enable = true;
+  services.jellyfin.enable = true;
   programs.steam.enable = true;
 
   # Enable OpenGL
@@ -47,6 +47,65 @@
 
     # Optionally, you may need to select the appropriate driver version for your specific GPU.
     package = config.boot.kernelPackages.nvidiaPackages.stable;
+  };
+
+ boot.initrd.availableKernelModules = [ "nvme" "xhci_pci" "ahci" "usbhid" "usb_storage" "sd_mod" ];
+  boot.initrd.kernelModules = [ ];
+  boot.kernelModules = [ "kvm-amd" ];
+  boot.extraModulePackages = [ ];
+
+  # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
+  # (the default) this is the recommended approach. When using systemd-networkd it's
+  # still possible to use this option, but it's recommended to use it in conjunction
+  # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
+  networking.useDHCP = lib.mkDefault true;
+  # networking.interfaces.enp42s0.useDHCP = lib.mkDefault true;
+
+  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+  hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+
+  # Use the systemd-boot EFI boot loader.
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
+
+  disko.devices.disk.nvme0n1 = {
+    type = "disk";
+    device = "/dev/nvme0n1";
+    content = {
+      type = "gpt";
+      partitions = {
+        ESP = {
+          priority = 1;
+          name = "ESP";
+          start = "1MiB";
+          end = "512MiB";
+          type = "EF00";
+          content = {
+            type = "filesystem";
+            format = "vfat";
+            mountpoint = "/boot";
+          };
+        };
+ root = {
+          size = "100%";
+          content = {
+            type = "btrfs";
+            extraArgs = [ "-f" ];
+            subvolumes = {
+              "@" = { mountpoint = "/"; };
+              "@home" = {
+                mountOptions = [ "compress=zstd" ];
+                mountpoint = "/home";
+              };
+              "@nix" = {
+                mountOptions = [ "compress=zstd" "noatime" ];
+                mountpoint = "/nix";
+              };
+            };
+          };
+        };
+      };
+    };
   };
   system.stateVersion = "23.11";
 }
