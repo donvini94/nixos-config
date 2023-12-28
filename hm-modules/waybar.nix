@@ -8,52 +8,59 @@
 
   programs.waybar = {
     enable = true;
-    package = pkgs.waybar.overrideAttrs (oldAttrs: { mesonFlags = oldAttrs.mesonFlags ++ [ "-Dexperimental=true"] ;} );
+    package = pkgs.waybar.overrideAttrs (oldAttrs: {
+      mesonFlags = oldAttrs.mesonFlags ++ [ "-Dexperimental=true" ];
+    });
     settings = {
       mainBar = {
         margin = "0";
         layer = "top";
-        modules-left = [ "custom/nix" "wlr/workspaces" "mpris" ];
-        modules-center = [ "wlr/taskbar"];
-        modules-right = [ "pulseaudio" "network#interface" "network#speed" "cpu" "temperature" "backlight" "battery" "clock" "custom/notification" "tray" ];
+        modules-left = [ "custom/nix" "hyprland/workspaces" ];
+        modules-right = [
+          "pulseaudio"
+          "network#interface"
+          "network#speed"
+          "cpu"
+          "battery"
+          "clock"
+          "tray"
+        ];
 
-        persistent_workspaces = {
-          "1" = [];
-          "2" = [];
-          "3" = [];
-        };
-
-        "wlr/workspaces" = {
-          format = "{icon}";
+        "hyprland/workspaces" = {
+          format = "{name} : {icon}";
           on-click = "activate";
           sort-by-number = true;
           format-icons = {
-            "1" = "";
-            "2" = "󰈹";
-            "3" = "󰒱";
-            "4" = "󰧑";
+            "1" = "";
+            "2" = "";
+            "3" = "";
+            "4" = "";
+            "5" = "";
+            "6" = "";
+            "7" = "";
+            "8" = "";
+            "9" = "";
+            "active" = "";
+            "default" = "";
           };
         };
 
-        mpris = {
-          format = "{status_icon}<span weight='bold'>{artist}</span> | {title}";
-          status-icons = {
-            playing = "󰎈 ";
-            paused =  "󰏤 ";
-            stopped = "󰓛 ";
-          };
-        };
-
-        "custom/nix" = {
-          format = "󱄅 ";
-        };
-
-        "wlr/taskbar" = {
-          on-click = "activate";
-        };
+        "custom/nix" = { format = "󱄅 "; };
 
         pulseaudio = {
-          format = "󰓃 {volume}%";
+          format = "{volume}% {icon} ";
+          on-click = "pavucontrol";
+          format-bluetooth = "{volume}% {icon} {format_source}";
+          format-bluetooth-muted = " {icon} {format_source}";
+          format-muted = "0% {icon} ";
+          format-source = "{volume}% ";
+          format-source-muted = "";
+          format-icons = {
+            "headphone" = "";
+            "hands-free" = "";
+            "headset" = "";
+            "default" = [ "" "" "" ];
+          };
         };
 
         "network#interface" = {
@@ -61,25 +68,15 @@
           format-wifi = "󰖩 {ifname}";
           tooltip = true;
           tooltip-format = "{ipaddr}";
+          on-click = "kitty -e 'nmtui'";
+
         };
 
         "network#speed" = {
           format = "⇡{bandwidthUpBits} ⇣{bandwidthDownBits}";
         };
 
-        cpu = {
-          format = "  {usage}% 󱐌 {avg_frequency}";
-        };
-
-        temperature = {
-          format = "{icon} {temperatureC} °C";
-          format-icons = [ "" "" "" "󰈸"];
-        };
-
-        backlight = {
-          format = "{icon} {percent}%";
-          format-icons = [ "󰃜" "󰃛" "󰃚 " ];
-        };
+        cpu = { format = "  {usage}% 󱐌 {avg_frequency}"; };
 
         battery = {
           format-critical = "{icon} {capacity}%";
@@ -94,53 +91,179 @@
 
         tray = {
           icon-size = 16;
-          spacing = 8;
+          spacing = 10;
         };
       };
     };
 
     style = ''
+
       * {
-        min-height: 0;
+      	border: none;
+      	border-radius: 0;
+      	font-family: Nerd Font Hack;
+      	font-size: 14px;
+      	min-height: 24px;
       }
 
       window#waybar {
-        font-family: 'Inter', 'RobotoMono Nerd Font';
-        font-size: 12px;
+      	background: transparent;
       }
 
-      tooltip {
+      window#waybar.hidden {
+      	opacity: 0.2;
       }
 
-      #custom-nix {
-        padding: 2px 6px;
+      #window {
+          margin-top: 8px;
+          padding-left: 16px;
+          padding-right: 16px;
+      	border-radius: 26px;
+      	transition: none;
+      	/*
+          color: #f8f8f2;
+      	background: #282a36;
+          */
+          color: transparent;
+      	background: transparent;
+      }
+
+      window#waybar.termite #window,
+      window#waybar.Firefox #window,
+      window#waybar.Navigator #window,
+      window#waybar.PCSX2 #window {
+          color: #4d4d4d;
+      	background: #e6e6e6;
+      }
+
+      #workspaces {
+      	margin-top: 8px;
+      	margin-left: 12px;
+      	margin-bottom: 0;
+      	border-radius: 26px;
+      	background: #282a36;
+      	transition: none;
       }
 
       #workspaces button {
-        padding: 2px 6px;
-        margin: 0 6px 0 0;
+      	transition: none;
+      	color: #f8f8f2;
+      	background: transparent;
+      	font-size: 16px;
       }
 
-      .modules-right * {
-        padding: 0 6px;
-        margin: 0 0 0 4px;
+      #workspaces button.focused {
+      	color: #9aedfe;
       }
 
-      #mpris {
-        padding: 0 6px;
+      #workspaces button:hover {
+      	transition: none;
+      	box-shadow: inherit;
+      	text-shadow: inherit;
+      	color: #ff79c6;
       }
 
-      #custom-notification {
-        padding: 0 6px 0 6px;
+      #mpd {
+      	margin-top: 8px;
+      	margin-left: 8px;
+      	padding-left: 16px;
+      	padding-right: 16px;
+      	margin-bottom: 0;
+      	border-radius: 26px;
+      	background: #282a36;
+      	transition: none;
+      	color: #4d4d4d;
+      	background: #5af78e;
       }
 
-      #tray {
-        padding: 0 6px;
+      #mpd.disconnected,
+      #mpd.stopped {
+      	color: #f8f8f2;
+      	background: #282a36;
       }
 
-      #tray * {
-        padding: 0;
-        margin: 0;
+      #network {
+      	margin-top: 8px;
+      	margin-left: 8px;
+      	padding-left: 16px;
+      	padding-right: 16px;
+      	margin-bottom: 0;
+      	border-radius: 26px;
+      	transition: none;
+      	color: #4d4d4d;
+      	background: #bd93f9;
+      }
+
+      #pulseaudio {
+      	margin-top: 8px;
+      	margin-left: 8px;
+      	padding-left: 16px;
+      	padding-right: 16px;
+      	margin-bottom: 0;
+      	border-radius: 26px;
+      	transition: none;
+      	color: #4d4d4d;
+      	background: #9aedfe;
+      }
+
+      #temperature {
+      	margin-top: 8px;
+      	margin-left: 8px;
+      	padding-left: 16px;
+      	padding-right: 16px;
+      	margin-bottom: 0;
+      	border-radius: 26px;
+      	transition: none;
+      	color: #4d4d4d;
+      	background: #5af78e;
+      }
+
+      #cpu {
+      	margin-top: 8px;
+      	margin-left: 8px;
+      	padding-left: 16px;
+      	padding-right: 16px;
+      	margin-bottom: 0;
+      	border-radius: 26px;
+      	transition: none;
+      	color: #4d4d4d;
+      	background: #f1fa8c;
+      }
+
+      #memory {
+      	margin-top: 8px;
+      	margin-left: 8px;
+      	padding-left: 16px;
+      	padding-right: 16px;
+      	margin-bottom: 0;
+      	border-radius: 26px;
+      	transition: none;
+      	color: #4d4d4d;
+      	background: #ff6e67;
+      }
+
+      #battery {
+      	margin-top: 8px;
+      	margin-left: 8px;
+      	padding-left: 16px;
+      	padding-right: 16px;
+      	margin-bottom: 0;
+      	border-radius: 26px;
+      	transition: none;
+      	color: #4d4d4d;
+      	background: #5af78e;
+      }
+      #clock {
+      	margin-top: 8px;
+      	margin-left: 8px;
+      	margin-right: 12px;
+      	padding-left: 16px;
+      	padding-right: 16px;
+      	margin-bottom: 0;
+      	border-radius: 26px;
+      	transition: none;
+      	color: #f8f8f2;
+      	background: #282a36;
       }
     '';
   };

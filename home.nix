@@ -12,6 +12,7 @@
     ./hm-modules/starship.nix
     ./modules/hyprland/config.nix
     ./hm-modules/swaylock.nix
+    ./hm-modules/waybar.nix
   ];
 
   programs.home-manager.enable = true;
