@@ -7,7 +7,6 @@
     ./modules/fonts.nix
     ./modules/hyprland/default.nix
     ./modules/programming.nix
-    ./hosts/asgar.nix
   ];
 
   boot.loader.systemd-boot.enable = true;

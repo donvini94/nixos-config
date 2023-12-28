@@ -76,6 +76,9 @@
      
 
     };
+    mappings = {
+      i = "recolor";
+    };
   };
   }
 

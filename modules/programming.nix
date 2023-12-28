@@ -27,6 +27,13 @@
 
     # Docs
     plantuml
+
+    # Tree-sitter
+    tree-sitter
+    tree-sitter-grammars.tree-sitter-rust
+    tree-sitter-grammars.tree-sitter-haskell
+    tree-sitter-grammars.tree-sitter-python
+
   ];
 }
 

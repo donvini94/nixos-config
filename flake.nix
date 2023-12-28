@@ -43,6 +43,7 @@
 
         modules = [
           ./configuration.nix
+          ./hosts/desktop/asgar.nix
           home-manager.nixosModules.home-manager
           {
             home-manager.useGlobalPkgs = true;
