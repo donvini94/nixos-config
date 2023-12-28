@@ -61,8 +61,8 @@
           ./configuration.nix
           ./hosts/desktop/dracula.nix
           home-manager.nixosModules.home-manager
-hyprland.nixosModules.default
-{programs.hyprland.enable = true;}
+          hyprland.nixosModules.default
+          { programs.hyprland.enable = true; }
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
@@ -70,26 +70,25 @@ hyprland.nixosModules.default
           }
         ];
       };
+
+      nixosConfigurations.alucard = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        specialArgs = { inherit inputs; };
+        modules = [ ./hosts/server/alucard.nix ];
+      };
+
       homeConfigurations = {
         "vincenzo@asgar" = home-manager.lib.homeManagerConfiguration {
           pkgs =
             nixpkgs.legacyPackages.x86_64-linux; # Home-manager requires 'pkgs' instance
-          extraSpecialArgs = {
-            inherit inputs;
-          };
-          modules = [
-            ./home.nix
-          ];
+          extraSpecialArgs = { inherit inputs; };
+          modules = [ ./home.nix ];
         };
         "vincenzo@dracula" = home-manager.lib.homeManagerConfiguration {
           pkgs =
             nixpkgs.legacyPackages.x86_64-linux; # Home-manager requires 'pkgs' instance
-          extraSpecialArgs = {
-            inherit inputs;
-          };
-          modules = [
-            ./home.nix
-          ];
+          extraSpecialArgs = { inherit inputs; };
+          modules = [ ./home.nix ];
         };
       };
     };
