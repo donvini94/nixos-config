@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 
 {
-  
+
   nixpkgs.config.allowUnfree = true;
 
   environment.systemPackages = with pkgs; [
@@ -12,6 +12,7 @@
     emacs29
     fzf # A command-line fuzzy finder
 
+    xorg.xhost
     ripgrep # recursively searches directories for a regex pattern
     # archives
     zip
@@ -74,13 +75,12 @@
     qt5ct
     qt6ct
     nwg-look
-    cht-sh #Cheatsheet
+    cht-sh # Cheatsheet
     btrfs-progs
     # system call monitoring
     strace # system call monitoring
     ltrace # library call monitoring
     lsof # list open files
-
 
     # Japanese fonts
     noto-fonts-cjk
