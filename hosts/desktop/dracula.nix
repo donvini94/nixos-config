@@ -7,8 +7,6 @@
     jellyfin-web
     jellyfin-ffmpeg
     cudatoolkit
-    mullvad-vpn
-    transmission-gtk
   ];
   services.jellyfin.enable = true;
   programs.steam.enable = true;
@@ -22,7 +20,6 @@
 
   # Load nvidia driver for Xorg and Wayland
   services.xserver.videoDrivers = [ "nvidia" ];
-  services.mullvad-vpn.enable = true;
 
   hardware.nvidia = {
 

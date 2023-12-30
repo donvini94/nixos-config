@@ -35,6 +35,7 @@
   security.rtkit.enable = true;
 
   services = {
+    mullvad-vpn.enable = true;
     pcscd.enable = true;
     logind.lidSwitchExternalPower = "ignore";
     pipewire.wireplumber.enable = true;

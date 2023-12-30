@@ -23,10 +23,10 @@
   };
 
   programs = {
-    hyprland = { 
+    hyprland = {
 
-xwayland.enable = true;
- };
+      xwayland.enable = true;
+    };
     # monitor backlight control
     light.enable = true;
 

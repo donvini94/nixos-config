@@ -82,6 +82,8 @@
     ltrace # library call monitoring
     lsof # list open files
 
+    transmission-gtk
+    mullvad-vpn
     # Japanese fonts
     noto-fonts-cjk
     noto-fonts-cjk-sans
