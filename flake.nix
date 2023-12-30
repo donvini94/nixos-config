@@ -22,7 +22,7 @@
   };
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs";
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -48,6 +48,8 @@
           ./configuration.nix
           ./hosts/desktop/asgar.nix
           home-manager.nixosModules.home-manager
+          hyprland.nixosModules.default
+          { programs.hyprland.enable = true; }
           {
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
