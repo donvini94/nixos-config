@@ -8,18 +8,13 @@
     cantarell-fonts
     nerdfonts
     font-awesome_5
+    oxygenfonts
     iosevka
-    oxygenfonts];
+    noto-fonts-cjk
+    noto-fonts-cjk-sans
+    noto-fonts-cjk-serif
+    kochi-substitute
 
- 
+  ];
+
 }
-
-
-
-
-
-
-
-
-
-
