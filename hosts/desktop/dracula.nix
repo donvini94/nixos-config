@@ -7,6 +7,7 @@
     jellyfin-web
     jellyfin-ffmpeg
     cudatoolkit
+    calibre
   ];
   services.jellyfin.enable = true;
   programs.steam.enable = true;
@@ -59,6 +60,11 @@
   fileSystems."/boot" = {
     device = "/dev/disk/by-uuid/C742-9F5D";
     fsType = "vfat";
+  };
+
+  fileSystems."/media" = {
+    device = "/dev/disk/by-uuid/847733dc-7756-4e10-88a6-1cc7fb153dec";
+    fsType = "ext4";
   };
 
   swapDevices = [ ];
