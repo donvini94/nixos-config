@@ -7,7 +7,7 @@
       scroll-page-aware = "true";
       scroll-full-overlap = "0.01";
       scroll-step = "100";
-      window-title-basename = true;
+      statusbar-basename = true;
       font = "Iosevka";
 
       ### zathura-pywal ###
