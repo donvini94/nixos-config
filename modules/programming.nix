@@ -16,6 +16,7 @@
     # Python
     python311
     python311Packages.pip
+    nodePackages.pyright
 
     # Java
     jdk17
@@ -23,7 +24,6 @@
     # Nix
     nix-output-monitor
     nixfmt
-
 
     # Docs
     plantuml
@@ -36,13 +36,3 @@
 
   ];
 }
-
-
-
-
-
-
-
-
-
-
