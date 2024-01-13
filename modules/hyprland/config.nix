@@ -92,7 +92,8 @@
       }
 
       misc {
-           enable_swallow = true
+            enable_swallow = true
+            force_default_wallpaper = 0
       }
 
       windowrulev2 = opacity 0.8 0.8,class:^(kitty)$
