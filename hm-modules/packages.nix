@@ -1,7 +1,7 @@
 { config, lib, pkgs, ... }:
 
 {
-  
+
   home.packages = with pkgs; [
     exercism
     ranger
@@ -26,7 +26,10 @@
     thunderbirdPackages.thunderbird-115
     slack
     signal-desktop
+    chromium
+    teams-for-linux
 
+    zotero
   ];
 
 }

@@ -97,7 +97,8 @@
     };
 
     style = ''
-
+      @define-color accent #7aa2f7;
+      @define-color foreground #c0caf5;
       * {
       	border: none;
       	border-radius: 0;
@@ -252,6 +253,10 @@
       	transition: none;
       	color: #4d4d4d;
       	background: #5af78e;
+      }
+      #custom-nix {
+        color: @accent;
+        font-size: 25px;
       }
       #clock {
       	margin-top: 8px;
