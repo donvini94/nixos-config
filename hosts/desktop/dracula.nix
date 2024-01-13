@@ -21,7 +21,7 @@
 
   # Load nvidia driver for Xorg and Wayland
   services.xserver.videoDrivers = [ "nvidia" ];
-
+  boot.kernelParams = [ "nvidia.NVreg_PreserveVideoMemoryAllocations=1" ];
   hardware.nvidia = {
 
     # Modesetting is required.
@@ -33,6 +33,8 @@
 
     # Optionally, you may need to select the appropriate driver version for your specific GPU.
     package = config.boot.kernelPackages.nvidiaPackages.stable;
+    powerManagement.enable = true;
+    open = false;
   };
 
   boot.initrd.availableKernelModules =
@@ -63,7 +65,7 @@
   };
 
   fileSystems."/media" = {
-    device = "/dev/disk/by-uuid/847733dc-7756-4e10-88a6-1cc7fb153dec";
+    device = "/dev/disk/by-label/media";
     fsType = "ext4";
   };
 
@@ -75,15 +77,22 @@
 
   environment = {
     variables = {
+      XCURSOR_SIZE = "24";
       NIXOS_OZONE_WL = "1";
       WLR_NO_HARDWARE_CURSORS = "1";
       GBM_BACKEND = "nvidia-drm";
+      LIBVA_DRIVER_NAME = "nvidia";
+      XDG_SESSION_TYPE = "wayland";
+      __GLX_VENDOR_LIBRARY_NAME = "nvidia";
     };
     sessionVariables = {
-
+      XCURSOR_SIZE = "24";
       NIXOS_OZONE_WL = "1";
       WLR_NO_HARDWARE_CURSORS = "1";
       GBM_BACKEND = "nvidia-drm";
+      LIBVA_DRIVER_NAME = "nvidia";
+      XDG_SESSION_TYPE = "wayland";
+      __GLX_VENDOR_LIBRARY_NAME = "nvidia";
     };
   };
   system.stateVersion = "23.11";
