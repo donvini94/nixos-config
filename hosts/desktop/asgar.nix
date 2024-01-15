@@ -1,6 +1,8 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, modulesPath, ... }:
 
 {
+
+  imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
   networking.hostName = "asgar";
   hardware.opengl.extraPackages = with pkgs; [
     intel-media-driver # LIBVA_DRIVER_NAME=iHD

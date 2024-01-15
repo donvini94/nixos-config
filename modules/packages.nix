@@ -86,11 +86,12 @@
     lsof # list open files
 
     transmission-gtk
-    mullvad-vpn
     # Japanese fonts
     noto-fonts-cjk
     noto-fonts-cjk-sans
     noto-fonts-cjk-serif
     kochi-substitute
+
+    iosevka
   ];
 }
