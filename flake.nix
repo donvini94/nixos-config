@@ -57,6 +57,24 @@
           }
         ];
       };
+	valnar = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        specialArgs = { inherit inputs; };
+
+        modules = [
+          ./configuration.nix
+          ./hosts/desktop/valnar.nix
+          home-manager.nixosModules.home-manager
+          hyprland.nixosModules.default
+          { programs.hyprland.enable = true; }
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.users.vincenzo = import ./home.nix;
+          }
+        ];
+      };
+
 
       dracula = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
@@ -89,6 +107,13 @@
           extraSpecialArgs = { inherit inputs; };
           modules = [ ./home.nix ];
         };
+	"vincenzo@valnar" = home-manager.lib.homeManagerConfiguration {
+          pkgs =
+            nixpkgs.legacyPackages.x86_64-linux; # Home-manager requires 'pkgs' instance
+          extraSpecialArgs = { inherit inputs; };
+          modules = [ ./home.nix ];
+        };
+
         "vincenzo@dracula" = home-manager.lib.homeManagerConfiguration {
           pkgs =
             nixpkgs.legacyPackages.x86_64-linux; # Home-manager requires 'pkgs' instance

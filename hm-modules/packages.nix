@@ -26,7 +26,6 @@
     thunderbirdPackages.thunderbird-115
     slack
     signal-desktop
-    chromium
     teams-for-linux
 
     zotero
