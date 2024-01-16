@@ -101,6 +101,11 @@
               "QGVRLBK-OZX7PIM-JMGKYHF-KSFI5VS-FJH6RGI-4YGB6H6-EYAJ27S-TM5LTQ6";
             autoAcceptFolders = true;
           };
+          "valnar" = {
+            id =
+              "RUL7KJT-FSXO3VI-QP76KVO-LAY5CYT-NERMG3C-EY3TYUU-FQDDKG5-NJ5V4AS";
+            autoAcceptFolders = true;
+          };
           "asgar" = {
             id =
               "H5KT7VJ-OFUH3PD-6HH4KRI-VKOOOMY-Z5KNIQL-DVTBCAN-PQ44EAY-AAAS7AO";
@@ -111,7 +116,7 @@
           "documents" = {
             id = "baqfs-svyhe";
             path = "/home/vincenzo/documents";
-            devices = [ "dracula" "asgar" ];
+            devices = [ "dracula" "asgar" "valnar" ];
             type = "sendreceive";
             enable = true;
             versioning = {
@@ -122,7 +127,7 @@
           "org" = {
             id = "cccdk-miidx";
             path = "/home/vincenzo/org";
-            devices = [ "dracula" "asgar" ];
+            devices = [ "dracula" "asgar" "valnar" ];
             type = "sendreceive";
             enable = true;
             versioning = {
@@ -133,7 +138,7 @@
           "code" = {
             id = "wnku3-6n7g5";
             path = "/home/vincenzo/code";
-            devices = [ "dracula" "asgar" ];
+            devices = [ "dracula" "asgar" "valnar" ];
             type = "sendreceive";
             enable = true;
             versioning = {
