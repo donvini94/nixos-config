@@ -2,23 +2,33 @@
 
 {
   networking.hostName = "dracula";
+  networking.firewall = {
+    enable = true;
+    allowedTCPPorts = [ 80 443 8096 22 ];
+  };
   environment.systemPackages = with pkgs; [
     jellyfin
     jellyfin-web
     jellyfin-ffmpeg
     cudatoolkit
     calibre
+    libva
+    mullvad-vpn
   ];
   services.jellyfin.enable = true;
+  services.mullvad-vpn.enable = true;
   programs.steam.enable = true;
-
   # Enable OpenGL
   hardware.opengl = {
     enable = true;
     driSupport = true;
     driSupport32Bit = true;
+    extraPackages = with pkgs; [
+      vaapiVdpau
+      libvdpau-va-gl
+      nvidia-vaapi-driver
+    ];
   };
-
   # Load nvidia driver for Xorg and Wayland
   services.xserver.videoDrivers = [ "nvidia" ];
   boot.kernelParams = [ "nvidia.NVreg_PreserveVideoMemoryAllocations=1" ];
@@ -30,6 +40,7 @@
     # Enable the Nvidia settings menu,
     # accessible via `nvidia-settings`.
     nvidiaSettings = true;
+    forceFullCompositionPipeline = true;
 
     # Optionally, you may need to select the appropriate driver version for your specific GPU.
     package = config.boot.kernelPackages.nvidiaPackages.stable;
@@ -55,12 +66,12 @@
     lib.mkDefault config.hardware.enableRedistributableFirmware;
 
   fileSystems."/" = {
-    device = "/dev/disk/by-uuid/0c498a05-9bd4-448c-a4c3-6be118e6e0ef";
+    device = "/dev/disk/by-label/nixos";
     fsType = "ext4";
   };
 
   fileSystems."/boot" = {
-    device = "/dev/disk/by-uuid/C742-9F5D";
+    device = "/dev/disk/by-label/BOOT";
     fsType = "vfat";
   };
 
