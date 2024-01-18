@@ -38,89 +38,44 @@
     };
   };
 
-  outputs = { nixpkgs, home-manager, hyprland, disko, ... }@inputs: {
-    nixosConfigurations = {
-      asgar = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        specialArgs = { inherit inputs; };
+  outputs = { nixpkgs, home-manager, hyprland, disko, ... }@inputs:
+    let
+      commonNixosModules = [
+        ./configuration.nix
+        home-manager.nixosModules.home-manager
+        hyprland.nixosModules.default
+        { programs.hyprland.enable = true; }
+        {
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+          home-manager.users.vincenzo = import ./home.nix;
+        }
+      ];
 
-        modules = [
-          ./configuration.nix
-          ./hosts/desktop/asgar.nix
-          home-manager.nixosModules.home-manager
-          hyprland.nixosModules.default
-          { programs.hyprland.enable = true; }
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.vincenzo = import ./home.nix;
-          }
-        ];
+      makeNixosSystem = hostName:
+        nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          specialArgs = { inherit inputs; };
+          modules = commonNixosModules ++ [ ./hosts/desktop/${hostName}.nix ];
+        };
+
+      makeHomeManagerConfig = hostname:
+        home-manager.lib.homeManagerConfiguration {
+          pkgs = nixpkgs.legacyPackages.x86_64-linux;
+          extraSpecialArgs = { inherit inputs; };
+          modules = [ ./home.nix ];
+        };
+    in {
+      nixosConfigurations = {
+        asgar = makeNixosSystem "asgar";
+        valnar = makeNixosSystem "valnar";
+        dracula = makeNixosSystem "dracula";
+        alucard = makeNixosSystem "alucard";
       };
-	valnar = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        specialArgs = { inherit inputs; };
-
-        modules = [
-          ./configuration.nix
-          ./hosts/desktop/valnar.nix
-          home-manager.nixosModules.home-manager
-          hyprland.nixosModules.default
-          { programs.hyprland.enable = true; }
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.vincenzo = import ./home.nix;
-          }
-        ];
-      };
-
-
-      dracula = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        specialArgs = { inherit inputs; };
-
-        modules = [
-          ./configuration.nix
-          ./hosts/desktop/dracula.nix
-          home-manager.nixosModules.home-manager
-          hyprland.nixosModules.default
-          { programs.hyprland.enable = true; }
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.users.vincenzo = import ./home.nix;
-          }
-        ];
-      };
-
-      alucard = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        specialArgs = { inherit inputs; };
-        modules = [ ./hosts/server/alucard.nix ];
-      };
-
       homeConfigurations = {
-        "vincenzo@asgar" = home-manager.lib.homeManagerConfiguration {
-          pkgs =
-            nixpkgs.legacyPackages.x86_64-linux; # Home-manager requires 'pkgs' instance
-          extraSpecialArgs = { inherit inputs; };
-          modules = [ ./home.nix ];
-        };
-	"vincenzo@valnar" = home-manager.lib.homeManagerConfiguration {
-          pkgs =
-            nixpkgs.legacyPackages.x86_64-linux; # Home-manager requires 'pkgs' instance
-          extraSpecialArgs = { inherit inputs; };
-          modules = [ ./home.nix ];
-        };
-
-        "vincenzo@dracula" = home-manager.lib.homeManagerConfiguration {
-          pkgs =
-            nixpkgs.legacyPackages.x86_64-linux; # Home-manager requires 'pkgs' instance
-          extraSpecialArgs = { inherit inputs; };
-          modules = [ ./home.nix ];
-        };
+        "vincenzo@asgar" = makeHomeManagerConfig "asgar";
+        "vincenzo@valnar" = makeHomeManagerConfig "valnar";
+        "vincenzo@dracula" = makeHomeManagerConfig "dracula";
       };
     };
-  };
 }
