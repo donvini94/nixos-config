@@ -70,7 +70,11 @@
         asgar = makeNixosSystem "asgar";
         valnar = makeNixosSystem "valnar";
         dracula = makeNixosSystem "dracula";
-        alucard = makeNixosSystem "alucard";
+        alucard = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          specialArgs = { inherit inputs; };
+          modules = [ ./hosts/server/alucard.nix ];
+        };
       };
       homeConfigurations = {
         "vincenzo@asgar" = makeHomeManagerConfig "asgar";
