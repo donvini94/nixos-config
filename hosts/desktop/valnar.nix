@@ -21,6 +21,12 @@
     ++ lib.optional
     (lib.versionOlder config.boot.kernelPackages.kernel.version "6.1.6")
     "acpi_backlight=none";
+  virtualisation = {
+    docker = {
+      enable = true;
+      enableNvidia = true;
+    };
+  };
   hardware.nvidia = {
 
     # Modesetting is required.

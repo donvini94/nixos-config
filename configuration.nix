@@ -55,7 +55,7 @@
   users.users.vincenzo = {
     isNormalUser = true;
     description = "Vincenzo Pace";
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = [ "networkmanager" "wheel" "docker" ];
     packages = with pkgs; [ firefox ];
   };
 

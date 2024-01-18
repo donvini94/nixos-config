@@ -32,6 +32,12 @@
   # Load nvidia driver for Xorg and Wayland
   services.xserver.videoDrivers = [ "nvidia" ];
   boot.kernelParams = [ "nvidia.NVreg_PreserveVideoMemoryAllocations=1" ];
+  virtualisation = {
+    docker = {
+      enable = true;
+      enableNvidia = true;
+    };
+  };
   hardware.nvidia = {
 
     # Modesetting is required.
