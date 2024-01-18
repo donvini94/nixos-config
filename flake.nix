@@ -31,6 +31,8 @@
     disko.url = "github:nix-community/disko";
     disko.inputs.nixpkgs.follows = "nixpkgs";
 
+    hosts.url = "github:StevenBlack/hosts";
+
     hyprland.url = "github:hyprwm/Hyprland";
     hyprland-contrib = {
       url = "github:hyprwm/contrib";
@@ -38,10 +40,12 @@
     };
   };
 
-  outputs = { nixpkgs, home-manager, hyprland, disko, ... }@inputs:
+  outputs = { nixpkgs, home-manager, hyprland, disko, hosts, ... }@inputs:
     let
       commonNixosModules = [
         ./configuration.nix
+        hosts.nixosModule
+        { networking.stevenBlackHosts.enable = true; }
         home-manager.nixosModules.home-manager
         hyprland.nixosModules.default
         { programs.hyprland.enable = true; }
@@ -70,6 +74,8 @@
         asgar = makeNixosSystem "asgar";
         valnar = makeNixosSystem "valnar";
         dracula = makeNixosSystem "dracula";
+
+        #Server
         alucard = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           specialArgs = { inherit inputs; };
