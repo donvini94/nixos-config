@@ -6,6 +6,7 @@
     ./modules/fonts.nix
     ./modules/hyprland/default.nix
     ./modules/programming.nix
+    ./modules/services.nix
   ];
 
   boot.loader.systemd-boot.enable = true;
@@ -34,24 +35,6 @@
   hardware.bluetooth.enable = true;
   security.rtkit.enable = true;
 
-  services = {
-    pcscd.enable = true;
-    logind.lidSwitchExternalPower = "ignore";
-    pipewire.wireplumber.enable = true;
-    emacs.enable = true;
-    printing.enable = true;
-    xserver = {
-      enable = true;
-      layout = "us";
-      xkbVariant = "";
-    };
-    pipewire = {
-      enable = true;
-      alsa.enable = true;
-      alsa.support32Bit = true;
-      pulse.enable = true;
-    };
-  };
   users.users.vincenzo = {
     isNormalUser = true;
     description = "Vincenzo Pace";
