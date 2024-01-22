@@ -1,4 +1,4 @@
-{ pkgs, ... }: {
+{ pkgs, inputs, ... }: {
   xdg.portal = {
     enable = true;
     wlr.enable = true;
@@ -18,6 +18,10 @@
       displayManager = {
         defaultSession = "hyprland";
         gdm.enable = true;
+        autoLogin = {
+          enable = true;
+          user = "xxx";
+        };
       };
     };
   };
@@ -25,11 +29,11 @@
   programs = {
     hyprland = {
 
+      package = inputs.hyprland.packages.${pkgs.system}.hyprland;
       xwayland.enable = true;
     };
     # monitor backlight control
     light.enable = true;
-
     thunar.plugins = with pkgs.xfce; [ thunar-archive-plugin thunar-volman ];
   };
 
