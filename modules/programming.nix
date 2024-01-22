@@ -34,5 +34,7 @@
     tree-sitter-grammars.tree-sitter-haskell
     tree-sitter-grammars.tree-sitter-python
 
+    # tooling
+    devbox
   ];
 }
