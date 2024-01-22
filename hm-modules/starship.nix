@@ -1,8 +1,9 @@
 { config, lib, pkgs, ... }:
 
 {
-   programs.starship = {
+  programs.starship = {
     enable = true;
+    enableNushellIntegration = true;
     settings = {
       add_newline = true;
       aws.disabled = true;
@@ -15,15 +16,4 @@
   # programs.carapace.enable = true;
   # programs.carapace.enableNushellIntegration = true;
 
- 
 }
-
-
-
-
-
-
-
-
-
-
