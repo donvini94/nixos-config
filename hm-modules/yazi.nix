@@ -1,7 +1,7 @@
 { config, lib, pkgs, ... }:
 
 {
-   programs.yazi = {
+  programs.yazi = {
     enable = true;
     enableNushellIntegration = true;
     settings = {
@@ -13,23 +13,13 @@
         linemode = "size";
       };
       preview = {
-        max_width = 800;
-        max_height = 400;
+        max_width = 1920;
+        max_height = 1080;
         cache_dir = "~/.cache/yazi/";
       };
     };
     #keymap = {};
 
   };
- 
+
 }
-
-
-
-
-
-
-
-
-
-

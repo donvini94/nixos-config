@@ -2,10 +2,6 @@
 
 {
   networking.hostName = "dracula";
-  networking.firewall = {
-    enable = true;
-    allowedTCPPorts = [ 80 443 8096 22 ];
-  };
   environment.systemPackages = with pkgs; [
     jellyfin
     jellyfin-web
@@ -14,8 +10,10 @@
     calibre
     libva
     mullvad-vpn
+    nvtop
   ];
   services.jellyfin.enable = true;
+  services.jellyfin.openFirewall = true;
   services.mullvad-vpn.enable = true;
   programs.steam.enable = true;
   # Enable OpenGL

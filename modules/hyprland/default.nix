@@ -20,7 +20,7 @@
         gdm.enable = true;
         autoLogin = {
           enable = true;
-          user = "xxx";
+          user = "vincenzo";
         };
       };
     };
