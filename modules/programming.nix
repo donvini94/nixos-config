@@ -36,5 +36,6 @@
 
     # tooling
     devbox
+    github-desktop
   ];
 }

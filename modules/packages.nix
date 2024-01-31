@@ -57,6 +57,7 @@
     btop # replacement of htop/nmon
     iotop # io monitoring
     iftop # network monitoring
+    filezilla
 
     zoxide
     psmisc

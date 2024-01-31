@@ -17,11 +17,7 @@
 
       displayManager = {
         defaultSession = "hyprland";
-        gdm.enable = true;
-        autoLogin = {
-          enable = true;
-          user = "vincenzo";
-        };
+        sddm.enable = true;
       };
     };
   };
