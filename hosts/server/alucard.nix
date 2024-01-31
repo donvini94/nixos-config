@@ -15,6 +15,10 @@
   # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
   networking.useDHCP = lib.mkDefault true;
   # networking.interfaces.ens3.useDHCP = lib.mkDefault true;
+  networking.firewall = {
+    enable = true;
+    allowedTCPPorts = [ 80 443 8096 22 58080];
+  };
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   boot.loader.systemd-boot.enable = true;
@@ -87,6 +91,7 @@
       settings.PermitRootLogin = "no";
 
     };
+fail2ban.enable = true;
 
     syncthing = {
       enable = true;
@@ -150,20 +155,20 @@
       };
     };
 
-    #    paperless = {
-    #      enable = true;
-    #      address = "0.0.0.0";
-    #      port = 58080;
-    #      consumptionDirIsPublic = true;
-    #      extraConfig.PAPERLESS_OCR_LANGUAGE = "deu+eng";
-    #
-    #    };
+  paperless = {
+      enable = true;
+      address = "dumustbereitsein.de";
+      port = 58080;
+      consumptionDirIsPublic = true;
+      settings.PAPERLESS_OCR_LANGUAGE = "deu+eng";
+      passwordFile = "/run/keys/paperless-password";
+    };
   };
 
-  #  systemd.services.paperless-consumer.after = [ "var-lib-paperless.mount" ];
-  #  systemd.services.paperless-scheduler.after = [ "var-lib-paperless.mount" ];
-  #  systemd.services.paperless-task-queue.after = [ "var-lib-paperless.mount" ];
-  #  systemd.services.paperless-web.after = [ "var-lib-paperless.mount" ];
+  systemd.services.paperless-consumer.after = [ "var-lib-paperless.mount" ];
+  systemd.services.paperless-scheduler.after = [ "var-lib-paperless.mount" ];
+  systemd.services.paperless-task-queue.after = [ "var-lib-paperless.mount" ];
+  systemd.services.paperless-web.after = [ "var-lib-paperless.mount" ];
 
   nix = {
     settings = {
