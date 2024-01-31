@@ -82,6 +82,7 @@
     unzip
     p7zip
 
+    certbot # for SSL certificate / let's encrypt
   ];
 
   services = {
