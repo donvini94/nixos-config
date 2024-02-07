@@ -29,6 +29,10 @@
     teams-for-linux
 
     zotero
+
+    # photos
+    shotwell
+    darktable
   ];
 
 }
