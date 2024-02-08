@@ -7,8 +7,8 @@
     printing.enable = true;
     xserver = {
       enable = true;
-      layout = "us";
-      xkbVariant = "";
+      xkb.layout = "us";
+      xkb.variant = "";
     };
     pipewire = {
       enable = true;
