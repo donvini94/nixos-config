@@ -15,6 +15,7 @@
     neofetch
 
     sxiv
+    nsxiv
     mpv
     # productivity
     glow # markdown previewer in terminal
