@@ -42,7 +42,7 @@
   # Afterwards the mode can be relaxed to `dual` (the default) again.
   #
   # hardware.bluetooth.settings = { General = { ControllerMode = "bredr"; }; };
-
+  services.xserver.desktopManager.plasma5.enable = true;
   users.users.vincenzo = {
     isNormalUser = true;
     description = "Vincenzo Pace";
