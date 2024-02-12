@@ -34,6 +34,7 @@
     # photos
     shotwell
     darktable
+    imagemagick
   ];
 
 }
