@@ -2,9 +2,12 @@
 
 {
   imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
+  networking.firewall = {
+    enable = true;
+    allowedTCPPorts = [ 80 443 5000 8000 8080 8888 22 11434 60198 ];
+  };
 
   networking.hostName = "valnar";
-
   environment.systemPackages = with pkgs; [ cudatoolkit mesa nvtop ollama ];
 
   # Enable OpenGL
@@ -17,10 +20,7 @@
   services.xserver.videoDrivers = lib.mkDefault [ "nvidia" ];
   hardware.opengl.extraPackages = with pkgs; [ vaapiVdpau ];
   boot.kernelParams =
-    [ "nvidia.NVreg_PreserveVideoMemoryAllocations=1" "amdgpu.backlight=0" ]
-    ++ lib.optional
-    (lib.versionOlder config.boot.kernelPackages.kernel.version "6.1.6")
-    "acpi_backlight=none";
+    [ "nvidia.NVreg_PreserveVideoMemoryAllocations=1" "amdgpu.backlight=0" ];
   virtualisation = {
     docker = {
       enable = true;
@@ -40,6 +40,10 @@
     package = config.boot.kernelPackages.nvidiaPackages.stable;
     powerManagement.enable = true;
     open = false;
+    prime = {
+      nvidiaBusId = "PCI:1:0:0";
+      amdgpuBusId = "PCI:5:0:0";
+    };
   };
 
   environment = {
