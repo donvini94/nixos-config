@@ -32,6 +32,7 @@
     disko.inputs.nixpkgs.follows = "nixpkgs";
 
     hosts.url = "github:StevenBlack/hosts";
+    hosts.inputs.nixpkgs.follows = "nixpkgs";
 
     hyprland.url = "github:hyprwm/Hyprland";
     hyprland-contrib = {
