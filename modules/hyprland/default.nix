@@ -17,7 +17,7 @@
 
       displayManager = {
         defaultSession = "hyprland";
-        sddm.enable = true;
+        gdm.enable = true;
       };
     };
   };
