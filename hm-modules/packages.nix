@@ -28,7 +28,7 @@
     slack
     signal-desktop
     teams-for-linux
-
+    firefox-devedition
     zotero
 
     # photos
