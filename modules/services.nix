@@ -16,5 +16,16 @@
       alsa.support32Bit = true;
       pulse.enable = true;
     };
+    resolved = {
+      enable = true;
+      extraConfig = ''
+        DNS=45.90.28.0#463172.dns.nextdns.io
+        DNS=2a07:a8c0::#463172.dns.nextdns.io
+        DNS=45.90.30.0#463172.dns.nextdns.io
+        DNS=2a07:a8c1::#463172.dns.nextdns.io
+        DNSOverTLS=yes
+      '';
+    };
+    nextdns.enable = true;
   };
 }
