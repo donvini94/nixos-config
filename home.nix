@@ -24,13 +24,14 @@
     stateVersion = "23.05";
 
   };
+
+  fonts.fontconfig.enable = true;
+
   programs.git = {
     enable = true;
     userName = "Vincenzo Pace";
-    userEmail = "vincenzo.pace@mailbox.org";
+    userEmail = "pace@amiconsult.de";
   };
-
-  fonts.fontconfig.enable = true;
 
   programs.bash = {
     enable = true;
@@ -38,6 +39,11 @@
     bashrcExtra = ''
       export PATH="$PATH:$HOME/bin:$HOME/.local/bin:$HOME/go/bin:$HOME/.config/emacs/bin/doom"
     '';
+  };
+
+  programs.zoxide = {
+    enable = true;
+    enableNushellIntegration = true;
   };
 
   services = {

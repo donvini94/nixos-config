@@ -10,6 +10,7 @@
         e = "nvim";
         cheat = "cht.sh";
         c = "cht.sh";
+        cd = "z";
       };
       extraConfig = ''
         $env.config = {
