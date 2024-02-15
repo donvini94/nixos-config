@@ -24,7 +24,7 @@
     # communication
     telegram-desktop
     discord
-    thunderbirdPackages.thunderbird-115
+    thunderbird
     slack
     signal-desktop
     teams-for-linux
