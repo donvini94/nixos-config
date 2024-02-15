@@ -6,8 +6,6 @@
 
       exec-once = dunst
       exec-once = waybar
-      exec-once = swww init 
-      exec-once = swww img /~/nixos-config/wallpapers/w3_ultrawide.png
       exec-once = emacs --daemon
       exec-once = nm-applet --indicator &
 
