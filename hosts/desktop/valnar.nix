@@ -4,7 +4,7 @@
   imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
   networking.firewall = {
     enable = true;
-    allowedTCPPorts = [ 80 443 5000 8000 8080 8888 22 11434 60198 ];
+    allowedTCPPorts = [ 80 443 5000 8000 8080 8888 22 11434 60198 3000 ];
   };
 
   networking.hostName = "valnar";
