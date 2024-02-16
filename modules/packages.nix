@@ -11,9 +11,11 @@
     helix
     emacs29
     fzf # A command-line fuzzy finder
+    entr
 
     xorg.xhost
     ripgrep # recursively searches directories for a regex pattern
+    ripgrep-all
     # archives
     zip
     xz
