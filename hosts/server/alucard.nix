@@ -118,8 +118,34 @@
               "H5KT7VJ-OFUH3PD-6HH4KRI-VKOOOMY-Z5KNIQL-DVTBCAN-PQ44EAY-AAAS7AO";
             autoAcceptFolders = true;
           };
+          "kyrill-thinkpad-t495" = {
+            id =
+              "PERVZSH-ZPN5MET-MM6ADZG-TTDUOV5-USGIDY3-4K4UT6N-JPUCYGM-6PIIWQQ";
+            autoAcceptFolders = true;
+          };
+          "kyrill-handy" = {
+            id =
+              "VKWKKOP-4ZNV7AY-MSDT3EA-LOJQFAS-BJ7MPWT-ZJ353LV-7HRXYA3-3763VAH";
+            autoAcceptFolders = true;
+          };
+          "kyrill-tablet" = {
+            id =
+              "T7SVLB6-ZWQM7DO-ZDULZNB-I6QGSQZ-JJUFPO2-7N3GVP7-HONELH2-3GDJSAE";
+            autoAcceptFolders = true;
+          };
         };
         folders = {
+          "default" = {
+            id = "default";
+            path = "/home/vincenzo/default";
+            devices = [ "kyrill-handy" "kyrill-tablet" "kyrill-thinkpad-t495" ];
+            type = "sendreceive";
+            enable = true;
+            versioning = {
+              type = "simple";
+              params.keep = 5;
+            };
+          };
           "documents" = {
             id = "baqfs-svyhe";
             path = "/home/vincenzo/documents";
