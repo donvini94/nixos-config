@@ -163,7 +163,7 @@
       port = 58080;
       consumptionDirIsPublic = true;
       settings.PAPERLESS_OCR_LANGUAGE = "deu+eng";
-      passwordFile = "/run/keys/paperless-password";
+      passwordFile = "/home/vincenzo/keys/paperless-password";
     };
   };
 
