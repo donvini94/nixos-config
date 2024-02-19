@@ -9,12 +9,10 @@
     cudatoolkit
     calibre
     libva
-    mullvad-vpn
     nvtop
   ];
   services.jellyfin.enable = true;
   services.jellyfin.openFirewall = true;
-  services.mullvad-vpn.enable = true;
   programs.steam.enable = true;
   # Enable OpenGL
   hardware.opengl = {

@@ -96,6 +96,7 @@
     noto-fonts-cjk-serif
     kochi-substitute
 
+    mullvad-vpn
     iosevka
   ];
 }

@@ -43,6 +43,8 @@
   #
   # hardware.bluetooth.settings = { General = { ControllerMode = "bredr"; }; };
   services.xserver.desktopManager.plasma5.enable = true;
+
+  services.mullvad-vpn.enable = true;
   users.users.vincenzo = {
     isNormalUser = true;
     description = "Vincenzo Pace";
