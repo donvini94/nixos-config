@@ -20,6 +20,7 @@
     # productivity
     glow # markdown previewer in terminal
     zathura
+    poppler_utils
     anki
     # communication
     telegram-desktop
