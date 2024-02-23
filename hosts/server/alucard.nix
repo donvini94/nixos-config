@@ -179,7 +179,7 @@
               params.keep = 5;
             };
           };
-          "code" = {
+          "amiconsult" = {
             id = "amiconsult";
             path = "/home/vincenzo/amiconsult";
             devices = [ "dracula" "valnar" ];
