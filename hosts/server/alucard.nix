@@ -179,6 +179,17 @@
               params.keep = 5;
             };
           };
+          "code" = {
+            id = "amiconsult";
+            path = "/home/vincenzo/amiconsult";
+            devices = [ "dracula" "valnar" ];
+            type = "sendreceive";
+            enable = true;
+            versioning = {
+              type = "simple";
+              params.keep = 5;
+            };
+          };
         };
       };
     };
