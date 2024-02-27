@@ -36,6 +36,9 @@
     shotwell
     darktable
     imagemagick
+
+    # media
+    ncmpcpp
   ];
 
 }

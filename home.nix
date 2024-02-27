@@ -49,6 +49,11 @@
   services = {
     udiskie.enable = true; # Automounter for removable media
     syncthing.enable = true;
+    mpd = {
+      enable = true;
+      musicDirectory = "/media/music";
+      network.startWhenNeeded = true;
+    };
   };
   services.gammastep = {
     enable = true;
