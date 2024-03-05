@@ -8,6 +8,7 @@
     ghc
     ghcid
     stack
+    haskellPackages.hoogle
 
     # Rust
     rust-analyzer
@@ -37,5 +38,8 @@
     # tooling
     devbox
     github-desktop
+    sqlite
+    shfmt
+    shellcheck
   ];
 }
