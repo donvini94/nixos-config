@@ -39,6 +39,8 @@
       url = "github:hyprwm/contrib";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nix-minecraft.url = "github:Infinidoge/nix-minecraft";
+
   };
 
   outputs = { nixpkgs, home-manager, hyprland, disko, hosts, ... }@inputs:

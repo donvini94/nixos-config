@@ -1,8 +1,12 @@
 { inputs, config, lib, pkgs, modulesPath, ... }:
 
 {
-  imports = [ (modulesPath + "/profiles/qemu-guest.nix") ./disk-config.nix ];
-
+  imports = [
+    (modulesPath + "/profiles/qemu-guest.nix")
+    ./disk-config.nix
+    inputs.nix-minecraft.nixosModules.minecraft-servers
+  ];
+  nixpkgs.overlays = [ inputs.nix-minecraft.overlay ];
   boot.initrd.availableKernelModules =
     [ "ata_piix" "uhci_hcd" "virtio_pci" "sr_mod" "virtio_blk" ];
   boot.initrd.kernelModules = [ ];
