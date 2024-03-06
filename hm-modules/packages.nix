@@ -39,6 +39,7 @@
 
     # media
     ncmpcpp
+    bsnes-hd
   ];
 
 }
