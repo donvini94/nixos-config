@@ -37,9 +37,9 @@
     darktable
     imagemagick
 
-    # media
-    ncmpcpp
+    # games
     bsnes-hd
+    xemu
   ];
 
 }
