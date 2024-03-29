@@ -28,6 +28,7 @@
 
     # Docs
     plantuml
+    zeal
 
     # Tree-sitter
     tree-sitter
