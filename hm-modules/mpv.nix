@@ -12,7 +12,7 @@
       f = "cycle fullscreen";
       "[" = "multiply speed 1/1.1";
       "]" = "multiply speed 1.1";
-      I = "cycle-values vf 'sub,lavfi=negate'";
+      I = "cycle-values vf 'sub,lavfi=negate' ''";
     };
     config = {
 
