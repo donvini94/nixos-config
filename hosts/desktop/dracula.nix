@@ -9,7 +9,7 @@
     cudatoolkit
     calibre
     libva
-    nvtop
+    nvitop
   ];
   services.jellyfin.enable = true;
   services.jellyfin.openFirewall = true;
