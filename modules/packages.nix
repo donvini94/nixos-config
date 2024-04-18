@@ -21,6 +21,7 @@
     xz
     unzip
     p7zip
+    unrar
 
     # networking tools
     mtr # A network diagnostic tool

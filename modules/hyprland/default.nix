@@ -10,15 +10,11 @@
   services = {
     gvfs.enable = true; # Mount, trash, and other functionalities
     tumbler.enable = true; # Thumbnail support for images
+    displayManager.defaultSession = "hyprland";
     xserver = {
       enable = true;
-
       desktopManager = { xterm.enable = false; };
-
-      displayManager = {
-        defaultSession = "hyprland";
-        gdm.enable = true;
-      };
+      displayManager = { gdm.enable = true; };
     };
   };
 
