@@ -14,6 +14,8 @@
     rust-analyzer
     rustup
     rustfmt
+    cargo-watch
+    clippy
     # Python
     python311
     python311Packages.pip
