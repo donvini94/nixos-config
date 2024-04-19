@@ -22,6 +22,7 @@
     unzip
     p7zip
     unrar
+    pigz
 
     # networking tools
     mtr # A network diagnostic tool
@@ -50,6 +51,7 @@
     curl
     graphviz
     magic-wormhole
+    altserver-linux
 
     # system tools
     sysstat
