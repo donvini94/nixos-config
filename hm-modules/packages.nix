@@ -17,11 +17,14 @@
     sxiv
     nsxiv
     mpv
+
     # productivity
     glow # markdown previewer in terminal
     zathura
     poppler_utils
     anki
+    qolibri # japanese dictionaries
+
     # communication
     telegram-desktop
     discord
