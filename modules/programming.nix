@@ -44,5 +44,7 @@
     sqlite
     shfmt
     shellcheck
+    dockfmt
+    plantuml
   ];
 }

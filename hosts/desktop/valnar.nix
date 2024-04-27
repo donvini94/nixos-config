@@ -8,7 +8,7 @@
   };
 
   networking.hostName = "valnar";
-  environment.systemPackages = with pkgs; [ cudatoolkit mesa nvtop ollama ];
+  environment.systemPackages = with pkgs; [ cudatoolkit mesa nvitop ollama ];
 
   # Enable OpenGL
   hardware.opengl = {
