@@ -14,6 +14,8 @@
   services.jellyfin.enable = true;
   services.jellyfin.openFirewall = true;
   programs.steam.enable = true;
+  programs.steam.gamescopeSession.enable = true;
+  programs.gamemode.enable = true;
   # Enable OpenGL
   hardware.opengl = {
     enable = true;
@@ -34,7 +36,9 @@
       enableNvidia = true;
     };
   };
-  hardware.nvidia = {
+
+  
+    hardware.nvidia = {
 
     # Modesetting is required.
     modesetting.enable = true;

@@ -43,6 +43,8 @@
     # games
     bsnes-hd
     xemu
+    mangohud
+    protonup
   ];
 
 }

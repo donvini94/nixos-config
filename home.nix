@@ -79,6 +79,10 @@
       size = 16;
     };
   };
+home.sessionVariables = {
+    STEAM_EXTRA_COMPAT_TOOLS_PATHS =
+      "\${HOME}/.steam/root/compatibilitytools.d";
+  };
 
   # Mimetypes
   xdg.mimeApps.defaultApplications = {
