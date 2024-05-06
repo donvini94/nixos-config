@@ -34,14 +34,7 @@
     hosts.url = "github:StevenBlack/hosts";
     hosts.inputs.nixpkgs.follows = "nixpkgs";
 
-    hyprland.url = "github:hyprwm/Hyprland";
-    hyprland.inputs.nixpkgs.follows = "nixpkgs";
-    hyprland-contrib = {
-      url = "github:hyprwm/contrib";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    nix-minecraft.url = "github:Infinidoge/nix-minecraft";
-
+    hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1";
   };
 
   outputs = { nixpkgs, home-manager, hyprland, disko, hosts, ... }@inputs:

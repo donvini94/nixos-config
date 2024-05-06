@@ -50,7 +50,6 @@
     wget
     curl
     graphviz
-    magic-wormhole
     altserver-linux
 
     # system tools
