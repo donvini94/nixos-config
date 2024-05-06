@@ -34,6 +34,7 @@
     teams-for-linux
     firefox-devedition
     zotero
+    zoom-us
 
     # photos
     shotwell

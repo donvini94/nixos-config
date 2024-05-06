@@ -46,5 +46,8 @@
     shellcheck
     dockfmt
     plantuml
+    oxker # docker tui
+    lazydocker
+    warp-terminal
   ];
 }
