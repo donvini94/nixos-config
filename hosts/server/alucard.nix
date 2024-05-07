@@ -4,9 +4,7 @@
   imports = [
     (modulesPath + "/profiles/qemu-guest.nix")
     ./disk-config.nix
-    inputs.nix-minecraft.nixosModules.minecraft-servers
   ];
-  nixpkgs.overlays = [ inputs.nix-minecraft.overlay ];
   boot.initrd.availableKernelModules =
     [ "ata_piix" "uhci_hcd" "virtio_pci" "sr_mod" "virtio_blk" ];
   boot.initrd.kernelModules = [ ];
@@ -53,6 +51,12 @@
     extraGroups = [ "wheel" "docker" ];
   };
 
+users.users.git = {
+    isSystemUser = true;
+    extraGroups = [ "wheel"];
+  };
+
+
   users.users.jellyfin = {
     isNormalUser = true;
     extraGroups = [ "wheel" "docker" ];
@@ -86,7 +90,7 @@
     unzip
     p7zip
 
-    certbot # for SSL certificate / let's encrypt
+#    certbot # for SSL certificate / let's encrypt
   ];
 
   services = {
@@ -98,8 +102,55 @@
 
     };
     fail2ban.enable = true;
+    # gitlab needs nginx proxy
+nginx = {
+  enable = true;
+  recommendedGzipSettings = true;
+  recommendedOptimisation = true;
+  recommendedProxySettings = true;
+  recommendedTlsSettings = true;
+  virtualHosts."stream.dumustbereitsein.de" = {
+    locations."/".proxyPass = "http://localhost:8096";
+  };
+  virtualHosts."git.dumustbereitsein.de" = {
+    enableACME = true;
+    forceSSL = true;
+    locations."/".proxyPass = "http://unix:/run/gitlab/gitlab-workhorse.socket";
+  };
+};
+gitlab = {
+  enable = true;
+  databasePasswordFile = "/var/keys/gitlab/db_password";
+  initialRootPasswordFile = "/var/keys/gitlab/root_password";
+  https = false;
+  host = "git.dumustbereitsein.de";
+  port = 80;
+  user = "git";
+  databaseUsername = "git";
+  group = "git";
+  smtp = {
+    enable = true;
+    address = "localhost";
+    port = 25;
+  };
+  secrets = {
+    dbFile = "/var/keys/gitlab/db";
+    secretFile = "/var/keys/gitlab/secret";
+    otpFile = "/var/keys/gitlab/otp";
+    jwsFile = "/var/keys/gitlab/jws";
+  };
+  extraConfig = {
+    gitlab = {
+      email_from = "gitlab-no-reply@example.com";
+      email_display_name = "Vincenzos GitLab";
+      email_reply_to = "gitlab-no-reply@example.com";
+    };
+  };
+};
+
 
     syncthing = {
+
       enable = true;
       user = "vincenzo";
       openDefaultPorts = true;
@@ -248,6 +299,8 @@
     };
   };
 
+  security.acme.acceptTerms = true;
+  security.acme.defaults.email = "vincenzo.pace94@icloud.com";
   system.stateVersion = "23.05";
 
 }
