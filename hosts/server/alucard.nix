@@ -112,6 +112,9 @@ nginx = {
   virtualHosts."stream.dumustbereitsein.de" = {
     locations."/".proxyPass = "http://localhost:8096";
   };
+ virtualHosts."docs.dumustbereitsein.de" = {
+    locations."/".proxyPass = "http://localhost:58080";
+  };
   virtualHosts."git.dumustbereitsein.de" = {
     enableACME = true;
     forceSSL = true;
@@ -148,6 +151,9 @@ gitlab = {
   };
 };
 
+gitlab-runner = {
+  enable =true;
+};
 
     syncthing = {
 
@@ -251,7 +257,7 @@ gitlab = {
 
     paperless = {
       enable = true;
-      address = "dumustbereitsein.de";
+      address = "docs.dumustbereitsein.de";
       port = 58080;
       consumptionDirIsPublic = true;
       settings.PAPERLESS_OCR_LANGUAGE = "deu+eng";
