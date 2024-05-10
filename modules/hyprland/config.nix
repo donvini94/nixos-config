@@ -124,7 +124,7 @@
       bind = $mod_SHIFT, P, exec, pavucontrol
       bind = $mod, P, exec, passmenu
       bind = $mod_SHIFT, H, exec, kitty -e btop
-      bind = $mod , D, exec, kitty -e lazydocker
+      bind = $mod , D, exec, kitty -e oxker
 
       # Window Navigation
       bind = $mod, J, cyclenext
