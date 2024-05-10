@@ -74,5 +74,6 @@
     warp-terminal
     editorconfig
     nodePackages.bash-language-server
+    dockerfile-language-server-nodejs
   ];
 }
