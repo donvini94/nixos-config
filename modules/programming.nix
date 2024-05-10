@@ -10,16 +10,40 @@
     stack
     haskellPackages.hoogle
 
+    #go
+    go
+    gccgo
+    gotools
+    gore
+    gotests
+    gotest
+    gopls
+    gomodifytags
+
     # Rust
     rust-analyzer
     rustup
     rustfmt
     cargo-watch
     clippy
+    jetbrains.rust-rover
+
     # Python
     python311
     python311Packages.pip
     nodePackages.pyright
+    pipenv
+    jetbrains.pycharm-professional
+    black
+    isort
+    pipenv
+    pytest
+    nosetests
+
+    # Web
+    html-tidy
+    js-beautify
+    stylelint
 
     # Java
     jdk17
@@ -45,9 +69,10 @@
     shfmt
     shellcheck
     dockfmt
-    plantuml
     oxker # docker tui
     lazydocker
     warp-terminal
+    editorconfig
+    nodePackages.bash-language-server
   ];
 }
