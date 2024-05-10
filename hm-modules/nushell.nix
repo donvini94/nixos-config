@@ -25,5 +25,10 @@
       enableNushellIntegration = true;
       nix-direnv.enable = true;
     };
+
+    atuin = {
+      enable = true;
+      enableNushellIntegration = true;
+    };
   };
 }
