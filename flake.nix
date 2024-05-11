@@ -7,6 +7,7 @@
       "https://cache.nixos.org/"
       "https://anyrun.cachix.org"
       "https://hyprland.cachix.org"
+      "https://helix.cachix.org"
     ];
 
     extra-substituters = [
@@ -14,6 +15,7 @@
       "https://nixpkgs-wayland.cachix.org"
     ];
     extra-trusted-public-keys = [
+      "helix.cachix.org-1:ejp9KQpR1FBI2onstMQ34yogDm4OgU2ru6lIwPvuCVs="
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
       "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
       "anyrun.cachix.org-1:pqBobmOjI7nKlsUMV25u9QHa9btJK65/C8vnO3p346s="

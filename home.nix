@@ -13,6 +13,7 @@
     ./modules/hyprland/config.nix
     ./hm-modules/swaylock.nix
     ./hm-modules/waybar.nix
+    ./hm-modules/helix.nix
   ];
 
   programs.home-manager.enable = true;
@@ -79,7 +80,7 @@
       size = 16;
     };
   };
-home.sessionVariables = {
+  home.sessionVariables = {
     STEAM_EXTRA_COMPAT_TOOLS_PATHS =
       "\${HOME}/.steam/root/compatibilitytools.d";
   };
