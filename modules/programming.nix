@@ -37,12 +37,10 @@
     black
     isort
     pipenv
-    pytest
-    nosetests
 
     # Web
     html-tidy
-    js-beautify
+    nodePackages.js-beautify
     stylelint
 
     # Java
@@ -72,7 +70,6 @@
     oxker # docker tui
     lazydocker
     warp-terminal
-    editorconfig
     nodePackages.bash-language-server
     dockerfile-language-server-nodejs
   ];
