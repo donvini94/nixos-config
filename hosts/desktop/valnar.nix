@@ -9,6 +9,7 @@
 
   networking.hostName = "valnar";
   environment.systemPackages = with pkgs; [ cudatoolkit mesa nvitop ollama ];
+  programs.gamemode.enable = true;
 
   # Enable OpenGL
   hardware.opengl = {
