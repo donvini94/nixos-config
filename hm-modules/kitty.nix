@@ -1,7 +1,7 @@
 { config, lib, pkgs, ... }:
 
 {
- programs.kitty = {
+  programs.kitty = {
     enable = true;
     keybindings = {
       "ctrl+t" = "new_tab";
@@ -18,15 +18,5 @@
     extraConfig = "shell nu";
   };
 
- 
 }
-
-
-
-
-
-
-
-
-
 

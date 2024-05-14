@@ -1,5 +1,5 @@
 {
-disko.devices.disk.nvme0n1 = {
+  disko.devices.disk.nvme0n1 = {
     type = "disk";
     device = "/dev/nvme0n1";
     content = {
@@ -17,7 +17,7 @@ disko.devices.disk.nvme0n1 = {
             mountpoint = "/boot";
           };
         };
-	 root = {
+        root = {
           size = "100%";
           content = {
             type = "btrfs";

@@ -18,17 +18,11 @@
         separator_color = "#585273";
       };
 
-      urgency_low = {
-        background = "#2D2B40";
-      };
+      urgency_low = { background = "#2D2B40"; };
 
-      urgency_normal = {
-        background = "#2D2B40";
-      };
+      urgency_normal = { background = "#2D2B40"; };
 
-      urgency_high = {
-        background = "#2D2B40";
-      };
+      urgency_high = { background = "#2D2B40"; };
 
       discord = {
         appname = "Discord";
