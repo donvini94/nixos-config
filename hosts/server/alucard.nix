@@ -16,7 +16,7 @@
   # networking.interfaces.ens3.useDHCP = lib.mkDefault true;
   networking.firewall = {
     enable = true;
-    allowedTCPPorts = [ 80 443 8096 22 58080 ];
+    allowedTCPPorts = [ 80 443 8096 22 58080 5050];
   };
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
@@ -85,8 +85,8 @@
     xz
     unzip
     p7zip
-
-    #    certbot # for SSL certificate / let's encrypt
+    openssl
+    gitlab-container-registry
   ];
 
   services = {
@@ -105,7 +105,14 @@
       recommendedOptimisation = true;
       recommendedProxySettings = true;
       recommendedTlsSettings = true;
+      virtualHosts."dumustbereitsein.de" = {
+        enableACME = true;
+        forceSSL = true;
+        root = "/var/www/dumustbereitsein.de";
+      };
       virtualHosts."stream.dumustbereitsein.de" = {
+        enableACME = true;
+        forceSSL = true;
         locations."/".proxyPass = "http://localhost:8096";
       };
       virtualHosts."docs.dumustbereitsein.de" = {
@@ -122,9 +129,9 @@
       enable = true;
       databasePasswordFile = "/var/keys/gitlab/db_password";
       initialRootPasswordFile = "/var/keys/gitlab/root_password";
-      https = false;
+      https = true;
       host = "git.dumustbereitsein.de";
-      port = 80;
+      port = 443;
       user = "git";
       databaseUsername = "git";
       group = "git";
@@ -141,14 +148,24 @@
       };
       extraConfig = {
         gitlab = {
-          email_from = "gitlab-no-reply@example.com";
+          email_from = "gitlab-no-reply@dumustbereitsein.de";
           email_display_name = "Vincenzos GitLab";
-          email_reply_to = "gitlab-no-reply@example.com";
+          email_reply_to = "gitlab-no-reply@dumustbereitsein.de";
         };
       };
+#      registry = {
+#        enable = true;
+#        externalPort = 5050;
+#        externalAddress = "registry.dumustbereitsein.de";
+#        certFile = "/var/cert/registry.crt";
+#        keyFile = "/var/cert/registry.key";
+#      };
     };
 
-    gitlab-runner = { enable = true; };
+    gitlab-runner = {
+      enable = true;
+      gracefulTermination = true;
+    };
 
     syncthing = {
 
