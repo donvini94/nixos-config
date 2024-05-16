@@ -35,6 +35,7 @@
     firefox-devedition
     zotero
     zoom-us
+    element-desktop
 
     # photos
     shotwell
