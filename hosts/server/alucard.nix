@@ -293,6 +293,36 @@
               params.keep = 5;
             };
           };
+          "doom-config" = {
+            id = "doom-config";
+            path = "/home/vincenzo/doom-config";
+            devices = [
+              "dracula"
+              "asgar"
+              "valnar"
+            ];
+            type = "sendreceive";
+            enable = true;
+            versioning = {
+              type = "simple";
+              params.keep = 5;
+            };
+          };
+          "nixos-config" = {
+            id = "nixos-config";
+            path = "/home/vincenzo/nixos-config";
+            devices = [
+              "dracula"
+              "asgar"
+              "valnar"
+            ];
+            type = "sendreceive";
+            enable = true;
+            versioning = {
+              type = "simple";
+              params.keep = 5;
+            };
+          };
           "amiconsult" = {
             id = "amiconsult";
             path = "/home/vincenzo/amiconsult";
