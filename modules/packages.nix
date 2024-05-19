@@ -67,6 +67,9 @@
     zoxide
     psmisc
     coreutils
+    gnumake
+    libtool
+    cmake
     fd
     clang
     blueberry

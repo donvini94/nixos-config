@@ -48,7 +48,7 @@
 
     # Nix
     nix-output-monitor
-    nixfmt
+    nixfmt-rfc-style
 
     # Docs
     plantuml
