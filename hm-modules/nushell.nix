@@ -29,6 +29,11 @@
     atuin = {
       enable = true;
       enableNushellIntegration = true;
+      settings = {
+        auto_sync = true;
+        sync_address = "https://dumustbereitsein.de";
+        search_mode = "prefix";
+      };
     };
   };
 }
