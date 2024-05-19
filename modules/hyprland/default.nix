@@ -1,20 +1,24 @@
-{ pkgs, inputs, ... }: {
+{ pkgs, inputs, ... }:
+{
   xdg.portal = {
     enable = true;
     wlr.enable = true;
     extraPortals = with pkgs; [ xdg-desktop-portal-wlr ];
   };
 
-  environment.pathsToLink =
-    [ "/libexec" ]; # links /libexec from derivations to /run/current-system/sw
+  environment.pathsToLink = [ "/libexec" ]; # links /libexec from derivations to /run/current-system/sw
   services = {
     gvfs.enable = true; # Mount, trash, and other functionalities
     tumbler.enable = true; # Thumbnail support for images
     displayManager.defaultSession = "hyprland";
     xserver = {
       enable = true;
-      desktopManager = { xterm.enable = false; };
-      displayManager = { gdm.enable = true; };
+      desktopManager = {
+        xterm.enable = false;
+      };
+      displayManager = {
+        gdm.enable = true;
+      };
     };
   };
 
@@ -26,7 +30,10 @@
     };
     # monitor backlight control
     light.enable = true;
-    thunar.plugins = with pkgs.xfce; [ thunar-archive-plugin thunar-volman ];
+    thunar.plugins = with pkgs.xfce; [
+      thunar-archive-plugin
+      thunar-volman
+    ];
   };
 
   environment.systemPackages = with pkgs; [

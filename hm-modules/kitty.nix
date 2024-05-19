@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   programs.kitty = {
@@ -17,6 +22,4 @@
     theme = "Modus Vivendi";
     extraConfig = "shell nu";
   };
-
 }
-

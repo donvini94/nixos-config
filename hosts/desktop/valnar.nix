@@ -1,14 +1,36 @@
-{ config, lib, pkgs, modulesPath, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  modulesPath,
+  ...
+}:
 
 {
   imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
   networking.firewall = {
     enable = true;
-    allowedTCPPorts = [ 80 443 5000 8000 8080 8888 22 11434 60198 3000 ];
+    allowedTCPPorts = [
+      80
+      443
+      5000
+      8000
+      8080
+      8888
+      22
+      11434
+      60198
+      3000
+    ];
   };
 
   networking.hostName = "valnar";
-  environment.systemPackages = with pkgs; [ cudatoolkit mesa nvitop ollama ];
+  environment.systemPackages = with pkgs; [
+    cudatoolkit
+    mesa
+    nvitop
+    ollama
+  ];
   programs.gamemode.enable = true;
 
   # Enable OpenGL
@@ -20,8 +42,10 @@
   # Load nvidia driver for Xorg and Wayland
   services.xserver.videoDrivers = lib.mkDefault [ "nvidia" ];
   hardware.opengl.extraPackages = with pkgs; [ vaapiVdpau ];
-  boot.kernelParams =
-    [ "nvidia.NVreg_PreserveVideoMemoryAllocations=1" "amdgpu.backlight=0" ];
+  boot.kernelParams = [
+    "nvidia.NVreg_PreserveVideoMemoryAllocations=1"
+    "amdgpu.backlight=0"
+  ];
   virtualisation = {
     docker = {
       enable = true;
@@ -70,8 +94,14 @@
   };
 
   # hardware.nix
-  boot.initrd.availableKernelModules =
-    [ "nvme" "xhci_pci" "usbhid" "usb_storage" "sd_mod" "sdhci_pci" ];
+  boot.initrd.availableKernelModules = [
+    "nvme"
+    "xhci_pci"
+    "usbhid"
+    "usb_storage"
+    "sd_mod"
+    "sdhci_pci"
+  ];
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-amd" ];
   boot.extraModulePackages = [ ];
@@ -96,7 +126,6 @@
   # networking.interfaces.wlp2s0.useDHCP = lib.mkDefault true;
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-  hardware.cpu.amd.updateMicrocode =
-    lib.mkDefault config.hardware.enableRedistributableFirmware;
+  hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
   system.stateVersion = "23.11";
 }

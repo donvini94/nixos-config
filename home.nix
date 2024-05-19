@@ -1,4 +1,10 @@
-{ inputs, lib, config, pkgs, ... }:
+{
+  inputs,
+  lib,
+  config,
+  pkgs,
+  ...
+}:
 
 {
 
@@ -23,7 +29,6 @@
     username = "vincenzo";
     homeDirectory = "/home/vincenzo";
     stateVersion = "23.05";
-
   };
 
   fonts.fontconfig.enable = true;
@@ -81,8 +86,7 @@
     };
   };
   home.sessionVariables = {
-    STEAM_EXTRA_COMPAT_TOOLS_PATHS =
-      "\${HOME}/.steam/root/compatibilitytools.d";
+    STEAM_EXTRA_COMPAT_TOOLS_PATHS = "\${HOME}/.steam/root/compatibilitytools.d";
   };
 
   # Mimetypes

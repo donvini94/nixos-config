@@ -1,4 +1,5 @@
-{ config, pkgs, ... }: {
+{ config, pkgs, ... }:
+{
   programs.zathura = {
     enable = true;
     options = {
@@ -74,7 +75,6 @@
       # Selected element in index mode
       index-active-fg = "#1a1b26";
       index-active-bg = "#c0caf5";
-
     };
     mappings = {
       i = "recolor";

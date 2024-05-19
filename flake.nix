@@ -2,7 +2,10 @@
   description = "NixOS Configuration of Vincenzo Pace";
 
   nixConfig = {
-    experimental-features = [ "nix-command" "flakes" ];
+    experimental-features = [
+      "nix-command"
+      "flakes"
+    ];
     substituters = [
       "https://cache.nixos.org/"
       "https://anyrun.cachix.org"
@@ -39,7 +42,15 @@
     hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1";
   };
 
-  outputs = { nixpkgs, home-manager, hyprland, disko, hosts, ... }@inputs:
+  outputs =
+    {
+      nixpkgs,
+      home-manager,
+      hyprland,
+      disko,
+      hosts,
+      ...
+    }@inputs:
     let
       commonNixosModules = [
         ./configuration.nix
@@ -55,20 +66,27 @@
         }
       ];
 
-      makeNixosSystem = hostName:
+      makeNixosSystem =
+        hostName:
         nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = { inherit inputs; };
+          specialArgs = {
+            inherit inputs;
+          };
           modules = commonNixosModules ++ [ ./hosts/desktop/${hostName}.nix ];
         };
 
-      makeHomeManagerConfig = hostname:
+      makeHomeManagerConfig =
+        hostname:
         home-manager.lib.homeManagerConfiguration {
           pkgs = nixpkgs.legacyPackages.x86_64-linux;
-          extraSpecialArgs = { inherit inputs; };
+          extraSpecialArgs = {
+            inherit inputs;
+          };
           modules = [ ./home.nix ];
         };
-    in {
+    in
+    {
       nixosConfigurations = {
         asgar = makeNixosSystem "asgar";
         valnar = makeNixosSystem "valnar";
@@ -77,7 +95,9 @@
         #Server
         alucard = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
-          specialArgs = { inherit inputs; };
+          specialArgs = {
+            inherit inputs;
+          };
           modules = [ ./hosts/server/alucard.nix ];
         };
       };

@@ -1,4 +1,10 @@
-{ config, lib, pkgs, ... }: {
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
+{
   services = {
     pcscd.enable = true;
     logind.lidSwitchExternalPower = "ignore";

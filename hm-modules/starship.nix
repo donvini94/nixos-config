@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   programs.starship = {
@@ -15,5 +20,4 @@
 
   # programs.carapace.enable = true;
   # programs.carapace.enableNushellIntegration = true;
-
 }

@@ -1,4 +1,10 @@
-{ inputs, lib, config, pkgs, ... }:
+{
+  inputs,
+  lib,
+  config,
+  pkgs,
+  ...
+}:
 
 {
   imports = [
@@ -21,8 +27,7 @@
       after = [ "graphical-session.target" ];
       serviceConfig = {
         Type = "simple";
-        ExecStart =
-          "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
+        ExecStart = "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
         Restart = "on-failure";
         RestartSec = 1;
         TimeoutStopSec = 10;
@@ -48,19 +53,24 @@
   users.users.vincenzo = {
     isNormalUser = true;
     description = "Vincenzo Pace";
-    extraGroups = [ "networkmanager" "wheel" "docker" ];
+    extraGroups = [
+      "networkmanager"
+      "wheel"
+      "docker"
+    ];
     packages = with pkgs; [ firefox ];
   };
 
   nix = {
     settings = {
       substituters = [ "https://hyprland.cachix.org" ];
-      trusted-public-keys = [
-        "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
-      ];
+      trusted-public-keys = [ "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc=" ];
     };
 
-    settings.experimental-features = [ "nix-command" "flakes" ];
+    settings.experimental-features = [
+      "nix-command"
+      "flakes"
+    ];
     settings.trusted-users = [ "vincenzo" ];
     settings.auto-optimise-store = true;
     optimise.automatic = true;
@@ -71,7 +81,10 @@
     };
   };
 
-  environment.shells = with pkgs; [ bash nushell ];
+  environment.shells = with pkgs; [
+    bash
+    nushell
+  ];
   environment.variables.EDITOR = "nvim";
 
   security.pam.services.login.enableKwallet = true;

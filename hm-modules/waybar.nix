@@ -15,7 +15,10 @@
       mainBar = {
         margin = "0";
         layer = "top";
-        modules-left = [ "custom/nix" "hyprland/workspaces" ];
+        modules-left = [
+          "custom/nix"
+          "hyprland/workspaces"
+        ];
         modules-right = [
           "pulseaudio"
           "network#interface"
@@ -45,7 +48,9 @@
           };
         };
 
-        "custom/nix" = { format = "󱄅 "; };
+        "custom/nix" = {
+          format = "󱄅 ";
+        };
 
         pulseaudio = {
           format = "{volume}% {icon} ";
@@ -59,7 +64,11 @@
             "headphone" = "";
             "hands-free" = "";
             "headset" = "";
-            "default" = [ "" "" "" ];
+            "default" = [
+              ""
+              ""
+              ""
+            ];
           };
         };
 
@@ -69,19 +78,25 @@
           tooltip = true;
           tooltip-format = "{ipaddr}";
           on-click = "kitty -e 'nmtui'";
-
         };
 
         "network#speed" = {
           format = "⇡{bandwidthUpBits} ⇣{bandwidthDownBits}";
         };
 
-        cpu = { format = "  {usage}% 󱐌 {avg_frequency}"; };
+        cpu = {
+          format = "  {usage}% 󱐌 {avg_frequency}";
+        };
 
         battery = {
           format-critical = "{icon} {capacity}%";
           format = "{icon} {capacity}%";
-          format-icons = [ "󰁺" "󰁾" "󰂀" "󱟢" ];
+          format-icons = [
+            "󰁺"
+            "󰁾"
+            "󰂀"
+            "󱟢"
+          ];
         };
 
         clock = {
@@ -272,5 +287,4 @@
       }
     '';
   };
-
 }

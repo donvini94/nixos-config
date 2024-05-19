@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   fonts.packages = with pkgs; [
@@ -14,7 +19,5 @@
     noto-fonts-cjk-sans
     noto-fonts-cjk-serif
     kochi-substitute
-
   ];
-
 }
