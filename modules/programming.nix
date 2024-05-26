@@ -1,9 +1,4 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}:
+{ config, lib, pkgs, ... }:
 
 {
   environment.systemPackages = with pkgs; [
@@ -75,6 +70,7 @@
     oxker # docker tui
     lazydocker
     warp-terminal
+    zed-editor
     nodePackages.bash-language-server
     dockerfile-language-server-nodejs
   ];
