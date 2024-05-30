@@ -34,7 +34,6 @@
     allowedTCPPorts = [
       80
       443
-      8096
       22
       58080
       5050
@@ -147,7 +146,9 @@
         locations."/".proxyPass = "http://localhost:8096";
       };
       virtualHosts."docs.dumustbereitsein.de" = {
-        locations."/".proxyPass = "http://localhost:58080";
+        enableACME = true;
+        forceSSL = true;
+        locations."/".proxyPass = "http://127.0.0.1:3000";
       };
       virtualHosts."git.dumustbereitsein.de" = {
         enableACME = true;
