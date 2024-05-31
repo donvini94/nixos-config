@@ -150,6 +150,11 @@
         forceSSL = true;
         locations."/".proxyPass = "http://127.0.0.1:3000";
       };
+      virtualHosts."paperless.dumustbereitsein.de" = {
+        enableACME = true;
+        forceSSL = true;
+        locations."/".proxyPass = "http://127.0.0.1:58080";
+      };
       virtualHosts."git.dumustbereitsein.de" = {
         enableACME = true;
         forceSSL = true;
@@ -344,7 +349,7 @@
 
     paperless = {
       enable = true;
-      address = "docs.dumustbereitsein.de";
+      address = "127.0.0.1";
       port = 58080;
       consumptionDirIsPublic = true;
       settings.PAPERLESS_OCR_LANGUAGE = "deu+eng";
