@@ -54,6 +54,8 @@
     let
       commonNixosModules = [
         ./configuration.nix
+        ./modules/desktop.nix
+        ./hosts/desktop/common.nix
         hosts.nixosModule
         { networking.stevenBlackHosts.enable = true; }
         home-manager.nixosModules.home-manager

@@ -8,12 +8,9 @@
     git
     vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     neovim
-    helix
-    emacs29
     fzf # A command-line fuzzy finder
     entr
 
-    xorg.xhost
     ripgrep # recursively searches directories for a regex pattern
     ripgrep-all
     # archives
@@ -50,7 +47,7 @@
     wget
     curl
     graphviz
-    altserver-linux
+    lazydocker
 
     # system tools
     sysstat
@@ -62,7 +59,6 @@
     btop # replacement of htop/nmon
     iotop # io monitoring
     iftop # network monitoring
-    filezilla
 
     zoxide
     psmisc
@@ -72,36 +68,14 @@
     cmake
     fd
     clang
-    blueberry
     unar
 
     xdg-user-dirs
-    xdg-desktop-portal-hyprland
-
-    brightnessctl
-    pinentry
-    pinentry-rofi
-    gparted
-    texlive.combined.scheme-full
-    pavucontrol
-    qt5ct
-    qt6ct
-    nwg-look
     cht-sh # Cheatsheet
     btrfs-progs
     # system call monitoring
     strace # system call monitoring
     ltrace # library call monitoring
     lsof # list open files
-
-    transmission-gtk
-    # Japanese fonts
-    noto-fonts-cjk
-    noto-fonts-cjk-sans
-    noto-fonts-cjk-serif
-    kochi-substitute
-
-    mullvad-vpn
-    iosevka
   ];
 }

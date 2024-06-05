@@ -13,13 +13,7 @@
     allowedTCPPorts = [
       80
       443
-      5000
-      8000
-      8080
-      8888
       22
-      11434
-      60198
       3000
     ];
   };
@@ -29,9 +23,7 @@
     cudatoolkit
     mesa
     nvitop
-    ollama
   ];
-  programs.gamemode.enable = true;
 
   # Enable OpenGL
   hardware.opengl = {
@@ -102,30 +94,9 @@
     "sd_mod"
     "sdhci_pci"
   ];
-  boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-amd" ];
-  boot.extraModulePackages = [ ];
-
-  fileSystems."/" = {
-    device = "/dev/disk/by-uuid/a61a06c1-0117-454f-b800-892e36e3a521";
-    fsType = "ext4";
-  };
-
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-uuid/347D-5443";
-    fsType = "vfat";
-  };
 
   swapDevices = [ ];
-
-  # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
-  # (the default) this is the recommended approach. When using systemd-networkd it's
-  # still possible to use this option, but it's recommended to use it in conjunction
-  # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
-  networking.useDHCP = lib.mkDefault true;
-  # networking.interfaces.wlp2s0.useDHCP = lib.mkDefault true;
-
-  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
   system.stateVersion = "23.11";
 }

@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   environment.systemPackages = with pkgs; [
@@ -67,11 +72,14 @@
     shfmt
     shellcheck
     dockfmt
-    oxker # docker tui
-    lazydocker
     warp-terminal
     zed-editor
     nodePackages.bash-language-server
     dockerfile-language-server-nodejs
+    helix
+    emacs29
+
+    # misc
+    iosevka
   ];
 }

@@ -13,6 +13,7 @@
     printing.enable = true;
     xserver = {
       enable = true;
+      desktopManager.plasma5.enable = true;
       xkb.layout = "us";
       xkb.variant = "";
     };
@@ -22,6 +23,8 @@
       alsa.support32Bit = true;
       pulse.enable = true;
     };
+
+    mullvad-vpn.enable = true;
     resolved = {
       enable = true;
       extraConfig = ''

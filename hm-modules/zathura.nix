@@ -13,7 +13,7 @@
 
       ### zathura-pywal ###
       # Allow recolor
-      recolor = "true";
+      #recolor = "true";
 
       # Don't allow original hue when recoloring
       recolor-keephue = "true";

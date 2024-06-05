@@ -11,6 +11,8 @@
   imports = [
     (modulesPath + "/profiles/qemu-guest.nix")
     ./disk-config.nix
+    ../../modules/packages.nix
+    ../../configuration.nix
   ];
   boot.initrd.availableKernelModules = [
     "ata_piix"
@@ -22,13 +24,11 @@
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ ];
   boot.extraModulePackages = [ ];
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
 
-  # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
-  # (the default) this is the recommended approach. When using systemd-networkd it's
-  # still possible to use this option, but it's recommended to use it in conjunction
-  # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
+  networking.hostName = "alucard";
   networking.useDHCP = lib.mkDefault true;
-  # networking.interfaces.ens3.useDHCP = lib.mkDefault true;
   networking.firewall = {
     enable = true;
     allowedTCPPorts = [
@@ -39,12 +39,6 @@
       5050
     ];
   };
-
-  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
-  time.timeZone = "Europe/Berlin";
-  networking.hostName = "alucard";
 
   users.users.vincenzo = {
     isNormalUser = true;
@@ -96,28 +90,8 @@
   };
 
   environment.systemPackages = with pkgs; [
-    vim
-    wget
-    curl
-    git
-    btop
-    eza
     yazi
-    mullvad-vpn
-    file
-    which
-    tree
-    gnused
-    gnutar
-    gawk
-    zstd
-    gnupg
-    zip
-    xz
-    unzip
-    p7zip
     openssl
-    gitlab-container-registry
   ];
 
   services = {
@@ -397,6 +371,7 @@
     };
   };
 
+  nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   security.acme.acceptTerms = true;
   security.acme.defaults.email = "vincenzo.pace94@icloud.com";
   system.stateVersion = "23.05";

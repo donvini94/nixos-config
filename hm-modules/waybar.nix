@@ -271,7 +271,9 @@
       }
       #custom-nix {
         color: @accent;
-        font-size: 25px;
+        font-size: 32px;
+      	margin-top: 8px;
+      	margin-left: 20px;
       }
       #clock {
       	margin-top: 8px;

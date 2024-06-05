@@ -9,20 +9,20 @@
 {
 
   imports = [
-    ./hm-modules/packages.nix
+    ./hm-modules/dunst.nix
+    ./hm-modules/helix.nix
     ./hm-modules/kitty.nix
-    ./hm-modules/yazi.nix
-    ./hm-modules/nushell.nix
-    ./hm-modules/zathura.nix
     ./hm-modules/mpv.nix
+    ./hm-modules/nushell.nix
+    ./hm-modules/packages.nix
     ./hm-modules/starship.nix
-    ./modules/hyprland/config.nix
     ./hm-modules/swaylock.nix
     ./hm-modules/waybar.nix
-    ./hm-modules/helix.nix
+    ./hm-modules/yazi.nix
+    ./hm-modules/zathura.nix
+    ./modules/hyprland/config.nix
   ];
 
-  programs.home-manager.enable = true;
   nixpkgs.config.allowUnfree = true;
 
   home = {
@@ -33,23 +33,24 @@
 
   fonts.fontconfig.enable = true;
 
-  programs.git = {
-    enable = true;
-    userName = "Vincenzo Pace";
-    userEmail = "pace@amiconsult.de";
-  };
-
-  programs.bash = {
-    enable = true;
-    enableCompletion = true;
-    bashrcExtra = ''
-      export PATH="$PATH:$HOME/bin:$HOME/.local/bin:$HOME/go/bin:$HOME/.config/emacs/bin/doom"
-    '';
-  };
-
-  programs.zoxide = {
-    enable = true;
-    enableNushellIntegration = true;
+  programs = {
+    home-manager.enable = true;
+    git = {
+      enable = true;
+      userName = "Vincenzo Pace";
+      userEmail = "pace@amiconsult.de";
+    };
+    bash = {
+      enable = true;
+      enableCompletion = true;
+      bashrcExtra = ''
+        export PATH="$PATH:$HOME/bin:$HOME/.local/bin:$HOME/go/bin:$HOME/.config/emacs/bin/doom"
+      '';
+    };
+    zoxide = {
+      enable = true;
+      enableNushellIntegration = true;
+    };
   };
 
   services = {
@@ -60,12 +61,12 @@
       musicDirectory = "/media/music";
       network.startWhenNeeded = true;
     };
-  };
-  services.gammastep = {
-    enable = true;
-    provider = "manual";
-    latitude = 49.782959;
-    longitude = 7.65118;
+    gammastep = {
+      enable = true;
+      provider = "manual";
+      latitude = 49.782959;
+      longitude = 7.65118;
+    };
   };
 
   # Enable GTK themes
