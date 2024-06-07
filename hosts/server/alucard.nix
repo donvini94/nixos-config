@@ -35,8 +35,7 @@
       80
       443
       22
-      58080
-      5050
+      5000
     ];
   };
 
@@ -124,6 +123,12 @@
         forceSSL = true;
         locations."/".proxyPass = "http://127.0.0.1:3000";
       };
+      virtualHosts."registry.dumustbereitsein.de" = {
+        enableACME = true;
+        forceSSL = true;
+        locations."/".proxyPass = "http://localhost:5000";
+      };
+
       virtualHosts."paperless.dumustbereitsein.de" = {
         enableACME = true;
         forceSSL = true;
