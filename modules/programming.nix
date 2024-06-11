@@ -36,7 +36,7 @@
     # Python
     python311
     python311Packages.pip
-    nodePackages.pyright
+    pyright
     pipenv
     jetbrains.pycharm-professional
     black
