@@ -91,6 +91,7 @@
   environment.systemPackages = with pkgs; [
     yazi
     openssl
+    apacheHttpd
   ];
 
   services = {
@@ -104,6 +105,7 @@
     # gitlab needs nginx proxy
     nginx = {
       enable = true;
+      clientMaxBodySize = "0"; # needed so that docker images can be pushed, turns off limit
       recommendedGzipSettings = true;
       recommendedOptimisation = true;
       recommendedProxySettings = true;
@@ -127,6 +129,7 @@
         enableACME = true;
         forceSSL = true;
         locations."/".proxyPass = "http://localhost:5000";
+        basicAuthFile = ../../auth/htpasswd;
       };
 
       virtualHosts."paperless.dumustbereitsein.de" = {
