@@ -10,7 +10,7 @@
         font = "Inter 12";
         frame_color = "#100E23";
         frame_width = "2";
-        origin = "top-center";
+        origin = "top-right";
         width = "300";
         height = "200";
         padding = 16;
