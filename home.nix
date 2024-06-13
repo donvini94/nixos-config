@@ -3,6 +3,9 @@
   lib,
   config,
   pkgs,
+  username,
+  gitName,
+  gitMail,
   ...
 }:
 
@@ -26,8 +29,8 @@
   nixpkgs.config.allowUnfree = true;
 
   home = {
-    username = "vincenzo";
-    homeDirectory = "/home/vincenzo";
+    username = "${username}";
+    homeDirectory = "/home/${username}";
     stateVersion = "23.05";
   };
 
@@ -37,8 +40,8 @@
     home-manager.enable = true;
     git = {
       enable = true;
-      userName = "Vincenzo Pace";
-      userEmail = "pace@amiconsult.de";
+      userName = "${gitName}";
+      userEmail = "${gitMail}";
     };
     bash = {
       enable = true;

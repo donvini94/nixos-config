@@ -52,19 +52,25 @@
       ...
     }@inputs:
     let
+      username = "vincenzo";
+      gitName = "Vincenzo Pace";
+      gitMail = "pace@amiconsult.de";
       commonNixosModules = [
         ./configuration.nix
         ./modules/desktop.nix
         ./hosts/desktop/common.nix
         hosts.nixosModule
         { networking.stevenBlackHosts.enable = true; }
-        home-manager.nixosModules.home-manager
         hyprland.nixosModules.default
         { programs.hyprland.enable = true; }
+        home-manager.nixosModules.home-manager
         {
+          home-manager.extraSpecialArgs = {
+            inherit username gitMail gitName;
+          };
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
-          home-manager.users.vincenzo = import ./home.nix;
+          home-manager.users.${username} = import ./home.nix;
         }
       ];
 
@@ -74,18 +80,9 @@
           system = "x86_64-linux";
           specialArgs = {
             inherit inputs;
+            inherit username;
           };
           modules = commonNixosModules ++ [ ./hosts/desktop/${hostName}.nix ];
-        };
-
-      makeHomeManagerConfig =
-        hostname:
-        home-manager.lib.homeManagerConfiguration {
-          pkgs = nixpkgs.legacyPackages.x86_64-linux;
-          extraSpecialArgs = {
-            inherit inputs;
-          };
-          modules = [ ./home.nix ];
         };
     in
     {
@@ -102,11 +99,6 @@
           };
           modules = [ ./hosts/server/alucard.nix ];
         };
-      };
-      homeConfigurations = {
-        "vincenzo@asgar" = makeHomeManagerConfig "asgar";
-        "vincenzo@valnar" = makeHomeManagerConfig "valnar";
-        "vincenzo@dracula" = makeHomeManagerConfig "dracula";
       };
     };
 }

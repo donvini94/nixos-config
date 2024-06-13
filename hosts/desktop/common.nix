@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  username,
   ...
 }:
 
@@ -50,9 +51,8 @@
     };
   };
 
-  users.users.vincenzo = {
+  users.users."${username}" = {
     isNormalUser = true;
-    description = "Vincenzo Pace";
     extraGroups = [
       "networkmanager"
       "wheel"
@@ -71,7 +71,7 @@
       "nix-command"
       "flakes"
     ];
-    settings.trusted-users = [ "vincenzo" ];
+    settings.trusted-users = [ "${username}" ];
     settings.auto-optimise-store = true;
     optimise.automatic = true;
     gc = {
