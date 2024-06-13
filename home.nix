@@ -4,8 +4,8 @@
   config,
   pkgs,
   username,
-  gitName,
-  gitMail,
+  fullName,
+  mail,
   ...
 }:
 
@@ -40,8 +40,8 @@
     home-manager.enable = true;
     git = {
       enable = true;
-      userName = "${gitName}";
-      userEmail = "${gitMail}";
+      userName = "${fullName}";
+      userEmail = "${mail}";
     };
     bash = {
       enable = true;

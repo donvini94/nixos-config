@@ -53,8 +53,8 @@
     }@inputs:
     let
       username = "vincenzo";
-      gitName = "Vincenzo Pace";
-      gitMail = "pace@amiconsult.de";
+      fullName = "Vincenzo Pace";
+      mail = "pace@amiconsult.de";
       commonNixosModules = [
         ./configuration.nix
         ./modules/desktop.nix
@@ -66,7 +66,7 @@
         home-manager.nixosModules.home-manager
         {
           home-manager.extraSpecialArgs = {
-            inherit username gitMail gitName;
+            inherit username mail fullName;
           };
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
