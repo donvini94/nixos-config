@@ -171,11 +171,6 @@
           email_reply_to = "gitlab-no-reply@dumustbereitsein.de";
         };
       };
-      #      registry = {
-      #        enable = true;
-      #        certFile = "/var/cert/registry.crt";
-      #        keyFile = "/var/cert/registry.key";
-      #      };
     };
 
     gitlab-runner = {
