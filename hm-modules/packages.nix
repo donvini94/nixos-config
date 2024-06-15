@@ -32,7 +32,7 @@
 
     # communication
     telegram-desktop
-    #discord
+    discord
     thunderbird
     slack
     signal-desktop
