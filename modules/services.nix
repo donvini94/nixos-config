@@ -11,9 +11,9 @@
     pipewire.wireplumber.enable = true;
     emacs.enable = true;
     printing.enable = true;
+    desktopManager.plasma6.enable = true;
     xserver = {
       enable = true;
-      desktopManager.plasma5.enable = true;
       xkb.layout = "us";
       xkb.variant = "";
     };
