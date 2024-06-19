@@ -203,7 +203,7 @@
             autoAcceptFolders = true;
           };
           "kyrill-thinkpad-t495" = {
-            id = "PERVZSH-ZPN5MET-MM6ADZG-TTDUOV5-USGIDY3-4K4UT6N-JPUCYGM-6PIIWQQ";
+            id = "DULG3KX-PYY3RT7-4CW2JVC-64F5J2T-24JRG3J-IDDKBJN-X535SHF-5IBO3QZ";
             autoAcceptFolders = true;
           };
           "kyrill-handy" = {
