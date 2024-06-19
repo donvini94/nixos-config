@@ -27,6 +27,7 @@
   };
 
   inputs = {
+
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     home-manager = {
       url = "github:nix-community/home-manager";
@@ -60,7 +61,15 @@
         ./modules/desktop.nix
         ./hosts/desktop/common.nix
         hosts.nixosModule
-        { networking.stevenBlackHosts.enable = true; }
+        {
+          networking.stevenBlackHosts.enable = true;
+          networking.stevenBlackHosts = {
+            blockFakenews = true;
+            blockGambling = true;
+            blockPorn = true;
+            blockSocial = true;
+          };
+        }
         hyprland.nixosModules.default
         { programs.hyprland.enable = true; }
         home-manager.nixosModules.home-manager
@@ -69,6 +78,7 @@
             inherit username mail fullName;
           };
           home-manager.useGlobalPkgs = true;
+          home-manager.backupFileExtension = "backup";
           home-manager.useUserPackages = true;
           home-manager.users.${username} = import ./home.nix;
         }
