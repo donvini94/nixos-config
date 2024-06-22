@@ -34,8 +34,15 @@
     jetbrains.rust-rover
 
     # Python
-    python311
-    python311Packages.pip
+    python312
+    python312Packages.pip
+    python312Packages.virtualenvwrapper
+    python312Packages.scrapy
+    python312Packages.pandas
+    python312Packages.numpy
+    python312Packages.requests
+    python312Packages.beautifulsoup4
+
     pyright
     pipenv
     jetbrains.pycharm-professional
@@ -74,7 +81,6 @@
     dockfmt
     warp-terminal
     zed-editor
-    nodePackages.bash-language-server
     dockerfile-language-server-nodejs
     helix
     emacs29
