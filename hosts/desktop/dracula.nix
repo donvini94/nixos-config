@@ -20,17 +20,18 @@
   services.jellyfin.openFirewall = true;
   programs.steam.enable = true;
   programs.steam.gamescopeSession.enable = true;
-  # Enable OpenGL
-  hardware.opengl = {
+
+  hardware.graphics = {
     enable = true;
-    driSupport = true;
-    driSupport32Bit = true;
+    enable32Bit = true;
     extraPackages = with pkgs; [
       vaapiVdpau
       libvdpau-va-gl
       nvidia-vaapi-driver
     ];
+
   };
+
   # Load nvidia driver for Xorg and Wayland
   services.xserver.videoDrivers = [ "nvidia" ];
   boot.kernelParams = [ "nvidia.NVreg_PreserveVideoMemoryAllocations=1" ];
