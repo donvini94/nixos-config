@@ -101,6 +101,11 @@
       settings.KbdInteractiveAuthentication = false;
       settings.PermitRootLogin = "no";
     };
+    rustdesk-server = {
+      enable = true;
+      openFirewall = true;
+      relayIP = "89.58.62.186";
+    };
     fail2ban.enable = true;
     # gitlab needs nginx proxy
     nginx = {
