@@ -25,12 +25,10 @@
     qt5ct
     qt6ct
     nwg-look
-    transmission_4-gtk
     mullvad-vpn
     gparted
     texlive.combined.scheme-full
     pavucontrol
     filezilla
-    rustdesk
   ];
 }

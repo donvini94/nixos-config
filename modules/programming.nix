@@ -31,7 +31,6 @@
     rustfmt
     cargo-watch
     clippy
-    jetbrains.rust-rover
 
     # Python
     python312
@@ -45,7 +44,6 @@
 
     pyright
     pipenv
-    jetbrains.pycharm-professional
     black
     isort
     pipenv
@@ -74,13 +72,10 @@
 
     # tooling
     devbox
-    github-desktop
     sqlite
     shfmt
     shellcheck
     dockfmt
-    warp-terminal
-    zed-editor
     dockerfile-language-server-nodejs
     helix
     emacs29

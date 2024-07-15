@@ -14,10 +14,10 @@
     # utils
     jq # A lightweight and flexible command-line JSON processor
     yq-go # yaml processer https://github.com/mikefarah/yq
+    yt-dlp
 
-    mathpix-snipping-tool
     pferd
-    neofetch
+    #neofetch
 
     sxiv
     nsxiv
@@ -37,20 +37,9 @@
     slack
     signal-desktop
     teams-for-linux
-    firefox-devedition
     zotero
     zoom-us
     element-desktop
 
-    # photos
-    shotwell
-    darktable
-    imagemagick
-
-    # games
-    bsnes-hd
-    xemu
-    mangohud
-    protonup
   ];
 }

@@ -15,6 +15,22 @@
     calibre
     libva
     nvitop
+    rustdesk
+    zed-editor
+    warp-terminal
+    github-desktop
+    jetbrains.pycharm-professional
+    jetbrains.rust-rover
+
+    # photos
+    shotwell
+    darktable
+    imagemagick
+
+    # games
+    bsnes-hd
+    mangohud
+    protonup
   ];
   services.jellyfin.enable = true;
   services.jellyfin.openFirewall = true;
