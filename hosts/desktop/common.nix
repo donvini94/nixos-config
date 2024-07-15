@@ -22,6 +22,7 @@
   boot.initrd.kernelModules = [ ];
   boot.extraModulePackages = [ ];
 
+  programs.noisetorch.enable = true;
   programs.gamemode.enable = true;
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   environment.sessionVariables.NIXOS_OZONE_WL = "1";
@@ -77,7 +78,7 @@
     gc = {
       automatic = true;
       dates = "weekly";
-      options = "--delete-older-than 1w";
+      options = "--delete-older-than 30d";
     };
   };
 
