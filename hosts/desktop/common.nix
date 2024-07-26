@@ -29,7 +29,6 @@
 
   networking.networkmanager.enable = true;
   networking.useDHCP = lib.mkDefault true;
-  sound.enable = true;
   hardware.pulseaudio.enable = false;
   hardware.bluetooth.enable = true;
   security.rtkit.enable = true;
