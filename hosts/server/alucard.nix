@@ -346,6 +346,10 @@
 
   nix = {
     settings = {
+      experimental-features = [
+        "nix-command"
+        "flakes"
+      ];
       sandbox = true;
       max-jobs = 10; # should be 1 per CPU logical core
       auto-optimise-store = true;
