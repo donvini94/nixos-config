@@ -19,9 +19,11 @@
     pferd
     #neofetch
 
+    # media
     sxiv
     nsxiv
     mpv
+    tidal-hifi
 
     # productivity
     glow # markdown previewer in terminal
