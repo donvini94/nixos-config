@@ -10,6 +10,7 @@
     neovim
     fzf # A command-line fuzzy finder
     entr
+    fastfetch
 
     ripgrep # recursively searches directories for a regex pattern
     ripgrep-all

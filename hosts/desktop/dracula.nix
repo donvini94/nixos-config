@@ -21,6 +21,7 @@
     github-desktop
     jetbrains.pycharm-professional
     jetbrains.rust-rover
+    transmission_4-gtk
 
     # photos
     shotwell
