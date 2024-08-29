@@ -95,6 +95,13 @@
   ];
 
   services = {
+    navidrome = {
+      enable = true;
+      openFirewall = true;
+      settings = {
+        MusicFolder = "/mnt/music";
+      };
+    };
     openssh = {
       enable = true;
       settings.PasswordAuthentication = false;
@@ -125,6 +132,12 @@
         forceSSL = true;
         locations."/".proxyPass = "http://localhost:8096";
       };
+      virtualHosts."music.dumustbereitsein.de" = {
+        enableACME = true;
+        forceSSL = true;
+        locations."/".proxyPass = "http://localhost:4533";
+      };
+
       virtualHosts."docs.dumustbereitsein.de" = {
         enableACME = true;
         forceSSL = true;
