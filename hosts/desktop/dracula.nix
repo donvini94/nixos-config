@@ -36,8 +36,6 @@
   ];
   services.jellyfin.enable = true;
   services.jellyfin.openFirewall = true;
-  programs.steam.enable = true;
-  programs.steam.gamescopeSession.enable = true;
 
   hardware.graphics = {
     enable = true;
