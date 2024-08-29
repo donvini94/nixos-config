@@ -67,7 +67,7 @@
             blockFakenews = true;
             blockGambling = true;
             blockPorn = true;
-            blockSocial = true;
+            # blockSocial = true;
           };
         }
         hyprland.nixosModules.default

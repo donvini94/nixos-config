@@ -27,7 +27,6 @@
     nwg-look
     mullvad-vpn
     gparted
-    texlive.combined.scheme-full
     pavucontrol
     filezilla
   ];

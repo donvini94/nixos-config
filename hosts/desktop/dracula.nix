@@ -11,11 +11,12 @@
     jellyfin
     jellyfin-web
     jellyfin-ffmpeg
+    texlive.combined.scheme-full
     cudatoolkit
     calibre
     libva
     nvitop
-    rustdesk
+    #rustdesk
     zed-editor
     warp-terminal
     github-desktop
@@ -55,10 +56,9 @@
   virtualisation = {
     docker = {
       enable = true;
-      enableNvidia = true;
     };
   };
-
+  hardware.nvidia-container-toolkit.enable = true;
   hardware.nvidia = {
 
     # Modesetting is required.

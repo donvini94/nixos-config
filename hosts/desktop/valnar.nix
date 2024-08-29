@@ -31,8 +31,11 @@
     enable32Bit = true;
   };
   # Load nvidia driver for Xorg and Wayland
-  services.xserver.videoDrivers = lib.mkDefault [ "nvidia" ];
-  hardware.opengl.extraPackages = with pkgs; [ vaapiVdpau ];
+  services.xserver.videoDrivers = lib.mkDefault [
+    "nvidia"
+    "amdgpu"
+  ];
+  hardware.graphics.extraPackages = with pkgs; [ vaapiVdpau ];
   boot.kernelParams = [
     "nvidia.NVreg_PreserveVideoMemoryAllocations=1"
     "amdgpu.backlight=0"
@@ -40,9 +43,9 @@
   virtualisation = {
     docker = {
       enable = true;
-      enableNvidia = true;
     };
   };
+  hardware.nvidia-container-toolkit.enable = true;
   hardware.nvidia = {
 
     # Modesetting is required.

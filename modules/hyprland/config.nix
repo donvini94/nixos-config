@@ -14,6 +14,7 @@
       monitor=,preferred,auto,auto
 
       env = XCURSOR_SIZE,24
+      env = AQ_DRM_DEVICES,/dev/dri/card2:/dev/dri/card1
 
       input {
           kb_layout = us

@@ -17,13 +17,12 @@
     yt-dlp
 
     pferd
-    #neofetch
+    chromium
 
     # media
     sxiv
     nsxiv
     mpv
-    tidal-hifi
 
     # productivity
     glow # markdown previewer in terminal

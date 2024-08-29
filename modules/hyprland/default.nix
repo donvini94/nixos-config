@@ -44,6 +44,8 @@
 
     pass-wayland
     wofi
+    nwg-look
+    lxappearance
 
     wf-recorder # creen recording
     grim # taking screenshots
