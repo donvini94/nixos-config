@@ -164,6 +164,28 @@
         forceSSL = true;
         locations."/".proxyPass = "http://127.0.0.1:58080";
       };
+      virtualHosts."dumustbereitsein.de" = {
+         enableACME = true;
+         forceSSL = true;
+         locations."/cloak/".proxyPass = "http://localhost:${toString config.services.keycloak.settings.http-port}/cloak/"; 
+      };
+    };
+    postgresql.enable = true;
+    keycloak = {
+      enable = true;
+      database = {
+        type = "postgresql";
+        createLocally = true;
+        username = "keycloak";
+        passwordFile  = "/var/keys/keycloak/passwordfile";
+      };
+    settings = {
+      hostname = "dumustbereitsein.de";
+      http-relative-path = "/cloak";
+      http-port = 38080;
+      proxy = "passthrough";
+      http-enabled = true;
+    };
     };
     gitlab = {
       enable = true;
