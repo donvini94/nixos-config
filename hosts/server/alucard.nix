@@ -56,10 +56,9 @@
         "wheel"
         "docker"
       ];
-      openssh.authorizedKeys.keys =
-        [
-          "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDg8T7GRlyOP6jme62lF6xTfLEK137MFP766m3C2G+0K3vckxxutE1dW3GPT/kqsDgGHIysRAFWeUm60X2tfdEWVaSNi9g1kb8uss+9EA8zrUuI596/HDeJnsHFo3K/hf7PhjEDhxblo8JzDMz7IF6y58Annh7fTQCdHk564k429YI65mMY16D1GiE0aL0hkiEvAk25gp5mLjEYyAHDHE2ma8csGWJCap5OaAqJ9h0mkf9mcrhczo7MlEF6iL6EWTDToDw0NWPpEVPFRvJUJM+2gNSSxIVIFZkt8eczX/TY0lFkSkSPy5FXqtedHTOazU4mxGU5Lwy3A4gmg3/3ibZ1 Marius"
-        ];
+      openssh.authorizedKeys.keys = [
+        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDg8T7GRlyOP6jme62lF6xTfLEK137MFP766m3C2G+0K3vckxxutE1dW3GPT/kqsDgGHIysRAFWeUm60X2tfdEWVaSNi9g1kb8uss+9EA8zrUuI596/HDeJnsHFo3K/hf7PhjEDhxblo8JzDMz7IF6y58Annh7fTQCdHk564k429YI65mMY16D1GiE0aL0hkiEvAk25gp5mLjEYyAHDHE2ma8csGWJCap5OaAqJ9h0mkf9mcrhczo7MlEF6iL6EWTDToDw0NWPpEVPFRvJUJM+2gNSSxIVIFZkt8eczX/TY0lFkSkSPy5FXqtedHTOazU4mxGU5Lwy3A4gmg3/3ibZ1 Marius"
+      ];
     };
     kyrill = {
       isNormalUser = true;
@@ -139,11 +138,6 @@
         locations."/".proxyPass = "http://localhost:5000";
         basicAuthFile = ../../auth/htpasswd;
       };
-      virtualHosts."dumustbereitsein.de" = {
-        enableACME = true;
-        forceSSL = true;
-        root = "/var/www/dumustbereitsein.de";
-      };
       virtualHosts."stream.dumustbereitsein.de" = {
         enableACME = true;
         forceSSL = true;
@@ -165,9 +159,9 @@
         locations."/".proxyPass = "http://127.0.0.1:58080";
       };
       virtualHosts."dumustbereitsein.de" = {
-         enableACME = true;
-         forceSSL = true;
-         locations."/cloak/".proxyPass = "http://localhost:${toString config.services.keycloak.settings.http-port}/cloak/"; 
+        enableACME = true;
+        forceSSL = true;
+        locations."/cloak/".proxyPass = "http://localhost:${toString config.services.keycloak.settings.http-port}/cloak/";
       };
     };
     postgresql.enable = true;
@@ -177,15 +171,15 @@
         type = "postgresql";
         createLocally = true;
         username = "keycloak";
-        passwordFile  = "/var/keys/keycloak/passwordfile";
+        passwordFile = "/var/keys/keycloak/passwordfile";
       };
-    settings = {
-      hostname = "dumustbereitsein.de";
-      http-relative-path = "/cloak";
-      http-port = 38080;
-      proxy = "passthrough";
-      http-enabled = true;
-    };
+      settings = {
+        hostname = "dumustbereitsein.de";
+        http-relative-path = "/cloak";
+        http-port = 38080;
+        proxy = "passthrough";
+        http-enabled = true;
+      };
     };
     gitlab = {
       enable = true;
