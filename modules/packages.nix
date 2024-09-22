@@ -16,6 +16,7 @@
     ripgrep-all
     # archives
     zip
+    p7zip
     xz
     unzip
     p7zip

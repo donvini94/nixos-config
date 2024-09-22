@@ -52,6 +52,7 @@
     html-tidy
     nodePackages.js-beautify
     stylelint
+    nodejs_22
 
     # Java
     jdk17

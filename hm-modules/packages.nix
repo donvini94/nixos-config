@@ -17,7 +17,6 @@
     yt-dlp
 
     pferd
-    chromium
 
     # media
     sxiv

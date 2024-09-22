@@ -23,6 +23,33 @@
         cache_dir = "~/.cache/yazi/";
       };
     };
-    #keymap = {};
+    keymap = {
+      manager.prepend_keymap = [
+        {
+          run = "cd /media/";
+          on = [
+            "g"
+            "m"
+          ];
+          desc = "Go to media directory";
+        }
+        {
+          run = "cd ~/documents/KIT";
+          on = [
+            "g"
+            "k"
+          ];
+          desc = "Go to KIT directory";
+        }
+        {
+          run = "cd /run/media/vincenzo/data";
+          on = [
+            "g"
+            "p"
+          ];
+          desc = "Go to data directory";
+        }
+      ];
+    };
   };
 }

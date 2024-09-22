@@ -126,6 +126,7 @@
       bind = $mod, P, exec, passmenu
       bind = $mod_SHIFT, H, exec, kitty -e btop
       bind = $mod , D, exec, kitty -e lazydocker
+      bind = $mod, G, exec, kitty -e gamescope -W 3840 -H 2160 -r 60 -e -- steam
 
       # Window Navigation
       bind = $mod, J, cyclenext
