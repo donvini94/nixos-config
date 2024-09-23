@@ -36,7 +36,7 @@
       enableNushellIntegration = true;
       settings = {
         auto_sync = true;
-        sync_address = "https://dumustbereitsein.de";
+        sync_address = "https://dumusstbereitsein.de";
         search_mode = "prefix";
       };
     };

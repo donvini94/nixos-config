@@ -127,38 +127,38 @@
       recommendedOptimisation = true;
       recommendedProxySettings = true;
       recommendedTlsSettings = true;
-      virtualHosts."git.dumusstbereitsein.de.de" = {
+      virtualHosts."git.dumusstbereitsein.de" = {
         enableACME = true;
         forceSSL = true;
         locations."/".proxyPass = "http://unix:/run/gitlab/gitlab-workhorse.socket";
       };
-      virtualHosts."registry.dumusstbereitsein.de.de" = {
+      virtualHosts."registry.dumusstbereitsein.de" = {
         enableACME = true;
         forceSSL = true;
         locations."/".proxyPass = "http://localhost:5000";
         basicAuthFile = ../../auth/htpasswd;
       };
-      virtualHosts."stream.dumusstbereitsein.de.de" = {
+      virtualHosts."stream.dumusstbereitsein.de" = {
         enableACME = true;
         forceSSL = true;
         locations."/".proxyPass = "http://localhost:8096";
       };
-      virtualHosts."music.dumusstbereitsein.de.de" = {
+      virtualHosts."music.dumusstbereitsein.de" = {
         enableACME = true;
         forceSSL = true;
         locations."/".proxyPass = "http://localhost:4533";
       };
-      virtualHosts."docs.dumusstbereitsein.de.de" = {
+      virtualHosts."docs.dumusstbereitsein.de" = {
         enableACME = true;
         forceSSL = true;
         locations."/".proxyPass = "http://127.0.0.1:3000";
       };
-      virtualHosts."paperless.dumusstbereitsein.de.de" = {
+      virtualHosts."paperless.dumusstbereitsein.de" = {
         enableACME = true;
         forceSSL = true;
         locations."/".proxyPass = "http://127.0.0.1:58080";
       };
-      virtualHosts."auth.dumusstbereitsein.de.de" = {
+      virtualHosts."auth.dumusstbereitsein.de" = {
         enableACME = true;
         forceSSL = true;
         locations."/" = {
@@ -176,7 +176,7 @@
         passwordFile = "/var/keys/keycloak/passwordfile";
       };
       settings = {
-        hostname = "auth.dumusstbereitsein.de.de";
+        hostname = "auth.dumusstbereitsein.de";
         http-port = 38080;
         proxy = "edge";
         http-enabled = true;
@@ -187,7 +187,7 @@
       databasePasswordFile = "/var/keys/gitlab/db_password";
       initialRootPasswordFile = "/var/keys/gitlab/root_password";
       https = true;
-      host = "git.dumusstbereitsein.de.de";
+      host = "git.dumusstbereitsein.de";
       port = 443;
       user = "git";
       databaseUsername = "git";
@@ -205,9 +205,9 @@
       };
       extraConfig = {
         gitlab = {
-          email_from = "gitlab-no-reply@dumusstbereitsein.de.de";
+          email_from = "gitlab-no-reply@dumusstbereitsein.de";
           email_display_name = "Vincenzos GitLab";
-          email_reply_to = "gitlab-no-reply@dumusstbereitsein.de.de";
+          email_reply_to = "gitlab-no-reply@dumusstbereitsein.de";
         };
       };
     };
