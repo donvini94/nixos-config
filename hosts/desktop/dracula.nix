@@ -36,6 +36,11 @@
   ];
   services.jellyfin.enable = true;
   services.jellyfin.openFirewall = true;
+  services.ollama = {
+    enable = true;
+    acceleration = "cuda";
+    openFirewall = true;
+  };
 
   hardware.graphics = {
     enable = true;
@@ -54,6 +59,7 @@
   virtualisation = {
     docker = {
       enable = true;
+      autoPrune.enable = true;
     };
   };
   hardware.nvidia-container-toolkit.enable = true;
@@ -68,7 +74,7 @@
     forceFullCompositionPipeline = true;
 
     # Optionally, you may need to select the appropriate driver version for your specific GPU.
-    package = config.boot.kernelPackages.nvidiaPackages.stable;
+    package = config.boot.kernelPackages.nvidiaPackages.production;
     powerManagement.enable = true;
     open = false;
   };
