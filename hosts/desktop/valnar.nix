@@ -33,13 +33,8 @@
   # Load nvidia driver for Xorg and Wayland
   services.xserver.videoDrivers = lib.mkDefault [
     "nvidia"
-    "amdgpu"
   ];
   hardware.graphics.extraPackages = with pkgs; [ vaapiVdpau ];
-  boot.kernelParams = [
-    "nvidia.NVreg_PreserveVideoMemoryAllocations=1"
-    "amdgpu.backlight=0"
-  ];
   virtualisation = {
     docker = {
       enable = true;
@@ -62,7 +57,7 @@
     prime = {
       sync.enable = true;
       nvidiaBusId = "PCI:1:0:0";
-      amdgpuBusId = "PCI:5:0:0";
+      intelBusId = "PCI:0:2:0";
     };
   };
 
@@ -91,12 +86,12 @@
   boot.initrd.availableKernelModules = [
     "nvme"
     "xhci_pci"
-    "usbhid"
     "usb_storage"
     "sd_mod"
     "sdhci_pci"
+    "thunderbolt"
   ];
-  boot.kernelModules = [ "kvm-amd" ];
+  boot.kernelModules = [ "kvm-intel" ];
 
   swapDevices = [ ];
   hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;

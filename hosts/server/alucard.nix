@@ -234,7 +234,7 @@
             autoAcceptFolders = true;
           };
           "valnar" = {
-            id = "RUL7KJT-FSXO3VI-QP76KVO-LAY5CYT-NERMG3C-EY3TYUU-FQDDKG5-NJ5V4AS";
+            id = "2J4BVNV-UHNMY4P-DFBRWZW-VQK6T4A-7MVQIL5-Z3DHZQ2-57KELZP-WFT3VAG";
             autoAcceptFolders = true;
           };
           "asgar" = {
