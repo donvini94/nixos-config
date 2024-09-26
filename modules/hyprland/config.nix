@@ -26,7 +26,6 @@
           touchpad {
               natural_scroll = no
               disable_while_typing = true
-              tap-to-click = false
           }
           sensitivity = 1.0 # -1.0 - 1.0, 0 means no modification.
       }
@@ -78,7 +77,7 @@
 
       master {
           # See https://wiki.hyprland.org/Configuring/Master-Layout/ for more
-          new_status = master
+          new_status = inherit
       }
 
       gestures {
@@ -109,7 +108,7 @@
       bind = $mod, R, exec, wofi --show drun
       bind = $mod, S, exec, grim -g "$(slurp)" - | wl-copy
       bind = $mod, L, exec, swaylock
-      #bind = $mod, P, pseudo, # dwindle
+      bind = $mod, Y, togglesplit
       bind = $mod_SHIFT, Escape, exec, wlogout -p layer-shell
 
 
@@ -175,9 +174,8 @@
       bindl = , XF86AudioMicMute, exec, wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle
 
       # backlight
-      bindle = , XF86MonBrightnessUp, exec, brightnessctl set +50
-      bindle = , XF86MonBrightnessDown, exec, brightnessctl set 50-
-      exec-once=bash ~/.config/hypr/start.sh
+      bind = , XF86MonBrightnessUp, exec, brightnessctl set +5%
+      bind = , XF86MonBrightnessDown, exec, brightnessctl set 5%-
     '';
   };
 }

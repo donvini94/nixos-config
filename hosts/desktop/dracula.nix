@@ -29,10 +29,6 @@
     darktable
     imagemagick
 
-    # games
-    bsnes-hd
-    mangohud
-    protonup
   ];
   services.jellyfin.enable = true;
   services.jellyfin.openFirewall = true;

@@ -33,7 +33,7 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
+    sops-nix.url = "github:Mic92/sops-nix";
     disko.url = "github:nix-community/disko";
     disko.inputs.nixpkgs.follows = "nixpkgs";
 
@@ -50,12 +50,13 @@
       hyprland,
       disko,
       hosts,
+      sops-nix,
       ...
     }@inputs:
     let
       username = "vincenzo";
       fullName = "Vincenzo Pace";
-      mail = "pace@amiconsult.de";
+      mail = "vincenzo.pace94@icloud.com";
       commonNixosModules = [
         ./configuration.nix
         ./modules/desktop.nix
@@ -69,6 +70,7 @@
           };
         }
         hyprland.nixosModules.default
+        sops-nix.nixosModules.sops
         { programs.hyprland.enable = true; }
         home-manager.nixosModules.home-manager
         {

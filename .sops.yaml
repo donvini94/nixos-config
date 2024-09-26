@@ -1,0 +1,9 @@
+keys:
+  - &vincenzo: 4649ce5798049770305a622a547e63a9aecbeb71
+  - &dmbs_server: 64ecdbc882cef53555ac468ae609f1ed2df8a933
+creation_rules:
+  - path_regex: secrets/[^/]+\.(yaml|json|env|ini)$
+    key_groups:
+    - pgp:
+      - *vincenzo
+      - *dmbs_server

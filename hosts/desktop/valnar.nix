@@ -55,7 +55,10 @@
     powerManagement.enable = true;
     open = false;
     prime = {
-      sync.enable = true;
+      offload = {
+        enable = true;
+        enableOffloadCmd = true;
+      };
       nvidiaBusId = "PCI:1:0:0";
       intelBusId = "PCI:0:2:0";
     };
