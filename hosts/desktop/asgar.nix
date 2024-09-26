@@ -17,6 +17,7 @@
     libvdpau-va-gl
   ];
 
+  sops.age.keyFile = "/home/vincenzo/.config/sops/age/keys.txt";
   # Hardware-configuration.nix
   boot.initrd.availableKernelModules = [
     "xhci_pci"

@@ -64,6 +64,7 @@
     };
   };
 
+  sops.age.keyFile = "/home/vincenzo/.config/sops/age/keys.txt";
   environment = {
     variables = {
       XCURSOR_SIZE = "24";

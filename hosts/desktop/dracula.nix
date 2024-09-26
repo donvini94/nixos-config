@@ -38,6 +38,7 @@
     openFirewall = true;
   };
 
+  sops.age.keyFile = "/home/vincenzo/.config/sops/age/keys.txt";
   hardware.graphics = {
     enable = true;
     enable32Bit = true;

@@ -22,6 +22,7 @@
     p7zip
     unrar
     pigz
+    age
 
     # networking tools
     mtr # A network diagnostic tool
