@@ -44,9 +44,8 @@
     defaultSopsFormat = "yaml";
     age.keyFile = "/home/nix/.config/sops/age/keys.txt";
     secrets = {
-      "keycloak/password" = {
-        mode = "640";
-      };
+      "keycloak/password".mode = "640";
+      "paperless/password".mode = "640";
     };
   };
 
@@ -391,7 +390,7 @@
       port = 58080;
       consumptionDirIsPublic = true;
       settings.PAPERLESS_OCR_LANGUAGE = "deu+eng";
-      passwordFile = "/home/vincenzo/keys/paperless-password";
+      passwordFile = "/run/secrets/paperless/password";
     };
   };
 
