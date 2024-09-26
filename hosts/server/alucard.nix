@@ -45,7 +45,7 @@
     age.keyFile = "/home/nix/.config/sops/age/keys.txt";
     secrets = {
       "keycloak/password" = {
-        owner = "keycloak";
+        mode = "640";
       };
     };
   };
