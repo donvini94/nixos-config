@@ -13,6 +13,7 @@
     ./disk-config.nix
     ../../modules/packages.nix
     ../../configuration.nix
+    inputs.sops-nix.nixosModules.sops
   ];
   boot.initrd.availableKernelModules = [
     "ata_piix"
@@ -36,6 +37,17 @@
       443
       22
     ];
+  };
+
+  sops = {
+    defaultSopsFile = ../../secrets/dmbs.yaml;
+    defaultSopsFormat = "yaml";
+    age.keyFile = "/home/nix/.config/sops/age/keys.txt";
+    secrets = {
+      "keycloak/password" = {
+        owner = "keycloak";
+      };
+    };
   };
 
   users.users = {
@@ -183,7 +195,7 @@
       database = {
         createLocally = true;
         username = "keycloak";
-        passwordFile = "/var/keys/keycloak/passwordfile";
+        passwordFile = "/run/secrets/keycloak/password";
       };
       settings = {
         hostname = "auth.dumusstbereitsein.de";
