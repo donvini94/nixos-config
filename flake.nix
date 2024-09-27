@@ -75,7 +75,11 @@
         home-manager.nixosModules.home-manager
         {
           home-manager.extraSpecialArgs = {
-            inherit username mail fullName;
+            inherit
+              username
+              mail
+              fullName
+              ;
           };
           home-manager.useGlobalPkgs = true;
           home-manager.backupFileExtension = "backup";

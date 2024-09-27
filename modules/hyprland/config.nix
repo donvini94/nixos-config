@@ -90,7 +90,7 @@
             force_default_wallpaper = 0
       }
 
-      windowrulev2 = opacity 0.8 0.8,class:^(kitty)$
+      windowrulev2 = opacity 0.9 0.9,class:^(kitty)$
       windowrulev2 = opacity 0.9 0.9,class:^(anki)$
       windowrulev2 = opacity 0.9 0.9,class:^(Emacs)$
       windowrulev2 = opacity 0.9 0.9,class:^(signal)$

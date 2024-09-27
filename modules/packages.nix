@@ -23,6 +23,7 @@
     unrar
     pigz
     age
+    sops
 
     # networking tools
     mtr # A network diagnostic tool
