@@ -92,7 +92,7 @@
     cursorTheme = {
       name = "Bibata-Modern-Ice";
       package = pkgs.bibata-cursors;
-      size = 16;
+      size = 24;
     };
   };
 
@@ -124,6 +124,7 @@
       '';
     };
   };
+
   home.sessionVariables = {
     STEAM_EXTRA_COMPAT_TOOLS_PATHS = "\${HOME}/.steam/root/compatibilitytools.d";
   };
