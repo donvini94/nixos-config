@@ -50,6 +50,8 @@
     wofi
     nwg-look
     lxappearance
+    hyprcursor
+    bibata-cursors
 
     wf-recorder # creen recording
     grim # taking screenshots

@@ -89,6 +89,11 @@
     iconTheme = {
       name = "Papirus-Dark";
     };
+    cursorTheme = {
+      name = "Bibata-Modern-Ice";
+      package = pkgs.bibata-cursors;
+      size = 16;
+    };
   };
 
   qt = {
@@ -100,6 +105,25 @@
     };
   };
 
+  services.darkman = {
+    enable = true;
+    settings = {
+      lat = 49.782959;
+      long = 7.65118;
+    };
+    darkModeScripts = {
+      gtk-theme = ''
+        ${pkgs.dconf}/bin/dconf write \
+            /org/gnome/desktop/interface/color-scheme "'prefer-dark'"
+      '';
+    };
+    lightModeScripts = {
+      gtk-theme = ''
+        ${pkgs.dconf}/bin/dconf write \
+            /org/gnome/desktop/interface/color-scheme "'prefer-light'"
+      '';
+    };
+  };
   home.sessionVariables = {
     STEAM_EXTRA_COMPAT_TOOLS_PATHS = "\${HOME}/.steam/root/compatibilitytools.d";
   };

@@ -5,16 +5,21 @@
     settings = { };
     extraConfig = ''
 
+
+      env = XCURSOR_SIZE,24
+      env = AQ_DRM_DEVICES,/dev/dri/card2:/dev/dri/card1
+      env = HYPRCURSOR_THEME,Bibata-Modern-Ice
+      env = HYPRCURSOR_SIZE,24
+
+
+
       exec-once = dunst
       exec-once = waybar
       exec-once = emacs --daemon
       exec-once = nm-applet --indicator &
-
+      exec-once = hyprctl setcursor Bibata-Modern-Ice 24
       # See https://wiki.hyprland.org/Configuring/Monitors/
       monitor=,preferred,auto,auto
-
-      env = XCURSOR_SIZE,24
-      env = AQ_DRM_DEVICES,/dev/dri/card2:/dev/dri/card1
 
       input {
           kb_layout = us
@@ -176,6 +181,9 @@
       # backlight
       bind = , XF86MonBrightnessUp, exec, brightnessctl set +5%
       bind = , XF86MonBrightnessDown, exec, brightnessctl set 5%-
+
+
+
     '';
   };
 }
