@@ -19,7 +19,12 @@
       tab_bar_style = "powerline";
       tab_powerline_style = "slanted";
     };
-    theme = "Modus Vivendi";
+    themeFile = "Modus_Vivendi";
+    font = {
+      name = "Oxygen Mono";
+      size = 16;
+    };
+
     extraConfig = "shell nu";
   };
 }
