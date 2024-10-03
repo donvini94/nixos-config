@@ -30,6 +30,7 @@
   networking.useDHCP = lib.mkDefault true;
   hardware.pulseaudio.enable = false;
   hardware.bluetooth.enable = true;
+  hardware.bluetooth.powerOnBoot = true;
   security.rtkit.enable = true;
   security.pam.services.login.enableKwallet = true;
   security.pam.services.swaylock = { };
@@ -57,6 +58,7 @@
       "wheel"
       "docker"
       "libvirtd"
+      "audio"
     ];
     packages = with pkgs; [ firefox ];
   };

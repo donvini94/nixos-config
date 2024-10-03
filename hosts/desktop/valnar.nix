@@ -96,6 +96,7 @@
     "kvm-intel"
   ];
 
+  # dolby atmos needs kernel 6.8+
   boot.kernelPackages = pkgs.linuxPackages_6_11;
   nix.settings.max-jobs = 24;
   swapDevices = [ ];
