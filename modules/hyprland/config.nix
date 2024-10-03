@@ -129,6 +129,7 @@
       bind = $mod, W, exec, firefox
       bind = $mod, A, exec, anki
       bind = $mod, N, exec, kitty -e yazi
+      bind = $mod, T, exec, darkman toggle
       bind = $mod_SHIFT, N, exec, pcmanfm
       bind = $mod, B, exec, blueberry
       bind = $mod_SHIFT, D, exec, discord
@@ -138,7 +139,7 @@
       bind = $mod, P, exec, passmenu
       bind = $mod_SHIFT, H, exec, kitty -e btop
       bind = $mod , D, exec, kitty -e lazydocker
-      bind = $mod, G, exec, kitty -e gamescope -W 3840 -H 2160 -r 60 -e -- steam
+      bind = $mod, G, exec, gamescope -W 3840 -H 2160 -r 60 -e -- steam
 
       # Window Navigation
       bind = $mod, J, cyclenext
