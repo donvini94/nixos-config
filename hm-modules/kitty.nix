@@ -20,6 +20,9 @@
       tab_powerline_style = "slanted";
     };
     themeFile = "Modus_Vivendi";
+    environment = {
+      "LANG" = "en_US.UTF-8";
+    };
     font = {
       name = "Oxygen Mono";
       size = 16;
