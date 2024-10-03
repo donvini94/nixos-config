@@ -23,6 +23,7 @@
     cudatoolkit
     mesa
     nvitop
+    nvidia-vaapi-driver
   ];
 
   # Enable OpenGL
@@ -54,14 +55,14 @@
     package = config.boot.kernelPackages.nvidiaPackages.stable;
     powerManagement.enable = true;
     open = false;
-    prime = {
-      offload = {
-        enable = true;
-        enableOffloadCmd = true;
-      };
-      nvidiaBusId = "PCI:1:0:0";
-      intelBusId = "PCI:0:2:0";
-    };
+    #   prime = {
+    #     offload = {
+    #       enable = true;
+    #       enableOffloadCmd = true;
+    #     };
+    #     nvidiaBusId = "PCI:1:0:0";
+    #     intelBusId = "PCI:0:2:0";
+    #   };
   };
 
   sops.age.keyFile = "/home/vincenzo/.config/sops/age/keys.txt";
@@ -69,7 +70,6 @@
     variables = {
       XCURSOR_SIZE = "24";
       NIXOS_OZONE_WL = "1";
-      WLR_NO_HARDWARE_CURSORS = "1";
       GBM_BACKEND = "nvidia-drm";
       LIBVA_DRIVER_NAME = "nvidia";
       XDG_SESSION_TYPE = "wayland";
@@ -78,7 +78,6 @@
     sessionVariables = {
       XCURSOR_SIZE = "24";
       NIXOS_OZONE_WL = "1";
-      WLR_NO_HARDWARE_CURSORS = "1";
       GBM_BACKEND = "nvidia-drm";
       LIBVA_DRIVER_NAME = "nvidia";
       XDG_SESSION_TYPE = "wayland";
@@ -97,6 +96,7 @@
   ];
   boot.kernelModules = [ "kvm-intel" ];
 
+  nix.settings.max-jobs = 24;
   swapDevices = [ ];
   hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
   system.stateVersion = "23.11";

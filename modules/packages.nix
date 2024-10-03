@@ -24,6 +24,8 @@
     pigz
     age
     sops
+    picard
+    droidcam
 
     # networking tools
     mtr # A network diagnostic tool
