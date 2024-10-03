@@ -89,13 +89,14 @@
   boot.initrd.availableKernelModules = [
     "nvme"
     "xhci_pci"
-    "usb_storage"
-    "sd_mod"
     "sdhci_pci"
     "thunderbolt"
   ];
-  boot.kernelModules = [ "kvm-intel" ];
+  boot.kernelModules = [
+    "kvm-intel"
+  ];
 
+  boot.kernelPackages = pkgs.linuxPackages_6_11;
   nix.settings.max-jobs = 24;
   swapDevices = [ ];
   hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
