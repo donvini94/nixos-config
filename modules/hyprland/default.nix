@@ -52,6 +52,7 @@
     lxappearance
     hyprcursor
     bibata-cursors
+    egl-wayland
 
     wf-recorder # creen recording
     grim # taking screenshots

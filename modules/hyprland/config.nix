@@ -10,7 +10,15 @@
       env = AQ_DRM_DEVICES,/dev/dri/card2:/dev/dri/card1
       env = HYPRCURSOR_THEME,Bibata-Modern-Ice
       env = HYPRCURSOR_SIZE,24
-
+      env = XDG_CURRENT_DESKTOP,Hyprland
+      env = LIBVA_DRIVER_NAME,nvidia
+      env = XDG_SESSION_TYPE,wayland
+      env = GBM_BACKEND,nvidia-drm
+      env = __GLX_VENDOR_LIBRARY_NAME,nvidia
+      env = NVD_BACKEND,direct
+      cursor {
+          no_hardware_cursors = true
+      }
 
 
       exec-once = dunst
