@@ -199,6 +199,22 @@
         forceSSL = true;
         locations."/".proxyPass = "http://127.0.0.1:58080";
       };
+      virtualHosts."read.istbereit.de" = {
+        enableACME = true;
+        forceSSL = true;
+        locations."/".proxyPass = "http://127.0.0.1:8083";
+      };
+    };
+
+    calibre-web = {
+      enable = true;
+      listen.ip = "127.0.0.1";
+      listen.port = 8083;
+      openFirewall = true;
+      # Data lies in /var/lib/calibre-web with its own user
+      dataDir = "calibre-web";
+      options.enableBookUploading = true;
+      options.enableBookConversion = true;
     };
     postgresql.enable = true;
     keycloak = {
