@@ -16,6 +16,7 @@
         cheat = "cht.sh";
         c = "cht.sh";
         cd = "z";
+        switch = "sudo nixos-rebuild switch";
       };
       extraConfig = ''
         $env.config = {

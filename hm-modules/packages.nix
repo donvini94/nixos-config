@@ -29,6 +29,8 @@
     poppler_utils
     anki
     qolibri # japanese dictionaries
+    animdl
+    ani-cli
 
     # communication
     telegram-desktop
