@@ -111,6 +111,12 @@
       windowrulev2 = opacity 0.9 0.9,class:^(discord)$
       windowrulev2 = opacity 0.9 0.9,class:^(Slack)$
 
+      # Screensharing rules for XWayland applications like discord
+      windowrulev2 = opacity 0.0 override, class:^(xwaylandvideobridge)$
+      windowrulev2 = noanim, class:^(xwaylandvideobridge)$
+      windowrulev2 = noinitialfocus, class:^(xwaylandvideobridge)$
+      windowrulev2 = maxsize 1 1, class:^(xwaylandvideobridge)$
+      windowrulev2 = noblur, class:^(xwaylandvideobridge)$
 
       $mod = SUPER
       bind = $mod, Return, exec, kitty

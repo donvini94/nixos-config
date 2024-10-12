@@ -19,7 +19,6 @@
     altserver-linux
     xorg.xhost
     blueberry
-    xdg-desktop-portal-hyprland
     brightnessctl
     pinentry
     pinentry-rofi

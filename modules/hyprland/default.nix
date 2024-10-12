@@ -2,10 +2,6 @@
 {
   xdg.portal = {
     enable = true;
-    extraPortals = with pkgs; [
-      xdg-desktop-portal-wlr
-      xdg-desktop-portal-gtk
-    ];
     configPackages = with pkgs; [ xdg-desktop-portal-gtk ];
   };
 
@@ -45,6 +41,7 @@
     swayidle # the idle timeout
     wlogout # logout menu
     wl-clipboard # copying and pasting
+    xwaylandvideobridge
 
     pass-wayland
     wofi
@@ -54,6 +51,7 @@
     bibata-cursors
     egl-wayland
 
+    xdg-desktop-portal-hyprland
     wf-recorder # creen recording
     grim # taking screenshots
     slurp # selecting a region to screenshot

@@ -15,9 +15,13 @@
     font-awesome_5
     oxygenfonts
     iosevka
+    noto-fonts
+    fira-code
+    fira-code-symbols
     noto-fonts-cjk
     noto-fonts-cjk-sans
     noto-fonts-cjk-serif
+    noto-fonts-emoji
     kochi-substitute
   ];
 }
