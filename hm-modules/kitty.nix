@@ -19,7 +19,7 @@
       tab_bar_style = "powerline";
       tab_powerline_style = "slanted";
     };
-    themeFile = "Modus_Vivendi";
+    theme = "Modus Vivendi";
     environment = {
       "LANG" = "en_US.UTF-8";
     };

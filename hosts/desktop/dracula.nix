@@ -17,9 +17,6 @@
     libva
     nvitop
     #rustdesk
-    zed-editor
-    warp-terminal
-    github-desktop
     jetbrains.pycharm-professional
     jetbrains.rust-rover
     transmission_4-gtk
@@ -32,22 +29,16 @@
   ];
   services.jellyfin.enable = true;
   services.jellyfin.openFirewall = true;
-  services.ollama = {
-    enable = true;
-    acceleration = "cuda";
-    openFirewall = true;
-  };
 
   sops.age.keyFile = "/home/vincenzo/.config/sops/age/keys.txt";
-  hardware.graphics = {
+  hardware.opengl = {
     enable = true;
-    enable32Bit = true;
+    driSupport32Bit = true;
     extraPackages = with pkgs; [
       vaapiVdpau
       libvdpau-va-gl
       nvidia-vaapi-driver
     ];
-
   };
 
   # Load nvidia driver for Xorg and Wayland

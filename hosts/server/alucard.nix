@@ -199,6 +199,12 @@
         forceSSL = true;
         locations."/".proxyPass = "http://127.0.0.1:58080";
       };
+      virtualHosts."files.dumusstbereitsein.de" = {
+        enableACME = true;
+        forceSSL = true;
+        locations."/".proxyPass = "http://127.0.0.1:53842";
+      };
+
       virtualHosts."read.istbereit.de" = {
         enableACME = true;
         forceSSL = true;
