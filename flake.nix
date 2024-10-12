@@ -28,24 +28,23 @@
 
   inputs = {
 
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
+    stable.url = "github:NixOS/nixpkgs/nixos-24.05";
+    unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     home-manager = {
-      url = "github:nix-community/home-manager/release-24.05";
-      inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:nix-community/home-manager";
     };
     sops-nix.url = "github:Mic92/sops-nix";
     disko.url = "github:nix-community/disko";
-    disko.inputs.nixpkgs.follows = "nixpkgs";
 
     hosts.url = "github:StevenBlack/hosts";
-    hosts.inputs.nixpkgs.follows = "nixpkgs";
 
     hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1";
   };
 
   outputs =
     {
-      nixpkgs,
+      stable,
+      unstable,
       home-manager,
       hyprland,
       disko,
@@ -75,11 +74,7 @@
         home-manager.nixosModules.home-manager
         {
           home-manager.extraSpecialArgs = {
-            inherit
-              username
-              mail
-              fullName
-              ;
+            inherit username mail fullName;
           };
           home-manager.useGlobalPkgs = true;
           home-manager.backupFileExtension = "backup";
@@ -90,7 +85,7 @@
 
       makeNixosSystem =
         hostName:
-        nixpkgs.lib.nixosSystem {
+        unstable.lib.nixosSystem {
           system = "x86_64-linux";
           specialArgs = {
             inherit inputs username;
@@ -105,7 +100,7 @@
         dracula = makeNixosSystem "dracula";
 
         #Server
-        alucard = nixpkgs.lib.nixosSystem {
+        alucard = stable.lib.nixosSystem {
           system = "x86_64-linux";
           specialArgs = {
             inherit inputs;

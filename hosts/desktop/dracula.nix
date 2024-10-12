@@ -25,6 +25,7 @@
     shotwell
     darktable
     imagemagick
+    rustdesk
 
   ];
   services.jellyfin.enable = true;
