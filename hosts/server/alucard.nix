@@ -110,7 +110,6 @@
       ];
     };
     jellyfin = {
-      isNormalUser = true;
       extraGroups = [
         "wheel"
         "docker"
@@ -126,8 +125,18 @@
     yazi
     openssl
     apacheHttpd
+    filebot
   ];
-
+  nixpkgs.overlays = [
+    (self: super: {
+      filebot = super.filebot.overrideAttrs (oldAttrs: {
+        src = super.fetchurl {
+          url = "https://get.filebot.net/filebot/FileBot_${oldAttrs.version}/FileBot_${oldAttrs.version}-portable.tar.xz";
+          sha256 = "UEgG3bQT5GPMfh/nxC1aXGsb8HKE5Ov5ax0ULjLr73U=";
+        };
+      });
+    })
+  ];
   services = {
     navidrome = {
       enable = true;
@@ -135,6 +144,16 @@
       settings = {
         MusicFolder = "/mnt/music";
       };
+    };
+    jellyfin = {
+      enable = true;
+      openFirewall = true;
+      dataDir = "/home/jellyfin/";
+    };
+    sonarr = {
+      enable = true;
+      user = "jellyfin";
+      openFirewall = true;
     };
     openssh = {
       enable = true;

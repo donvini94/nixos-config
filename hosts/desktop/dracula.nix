@@ -16,18 +16,30 @@
     calibre
     libva
     nvitop
-    #rustdesk
+    rustdesk
     jetbrains.pycharm-professional
     jetbrains.rust-rover
+    filebot
     transmission_4-gtk
 
     # photos
     shotwell
     darktable
     imagemagick
-    rustdesk
 
   ];
+
+  nixpkgs.overlays = [
+    (self: super: {
+      filebot = super.filebot.overrideAttrs (oldAttrs: {
+        src = super.fetchurl {
+          url = "https://get.filebot.net/filebot/FileBot_${oldAttrs.version}/FileBot_${oldAttrs.version}-portable.tar.xz";
+          sha256 = "fwyo9J5O728xxWHWvq63bTJMV4IAMAHZR0yr3Pb6d7U=";
+        };
+      });
+    })
+  ];
+
   services.jellyfin.enable = true;
   services.jellyfin.openFirewall = true;
 
