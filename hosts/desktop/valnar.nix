@@ -28,9 +28,9 @@
   ];
 
   # Enable OpenGL
-  hardware.opengl = {
+  hardware.graphics = {
     enable = true;
-    driSupport32Bit = true;
+    enable32Bit = true;
     extraPackages = with pkgs; [
       vaapiVdpau
       libvdpau-va-gl
@@ -41,7 +41,6 @@
   services.xserver.videoDrivers = lib.mkDefault [
     "nvidia"
   ];
-  hardware.graphics.extraPackages = with pkgs; [ vaapiVdpau ];
   virtualisation = {
     docker = {
       enable = true;

@@ -44,9 +44,9 @@
   services.jellyfin.openFirewall = true;
 
   sops.age.keyFile = "/home/vincenzo/.config/sops/age/keys.txt";
-  hardware.opengl = {
+  hardware.graphics = {
     enable = true;
-    driSupport32Bit = true;
+    enable32Bit = true;
     extraPackages = with pkgs; [
       vaapiVdpau
       libvdpau-va-gl
