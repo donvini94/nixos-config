@@ -23,6 +23,7 @@
     ./hm-modules/waybar.nix
     ./hm-modules/yazi.nix
     ./hm-modules/zathura.nix
+    ./hm-modules/mail.nix
     ./modules/hyprland/config.nix
   ];
 

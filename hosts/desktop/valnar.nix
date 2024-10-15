@@ -25,6 +25,7 @@
     nvitop
     nvidia-container-toolkit
     nvidia-vaapi-driver
+    mangohud
   ];
 
   # Enable OpenGL
