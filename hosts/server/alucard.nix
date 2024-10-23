@@ -109,6 +109,9 @@
         "docker"
       ];
     };
+    coder = {
+      extraGroups = [ "docker" ];
+    };
     jellyfin = {
       extraGroups = [
         "wheel"
@@ -144,6 +147,17 @@
       settings = {
         MusicFolder = "/mnt/music";
       };
+    };
+    coder = {
+      enable = true;
+      homeDir = "/var/lib/coder";
+      accessUrl = "https://coder.istbereit.de";
+      listenAddress = "127.0.0.1:1337";
+      database.createLocally = true;
+    };
+    code-server = {
+      enable = true;
+      port = 4444;
     };
     jellyfin = {
       enable = true;
@@ -223,14 +237,20 @@
         forceSSL = true;
         locations."/".proxyPass = "http://127.0.0.1:53842";
       };
-
       virtualHosts."read.istbereit.de" = {
         enableACME = true;
         forceSSL = true;
         locations."/".proxyPass = "http://127.0.0.1:8083";
       };
+      virtualHosts."coder.istbereit.de" = {
+        enableACME = true;
+        forceSSL = true;
+        locations."/" = {
+          proxyPass = "http://127.0.0.1:1337";
+          proxyWebsockets = true;
+        };
+      };
     };
-
     calibre-web = {
       enable = true;
       listen.ip = "127.0.0.1";
