@@ -66,6 +66,7 @@
           networking.stevenBlackHosts = {
             blockFakenews = true;
             blockGambling = true;
+            blockPorn = true;
           };
         }
         hyprland.nixosModules.default

@@ -82,6 +82,7 @@
     ltrace # library call monitoring
     lsof # list open files
 
+    harsh # habit tracker
     # mail
     mu
     notmuch

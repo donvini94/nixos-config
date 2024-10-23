@@ -60,6 +60,7 @@
     # Nix
     nix-output-monitor
     nixfmt-rfc-style
+    nixd
 
     # Docs
     plantuml
@@ -80,8 +81,8 @@
     dockerfile-language-server-nodejs
     helix
     emacs29
-
-    # misc
-    iosevka
+    leetcode-cli
+    postman
+    bruno
   ];
 }
