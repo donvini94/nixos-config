@@ -22,7 +22,7 @@
         $env.config = {
                show_banner: false,
               }
-        $env.PATH = ($env.PATH | split row (char esep) | append "~/.config/emacs/bin/doom")
+        $env.PATH = ($env.PATH | split row (char esep) | append "~/.config/emacs/bin/")
       '';
     };
 
