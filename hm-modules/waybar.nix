@@ -19,6 +19,7 @@
           "custom/nix"
           "hyprland/workspaces"
         ];
+        modules-center = [ "custom/pomodoro" ];
         modules-right = [
           "pulseaudio"
           "network#interface"
@@ -29,6 +30,11 @@
           "tray"
         ];
 
+        "custom/pomodoro" = {
+          exec = "echo -e \"  $(emacsclient -e '(ruborcalor/org-pomodoro-time)' | cut -d '\"' -f 2)\"";
+          interval = 1;
+          tooltip = false;
+        };
         "hyprland/workspaces" = {
           format = "{name} : {icon}";
           on-click = "activate";
@@ -274,6 +280,19 @@
         font-size: 32px;
       	margin-top: 8px;
       	margin-left: 20px;
+      }
+      #custom-pomodoro {
+        background: #ff6e67;       /* Consistent with #clock and #workspaces */
+        color: #4d4d4d;            /* Matches the foreground color */
+        margin-top: 8px;
+        margin-left: 8px;
+        padding-left: 16px;
+        padding-right: 16px;
+        border-radius: 26px;
+        transition: none;
+        font-size: 14px;      /* Slightly larger, matching main font size */
+        padding: 4px 8px;     /* Add padding for a clean look */
+        border-radius: 26px;
       }
       #clock {
       	margin-top: 8px;

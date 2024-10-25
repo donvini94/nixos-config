@@ -12,7 +12,7 @@
     dejavu_fonts
     cantarell-fonts
     nerdfonts
-    font-awesome_5
+    font-awesome
     oxygenfonts
     iosevka
     noto-fonts
