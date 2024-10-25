@@ -83,6 +83,9 @@
     lsof # list open files
 
     harsh # habit tracker
+
+    mediainfo
+    imagemagick
     # mail
     mu
     notmuch

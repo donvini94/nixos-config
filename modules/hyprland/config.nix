@@ -23,7 +23,6 @@
 
       exec-once = dunst
       exec-once = waybar
-      exec-once = emacs --daemon
       exec-once = nm-applet --indicator &
       exec-once = hyprctl setcursor Bibata-Modern-Ice 24
       # See https://wiki.hyprland.org/Configuring/Monitors/

@@ -90,6 +90,7 @@
           system = "x86_64-linux";
           specialArgs = {
             inherit inputs username;
+            nix.nixPath = [ "nixpkgs=${inputs.nixpkgs}" ];
           };
           modules = commonNixosModules ++ [ ./hosts/desktop/${hostName}.nix ];
         };

@@ -60,7 +60,7 @@
     # Nix
     nix-output-monitor
     nixfmt-rfc-style
-    nixd
+    nil
 
     # Docs
     plantuml
