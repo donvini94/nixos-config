@@ -19,7 +19,7 @@
           "custom/nix"
           "hyprland/workspaces"
         ];
-        modules-center = [ "custom/pomodoro" ];
+        #        modules-center = [ "custom/pomodoro" ];
         modules-right = [
           "pulseaudio"
           "network#interface"

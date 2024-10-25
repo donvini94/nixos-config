@@ -1,0 +1,48 @@
+#+title: Readme
+
+* nixos-config
+
+This repository contains my configuration files for managing multiple NixOS systems, including desktops, laptops, and a server. The configuration is structured to support modularity, allowing anyone to start with these configs and selectively enable the modules they need for their own homeserver setup.
+
+** Goals
+The primary goal of this repository is to provide a flexible and modular configuration for:
+- Desktop systems running Hyprland, Waybar, Doom Emacs, and other key tools
+- A server hosting various services accessible through a secure setup with Keycloak authentication
+
+** Structure
+The repository is organized into separate configuration files for each machine, with reusable modules for common services and setups.
+- /hm-modules/ contains configurations for specific tools I use on my machine.
+- /modules/ contains thematic packages like in /programming.nix/ as well as my /hyprland/ config.
+- /hosts/ contains machine specific information. It is the place where you would put your /hardware-configuration.nix/
+
+** Desktop Software
+| Software   | Purpose                             |
+|------------|-------------------------------------|
+| Hyprland   | Window manager                      |
+| Waybar     | Status bar                          |
+| Doom Emacs | Code editor and personal organizer  |
+| Kitty      | Terminal emulator                   |
+| Nushell    | Modern shell                        |
+| Swaylock   | Screen locker                       |
+
+** Server Setup
+The server configuration, found in `[[file:hosts/server/alucard.nix::{][alucard.nix]]`, is designed to create a home server environment with the following services, all routed through nginx reverse proxies and accessible via Dashy, an entry point dashboard:
+
+| Service      | Description                  |
+|--------------|------------------------------|
+| Dashy        | Homepage and service portal  |
+| Jellyfin     | Media server                 |
+| Paperless    | Document management          |
+| Navidrome    | Music server                 |
+| Calibre-Web  | E-book library               |
+| Overleaf     | Collaborative document editor|
+| Coder        | Code-server for development  |
+
+All access to these services is managed via Keycloak for unified authentication.
+
+** How to Use
+To get started, clone this repository and review the [[file:hosts/server/alucard.nix::{][alucard.nix]] configuration file and other system-specific files for module options. Each module can be selectively enabled depending on the services you want to deploy on your own system.
+
+** Future Goals
+I aim to continuously improve the modularity of these configurations, adding more reusable modules and further simplifying the setup process for both desktop and server configurations.
+
