@@ -1,7 +1,5 @@
 {
-  pkgs,
   inputs,
-  config,
   ...
 }:
 
@@ -11,7 +9,7 @@
   ];
 
   sops = {
-    defaultSopsFile = ./secrets/secrets.yaml;
+    defaultSopsFile = ./dmbs.yaml;
     defaultSopsFormat = "yaml";
     age.keyFile = "/home/nix/.config/sops/age/keys.txt";
     secrets = {
