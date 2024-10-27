@@ -101,7 +101,6 @@
   environment = {
     variables = {
       XCURSOR_SIZE = "24";
-      NIXOS_OZONE_WL = "1";
       WLR_NO_HARDWARE_CURSORS = "1";
       GBM_BACKEND = "nvidia-drm";
       LIBVA_DRIVER_NAME = "nvidia";
@@ -110,7 +109,6 @@
     };
     sessionVariables = {
       XCURSOR_SIZE = "24";
-      NIXOS_OZONE_WL = "1";
       WLR_NO_HARDWARE_CURSORS = "1";
       GBM_BACKEND = "nvidia-drm";
       LIBVA_DRIVER_NAME = "nvidia";

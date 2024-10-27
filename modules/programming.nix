@@ -7,13 +7,9 @@
 
 {
   environment.systemPackages = with pkgs; [
-    # Haskell
-    cabal-install
-    haskell-language-server
-    ghc
-    ghcid
-    stack
-    haskellPackages.hoogle
+    # Docs
+    plantuml
+    zeal
 
     #go
     go
@@ -25,12 +21,21 @@
     gopls
     gomodifytags
 
-    # Rust
-    rust-analyzer
-    rustup
-    rustfmt
-    cargo-watch
-    clippy
+    # Haskell
+    cabal-install
+    haskell-language-server
+    ghc
+    ghcid
+    stack
+    haskellPackages.hoogle
+
+    # Java
+    jdk17
+
+    # Nix
+    nix-output-monitor
+    nixfmt-rfc-style
+    nil # nix language server
 
     # Python
     python312
@@ -41,36 +46,11 @@
     python312Packages.numpy
     python312Packages.requests
     python312Packages.beautifulsoup4
-
     pyright
     pipenv
     black
     isort
     pipenv
-
-    # Web
-    html-tidy
-    nodePackages.js-beautify
-    stylelint
-    nodejs_22
-
-    # Java
-    jdk17
-
-    # Nix
-    nix-output-monitor
-    nixfmt-rfc-style
-    nil
-
-    # Docs
-    plantuml
-    zeal
-
-    # Tree-sitter
-    tree-sitter
-    tree-sitter-grammars.tree-sitter-rust
-    tree-sitter-grammars.tree-sitter-haskell
-    tree-sitter-grammars.tree-sitter-python
 
     # tooling
     devbox
@@ -84,5 +64,24 @@
     leetcode-cli
     postman
     bruno
+
+    # Tree-sitter
+    tree-sitter
+    tree-sitter-grammars.tree-sitter-rust
+    tree-sitter-grammars.tree-sitter-haskell
+    tree-sitter-grammars.tree-sitter-python
+
+    # Rust
+    rust-analyzer
+    rustup
+    rustfmt
+    cargo-watch
+    clippy
+
+    # Web
+    html-tidy
+    nodePackages.js-beautify
+    stylelint
+    nodejs_22
   ];
 }

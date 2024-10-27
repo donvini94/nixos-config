@@ -35,6 +35,7 @@
     ];
   };
 
+  environment.sessionVariables.NIXOS_OZONE_WL = "1";
   environment.systemPackages = with pkgs; [
     waybar # the status bar
     swww # the wallpaper

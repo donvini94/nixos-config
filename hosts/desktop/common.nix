@@ -7,34 +7,58 @@
 }:
 
 {
-  fileSystems."/" = {
-    device = "/dev/disk/by-label/nixos";
-    fsType = "ext4";
-  };
 
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-label/BOOT";
-    fsType = "vfat";
-  };
   # Use the systemd-boot EFI boot loader.
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
-  boot.initrd.kernelModules = [ ];
-  boot.extraModulePackages = [ ];
+  boot = {
+    loader.systemd-boot.enable = true;
+    loader.efi.canTouchEfiVariables = true;
+    initrd.kernelModules = [ ];
+    extraModulePackages = [ ];
+  };
 
-  programs.noisetorch.enable = true;
+  fileSystems = {
+    "/" = {
+      device = "/dev/disk/by-label/nixos";
+      fsType = "ext4";
+    };
+    "/boot" = {
+      device = "/dev/disk/by-label/BOOT";
+      fsType = "vfat";
+    };
+  };
+
+  hardware = {
+    pulseaudio.enable = false;
+    bluetooth.enable = true;
+    bluetooth.powerOnBoot = true;
+  };
+
+  networking = {
+    networkmanager.enable = true;
+    useDHCP = lib.mkDefault true;
+  };
+
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-  environment.sessionVariables.NIXOS_OZONE_WL = "1";
+  nix = {
+    settings.trusted-users = [ "${username}" ];
+    settings.auto-optimise-store = true;
+    optimise.automatic = true;
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 30d";
+    };
+  };
 
-  networking.networkmanager.enable = true;
-  networking.useDHCP = lib.mkDefault true;
-  hardware.pulseaudio.enable = false;
-  hardware.bluetooth.enable = true;
-  hardware.bluetooth.powerOnBoot = true;
-  security.rtkit.enable = true;
-  security.pam.services.login.enableKwallet = true;
-  security.pam.services.swaylock = { };
+  # noisetorch is a tool for noise suppression in voice chats
+  programs.noisetorch.enable = true;
+  security = {
+    rtkit.enable = true;
+    pam.services.login.enableKwallet = true;
+    pam.services.swaylock = { };
+  };
 
+  services.desktopManager.plasma6.enable = true;
   systemd = {
     user.services.polkit-gnome-authentication-agent-1 = {
       description = "polkit-gnome-authentication-agent-1";
@@ -78,26 +102,6 @@
           }).fd
         ];
       };
-    };
-  };
-
-  nix = {
-    settings = {
-      substituters = [ "https://hyprland.cachix.org" ];
-      trusted-public-keys = [ "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc=" ];
-    };
-
-    settings.experimental-features = [
-      "nix-command"
-      "flakes"
-    ];
-    settings.trusted-users = [ "${username}" ];
-    settings.auto-optimise-store = true;
-    optimise.automatic = true;
-    gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 30d";
     };
   };
 

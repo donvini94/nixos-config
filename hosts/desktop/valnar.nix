@@ -75,7 +75,6 @@
   environment = {
     variables = {
       XCURSOR_SIZE = "24";
-      NIXOS_OZONE_WL = "1";
       GBM_BACKEND = "nvidia-drm";
       LIBVA_DRIVER_NAME = "nvidia";
       XDG_SESSION_TYPE = "wayland";
@@ -83,7 +82,6 @@
     };
     sessionVariables = {
       XCURSOR_SIZE = "24";
-      NIXOS_OZONE_WL = "1";
       GBM_BACKEND = "nvidia-drm";
       LIBVA_DRIVER_NAME = "nvidia";
       XDG_SESSION_TYPE = "wayland";

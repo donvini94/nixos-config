@@ -8,7 +8,6 @@
     ];
     substituters = [
       "https://cache.nixos.org/"
-      "https://anyrun.cachix.org"
       "https://hyprland.cachix.org"
       "https://helix.cachix.org"
     ];
@@ -21,24 +20,18 @@
       "helix.cachix.org-1:ejp9KQpR1FBI2onstMQ34yogDm4OgU2ru6lIwPvuCVs="
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
       "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
-      "anyrun.cachix.org-1:pqBobmOjI7nKlsUMV25u9QHa9btJK65/C8vnO3p346s="
       "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
     ];
   };
 
   inputs = {
-
-    stable.url = "github:NixOS/nixpkgs/nixos-24.05";
-    unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
-    home-manager = {
-      url = "github:nix-community/home-manager";
-    };
-    sops-nix.url = "github:Mic92/sops-nix";
-    disko.url = "github:nix-community/disko";
-
-    hosts.url = "github:StevenBlack/hosts";
-
-    hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1";
+    stable.url = "github:NixOS/nixpkgs/nixos-24.05"; # stability for the server
+    unstable.url = "github:NixOS/nixpkgs/nixos-unstable"; # edge for the desktop
+    home-manager.url = "github:nix-community/home-manager";
+    sops-nix.url = "github:Mic92/sops-nix"; # secret management
+    disko.url = "github:nix-community/disko"; # declarative partitioning
+    hosts.url = "github:StevenBlack/hosts"; # block unwanted websites
+    hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1"; # Modern tiling window manager
   };
 
   outputs =
@@ -53,9 +46,12 @@
       ...
     }@inputs:
     let
+      # Declare some user variables
       username = "vincenzo";
       fullName = "Vincenzo Pace";
       mail = "vincenzo.pace94@icloud.com";
+
+      # Desktop specific modules and settings
       commonNixosModules = [
         ./configuration.nix
         ./modules/desktop.nix
@@ -69,9 +65,9 @@
             blockPorn = true;
           };
         }
+        { programs.hyprland.enable = true; }
         hyprland.nixosModules.default
         sops-nix.nixosModules.sops
-        { programs.hyprland.enable = true; }
         home-manager.nixosModules.home-manager
         {
           home-manager.extraSpecialArgs = {
@@ -84,6 +80,7 @@
         }
       ];
 
+      # Build a system based on the commonNixosModules and unstable branch
       makeNixosSystem =
         hostName:
         unstable.lib.nixosSystem {

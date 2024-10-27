@@ -6,12 +6,10 @@
 }:
 {
   services = {
-    pcscd.enable = true;
     logind.lidSwitchExternalPower = "ignore";
     pipewire.wireplumber.enable = true;
     emacs.enable = true;
     printing.enable = true;
-    desktopManager.plasma6.enable = true;
     xserver = {
       enable = true;
       xkb.layout = "us";
@@ -24,7 +22,6 @@
       pulse.enable = true;
       jack.enable = true;
     };
-
     mullvad-vpn.enable = true;
     #resolved = {
     #  enable = true;

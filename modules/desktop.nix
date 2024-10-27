@@ -16,7 +16,6 @@
   ];
 
   environment.systemPackages = with pkgs; [
-    altserver-linux
     xorg.xhost
     blueberry
     brightnessctl
@@ -30,5 +29,4 @@
     pavucontrol
     filezilla
   ];
-
 }

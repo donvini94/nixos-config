@@ -7,8 +7,8 @@
     vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     neovim
     fzf # A command-line fuzzy finder
-    entr
-    fastfetch
+    entr # Run arbitrary commands when files change
+    fastfetch # neofetch but maintained
 
     ripgrep # recursively searches directories for a regex pattern
     ripgrep-all
@@ -20,9 +20,11 @@
     p7zip
     unrar
     pigz
+
+    # secrets
     age
     sops
-    picard
+
     droidcam
 
     # networking tools
@@ -51,7 +53,6 @@
     wget
     curl
     graphviz
-    lazydocker
 
     # system tools
     sysstat
@@ -63,7 +64,7 @@
     btop # replacement of htop/nmon
     iotop # io monitoring
     iftop # network monitoring
-
+    lazydocker
     zoxide
     psmisc
     coreutils
@@ -86,9 +87,6 @@
 
     mediainfo
     imagemagick
-    # mail
-    mu
-    notmuch
-    isync
+    picard # audio tagger
   ];
 }
