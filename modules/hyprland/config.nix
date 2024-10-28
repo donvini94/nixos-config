@@ -25,6 +25,8 @@
       exec-once = waybar
       exec-once = nm-applet --indicator &
       exec-once = hyprctl setcursor Bibata-Modern-Ice 24
+      exec-once = swww-daemon
+
       # See https://wiki.hyprland.org/Configuring/Monitors/
       monitor=,preferred,auto,auto
 
@@ -103,12 +105,6 @@
       }
 
       windowrulev2 = opacity 0.9 0.9,class:^(kitty)$
-      windowrulev2 = opacity 0.9 0.9,class:^(anki)$
-      windowrulev2 = opacity 0.9 0.9,class:^(Emacs)$
-      windowrulev2 = opacity 0.9 0.9,class:^(signal)$
-      windowrulev2 = opacity 0.9 0.9,class:^(org.telegram.desktop)$
-      windowrulev2 = opacity 0.9 0.9,class:^(discord)$
-      windowrulev2 = opacity 0.9 0.9,class:^(Slack)$
 
       # Screensharing rules for XWayland applications like discord
       windowrulev2 = opacity 0.0 override, class:^(xwaylandvideobridge)$
@@ -141,7 +137,7 @@
       bind = $mod_SHIFT, T, exec, telegram-desktop
       bind = $mod_SHIFT, S, exec, signal-desktop
       bind = $mod_SHIFT, P, exec, pavucontrol
-      bind = $mod, P, exec, passmenu
+      bind = $mod, P, exec, passmenu -i
       bind = $mod_SHIFT, H, exec, kitty -e btop
       bind = $mod , D, exec, kitty -e lazydocker
       bind = $mod, G, exec, gamescope -W 3840 -H 2160 -r 60 -e -- steam
