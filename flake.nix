@@ -32,6 +32,7 @@
     disko.url = "github:nix-community/disko"; # declarative partitioning
     hosts.url = "github:StevenBlack/hosts"; # block unwanted websites
     hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1"; # Modern tiling window manager
+    nil.url = "github:oxalica/nil"; # nix lsp
   };
 
   outputs =
@@ -43,6 +44,7 @@
       disko,
       hosts,
       sops-nix,
+      nil,
       ...
     }@inputs:
     let
@@ -69,6 +71,9 @@
         hyprland.nixosModules.default
         sops-nix.nixosModules.sops
         home-manager.nixosModules.home-manager
+        {
+          environment.systemPackages = [ inputs.nil ];
+        }
         {
           home-manager.extraSpecialArgs = {
             inherit username mail fullName;

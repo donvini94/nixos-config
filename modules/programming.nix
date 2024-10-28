@@ -1,6 +1,4 @@
 {
-  config,
-  lib,
   pkgs,
   ...
 }:
@@ -35,7 +33,6 @@
     # Nix
     nix-output-monitor
     nixfmt-rfc-style
-    nil # nix language server
 
     # Python
     python312
