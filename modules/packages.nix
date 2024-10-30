@@ -52,6 +52,7 @@
     gnupg
     wget
     curl
+    csvlens
     graphviz
 
     # system tools
