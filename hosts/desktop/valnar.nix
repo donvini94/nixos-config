@@ -26,6 +26,8 @@
     nvidia-container-toolkit
     nvidia-vaapi-driver
     mangohud
+    transmission-gtk
+    microsoft-edge
   ];
 
   # Enable OpenGL

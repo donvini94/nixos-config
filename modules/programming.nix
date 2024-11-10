@@ -53,6 +53,7 @@
     devbox
     sqlite
     shfmt
+    bash-language-server
     shellcheck
     dockfmt
     dockerfile-language-server-nodejs
@@ -61,12 +62,15 @@
     leetcode-cli
     postman
     bruno
+    wakatime
+    delta # syntax highlight pager for git
 
     # Tree-sitter
     tree-sitter
     tree-sitter-grammars.tree-sitter-rust
     tree-sitter-grammars.tree-sitter-haskell
     tree-sitter-grammars.tree-sitter-python
+    tree-sitter-grammars.tree-sitter-bash
 
     # Rust
     rust-analyzer

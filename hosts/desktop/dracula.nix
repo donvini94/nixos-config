@@ -21,6 +21,7 @@
     jetbrains.rust-rover
     filebot
     transmission_4-gtk
+    android-tools
 
     # photos
     shotwell
@@ -28,6 +29,7 @@
 
   ];
 
+  programs.adb.enable = true;
   nixpkgs.overlays = [
     (self: super: {
       filebot = super.filebot.overrideAttrs (oldAttrs: {

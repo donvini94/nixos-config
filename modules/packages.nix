@@ -89,5 +89,6 @@
     mediainfo
     imagemagick
     picard # audio tagger
+    vdhcoapp # companion app for firefox video download helper
   ];
 }
