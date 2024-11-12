@@ -21,7 +21,7 @@
     brightnessctl
     pinentry
     pinentry-rofi
-    qt5ct
+    libsForQt5.qt5ct
     qt6ct
     nwg-look
     mullvad-vpn
