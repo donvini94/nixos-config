@@ -63,13 +63,6 @@
               brightness = 1.0
               noise = 0.02
           }
-
-          drop_shadow = yes
-          shadow_ignore_window = true
-          shadow_offset = 0 2
-          shadow_range = 20
-          shadow_render_power = 3
-          col.shadow = rgba(00000055)
       }
       xwayland {
             force_zero_scaling = true
@@ -129,6 +122,7 @@
       # Launch programs with keybind
       bind = $mod, W, exec, firefox
       bind = $mod, A, exec, anki
+      bind = $mod, Z, exec, zotero
       bind = $mod, N, exec, kitty -e yazi
       bind = $mod, T, exec, darkman toggle
       bind = $mod_SHIFT, N, exec, pcmanfm

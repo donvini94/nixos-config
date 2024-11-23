@@ -26,7 +26,7 @@
     nvidia-container-toolkit
     nvidia-vaapi-driver
     mangohud
-    transmission-gtk
+    transmission_4-gtk
     microsoft-edge
   ];
 
