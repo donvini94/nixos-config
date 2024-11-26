@@ -30,6 +30,7 @@
     poppler_utils
     anki
     qolibri # japanese dictionaries
+    cmigemo
     animdl
     ani-cli
 

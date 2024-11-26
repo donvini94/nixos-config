@@ -16,6 +16,8 @@
       env = GBM_BACKEND,nvidia-drm
       env = __GLX_VENDOR_LIBRARY_NAME,nvidia
       env = NVD_BACKEND,direct
+      env = QT_IM_MODULE,fcitx
+      env = XMODIFIERS,@im=fcitx
       cursor {
           no_hardware_cursors = true
       }
@@ -26,17 +28,17 @@
       exec-once = nm-applet --indicator &
       exec-once = hyprctl setcursor Bibata-Modern-Ice 24
       exec-once = swww-daemon
+      exec-once = fcitx5
 
       # See https://wiki.hyprland.org/Configuring/Monitors/
       monitor=,preferred,auto,auto
 
       input {
-          kb_layout = us
+          kb_layout = us,de
           follow_mouse = 1
           repeat_rate = 50
           repeat_delay = 200
           kb_options = caps:escape, grp:alt_shift_toggle
-          kb_layout = us,de
           touchpad {
               natural_scroll = no
               disable_while_typing = true

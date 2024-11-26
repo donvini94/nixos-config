@@ -16,6 +16,18 @@
     enable = true;
     enableSSHSupport = true;
   };
+  i18n.inputMethod = {
+    type = "fcitx5";
+    enable = true;
+    fcitx5.waylandFrontend = true;
+    fcitx5.addons = with pkgs; [
+      fcitx5-mozc
+      fcitx5-gtk
+      fcitx5-configtool
+      fcitx5-anthy
+      libsForQt5.fcitx5-qt
+    ];
+  };
 
   nixpkgs.config.allowUnfree = true;
   time.timeZone = "Europe/Berlin";
