@@ -25,8 +25,7 @@
   };
 
   inputs = {
-    stable.url = "github:NixOS/nixpkgs/nixos-24.05"; # stability for the server
-    unstable.url = "github:NixOS/nixpkgs/nixos-unstable"; # edge for the desktop
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11"; # stability for the server
     home-manager.url = "github:nix-community/home-manager";
     sops-nix.url = "github:Mic92/sops-nix"; # secret management
     disko.url = "github:nix-community/disko"; # declarative partitioning
@@ -37,8 +36,7 @@
 
   outputs =
     {
-      stable,
-      unstable,
+      nixpkgs,
       home-manager,
       hyprland,
       disko,
@@ -85,10 +83,10 @@
         }
       ];
 
-      # Build a system based on the commonNixosModules and unstable branch
+      # Build a system based on the commonNixosModules and stable branch
       makeNixosSystem =
         hostName:
-        unstable.lib.nixosSystem {
+        nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           specialArgs = {
             inherit inputs username;
@@ -104,7 +102,7 @@
         dracula = makeNixosSystem "dracula";
 
         #Server
-        alucard = stable.lib.nixosSystem {
+        alucard = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           specialArgs = {
             inherit inputs;
