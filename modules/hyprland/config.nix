@@ -17,6 +17,7 @@
       env = __GLX_VENDOR_LIBRARY_NAME,nvidia
       env = NVD_BACKEND,direct
       env = QT_IM_MODULE,fcitx
+      env = GTK_IM_MODULE DEFAULT=fcitx
       env = XMODIFIERS,@im=fcitx
       cursor {
           no_hardware_cursors = true

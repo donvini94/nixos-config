@@ -103,7 +103,7 @@
   ];
 
   # dolby atmos needs kernel 6.8+
-  boot.kernelPackages = pkgs.linuxPackages_6_11;
+  boot.kernelPackages = pkgs.linuxPackages_6_12;
   nix.settings.max-jobs = 24;
   swapDevices = [ ];
   hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;

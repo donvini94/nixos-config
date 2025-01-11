@@ -7,6 +7,7 @@
     vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     neovim
     fzf # A command-line fuzzy finder
+    television # batteries included version of fzf
     entr # Run arbitrary commands when files change
     fastfetch # neofetch but maintained
 
@@ -26,6 +27,7 @@
     sops
 
     droidcam
+    piper
 
     # networking tools
     mtr # A network diagnostic tool

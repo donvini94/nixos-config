@@ -23,6 +23,7 @@
       jack.enable = true;
     };
     mullvad-vpn.enable = true;
+    ratbagd.enable = true;
     #resolved = {
     #  enable = true;
     #  extraConfig = ''

@@ -20,6 +20,10 @@
     protonup
     bsnes-hd
     lutris
+    wine-wayland
+    winetricks
+    wineWow64Packages.full
+    mono
   ];
 
   environment.sessionVariables = {
