@@ -25,7 +25,8 @@
   };
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11"; # stability for the server
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     home-manager.url = "github:nix-community/home-manager/release-24.11";
     sops-nix.url = "github:Mic92/sops-nix"; # secret management
     disko.url = "github:nix-community/disko"; # declarative partitioning
@@ -71,7 +72,10 @@
         sops-nix.nixosModules.sops
         home-manager.nixosModules.home-manager
         {
-          environment.systemPackages = [ inputs.nil ];
+          environment.systemPackages = [
+            inputs.nil
+            (inputs.unstable.legacyPackages.x86_64-linux.pferd)
+          ];
         }
         {
           home-manager.extraSpecialArgs = {

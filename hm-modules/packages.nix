@@ -17,8 +17,6 @@
     yt-dlp
     wofi-pass
 
-    pferd
-
     # media
     sxiv
     nsxiv
