@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  pkgs,
+  inputs,
+  ...
+}:
 
 {
 
@@ -22,6 +27,7 @@
     unrar
     pigz
 
+    (inputs.unstable.legacyPackages.x86_64-linux.pferd)
     # secrets
     age
     sops

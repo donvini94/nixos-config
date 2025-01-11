@@ -72,10 +72,7 @@
         sops-nix.nixosModules.sops
         home-manager.nixosModules.home-manager
         {
-          environment.systemPackages = [
-            inputs.nil
-            (inputs.unstable.legacyPackages.x86_64-linux.pferd)
-          ];
+          environment.systemPackages = [ inputs.nil ];
         }
         {
           home-manager.extraSpecialArgs = {
