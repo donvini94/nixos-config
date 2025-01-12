@@ -28,6 +28,8 @@
     poppler_utils
     anki
     qolibri # japanese dictionaries
+    mecab # japanese furigana
+    kakasi
     cmigemo
     animdl
     ani-cli

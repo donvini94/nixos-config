@@ -124,7 +124,7 @@
 
       # Launch programs with keybind
       bind = $mod, W, exec, firefox
-      bind = $mod, A, exec, anki
+      bind = $mod, A, exec, steam-run anki
       bind = $mod, Z, exec, zotero
       bind = $mod, N, exec, kitty -e yazi
       bind = $mod, T, exec, darkman toggle
