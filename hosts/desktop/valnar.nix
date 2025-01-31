@@ -8,12 +8,9 @@
 }:
 let
   unstablePkgs = import inputs.unstable {
+    system = "x86_64-linux";
     config.allowUnfree = true;
   };
-  pkgs = import inputs.nixpkgs {
-    config.allowUnfree = true;
-  };
-
 in
 {
   imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
@@ -26,36 +23,24 @@ in
       3000
     ];
   };
-  unstablePkgs.config.allowUnfreePredicate =
-    pkg:
-    builtins.elem (lib.getName pkg) [
-      "microsoft-identity-broker"
-    ];
   services.intune.enable = true;
 
-  systemd.packages = [
-    unstablePkgs.microsoft-identity-broker
-    unstablePkgs.intune-portal
+  nixpkgs.overlays = [
+    (_: _: {
+      microsoft-identity-broker = unstablePkgs.microsoft-identity-broker;
+    })
   ];
-  systemd.tmpfiles.packages = [ unstablePkgs.intune-portal ];
-  services.dbus.packages = [ unstablePkgs.microsoft-identity-broker ];
 
   networking.hostName = "valnar";
-  environment.systemPackages =
-    with pkgs;
-    [
-      cudatoolkit
-      mesa
-      nvitop
-      nvidia-container-toolkit
-      nvidia-vaapi-driver
-      mangohud
-      transmission_4-gtk
-    ]
-    ++ (with unstablePkgs; [
-      micrisoft-identity-broker
-      intune-portal
-    ]);
+  environment.systemPackages = with pkgs; [
+    cudatoolkit
+    mesa
+    nvitop
+    nvidia-container-toolkit
+    nvidia-vaapi-driver
+    mangohud
+    transmission_4-gtk
+  ];
 
   # Enable OpenGL
   hardware.graphics = {
