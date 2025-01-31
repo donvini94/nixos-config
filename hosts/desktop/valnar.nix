@@ -3,9 +3,18 @@
   lib,
   pkgs,
   modulesPath,
+  inputs,
   ...
 }:
+let
+  unstablePkgs = import inputs.unstable {
+    config.allowUnfree = true;
+  };
+  pkgs = import inputs.nixpkgs {
+    config.allowUnfree = true;
+  };
 
+in
 {
   imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
   networking.firewall = {
@@ -17,18 +26,36 @@
       3000
     ];
   };
+  unstablePkgs.config.allowUnfreePredicate =
+    pkg:
+    builtins.elem (lib.getName pkg) [
+      "microsoft-identity-broker"
+    ];
+  services.intune.enable = true;
+
+  systemd.packages = [
+    unstablePkgs.microsoft-identity-broker
+    unstablePkgs.intune-portal
+  ];
+  systemd.tmpfiles.packages = [ unstablePkgs.intune-portal ];
+  services.dbus.packages = [ unstablePkgs.microsoft-identity-broker ];
 
   networking.hostName = "valnar";
-  environment.systemPackages = with pkgs; [
-    cudatoolkit
-    mesa
-    nvitop
-    nvidia-container-toolkit
-    nvidia-vaapi-driver
-    mangohud
-    transmission_4-gtk
-    microsoft-edge
-  ];
+  environment.systemPackages =
+    with pkgs;
+    [
+      cudatoolkit
+      mesa
+      nvitop
+      nvidia-container-toolkit
+      nvidia-vaapi-driver
+      mangohud
+      transmission_4-gtk
+    ]
+    ++ (with unstablePkgs; [
+      micrisoft-identity-broker
+      intune-portal
+    ]);
 
   # Enable OpenGL
   hardware.graphics = {
@@ -101,11 +128,16 @@
   boot.kernelModules = [
     "kvm-intel"
   ];
+  # Sound speaker fix, see #1039
+  boot.extraModprobeConfig = ''
+    options snd-hda-intel model=auto
+  '';
 
+  boot.blacklistedKernelModules = [ "snd_soc_avs" ];
   # dolby atmos needs kernel 6.8+
   boot.kernelPackages = pkgs.linuxPackages_6_12;
   nix.settings.max-jobs = 24;
   swapDevices = [ ];
-  hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
   system.stateVersion = "23.11";
+  nixpkgs.config.allowUnfree = true;
 }

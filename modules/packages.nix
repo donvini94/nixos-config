@@ -98,7 +98,5 @@
     imagemagick
     picard # audio tagger
     vdhcoapp # companion app for firefox video download helper
-
-    citrix_workspace
   ];
 }
