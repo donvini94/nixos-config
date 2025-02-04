@@ -3,15 +3,9 @@
   lib,
   pkgs,
   modulesPath,
-  inputs,
   ...
 }:
-let
-  unstablePkgs = import inputs.unstable {
-    system = "x86_64-linux";
-    config.allowUnfree = true;
-  };
-in
+
 {
   imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
   networking.firewall = {
@@ -23,14 +17,8 @@ in
       3000
     ];
   };
+
   services.intune.enable = true;
-
-  nixpkgs.overlays = [
-    (_: _: {
-      microsoft-identity-broker = unstablePkgs.microsoft-identity-broker;
-    })
-  ];
-
   networking.hostName = "valnar";
   environment.systemPackages = with pkgs; [
     cudatoolkit
@@ -40,6 +28,7 @@ in
     nvidia-vaapi-driver
     mangohud
     transmission_4-gtk
+    microsoft-edge
   ];
 
   # Enable OpenGL
@@ -113,16 +102,10 @@ in
   boot.kernelModules = [
     "kvm-intel"
   ];
-  # Sound speaker fix, see #1039
-  boot.extraModprobeConfig = ''
-    options snd-hda-intel model=auto
-  '';
 
-  boot.blacklistedKernelModules = [ "snd_soc_avs" ];
   # dolby atmos needs kernel 6.8+
   boot.kernelPackages = pkgs.linuxPackages_6_12;
   nix.settings.max-jobs = 24;
   swapDevices = [ ];
   system.stateVersion = "23.11";
-  nixpkgs.config.allowUnfree = true;
 }
