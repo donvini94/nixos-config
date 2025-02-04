@@ -134,7 +134,7 @@
       bind = $mod_SHIFT, T, exec, telegram-desktop
       bind = $mod_SHIFT, S, exec, signal-desktop
       bind = $mod_SHIFT, P, exec, pavucontrol
-      bind = $mod, P, exec, passmenu -i
+      bind = $mod, P, exec, wofi-pass -i -s -c
       bind = $mod_SHIFT, H, exec, kitty -e btop
       bind = $mod , D, exec, kitty -e lazydocker
       bind = $mod, G, exec, steam

@@ -26,6 +26,7 @@
     p7zip
     unrar
     pigz
+    wofi-pass
 
     (inputs.unstable.legacyPackages.x86_64-linux.pferd)
     # secrets
