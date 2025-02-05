@@ -3,6 +3,7 @@
 
   nixConfig = {
     substituters = [
+      "https://cache.nixos.org/"
       "https://hyprland.cachix.org"
       "https://helix.cachix.org"
       "https://nix-community.cachix.org"
@@ -57,7 +58,7 @@
             blockFakenews = true;
             blockGambling = true;
             blockPorn = true;
-            blockSocial = true;
+            #blockSocial = true;
           };
         }
         { programs.hyprland.enable = true; }
