@@ -87,6 +87,7 @@
 
     xdg-user-dirs
     cht-sh # Cheatsheet
+    tldr
     btrfs-progs
     # system call monitoring
     strace # system call monitoring
