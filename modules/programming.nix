@@ -32,6 +32,7 @@
     python312Packages.numpy
     python312Packages.requests
     python312Packages.beautifulsoup4
+    python312Packages.pyflakes
     pyright
     pipenv
     black

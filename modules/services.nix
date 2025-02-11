@@ -7,6 +7,7 @@
 {
   services = {
     logind.lidSwitchExternalPower = "ignore";
+    logind.lidSwitch = "suspend";
     pipewire.wireplumber.enable = true;
     emacs.enable = true;
     printing.enable = true;
