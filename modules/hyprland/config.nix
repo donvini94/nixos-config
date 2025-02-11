@@ -138,6 +138,7 @@
       bind = $mod_SHIFT, H, exec, kitty -e btop
       bind = $mod , D, exec, kitty -e lazydocker
       bind = $mod, G, exec, steam
+      bind = $mod, M, exec, thunderbird
 
       # Window Navigation
       bind = $mod, J, cyclenext
