@@ -6,18 +6,7 @@
 {
   environment.systemPackages = with pkgs; [
     # Docs
-    plantuml
     zeal
-
-    #go
-    go
-    gccgo
-    gotools
-    gore
-    gotests
-    gotest
-    gopls
-    gomodifytags
 
     # Haskell
     cabal-install
@@ -60,7 +49,6 @@
     helix
     emacs29
     leetcode-cli
-    postman
     bruno
     wakatime
     delta # syntax highlight pager for git

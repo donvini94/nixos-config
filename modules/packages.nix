@@ -33,7 +33,6 @@
     age
     sops
 
-    droidcam
     piper
 
     # networking tools
@@ -85,6 +84,11 @@
     clang
     unar
 
+    #undervolting stuff
+    undervolt
+    s-tui
+    stress
+
     xdg-user-dirs
     cht-sh # Cheatsheet
     tldr
@@ -93,8 +97,6 @@
     strace # system call monitoring
     ltrace # library call monitoring
     lsof # list open files
-
-    harsh # habit tracker
 
     mediainfo
     imagemagick

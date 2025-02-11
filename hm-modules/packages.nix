@@ -35,7 +35,6 @@
     ani-cli
 
     # communication
-    telegram-desktop
     discord
     thunderbird
     slack

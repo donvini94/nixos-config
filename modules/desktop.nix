@@ -12,7 +12,6 @@
     ./hyprland/default.nix
     ./programming.nix
     ./services.nix
-    ./gaming.nix
   ];
 
   environment.systemPackages = with pkgs; [
