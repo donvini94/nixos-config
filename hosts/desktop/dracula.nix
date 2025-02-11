@@ -6,6 +6,8 @@
 }:
 
 {
+  imports = [ ../../modules/gaming.nix ];
+
   networking.hostName = "dracula";
   environment.systemPackages = with pkgs; [
     jellyfin
@@ -41,9 +43,16 @@
     })
   ];
 
-  services.jellyfin.enable = true;
-  services.jellyfin.openFirewall = true;
-
+  services = {
+    jellyfin = {
+      enable = true;
+      openFirewall = true;
+    };
+    ollama = {
+      enable = true;
+      acceleration = "cuda";
+    };
+  };
   sops.age.keyFile = "/home/vincenzo/.config/sops/age/keys.txt";
   hardware.graphics = {
     enable = true;

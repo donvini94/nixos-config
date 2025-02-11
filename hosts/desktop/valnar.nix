@@ -7,7 +7,10 @@
 }:
 
 {
-  imports = [ (modulesPath + "/installer/scan/not-detected.nix") ];
+  imports = [
+    (modulesPath + "/installer/scan/not-detected.nix")
+    ../../modules/gaming.nix
+  ];
   networking.firewall = {
     enable = true;
     allowedTCPPorts = [
@@ -18,7 +21,15 @@
     ];
   };
 
-  services.intune.enable = true;
+  services = {
+    ollama = {
+      enable = true;
+      acceleration = "cuda";
+    };
+    intune.enable = true;
+
+  };
+
   networking.hostName = "valnar";
   environment.systemPackages = with pkgs; [
     cudatoolkit
