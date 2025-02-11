@@ -19,8 +19,8 @@
           "custom/nix"
           "hyprland/workspaces"
         ];
-        #        modules-center = [ "custom/pomodoro" ];
         modules-right = [
+          "custom/powerprofile"
           "pulseaudio"
           "network#interface"
           "network#speed"
@@ -35,6 +35,15 @@
           interval = 1;
           tooltip = false;
         };
+
+        "custom/powerprofile" = {
+          format = "󱐌 {}";
+          tooltip = false;
+          exec = "~/.config/waybar/scripts/powerprofile.sh";
+          interval = 5;
+          on-click = "~/.config/waybar/scripts/powerprofile.sh toggle";
+        };
+
         "hyprland/workspaces" = {
           format = "{name} : {icon}";
           on-click = "activate";
@@ -59,7 +68,7 @@
         };
 
         pulseaudio = {
-          format = "{volume}% {icon} ";
+          format = "{volume}% {icon}";
           on-click = "pavucontrol";
           format-bluetooth = "{volume}% {icon} {format_source}";
           format-bluetooth-muted = " {icon} {format_source}";
@@ -305,6 +314,18 @@
       	transition: none;
       	color: #f8f8f2;
       	background: #282a36;
+      }
+      #custom-powerprofile {
+      	margin-top: 8px;
+      	margin-left: 8px;
+      	margin-right: 12px;
+      	padding-left: 16px;
+      	padding-right: 16px;
+      	margin-bottom: 0;
+      	border-radius: 26px;
+      	transition: none;
+        background: white;
+        color: black;
       }
     '';
   };
