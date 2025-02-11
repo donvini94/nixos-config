@@ -318,7 +318,6 @@
       #custom-powerprofile {
       	margin-top: 8px;
       	margin-left: 8px;
-      	margin-right: 12px;
       	padding-left: 16px;
       	padding-right: 16px;
       	margin-bottom: 0;
