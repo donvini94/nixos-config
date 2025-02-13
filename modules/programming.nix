@@ -24,6 +24,7 @@
     nixfmt-rfc-style
 
     # Python
+    jetbrains.pycharm-professional
     python312
     python312Packages.pip
     python312Packages.virtualenvwrapper
@@ -33,6 +34,7 @@
     python312Packages.requests
     python312Packages.beautifulsoup4
     python312Packages.pyflakes
+    python312Packages.debugpy
     pyright
     pipenv
     black
@@ -67,6 +69,8 @@
     rustfmt
     cargo-watch
     clippy
+    lldb
+    gdb
 
     # Web
     html-tidy
