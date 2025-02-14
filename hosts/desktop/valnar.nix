@@ -27,7 +27,6 @@
       acceleration = "cuda";
     };
     intune.enable = true;
-
   };
 
   networking.hostName = "valnar";
@@ -86,18 +85,6 @@
   };
 
   powerManagement.enable = true;
-
-  #  services.auto-cpufreq.enable = true;
-  #  services.auto-cpufreq.settings = {
-  #    battery = {
-  #      governor = "power-saver";
-  #      turbo = "never";
-  #    };
-  #    charger = {
-  #      governor = "performance";
-  #      turbo = "auto";
-  #    };
-  #  };
   sops.age.keyFile = "/home/vincenzo/.config/sops/age/keys.txt";
   environment = {
     variables = {
