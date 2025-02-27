@@ -127,7 +127,7 @@
     rustdesk-server = {
       enable = true;
       openFirewall = true;
-      relayIP = "89.58.62.186";
+      signal.relayHosts = [ "89.58.62.186" ];
     };
     fail2ban.enable = true;
     nginx = {
@@ -221,7 +221,7 @@
       settings = {
         hostname = "auth.dumusstbereitsein.de";
         http-port = 38080;
-        proxy = "edge";
+        "proxy-headers" = true;
         http-enabled = true;
       };
     };
