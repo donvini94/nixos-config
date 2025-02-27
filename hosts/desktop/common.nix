@@ -33,6 +33,9 @@
     bluetooth.powerOnBoot = true;
   };
 
+  programs.ausweisapp.enable = true;
+  programs.ausweisapp.openFirewall = true;
+
   networking = {
     networkmanager.enable = true;
     useDHCP = lib.mkDefault true;
@@ -62,7 +65,8 @@
     pam.services.swaylock = { };
   };
 
-  services.desktopManager.plasma6.enable = true;
+  #  services.desktopManager.plasma6.enable = true;
+  services.xserver.desktopManager.gnome.enable = true;
   systemd = {
     user.services.polkit-gnome-authentication-agent-1 = {
       description = "polkit-gnome-authentication-agent-1";
@@ -90,7 +94,7 @@
     ];
     packages = with pkgs; [ firefox ];
   };
-
+  programs.virt-manager.enable = true;
   virtualisation.libvirtd = {
     enable = true;
     qemu = {
