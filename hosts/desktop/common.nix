@@ -65,8 +65,8 @@
     pam.services.swaylock = { };
   };
 
-  #  services.desktopManager.plasma6.enable = true;
-  services.xserver.desktopManager.gnome.enable = true;
+  services.desktopManager.plasma6.enable = true;
+  # services.xserver.desktopManager.gnome.enable = true;
   systemd = {
     user.services.polkit-gnome-authentication-agent-1 = {
       description = "polkit-gnome-authentication-agent-1";
