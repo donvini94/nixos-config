@@ -32,7 +32,7 @@
       exec-once = fcitx5
 
       # See https://wiki.hyprland.org/Configuring/Monitors/
-      monitor=,preferred,auto,auto
+      monitor=,highres@highrr,auto,auto
 
       input {
           kb_layout = us,de
