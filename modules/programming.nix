@@ -18,6 +18,7 @@
 
     # Java
     jdk17
+    jdk21
 
     # Nix
     nix-output-monitor
@@ -49,7 +50,7 @@
     dockfmt
     dockerfile-language-server-nodejs
     helix
-    emacs29
+    emacs30
     leetcode-cli
     bruno
     wakatime
