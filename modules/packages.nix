@@ -25,6 +25,7 @@
     unzip
     p7zip
     unrar
+    furmark
     pigz
     wofi-pass
 
@@ -62,6 +63,8 @@
     curl
     csvlens
     graphviz
+    groff
+    ghostscript
 
     # system tools
     sysstat
