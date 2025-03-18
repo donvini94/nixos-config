@@ -55,6 +55,8 @@
     bruno
     wakatime
     delta # syntax highlight pager for git
+    aider-chat
+    codecrafters-cli
 
     # Tree-sitter
     tree-sitter
@@ -71,6 +73,7 @@
     clippy
     lldb
     gdb
+    rustc
 
     # Web
     html-tidy

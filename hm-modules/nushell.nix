@@ -17,6 +17,8 @@
         c = "cht.sh";
         cd = "z";
         switch = "sudo nixos-rebuild switch";
+        ccs = "codecrafters submit";
+        cct = "codecrafters test";
       };
       extraConfig = ''
         $env.config = {
