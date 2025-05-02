@@ -25,16 +25,22 @@
     nixfmt-rfc-style
 
     # Python
-    python312
-    python312Packages.pip
-    python312Packages.virtualenvwrapper
-    python312Packages.scrapy
-    python312Packages.pandas
-    python312Packages.numpy
-    python312Packages.requests
-    python312Packages.beautifulsoup4
-    python312Packages.pyflakes
-    python312Packages.debugpy
+    (python312.withPackages (
+      ps: with ps; [
+        pip
+        virtualenvwrapper
+        scrapy
+        pandas
+        numpy
+        requests
+        beautifulsoup4
+        pyflakes
+        debugpy
+        pytorchWithCuda
+        transformers
+        pynvml
+      ]
+    ))
     pyright
     pipenv
     black

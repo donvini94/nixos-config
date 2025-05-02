@@ -66,23 +66,19 @@
 
   # Load nvidia driver for Xorg and Wayland
   services.xserver.videoDrivers = [ "nvidia" ];
-  boot.kernelParams = [ "nvidia.NVreg_PreserveVideoMemoryAllocations=1" ];
   virtualisation = {
     docker = {
       enable = true;
       autoPrune.enable = true;
+      daemon.settings.features.cdi = true;
     };
   };
   hardware.nvidia-container-toolkit.enable = true;
   hardware.nvidia = {
 
-    # Modesetting is required.
-    modesetting.enable = true;
-
     # Enable the Nvidia settings menu,
     # accessible via `nvidia-settings`.
     nvidiaSettings = true;
-    forceFullCompositionPipeline = true;
 
     # Optionally, you may need to select the appropriate driver version for your specific GPU.
     package = config.boot.kernelPackages.nvidiaPackages.production;
