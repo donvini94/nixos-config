@@ -100,6 +100,8 @@
     strace # system call monitoring
     ltrace # library call monitoring
     lsof # list open files
+    lact # GPU monitoring
+    efibootmgr
 
     mediainfo
     imagemagick

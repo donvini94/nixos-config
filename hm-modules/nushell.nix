@@ -19,6 +19,7 @@
         switch = "sudo nixos-rebuild switch";
         ccs = "codecrafters submit";
         cct = "codecrafters test";
+        windows = "bash ~/nixos-config/scripts/windows.sh"; # Boots into windows
       };
       extraConfig = ''
         $env.config = {
