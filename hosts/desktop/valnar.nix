@@ -26,7 +26,6 @@
       enable = true;
       acceleration = "cuda";
     };
-    intune.enable = true;
   };
 
   networking.hostName = "valnar";
@@ -36,9 +35,7 @@
     nvitop
     nvidia-container-toolkit
     nvidia-vaapi-driver
-    mangohud
     transmission_4-gtk
-    microsoft-edge
   ];
 
   # Enable OpenGL
@@ -58,6 +55,8 @@
   virtualisation = {
     docker = {
       enable = true;
+      autoPrune.enable = true;
+      daemon.settings.features.cdi = true;
     };
   };
   hardware.nvidia-container-toolkit.enable = true;
