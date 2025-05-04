@@ -19,6 +19,7 @@
       env = QT_IM_MODULE,fcitx
       env = GTK_IM_MODULE DEFAULT=fcitx
       env = XMODIFIERS,@im=fcitx
+      env = ELECTRON_OZONE_PLATFORM_HINT,auto
       cursor {
           no_hardware_cursors = true
       }
