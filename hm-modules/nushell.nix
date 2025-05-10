@@ -22,6 +22,7 @@
         windows = "bash ~/nixos-config/scripts/windows.sh"; # Boots into windows
         dr = "direnv reload";
         fzi = "ssh -l nl810@fzi.de fzi-gpu-mgmt-01.fzi.de";
+        bereit = "ssh $'($env.USER)@dumusstbereitsein.de'";
       };
       extraConfig = ''
         $env.config = {
