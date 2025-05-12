@@ -81,6 +81,7 @@
             enable = true;
             blockFakenews = true;
             blockGambling = true;
+            blockSocial = true;
             blockPorn = true;
           };
         }
@@ -105,7 +106,7 @@
               ;
           };
           home-manager.useGlobalPkgs = true;
-          home-manager.backupFileExtension = "backup";
+          home-manager.backupFileExtension = "hm-backup";
           home-manager.useUserPackages = true;
           home-manager.users.${username} = import ./home.nix;
         }

@@ -24,6 +24,7 @@
     filebot
     transmission_4-gtk
     android-tools
+    nvidia-container-toolkit
 
     # photos
     shotwell
@@ -47,10 +48,6 @@
     jellyfin = {
       enable = true;
       openFirewall = true;
-    };
-    ollama = {
-      enable = true;
-      acceleration = "cuda";
     };
   };
   sops.age.keyFile = "/home/vincenzo/.config/sops/age/keys.txt";
@@ -76,16 +73,20 @@
   hardware.nvidia-container-toolkit.enable = true;
   hardware.nvidia = {
 
+    # Modesetting is required.
+    modesetting.enable = true;
+
     # Enable the Nvidia settings menu,
     # accessible via `nvidia-settings`.
     nvidiaSettings = true;
 
     # Optionally, you may need to select the appropriate driver version for your specific GPU.
-    package = config.boot.kernelPackages.nvidiaPackages.production;
+    package = config.boot.kernelPackages.nvidiaPackages.stable;
     powerManagement.enable = true;
     open = false;
   };
 
+  powerManagement.enable = true;
   boot.initrd.availableKernelModules = [
     "nvme"
     "xhci_pci"
