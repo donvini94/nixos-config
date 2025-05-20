@@ -2,7 +2,6 @@
 {
   xdg.portal = {
     enable = true;
-    configPackages = with pkgs; [ xdg-desktop-portal-gtk ];
   };
 
   environment.pathsToLink = [ "/libexec" ]; # links /libexec from derivations to /run/current-system/sw

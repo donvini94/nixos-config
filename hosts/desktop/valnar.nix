@@ -91,14 +91,12 @@
       GBM_BACKEND = "nvidia-drm";
       LIBVA_DRIVER_NAME = "nvidia";
       XDG_SESSION_TYPE = "wayland";
-      __GLX_VENDOR_LIBRARY_NAME = "nvidia";
     };
     sessionVariables = {
       XCURSOR_SIZE = "24";
       GBM_BACKEND = "nvidia-drm";
       LIBVA_DRIVER_NAME = "nvidia";
       XDG_SESSION_TYPE = "wayland";
-      __GLX_VENDOR_LIBRARY_NAME = "nvidia";
     };
   };
 

@@ -78,16 +78,7 @@
       options = "--delete-older-than 30d";
     };
   };
-  nixpkgs.overlays = [
-    (self: super: {
-      filebot = super.filebot.overrideAttrs (oldAttrs: {
-        src = super.fetchurl {
-          url = "https://get.filebot.net/filebot/FileBot_${oldAttrs.version}/FileBot_${oldAttrs.version}-portable.tar.xz";
-          sha256 = "UEgG3bQT5GPMfh/nxC1aXGsb8HKE5Ov5ax0ULjLr73U=";
-        };
-      });
-    })
-  ];
+
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   services = {
     navidrome = {
@@ -221,7 +212,6 @@
       settings = {
         hostname = "auth.dumusstbereitsein.de";
         http-port = 38080;
-        "proxy-headers" = true;
         http-enabled = true;
       };
     };
@@ -294,6 +284,22 @@
           };
           "kyrill-tablet" = {
             id = "T7SVLB6-ZWQM7DO-ZDULZNB-I6QGSQZ-JJUFPO2-7N3GVP7-HONELH2-3GDJSAE";
+            autoAcceptFolders = true;
+          };
+          "marius-macbook-pro" = {
+            id = "TD6EE2L-NYXXBBC-TNERZDG-D25X2OS-EBK6BHO-STJEUNS-PG5WD6Y-M4XPKA5";
+            autoAcceptFolders = true;
+          };
+          "marius-notebook-nixsilden" = {
+            id = "BUSMJXH-QLT4K4O-4LE4XDF-2A7YH7W-6LXA3TM-E7E3OWL-PWXOLGP-5V25YAY";
+            autoAcceptFolders = true;
+          };
+          "mariusbox11" = {
+            id = "3MUCAXD-FOBQVWY-FAZEBM2-MV3TVG7-6RA6V5N-WCO34SU-YFFZKXK-BDHQIAQ";
+            autoAcceptFolders = true;
+          };
+          "marius-handy" = {
+            id = "V23JGGX-6FAAKJB-GP4LNMT-ORO4IVI-JCMGQCT-R5F67ZU-FBLMK72-P3FQFQG";
             autoAcceptFolders = true;
           };
         };

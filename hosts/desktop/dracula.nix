@@ -109,19 +109,15 @@
   environment = {
     variables = {
       XCURSOR_SIZE = "24";
-      WLR_NO_HARDWARE_CURSORS = "1";
       GBM_BACKEND = "nvidia-drm";
       LIBVA_DRIVER_NAME = "nvidia";
       XDG_SESSION_TYPE = "wayland";
-      __GLX_VENDOR_LIBRARY_NAME = "nvidia";
     };
     sessionVariables = {
       XCURSOR_SIZE = "24";
-      WLR_NO_HARDWARE_CURSORS = "1";
       GBM_BACKEND = "nvidia-drm";
       LIBVA_DRIVER_NAME = "nvidia";
       XDG_SESSION_TYPE = "wayland";
-      __GLX_VENDOR_LIBRARY_NAME = "nvidia";
     };
   };
   system.stateVersion = "23.11";

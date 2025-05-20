@@ -81,8 +81,8 @@
             enable = true;
             blockFakenews = true;
             blockGambling = true;
-            blockSocial = true;
             blockPorn = true;
+            blockSocial = true;
           };
         }
         { programs.hyprland.enable = true; }

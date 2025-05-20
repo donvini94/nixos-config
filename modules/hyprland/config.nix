@@ -14,12 +14,12 @@
       env = LIBVA_DRIVER_NAME,nvidia
       env = XDG_SESSION_TYPE,wayland
       env = GBM_BACKEND,nvidia-drm
-      env = __GLX_VENDOR_LIBRARY_NAME,nvidia
       env = NVD_BACKEND,direct
       env = QT_IM_MODULE,fcitx
       env = GTK_IM_MODULE DEFAULT=fcitx
       env = XMODIFIERS,@im=fcitx
       env = ELECTRON_OZONE_PLATFORM_HINT,auto
+      env = NIXOS_OZONE_WL,1
       cursor {
           no_hardware_cursors = true
       }
