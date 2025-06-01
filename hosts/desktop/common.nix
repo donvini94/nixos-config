@@ -28,7 +28,6 @@
   };
 
   hardware = {
-    pulseaudio.enable = false;
     bluetooth.enable = true;
     bluetooth.powerOnBoot = true;
   };
@@ -65,8 +64,6 @@
     pam.services.swaylock = { };
   };
 
-  services.desktopManager.plasma6.enable = true;
-  # services.xserver.desktopManager.gnome.enable = true;
   systemd = {
     user.services.polkit-gnome-authentication-agent-1 = {
       description = "polkit-gnome-authentication-agent-1";

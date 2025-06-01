@@ -33,17 +33,6 @@
   ];
 
   programs.adb.enable = true;
-  nixpkgs.overlays = [
-    (self: super: {
-      filebot = super.filebot.overrideAttrs (oldAttrs: {
-        src = super.fetchurl {
-          url = "https://get.filebot.net/filebot/FileBot_${oldAttrs.version}/FileBot_${oldAttrs.version}-portable.tar.xz";
-          sha256 = "fwyo9J5O728xxWHWvq63bTJMV4IAMAHZR0yr3Pb6d7U=";
-        };
-      });
-    })
-  ];
-
   services = {
     jellyfin = {
       enable = true;
@@ -51,6 +40,7 @@
     };
   };
   sops.age.keyFile = "/home/vincenzo/.config/sops/age/keys.txt";
+  hardware.xpadneo.enable = true;
   hardware.graphics = {
     enable = true;
     enable32Bit = true;

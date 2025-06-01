@@ -14,7 +14,7 @@
     xserver = {
       enable = true;
       xkb.layout = "us";
-      xkb.variant = "";
+      xkb.options = "caps:escape, grp:alt_shift_toggle";
     };
     pipewire = {
       enable = true;

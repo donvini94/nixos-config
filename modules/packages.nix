@@ -102,6 +102,11 @@
     lsof # list open files
     lact # GPU monitoring
     efibootmgr
+    hledger
+    hledger-ui
+    hledger-utils
+    hledger-interest
+    hledger-web
 
     mediainfo
     imagemagick
