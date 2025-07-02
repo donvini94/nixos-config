@@ -23,6 +23,7 @@
       pulse.enable = true;
       jack.enable = true;
     };
+    power-profiles-daemon.enable = true;
     mullvad-vpn.enable = true;
     ratbagd.enable = true;
     #resolved = {

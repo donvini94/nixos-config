@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  inputs,
   ...
 }:
 
@@ -28,6 +29,7 @@
     winetricks
     wineWow64Packages.full
     mono
+    (inputs.unstable.legacyPackages.x86_64-linux.heroic)
   ];
 
   environment.sessionVariables = {

@@ -286,6 +286,10 @@
             id = "T7SVLB6-ZWQM7DO-ZDULZNB-I6QGSQZ-JJUFPO2-7N3GVP7-HONELH2-3GDJSAE";
             autoAcceptFolders = true;
           };
+          "kyrill-mint-laptop" = {
+            id = "X6J6CVJ-K7BTU4D-5VIYQ6I-VEMAAF6-EV7CLXN-5XD4277-AKFOZLB-X66Y6A4";
+            autoAcceptFolders = true;
+          };
           "marius-macbook-pro" = {
             id = "TD6EE2L-NYXXBBC-TNERZDG-D25X2OS-EBK6BHO-STJEUNS-PG5WD6Y-M4XPKA5";
             autoAcceptFolders = true;

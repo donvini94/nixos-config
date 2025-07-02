@@ -28,6 +28,7 @@
     furmark
     pigz
     wofi-pass
+    powertop
 
     (inputs.unstable.legacyPackages.x86_64-linux.pferd)
     # secrets
@@ -86,6 +87,7 @@
     fd
     clang
     unar
+    libsForQt5.okular
 
     #undervolting stuff
     undervolt

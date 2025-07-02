@@ -20,6 +20,7 @@
       env = XMODIFIERS,@im=fcitx
       env = ELECTRON_OZONE_PLATFORM_HINT,auto
       env = NIXOS_OZONE_WL,1
+      env = XDG_DESKTOP_PORTAL,xdg-desktop-portal-hyprland
       cursor {
           no_hardware_cursors = true
       }

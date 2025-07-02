@@ -46,6 +46,7 @@
     black
     isort
     pipenv
+    uv
 
     # tooling
     devbox

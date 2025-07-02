@@ -27,5 +27,7 @@
     gparted
     pavucontrol
     filezilla
+    power-profiles-daemon
+    linux-firmware
   ];
 }

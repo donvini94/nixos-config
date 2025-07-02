@@ -50,7 +50,7 @@
       nvidia-vaapi-driver
     ];
   };
-
+  hardware.enableRedistributableFirmware = true;
   # Load nvidia driver for Xorg and Wayland
   services.xserver.videoDrivers = [ "nvidia" ];
   virtualisation = {
@@ -77,6 +77,7 @@
   };
 
   powerManagement.enable = true;
+  boot.kernelPackages = pkgs.linuxPackages_6_12;
   boot.initrd.availableKernelModules = [
     "nvme"
     "xhci_pci"
