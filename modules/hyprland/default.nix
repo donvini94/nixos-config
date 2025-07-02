@@ -41,7 +41,7 @@
     swayidle # the idle timeout
     wlogout # logout menu
     wl-clipboard # copying and pasting
-    xwaylandvideobridge
+    kdePackages.xwaylandvideobridge
 
     pass-wayland
     wofi
