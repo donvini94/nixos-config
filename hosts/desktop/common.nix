@@ -42,10 +42,14 @@
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   nix = {
-    settings.experimental-features = [
-      "nix-command"
-      "flakes"
-    ];
+    settings = {
+      experimental-features = [
+        "nix-command"
+        "flakes"
+      ];
+      download-buffer-size = 524288000;
+    };
+
     settings.trusted-users = [ "${username}" ];
     settings.auto-optimise-store = true;
     optimise.automatic = true;

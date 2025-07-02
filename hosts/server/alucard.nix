@@ -51,6 +51,7 @@
 
   nix = {
     settings = {
+      download-buffer-size = 524288000;
       experimental-features = [
         "nix-command"
         "flakes"
@@ -215,40 +216,43 @@
         http-enabled = true;
       };
     };
-    gitlab = {
-      enable = true;
-      databasePasswordFile = "/var/keys/gitlab/db_password";
-      initialRootPasswordFile = "/var/keys/gitlab/root_password";
-      https = true;
-      host = "git.dumusstbereitsein.de";
-      port = 443;
-      user = "git";
-      databaseUsername = "git";
-      group = "git";
-      smtp = {
-        enable = true;
-        address = "localhost";
-        port = 25;
-      };
-      secrets = {
-        dbFile = "/var/keys/gitlab/db";
-        secretFile = "/var/keys/gitlab/secret";
-        otpFile = "/var/keys/gitlab/otp";
-        jwsFile = "/var/keys/gitlab/jws";
-      };
-      extraConfig = {
-        gitlab = {
-          email_from = "gitlab-no-reply@dumusstbereitsein.de";
-          email_display_name = "Vincenzos GitLab";
-          email_reply_to = "gitlab-no-reply@dumusstbereitsein.de";
-        };
-      };
-    };
-
-    gitlab-runner = {
-      enable = true;
-      gracefulTermination = true;
-    };
+    #    gitlab = {
+    #      enable = true;
+    #      databasePasswordFile = "/var/keys/gitlab/db_password";
+    #      initialRootPasswordFile = "/var/keys/gitlab/root_password";
+    #      https = true;
+    #      host = "git.dumusstbereitsein.de";
+    #      port = 443;
+    #      user = "git";
+    #      databaseUsername = "git";
+    #      group = "git";
+    #      smtp = {
+    #        enable = true;
+    #        address = "localhost";
+    #        port = 25;
+    #      };
+    #      secrets = {
+    #        dbFile = "/var/keys/gitlab/db";
+    #        secretFile = "/var/keys/gitlab/secret";
+    #        activeRecordPrimaryKeyFile = "/var/keys/gitlab/secret";
+    #        activeRecordDeterministicKeyFile = "/var/keys/gitlab/secret";
+    #        activeRecordSaltFile = "/var/keys/gitlab/secret";
+    #        otpFile = "/var/keys/gitlab/otp";
+    #        jwsFile = "/var/keys/gitlab/jws";
+    #      };
+    #      extraConfig = {
+    #        gitlab = {
+    #          email_from = "gitlab-no-reply@dumusstbereitsein.de";
+    #          email_display_name = "Vincenzos GitLab";
+    #          email_reply_to = "gitlab-no-reply@dumusstbereitsein.de";
+    #        };
+    #      };
+    #    };
+    #
+    #    gitlab-runner = {
+    #      enable = true;
+    #      gracefulTermination = true;
+    #    };
 
     dockerRegistry = {
       enable = true;
@@ -484,13 +488,13 @@
         "docker"
       ];
     };
-    git = {
-      isSystemUser = true;
-      extraGroups = [
-        "wheel"
-        "docker"
-      ];
-    };
+    #git = {
+    #  isSystemUser = true;
+    #  extraGroups = [
+    #    "wheel"
+    #    "docker"
+    #  ];
+    #};
     coder = {
       extraGroups = [ "docker" ];
     };
