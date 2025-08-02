@@ -33,6 +33,10 @@
 
     # Development tools
     nil.url = "github:oxalica/nil"; # Nix LSP
+
+    # losless scaling
+    lsfg-vk-flake.url = "github:pabloaul/lsfg-vk-flake/main";
+    lsfg-vk-flake.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
@@ -46,6 +50,7 @@
       sops-nix,
       nil,
       unstable,
+      lsfg-vk-flake,
       ...
     }@inputs:
     let
@@ -75,6 +80,7 @@
         ./configuration.nix
         ./modules/desktop.nix
         ./hosts/desktop/common.nix
+        lsfg-vk-flake.nixosModules.default
         hosts.nixosModule
         {
           networking.stevenBlackHosts = {

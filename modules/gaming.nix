@@ -36,4 +36,8 @@
     STEAM_EXTRA_COMPAT_TOOLS_PATHS = "\${HOME}/.steam/root/compatibilitytools.d";
   };
 
+  services.lsfg-vk = {
+    enable = true;
+    ui.enable = true; # installs gui for configuring lsfg-vk
+  };
 }
