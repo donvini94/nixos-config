@@ -29,5 +29,7 @@
     filezilla
     power-profiles-daemon
     linux-firmware
+    mtpfs
+    droidcam
   ];
 }

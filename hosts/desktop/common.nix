@@ -13,7 +13,11 @@
     loader.systemd-boot.enable = true;
     loader.efi.canTouchEfiVariables = true;
     initrd.kernelModules = [ ];
-    extraModulePackages = [ ];
+    extraModulePackages = with config.boot.kernelPackages; [ v4l2loopback ];
+    kernelModules = [ "v4l2loopback" ];
+    extraModprobeConfig = ''
+      options v4l2loopback devices=1 video_nr=2 card_label="DroidCam" exclusive_caps=1
+    '';
   };
 
   fileSystems = {
@@ -62,6 +66,13 @@
 
   # noisetorch is a tool for noise suppression in voice chats
   programs.noisetorch.enable = true;
+  programs.obs-studio = {
+    enable = true;
+    enableVirtualCamera = true;
+    plugins = with pkgs.obs-studio-plugins; [
+      droidcam-obs
+    ];
+  };
   security = {
     rtkit.enable = true;
     pam.services.login.enableKwallet = true;

@@ -26,6 +26,7 @@
     power-profiles-daemon.enable = true;
     mullvad-vpn.enable = true;
     ratbagd.enable = true;
+    usbmuxd.enable = true;
     #resolved = {
     #  enable = true;
     #  extraConfig = ''
