@@ -1,5 +1,6 @@
 {
   inputs,
+  config,
   ...
 }:
 
@@ -11,10 +12,24 @@
   sops = {
     defaultSopsFile = ./dmbs.yaml;
     defaultSopsFormat = "yaml";
-    age.keyFile = "/home/nix/.config/sops/age/keys.txt";
+    age.keyFile = "/home/vincenzo/.config/sops/age/keys.txt";
     secrets = {
       "keycloak/password".mode = "640";
       "paperless/password".mode = "640";
+      "smb_hetzner/username" = {};
+      "smb_hetzner/password" = {};
     };
-  };
+
+  templates."smb-hetzner".content = ''
+    username=${config.sops.placeholder."smb_hetzner/username"}
+    password=${config.sops.placeholder."smb_hetzner/password"}
+  '';
+  templates."smb-hetzner".mode = "0600";
+  templates."smb-hetzner".owner = "root";
+  templates."smb-hetzner".group = "root";
+};
+
+# symlink /etc/smb-hetzner to the rendered template
+environment.etc."smb-hetzner".source = config.sops.templates."smb-hetzner".path;
+
 }

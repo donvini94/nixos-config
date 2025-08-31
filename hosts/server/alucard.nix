@@ -28,25 +28,60 @@
     extraModulePackages = [ ];
     loader.systemd-boot.enable = true;
     loader.efi.canTouchEfiVariables = true;
+    supportedFilesystems = [ "cifs" ];
   };
   environment.systemPackages = with pkgs; [
     yazi
     openssl
     apacheHttpd
     filebot
+    cifs-utils
   ];
+
+  fileSystems."/mnt/hetzner" = {
+    device = "//u487137.your-storagebox.de/backup";
+    fsType = "cifs";
+    options = [
+      "credentials=/etc/smb-hetzner"
+      "vers=3.1.1"
+      "sec=ntlmssp"
+      "seal" # encrypt session
+      "iocharset=utf8"
+      "file_mode=0644"
+      "dir_mode=0755"
+      "uid=jellyfin"
+      "gid=jellyfin"
+      "_netdev"
+      "x-systemd.automount" # on-demand
+      "noauto"
+      "nofail"
+      "serverino"
+    ];
+  };
+
   networking = {
     hostName = "alucard";
     useDHCP = lib.mkDefault true;
     firewall = {
       enable = true;
       allowedTCPPorts = [
-        80
-        443
         22
+        25
+        53
+        80
+        110
+        143
+        443
+        465
+        587
+        873
+        993
+        995
+        4190
+        11445
+        11335
       ];
     };
-
   };
 
   nix = {
@@ -138,7 +173,7 @@
         enableACME = true;
         forceSSL = true;
         locations."/" = {
-          proxyPass = "http://127.0.0.1:${toString config.services.keycloak.settings.http-port}/";
+          proxyPass = "http://127.0.0.1:38080/";
           proxyWebsockets = true;
         };
       };
@@ -183,6 +218,11 @@
         forceSSL = true;
         locations."/".proxyPass = "http://127.0.0.1:8083";
       };
+      virtualHosts."mail.istbereit.de" = {
+        enableACME = true;
+        forceSSL = true;
+        locations."/".proxyPass = "http://127.0.0.1:880";
+      };
       virtualHosts."coder.istbereit.de" = {
         enableACME = true;
         forceSSL = true;
@@ -203,19 +243,24 @@
       options.enableBookConversion = true;
     };
     postgresql.enable = true;
-    keycloak = {
-      enable = true;
-      database = {
-        createLocally = true;
-        username = "keycloak";
-        passwordFile = "/run/secrets/keycloak/password";
-      };
-      settings = {
-        hostname = "auth.dumusstbereitsein.de";
-        http-port = 38080;
-        http-enabled = true;
-      };
-    };
+    #    keycloak = {
+    #      enable = true;
+    #      #      sslCertificate = "";
+    #      #      sslCertificateKey = "";
+    #      database = {
+    #        createLocally = true;
+    #        username = "keycloak";
+    #        passwordFile = config.sops.secrets."keycloak/password".path;
+    #      };
+    #      settings = {
+    #        hostname = "auth.dumusstbereitsein.de";
+    #        http-port = 38080;
+    #        http-enabled = true;
+    #        hostname-strict-https = false;
+    #        proxy-headers = "xforwarded";
+    #      };
+    #    };
+
     #    gitlab = {
     #      enable = true;
     #      databasePasswordFile = "/var/keys/gitlab/db_password";
@@ -270,8 +315,8 @@
             id = "QGVRLBK-OZX7PIM-JMGKYHF-KSFI5VS-FJH6RGI-4YGB6H6-EYAJ27S-TM5LTQ6";
             autoAcceptFolders = true;
           };
-          "valnar" = {
-            id = "2J4BVNV-UHNMY4P-DFBRWZW-VQK6T4A-7MVQIL5-Z3DHZQ2-57KELZP-WFT3VAG";
+          "bereitbook-pro-m4" = {
+            id = "BS4FOGC-XQFLI5X-KQ7PP7R-5P37LRS-TTZGR24-7S2QCBE-5MLVWHM-5FVKNAW";
             autoAcceptFolders = true;
           };
           "asgar" = {
@@ -294,6 +339,10 @@
             id = "X6J6CVJ-K7BTU4D-5VIYQ6I-VEMAAF6-EV7CLXN-5XD4277-AKFOZLB-X66Y6A4";
             autoAcceptFolders = true;
           };
+          "kyrill-macbook" = {
+            id = "J7G2USF-UU35NDR-4AWVN7M-DPV7FLX-7IZFPQ2-I3JOU7R-3KCJ73I-2JRBUAU";
+            autoAcceptFolders = true;
+          };
           "marius-macbook-pro" = {
             id = "TD6EE2L-NYXXBBC-TNERZDG-D25X2OS-EBK6BHO-STJEUNS-PG5WD6Y-M4XPKA5";
             autoAcceptFolders = true;
@@ -307,7 +356,7 @@
             autoAcceptFolders = true;
           };
           "marius-handy" = {
-            id = "V23JGGX-6FAAKJB-GP4LNMT-ORO4IVI-JCMGQCT-R5F67ZU-FBLMK72-P3FQFQG";
+            id = "YJKXWDI-QKUHP3F-FQHQ3YG-KRQNN7U-EHOASUO-6V6II2W-SB3NTH3-D5FJEA5";
             autoAcceptFolders = true;
           };
         };
@@ -333,7 +382,7 @@
             devices = [
               "dracula"
               "asgar"
-              "valnar"
+              "bereitbook-pro-m4"
             ];
             type = "sendreceive";
             enable = true;
@@ -348,7 +397,7 @@
             devices = [
               "dracula"
               "asgar"
-              "valnar"
+              "bereitbook-pro-m4"
             ];
             type = "sendreceive";
             enable = true;
@@ -363,7 +412,7 @@
             devices = [
               "dracula"
               "asgar"
-              "valnar"
+              "bereitbook-pro-m4"
             ];
             type = "sendreceive";
             enable = true;
@@ -378,7 +427,7 @@
             devices = [
               "dracula"
               "asgar"
-              "valnar"
+              "bereitbook-pro-m4"
             ];
             type = "sendreceive";
             enable = true;
@@ -393,7 +442,7 @@
             devices = [
               "dracula"
               "asgar"
-              "valnar"
+              "bereitbook-pro-m4"
             ];
             type = "sendreceive";
             enable = true;
@@ -407,7 +456,7 @@
             path = "/home/vincenzo/amiconsult";
             devices = [
               "dracula"
-              "valnar"
+              "bereitbook-pro-m4"
             ];
             type = "sendreceive";
             enable = true;
@@ -429,6 +478,14 @@
       passwordFile = "/run/secrets/paperless/password";
     };
   };
+  #  sops.secrets."keycloak/password" = {
+  #    sopsFile = ../../secrets/dmbs.yaml;
+  #    format = "yaml";
+  #    key = "keycloak.password";
+  #    owner = "keycloak";
+  #    group = "keycloak";
+  #    restartUnits = [ "keycloak.service" ];
+  #  };
 
   systemd.services.paperless-consumer.after = [ "var-lib-paperless.mount" ];
   systemd.services.paperless-scheduler.after = [ "var-lib-paperless.mount" ];
@@ -488,13 +545,13 @@
         "docker"
       ];
     };
-    #git = {
-    #  isSystemUser = true;
-    #  extraGroups = [
-    #    "wheel"
-    #    "docker"
-    #  ];
-    #};
+    #    git = {
+    #      isSystemUser = true;
+    #      extraGroups = [
+    #        "wheel"
+    #        "docker"
+    #      ];
+    #    };
     coder = {
       extraGroups = [ "docker" ];
     };
