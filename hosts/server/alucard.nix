@@ -42,7 +42,7 @@
     device = "//u487137.your-storagebox.de/backup";
     fsType = "cifs";
     options = [
-      "credentials=/etc/smb-hetzner"
+      "credentials=${config.sops.templates."smb-hetzner".path}"
       "vers=3.1.1"
       "sec=ntlmssp"
       "seal" # encrypt session
@@ -243,23 +243,23 @@
       options.enableBookConversion = true;
     };
     postgresql.enable = true;
-    #    keycloak = {
-    #      enable = true;
-    #      #      sslCertificate = "";
-    #      #      sslCertificateKey = "";
-    #      database = {
-    #        createLocally = true;
-    #        username = "keycloak";
-    #        passwordFile = config.sops.secrets."keycloak/password".path;
-    #      };
-    #      settings = {
-    #        hostname = "auth.dumusstbereitsein.de";
-    #        http-port = 38080;
-    #        http-enabled = true;
-    #        hostname-strict-https = false;
-    #        proxy-headers = "xforwarded";
-    #      };
-    #    };
+    keycloak = {
+      enable = true;
+      database = {
+        createLocally = true;
+        username = "keycloak";
+        passwordFile = config.sops.secrets."keycloak/password".path;
+      };
+      settings = {
+        hostname = "auth.dumusstbereitsein.de";
+        http-port = 38080;
+        http-enabled = true;
+        proxy-headers = "xforwarded";        # Nginx sets X-Forwarded-* by default on NixOS
+        hostname-strict-https = false;       # because backend is HTTP, but external is HTTPS
+        hostname-strict = true;              # lock to the hostname you set (good practice)
+        # (Optionally) proxy = "edge";       # typical when TLS ends at the proxy      };
+    };
+      };
 
     #    gitlab = {
     #      enable = true;
@@ -478,15 +478,6 @@
       passwordFile = "/run/secrets/paperless/password";
     };
   };
-  #  sops.secrets."keycloak/password" = {
-  #    sopsFile = ../../secrets/dmbs.yaml;
-  #    format = "yaml";
-  #    key = "keycloak.password";
-  #    owner = "keycloak";
-  #    group = "keycloak";
-  #    restartUnits = [ "keycloak.service" ];
-  #  };
-
   systemd.services.paperless-consumer.after = [ "var-lib-paperless.mount" ];
   systemd.services.paperless-scheduler.after = [ "var-lib-paperless.mount" ];
   systemd.services.paperless-task-queue.after = [ "var-lib-paperless.mount" ];
