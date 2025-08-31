@@ -474,8 +474,13 @@
       address = "127.0.0.1";
       port = 58080;
       consumptionDirIsPublic = true;
-      settings.PAPERLESS_OCR_LANGUAGE = "deu+eng";
-      passwordFile = "/run/secrets/paperless/password";
+      settings = {
+        PAPERLESS_OCR_LANGUAGE = "deu+eng";
+        PAPERLESS_URL = "https://paperless.dumusstbereitsein.de";
+        PAPERLESS_ALLOWED_HOSTS = "paperless.dumusstbereitsein.de";
+        PAPERLESS_CSRF_TRUSTED_ORIGINS = "https://paperless.dumusstbereitsein.de";
+      };
+      passwordFile = config.sops.secrets."paperless/password".path;
     };
   };
   systemd.services.paperless-consumer.after = [ "var-lib-paperless.mount" ];
