@@ -57,7 +57,7 @@
     dockfmt
     dockerfile-language-server-nodejs
     helix
-    emacs30
+    emacs
     leetcode-cli
     bruno
     wakatime
