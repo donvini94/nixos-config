@@ -117,12 +117,15 @@
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   services = {
-    navidrome = {
+    calibre-web = {
       enable = true;
+      listen.ip = "127.0.0.1";
+      listen.port = 8083;
       openFirewall = true;
-      settings = {
-        MusicFolder = "/mnt/music";
-      };
+      # Data lies in /var/lib/calibre-web with its own user
+      dataDir = "calibre-web";
+      options.enableBookUploading = true;
+      options.enableBookConversion = true;
     };
     coder = {
       enable = true;
@@ -135,28 +138,36 @@
       enable = true;
       port = 4444;
     };
+    fail2ban.enable = true;
     jellyfin = {
       enable = true;
       openFirewall = true;
       dataDir = "/home/jellyfin/";
     };
-    sonarr = {
+    keycloak = {
       enable = true;
-      user = "jellyfin";
+      database = {
+        createLocally = true;
+        username = "keycloak";
+        passwordFile = config.sops.secrets."keycloak/password".path;
+      };
+      settings = {
+        hostname = "auth.dumusstbereitsein.de";
+        http-port = 38080;
+        http-enabled = true;
+        proxy-headers = "xforwarded";        # Nginx sets X-Forwarded-* by default on NixOS
+        hostname-strict-https = false;       # because backend is HTTP, but external is HTTPS
+        hostname-strict = true;              # lock to the hostname you set (good practice)
+        # (Optionally) proxy = "edge";       # typical when TLS ends at the proxy      };
+    };
+      };
+    navidrome = {
+      enable = true;
       openFirewall = true;
+      settings = {
+        MusicFolder = "/mnt/music";
+      };
     };
-    openssh = {
-      enable = true;
-      settings.PasswordAuthentication = false;
-      settings.KbdInteractiveAuthentication = false;
-      settings.PermitRootLogin = "no";
-    };
-    rustdesk-server = {
-      enable = true;
-      openFirewall = true;
-      signal.relayHosts = [ "89.58.62.186" ];
-    };
-    fail2ban.enable = true;
     nginx = {
       enable = true;
       clientMaxBodySize = "0"; # needed so that docker images can be pushed, turns off limit
@@ -231,36 +242,31 @@
           proxyWebsockets = true;
         };
       };
+      virtualHosts."passwort.istbereit.de" = {
+          enableACME = true;
+          forceSSL = true;
+          locations."/" = {
+              proxyPass = "http://127.0.0.1:${toString config.services.vaultwarden.config.ROCKET_PORT}";
+          };
+      };
     };
-    calibre-web = {
+    openssh = {
       enable = true;
-      listen.ip = "127.0.0.1";
-      listen.port = 8083;
-      openFirewall = true;
-      # Data lies in /var/lib/calibre-web with its own user
-      dataDir = "calibre-web";
-      options.enableBookUploading = true;
-      options.enableBookConversion = true;
+      settings.PasswordAuthentication = false;
+      settings.KbdInteractiveAuthentication = false;
+      settings.PermitRootLogin = "no";
     };
     postgresql.enable = true;
-    keycloak = {
+    rustdesk-server = {
       enable = true;
-      database = {
-        createLocally = true;
-        username = "keycloak";
-        passwordFile = config.sops.secrets."keycloak/password".path;
-      };
-      settings = {
-        hostname = "auth.dumusstbereitsein.de";
-        http-port = 38080;
-        http-enabled = true;
-        proxy-headers = "xforwarded";        # Nginx sets X-Forwarded-* by default on NixOS
-        hostname-strict-https = false;       # because backend is HTTP, but external is HTTPS
-        hostname-strict = true;              # lock to the hostname you set (good practice)
-        # (Optionally) proxy = "edge";       # typical when TLS ends at the proxy      };
+      openFirewall = true;
+      signal.relayHosts = [ "89.58.62.186" ];
     };
-      };
-
+    sonarr = {
+      enable = true;
+      user = "jellyfin";
+      openFirewall = true;
+    };
     #    gitlab = {
     #      enable = true;
     #      databasePasswordFile = "/var/keys/gitlab/db_password";
@@ -482,7 +488,33 @@
       };
       passwordFile = config.sops.secrets."paperless/password".path;
     };
-  };
+    vaultwarden = {
+        enable = true;
+        backupDir = "/var/lib/vaultwarden/backup";
+        environmentFile = config.sops.templates."vaultwarden.env".path;
+
+        config = {
+            # Refer to https://github.com/dani-garcia/vaultwarden/blob/main/.env.template
+            DOMAIN = "https://passwort.istbereit.de";
+            SIGNUPS_ALLOWED = false;
+
+            ROCKET_ADDRESS = "127.0.0.1";
+            ROCKET_PORT = 8222;
+            ROCKET_LOG = "critical";
+
+            # This example assumes a mailserver running on localhost,
+            # thus without transport encryption.
+            # If you use an external mail server, follow:
+            #   https://github.com/dani-garcia/vaultwarden/wiki/SMTP-configuration
+            SMTP_HOST = "127.0.0.1";
+            SMTP_PORT = 25;
+            SMTP_SSL = false;
+
+            SMTP_FROM = "admin@passwort.istbereit.de";
+            SMTP_FROM_NAME = "Bereitwarden";
+        };
+      };
+    };
   systemd.services.paperless-consumer.after = [ "var-lib-paperless.mount" ];
   systemd.services.paperless-scheduler.after = [ "var-lib-paperless.mount" ];
   systemd.services.paperless-task-queue.after = [ "var-lib-paperless.mount" ];
