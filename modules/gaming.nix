@@ -30,6 +30,8 @@
     wineWow64Packages.full
     mono
     (inputs.unstable.legacyPackages.x86_64-linux.heroic)
+    pokemmo-installer
+    egl-wayland
   ];
 
   environment.sessionVariables = {

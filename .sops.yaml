@@ -1,9 +1,11 @@
 keys:
   - &vincenzo age16k06xjvtqk9ejwvzqvtq2u78kp4dvxsqpp62mtc9y2ggujpqg3cswf8shm
   - &dmbs_server age12upwfqx9tvhf6gxxz7xeagg44fuvxf0p46r0wmvmpymcg4jg256qswnx82
+  - &macbook age1ley42wv68lujjwrhs2nxkdgx02tdzyy74hen8whhjzz35watucxsm2mhrp
 creation_rules:
   - path_regex: secrets/[^/]+\.(yaml|json|env|ini)$
     key_groups:
     - age:
         - *vincenzo
         - *dmbs_server
+        - *macbook

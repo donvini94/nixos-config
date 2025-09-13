@@ -76,7 +76,7 @@
     settings = {
       "org/gnome/desktop/interface" = {
         gtk-theme = "Adwaita-dark";
-        color-scheme = "prefer-dark";
+        color-scheme = "prefer-light";
       };
     };
   };
@@ -110,7 +110,7 @@
     enable = true;
     settings = {
       lat = 49.782959;
-      long = 7.65118;
+      lng = 7.65118;
     };
     darkModeScripts = {
       gtk-theme = ''

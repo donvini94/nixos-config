@@ -36,6 +36,7 @@
     apacheHttpd
     filebot
     cifs-utils
+    docker-compose
   ];
 
   fileSystems."/mnt/hetzner" = {
@@ -58,6 +59,20 @@
       "serverino"
     ];
   };
+
+  # Create required directories for media automation
+  systemd.tmpfiles.rules = [
+    "d /var/lib/media-stack 0755 root root"
+    "d /var/lib/media-stack/jellyseerr 0755 jellyfin jellyfin"
+    "d /var/lib/media-stack/sonarr 0755 jellyfin jellyfin"
+    "d /var/lib/media-stack/radarr 0755 jellyfin jellyfin"
+    "d /var/lib/media-stack/prowlarr 0755 jellyfin jellyfin"
+    "d /var/lib/media-stack/qbittorrent 0755 jellyfin jellyfin"
+    "d /var/lib/media-stack/gluetun 0755 jellyfin jellyfin"
+    "d /mnt/hetzner/downloads 0755 jellyfin jellyfin"
+    "d /mnt/hetzner/shows 0755 jellyfin jellyfin"
+    "d /mnt/hetzner/movies 0755 jellyfin jellyfin"
+  ];
 
   networking = {
     hostName = "alucard";
@@ -249,6 +264,14 @@
               proxyPass = "http://127.0.0.1:${toString config.services.vaultwarden.config.ROCKET_PORT}";
           };
       };
+      virtualHosts."requests.dumusstbereitsein.de" = {
+        enableACME = true;
+        forceSSL = true;
+        locations."/" = {
+          proxyPass = "http://127.0.0.1:5055";
+          proxyWebsockets = true;
+        };
+      };
     };
     openssh = {
       enable = true;
@@ -262,11 +285,8 @@
       openFirewall = true;
       signal.relayHosts = [ "89.58.62.186" ];
     };
-    sonarr = {
-      enable = true;
-      user = "jellyfin";
-      openFirewall = true;
-    };
+    # Disabled native Sonarr - using containerized version in media-stack
+    sonarr.enable = false;
     #    gitlab = {
     #      enable = true;
     #      databasePasswordFile = "/var/keys/gitlab/db_password";
@@ -515,6 +535,30 @@
         };
       };
     };
+
+  # Media automation Docker Compose stack
+  systemd.services.media-stack = {
+    description = "Media automation stack with VPN-isolated torrenting";
+    after = [ "docker.service" "mnt-hetzner.mount" ];
+    requires = [ "docker.service" ];
+    wantedBy = [ "multi-user.target" ];
+    
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      WorkingDirectory = "/var/lib/media-stack";
+      EnvironmentFile = config.sops.templates."mullvad.env".path;
+      ExecStartPre = [
+        "${pkgs.coreutils}/bin/mkdir -p /var/lib/media-stack"
+        "${pkgs.coreutils}/bin/cp ${./media-stack/docker-compose.yml} /var/lib/media-stack/docker-compose.yml"
+      ];
+      ExecStart = "${pkgs.docker-compose}/bin/docker-compose up -d";
+      ExecStop = "${pkgs.docker-compose}/bin/docker-compose down";
+      User = "root";
+      Group = "root";
+    };
+  };
+
   systemd.services.paperless-consumer.after = [ "var-lib-paperless.mount" ];
   systemd.services.paperless-scheduler.after = [ "var-lib-paperless.mount" ];
   systemd.services.paperless-task-queue.after = [ "var-lib-paperless.mount" ];

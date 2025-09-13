@@ -19,6 +19,8 @@
       "smb_hetzner/username" = { };
       "smb_hetzner/password" = { };
       "vaultwarden/admin_token" = {};
+      "mullvad/private_key" = {};
+      "mullvad/addresses" = {};
     };
 
     templates."smb-hetzner".content = ''
@@ -36,5 +38,13 @@
     templates."vaultwarden.env".mode  = "0640";
     templates."vaultwarden.env".owner = "root";
     templates."vaultwarden.env".group = "root";
+
+    templates."mullvad.env".content = ''
+      MULLVAD_PRIVATE_KEY=${config.sops.placeholder."mullvad/private_key"}
+      MULLVAD_ADDRESSES=${config.sops.placeholder."mullvad/addresses"}
+    '';
+    templates."mullvad.env".mode = "0640";
+    templates."mullvad.env".owner = "root";
+    templates."mullvad.env".group = "root";
   };
 }

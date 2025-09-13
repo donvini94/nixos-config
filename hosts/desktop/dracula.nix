@@ -15,6 +15,7 @@
     jellyfin-ffmpeg
     texlive.combined.scheme-full
     cudatoolkit
+    mesa
     calibre
     libva
     nvitop
@@ -52,7 +53,9 @@
   };
   hardware.enableRedistributableFirmware = true;
   # Load nvidia driver for Xorg and Wayland
-  services.xserver.videoDrivers = [ "nvidia" ];
+  services.xserver.videoDrivers = lib.mkDefault [
+    "nvidia"
+  ];
   virtualisation = {
     docker = {
       enable = true;

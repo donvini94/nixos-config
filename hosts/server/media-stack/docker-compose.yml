@@ -1,0 +1,149 @@
+version: '3.8'
+
+services:
+  # VPN container - all torrent traffic goes through this
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - "18080:18080"  # qBittorrent web UI (localhost only) - using unique port
+    volumes:
+      - /var/lib/media-stack/gluetun:/gluetun
+    environment:
+      - VPN_SERVICE_PROVIDER=mullvad
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=${MULLVAD_PRIVATE_KEY}
+      - WIREGUARD_ADDRESSES=${MULLVAD_ADDRESSES}
+      - WIREGUARD_ENDPOINT_PORT=51820
+      - WIREGUARD_PUBLIC_KEY=/iivwlyqWqxQ0BVWmJRhcXIFdJeo0WbHQ/hZwuXaN3g=
+      # DNS and firewall
+      - SERVER_COUNTRIES=Switzerland, Netherlands  # Closest to your location
+
+
+
+      - FIREWALL=off  # Temporarily disable to test
+
+#      - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.0.0/16,10.0.0.0/8  # Allow local networks
+#      - FIREWALL_INPUT_PORTS=8080  # Allow qBittorrent web UI
+      - DOT=off
+      - TZ=Europe/Amsterdam
+    restart: unless-stopped
+    networks:
+      - media-network
+
+  # qBittorrent - uses Gluetun's network stack (VPN-isolated)
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:libtorrentv1
+    container_name: qbittorrent
+    network_mode: "service:gluetun"  # Share Gluetun's network (VPN)
+    environment:
+      - PUID=1001  # jellyfin user ID
+      - PGID=987  # jellyfin group ID
+      - TZ=Europe/Berlin
+      - WEBUI_PORT=18080
+      - TORRENTING_PORT=6881
+    volumes:
+      - /var/lib/media-stack/qbittorrent:/config
+      - /mnt/hetzner/downloads:/downloads
+    restart: unless-stopped
+    depends_on:
+      - gluetun
+
+  # Sonarr - TV show automation (uses regular internet)
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PUID=1001
+      - PGID=987
+      - TZ=Europe/Berlin
+    volumes:
+      - /var/lib/media-stack/sonarr:/config
+      - /mnt/hetzner/shows:/tv
+      - /mnt/hetzner/downloads:/downloads
+    ports:
+      - "18989:8989"  # localhost only - changed to avoid conflict
+    restart: unless-stopped
+    networks:
+      - media-network
+
+  # Radarr - Movie automation (uses regular internet)
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=1001
+      - PGID=987
+      - TZ=Europe/Berlin
+    volumes:
+      - /var/lib/media-stack/radarr:/config
+      - /mnt/hetzner/movies:/movies
+      - /mnt/hetzner/downloads:/downloads
+    ports:
+      - "17878:7878"  # localhost only - using unique port
+    restart: unless-stopped
+    networks:
+      - media-network
+
+  # Prowlarr - Indexer management (uses regular internet)
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=1001
+      - PGID=987
+      - TZ=Europe/Berlin
+    volumes:
+      - /var/lib/media-stack/prowlarr:/config
+    ports:
+      - "19696:9696"  # localhost only - using unique port
+    restart: unless-stopped
+    depends_on:
+      - flaresolverr
+    networks:
+      - media-network
+
+  # FlareSolverr - Cloudflare bypass for indexers
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    environment:
+      - LOG_LEVEL=info
+      - LOG_HTML=false
+      - CAPTCHA_SOLVER=none
+      - TZ=Europe/Berlin
+    ports:
+      - "8191:8191"  # localhost only
+    restart: unless-stopped
+    networks:
+      - media-network
+
+  # Jellyseerr - User request interface for Jellyfin (publicly accessible)
+  jellyseerr:
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    environment:
+      - LOG_LEVEL=info
+      - TZ=Europe/Berlin
+      - PORT=5055
+    volumes:
+      - /var/lib/media-stack/jellyseerr:/app/config
+    ports:
+      - "5055:5055"  # Public access via nginx
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/status || exit 1
+      start_period: 20s
+      timeout: 3s
+      interval: 15s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - media-network
+
+networks:
+  media-network:
+    driver: bridge
