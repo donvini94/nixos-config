@@ -122,6 +122,27 @@ services:
     networks:
       - media-network
 
+  # Bazarr - Subtitle management for TV shows and movies (uses regular internet)
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    environment:
+      - PUID=1001
+      - PGID=987
+      - TZ=Europe/Berlin
+    volumes:
+      - /var/lib/media-stack/bazarr:/config
+      - /mnt/hetzner/movies:/movies
+      - /mnt/hetzner/shows:/tv
+    ports:
+      - "16767:6767"  # localhost only - using unique port
+    restart: unless-stopped
+    depends_on:
+      - sonarr
+      - radarr
+    networks:
+      - media-network
+
   # Jellyseerr - User request interface for Jellyfin (publicly accessible)
   jellyseerr:
     image: fallenbagel/jellyseerr:latest

@@ -285,8 +285,6 @@
       openFirewall = true;
       signal.relayHosts = [ "89.58.62.186" ];
     };
-    # Disabled native Sonarr - using containerized version in media-stack
-    sonarr.enable = false;
     #    gitlab = {
     #      enable = true;
     #      databasePasswordFile = "/var/keys/gitlab/db_password";
