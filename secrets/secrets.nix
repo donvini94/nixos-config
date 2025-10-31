@@ -12,7 +12,7 @@
   sops = {
     defaultSopsFile = ./dmbs.yaml;
     defaultSopsFormat = "yaml";
-    age.keyFile = "/home/vincenzo/.config/sops/age/keys.txt";
+    age.keyFile = "/var/lib/sops/age/keys.txt";
     secrets = {
       "keycloak/password".mode = "640";
       "paperless/password".mode = "640";

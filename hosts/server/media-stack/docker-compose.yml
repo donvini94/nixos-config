@@ -20,15 +20,10 @@ services:
       - WIREGUARD_ADDRESSES=${MULLVAD_ADDRESSES}
       - WIREGUARD_ENDPOINT_PORT=51820
       - WIREGUARD_PUBLIC_KEY=/iivwlyqWqxQ0BVWmJRhcXIFdJeo0WbHQ/hZwuXaN3g=
+
       # DNS and firewall
-      - SERVER_COUNTRIES=Switzerland, Netherlands  # Closest to your location
-
-
-
-      - FIREWALL=off  # Temporarily disable to test
-
-#      - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12,192.168.0.0/16,10.0.0.0/8  # Allow local networks
-#      - FIREWALL_INPUT_PORTS=8080  # Allow qBittorrent web UI
+      - SERVER_COUNTRIES=Switzerland,Netherlands  # Closest to your location
+      - FIREWALL_INPUT_PORTS=18080  # Allow qBittorrent web UI
       - DOT=off
       - TZ=Europe/Amsterdam
     restart: unless-stopped
@@ -49,9 +44,11 @@ services:
     volumes:
       - /var/lib/media-stack/qbittorrent:/config
       - /mnt/hetzner/downloads:/downloads
-    restart: unless-stopped
     depends_on:
-      - gluetun
+      gluetun:
+        condition: service_healthy
+        restart: true  # Restart when dependency restarts
+    restart: unless-stopped
 
   # Sonarr - TV show automation (uses regular internet)
   sonarr:

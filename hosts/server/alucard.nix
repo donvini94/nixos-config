@@ -37,6 +37,9 @@
     filebot
     cifs-utils
     docker-compose
+    keycloak
+    ffmpeg
+    yt-dlp
   ];
 
   fileSystems."/mnt/hetzner" = {
@@ -131,7 +134,14 @@
   };
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
+
+  programs.tmux = {
+    enable = true;
+    keyMode = "vi";
+    terminal = "screen-256color";
+  };
   services = {
+    qemuGuest.enable = true;
     calibre-web = {
       enable = true;
       listen.ip = "127.0.0.1";
@@ -170,12 +180,12 @@
         hostname = "auth.dumusstbereitsein.de";
         http-port = 38080;
         http-enabled = true;
-        proxy-headers = "xforwarded";        # Nginx sets X-Forwarded-* by default on NixOS
-        hostname-strict-https = false;       # because backend is HTTP, but external is HTTPS
-        hostname-strict = true;              # lock to the hostname you set (good practice)
+        proxy-headers = "xforwarded"; # Nginx sets X-Forwarded-* by default on NixOS
+        hostname-strict-https = false; # because backend is HTTP, but external is HTTPS
+        hostname-strict = true; # lock to the hostname you set (good practice)
         # (Optionally) proxy = "edge";       # typical when TLS ends at the proxy      };
-    };
       };
+    };
     navidrome = {
       enable = true;
       openFirewall = true;
@@ -219,6 +229,11 @@
         forceSSL = true;
         locations."/".proxyPass = "http://localhost:8096";
       };
+      virtualHosts."chat.dumusstbereitsein.de" = {
+        enableACME = true;
+        forceSSL = true;
+        locations."/".proxyPass = "http://localhost:1447";
+      };
       virtualHosts."music.dumusstbereitsein.de" = {
         enableACME = true;
         forceSSL = true;
@@ -258,11 +273,11 @@
         };
       };
       virtualHosts."passwort.istbereit.de" = {
-          enableACME = true;
-          forceSSL = true;
-          locations."/" = {
-              proxyPass = "http://127.0.0.1:${toString config.services.vaultwarden.config.ROCKET_PORT}";
-          };
+        enableACME = true;
+        forceSSL = true;
+        locations."/" = {
+          proxyPass = "http://127.0.0.1:${toString config.services.vaultwarden.config.ROCKET_PORT}";
+        };
       };
       virtualHosts."requests.dumusstbereitsein.de" = {
         enableACME = true;
@@ -507,40 +522,43 @@
       passwordFile = config.sops.secrets."paperless/password".path;
     };
     vaultwarden = {
-        enable = true;
-        backupDir = "/var/lib/vaultwarden/backup";
-        environmentFile = config.sops.templates."vaultwarden.env".path;
+      enable = true;
+      backupDir = "/var/lib/vaultwarden/backup";
+      environmentFile = config.sops.templates."vaultwarden.env".path;
 
-        config = {
-            # Refer to https://github.com/dani-garcia/vaultwarden/blob/main/.env.template
-            DOMAIN = "https://passwort.istbereit.de";
-            SIGNUPS_ALLOWED = false;
+      config = {
+        # Refer to https://github.com/dani-garcia/vaultwarden/blob/main/.env.template
+        DOMAIN = "https://passwort.istbereit.de";
+        SIGNUPS_ALLOWED = false;
 
-            ROCKET_ADDRESS = "127.0.0.1";
-            ROCKET_PORT = 8222;
-            ROCKET_LOG = "critical";
+        ROCKET_ADDRESS = "127.0.0.1";
+        ROCKET_PORT = 8222;
+        ROCKET_LOG = "critical";
 
-            # This example assumes a mailserver running on localhost,
-            # thus without transport encryption.
-            # If you use an external mail server, follow:
-            #   https://github.com/dani-garcia/vaultwarden/wiki/SMTP-configuration
-            SMTP_HOST = "127.0.0.1";
-            SMTP_PORT = 25;
-            SMTP_SSL = false;
+        # This example assumes a mailserver running on localhost,
+        # thus without transport encryption.
+        # If you use an external mail server, follow:
+        #   https://github.com/dani-garcia/vaultwarden/wiki/SMTP-configuration
+        SMTP_HOST = "127.0.0.1";
+        SMTP_PORT = 25;
+        SMTP_SSL = false;
 
-            SMTP_FROM = "admin@passwort.istbereit.de";
-            SMTP_FROM_NAME = "Bereitwarden";
-        };
+        SMTP_FROM = "admin@passwort.istbereit.de";
+        SMTP_FROM_NAME = "Bereitwarden";
       };
     };
+  };
 
   # Media automation Docker Compose stack
   systemd.services.media-stack = {
     description = "Media automation stack with VPN-isolated torrenting";
-    after = [ "docker.service" "mnt-hetzner.mount" ];
+    after = [
+      "docker.service"
+      "mnt-hetzner.mount"
+    ];
     requires = [ "docker.service" ];
     wantedBy = [ "multi-user.target" ];
-    
+
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
@@ -561,6 +579,42 @@
   systemd.services.paperless-scheduler.after = [ "var-lib-paperless.mount" ];
   systemd.services.paperless-task-queue.after = [ "var-lib-paperless.mount" ];
   systemd.services.paperless-web.after = [ "var-lib-paperless.mount" ];
+
+  # Keycloak export service for backup/migration
+  systemd.services.keycloakExportRealms =
+    let
+      p = config.systemd.services.keycloak;
+    in
+    lib.mkIf config.services.keycloak.enable {
+      after = p.after;
+      before = [ "keycloak.service" ];
+      wantedBy = [ ]; # Manual activation only
+      environment = lib.mkForce p.environment;
+      serviceConfig =
+        let
+          origin = p.serviceConfig;
+        in
+        {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          User = origin.User;
+          Group = origin.Group;
+          LoadCredential = origin.LoadCredential;
+          DynamicUser = origin.DynamicUser;
+          RuntimeDirectory = origin.RuntimeDirectory;
+          RuntimeDirectoryMode = origin.RuntimeDirectoryMode;
+          AmbientCapabilities = origin.AmbientCapabilities;
+          StateDirectory = "keycloak";
+          StateDirectoryMode = "0750";
+        };
+      script = ''
+        EDIR="/var/lib/keycloak"
+        EDIRT="$EDIR/$(date '+%Y-%m-%d_%H-%M-%S')"
+        mkdir -p $EDIRT
+        kc.sh export --dir=$EDIRT
+        echo "Keycloak export completed successfully to: $EDIRT"
+      '';
+    };
 
   users.users = {
     vincenzo = {
