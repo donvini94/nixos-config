@@ -8,18 +8,7 @@
     # Docs
     zeal
 
-    # Haskell
-    cabal-install
-    haskell-language-server
-    ghc
-    ghcid
-    stack
-    haskellPackages.hoogle
-
-    # Java
-    jdk17
-    jdk21
-
+    zed-editor
     # Nix
     nix-output-monitor
     nixfmt-rfc-style
@@ -36,7 +25,7 @@
         beautifulsoup4
         pyflakes
         debugpy
-        pytorchWithCuda
+        torchWithCuda
         transformers
         pynvml
       ]
@@ -60,7 +49,7 @@
     emacs
     leetcode-cli
     bruno
-    wakatime
+    wakatime-cli
     delta # syntax highlight pager for git
     aider-chat
     codecrafters-cli

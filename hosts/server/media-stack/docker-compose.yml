@@ -10,7 +10,7 @@ services:
     devices:
       - /dev/net/tun:/dev/net/tun
     ports:
-      - "18080:18080"  # qBittorrent web UI (localhost only) - using unique port
+      - "127.0.0.1:18080:18080"  # qBittorrent web UI (LOCALHOST ONLY) - SECURITY FIX
     volumes:
       - /var/lib/media-stack/gluetun:/gluetun
     environment:
@@ -63,7 +63,7 @@ services:
       - /mnt/hetzner/shows:/tv
       - /mnt/hetzner/downloads:/downloads
     ports:
-      - "18989:8989"  # localhost only - changed to avoid conflict
+      - "127.0.0.1:18989:8989"  # LOCALHOST ONLY - SECURITY FIX
     restart: unless-stopped
     networks:
       - media-network
@@ -81,7 +81,7 @@ services:
       - /mnt/hetzner/movies:/movies
       - /mnt/hetzner/downloads:/downloads
     ports:
-      - "17878:7878"  # localhost only - using unique port
+      - "127.0.0.1:17878:7878"  # LOCALHOST ONLY - SECURITY FIX
     restart: unless-stopped
     networks:
       - media-network
@@ -97,29 +97,12 @@ services:
     volumes:
       - /var/lib/media-stack/prowlarr:/config
     ports:
-      - "19696:9696"  # localhost only - using unique port
-    restart: unless-stopped
-    depends_on:
-      - flaresolverr
-    networks:
-      - media-network
-
-  # FlareSolverr - Cloudflare bypass for indexers
-  flaresolverr:
-    image: ghcr.io/flaresolverr/flaresolverr:latest
-    container_name: flaresolverr
-    environment:
-      - LOG_LEVEL=info
-      - LOG_HTML=false
-      - CAPTCHA_SOLVER=none
-      - TZ=Europe/Berlin
-    ports:
-      - "8191:8191"  # localhost only
+      - "127.0.0.1:19696:9696"  # LOCALHOST ONLY - SECURITY FIX
     restart: unless-stopped
     networks:
       - media-network
 
-  # Bazarr - Subtitle management for TV shows and movies (uses regular internet)
+    # Bazarr - Subtitle management for TV shows and movies (uses regular internet)
   bazarr:
     image: lscr.io/linuxserver/bazarr:latest
     container_name: bazarr
@@ -132,7 +115,7 @@ services:
       - /mnt/hetzner/movies:/movies
       - /mnt/hetzner/shows:/tv
     ports:
-      - "16767:6767"  # localhost only - using unique port
+      - "127.0.0.1:16767:6767"  # LOCALHOST ONLY - SECURITY FIX
     restart: unless-stopped
     depends_on:
       - sonarr
@@ -151,13 +134,30 @@ services:
     volumes:
       - /var/lib/media-stack/jellyseerr:/app/config
     ports:
-      - "5055:5055"  # Public access via nginx
+      - "127.0.0.1:5055:5055"  # LOCALHOST ONLY - Use nginx reverse proxy for public access
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/status || exit 1
       start_period: 20s
       timeout: 3s
       interval: 15s
       retries: 3
+    restart: unless-stopped
+    networks:
+      - media-network
+
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    environment:
+      - PUID=1001  # jellyfin user ID
+      - PGID=987   # jellyfin group ID
+      - TZ=Europe/Berlin
+    volumes:
+      - /var/lib/media-stack/sabnzbd:/config
+      - /mnt/hetzner/downloads:/downloads
+      - /mnt/hetzner/downloads/incomplete:/incomplete-downloads  # Optional: separate incomplete
+    ports:
+      - "127.0.0.1:19090:8080"  # LOCALHOST ONLY - SECURITY FIX
     restart: unless-stopped
     networks:
       - media-network

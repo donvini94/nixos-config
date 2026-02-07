@@ -8,20 +8,23 @@
       "https://helix.cachix.org"
       "https://nix-community.cachix.org"
       "https://nixpkgs-wayland.cachix.org"
+      "https://cache.nixos-cuda.org"
     ];
-    extra-trusted-public-keys = [
+    trusted-public-keys = [
       "helix.cachix.org-1:ejp9KQpR1FBI2onstMQ34yogDm4OgU2ru6lIwPvuCVs="
       "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
       "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
       "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
+      "cache.nixos-cuda.org:74DUi4Ye579gUqzH4ziL9IyiJBlDpMRn9MBN8oNan9M="
+      "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
     ];
   };
 
   inputs = {
     # Core inputs
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     unstable.url = "github:NixOS/nixpkgs/master";
-    home-manager.url = "github:nix-community/home-manager/release-25.05";
+    home-manager.url = "github:nix-community/home-manager/release-25.11";
 
     # System management
     sops-nix.url = "github:Mic92/sops-nix"; # Secret management
@@ -67,6 +70,7 @@
         system = "x86_64-linux";
         config = {
           allowUnfree = true;
+          cudaSupport = true;
           allowUnfreePredicate =
             pkg:
             builtins.elem (unstable.lib.getName pkg) [

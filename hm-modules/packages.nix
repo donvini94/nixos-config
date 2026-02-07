@@ -25,7 +25,7 @@
     # productivity
     glow # markdown previewer in terminal
     zathura
-    poppler_utils
+    poppler-utils
     anki
     qolibri # japanese dictionaries
     mecab # japanese furigana

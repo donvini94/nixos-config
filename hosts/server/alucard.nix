@@ -40,8 +40,10 @@
     keycloak
     ffmpeg
     yt-dlp
+    openstackclient
+    inetutils  # Provides netstat
+    claude-code
   ];
-
   fileSystems."/mnt/hetzner" = {
     device = "//u487137.your-storagebox.de/backup";
     fsType = "cifs";
@@ -99,6 +101,20 @@
         11445
         11335
       ];
+      # Block outbound connections to known mining pools (SECURITY FIX)
+      extraCommands = ''
+        # Block mining pool ports
+        iptables -A OUTPUT -p tcp --dport 3333 -j DROP
+        iptables -A OUTPUT -p tcp --dport 4444 -j DROP
+        iptables -A OUTPUT -p tcp --dport 5555 -j DROP
+        iptables -A OUTPUT -p tcp --dport 7777 -j DROP
+        iptables -A OUTPUT -p tcp --dport 8333 -j DROP
+        iptables -A OUTPUT -p tcp --dport 9333 -j DROP
+
+        # Block specific mining pool IPs discovered during breach
+        iptables -A OUTPUT -d 141.95.72.61 -j DROP
+        iptables -A OUTPUT -d 141.95.72.59 -j DROP
+      '';
     };
   };
 
@@ -151,17 +167,6 @@
       dataDir = "calibre-web";
       options.enableBookUploading = true;
       options.enableBookConversion = true;
-    };
-    coder = {
-      enable = true;
-      homeDir = "/var/lib/coder";
-      accessUrl = "https://coder.istbereit.de";
-      listenAddress = "127.0.0.1:1337";
-      database.createLocally = true;
-    };
-    code-server = {
-      enable = true;
-      port = 4444;
     };
     fail2ban.enable = true;
     jellyfin = {
@@ -254,6 +259,12 @@
         forceSSL = true;
         locations."/".proxyPass = "http://127.0.0.1:53842";
       };
+      virtualHosts."budget.istbereit.de" = {
+        enableACME = true;
+        forceSSL = true;
+        locations."/".proxyPass = "http://127.0.0.1:5006";
+      };
+
       virtualHosts."read.istbereit.de" = {
         enableACME = true;
         forceSSL = true;
@@ -295,11 +306,6 @@
       settings.PermitRootLogin = "no";
     };
     postgresql.enable = true;
-    rustdesk-server = {
-      enable = true;
-      openFirewall = true;
-      signal.relayHosts = [ "89.58.62.186" ];
-    };
     #    gitlab = {
     #      enable = true;
     #      databasePasswordFile = "/var/keys/gitlab/db_password";
@@ -521,32 +527,32 @@
       };
       passwordFile = config.sops.secrets."paperless/password".path;
     };
-    vaultwarden = {
-      enable = true;
-      backupDir = "/var/lib/vaultwarden/backup";
-      environmentFile = config.sops.templates."vaultwarden.env".path;
+    #   vaultwarden = {
+    #     enable = true;
+    #     backupDir = "/var/lib/vaultwarden/backup";
+    #     environmentFile = config.sops.templates."vaultwarden.env".path;
 
-      config = {
-        # Refer to https://github.com/dani-garcia/vaultwarden/blob/main/.env.template
-        DOMAIN = "https://passwort.istbereit.de";
-        SIGNUPS_ALLOWED = false;
+    #     config = {
+    #       # Refer to https://github.com/dani-garcia/vaultwarden/blob/main/.env.template
+    #       DOMAIN = "https://passwort.istbereit.de";
+    #       SIGNUPS_ALLOWED = false;
 
-        ROCKET_ADDRESS = "127.0.0.1";
-        ROCKET_PORT = 8222;
-        ROCKET_LOG = "critical";
+    #       ROCKET_ADDRESS = "127.0.0.1";
+    #       ROCKET_PORT = 8222;
+    #       ROCKET_LOG = "critical";
 
-        # This example assumes a mailserver running on localhost,
-        # thus without transport encryption.
-        # If you use an external mail server, follow:
-        #   https://github.com/dani-garcia/vaultwarden/wiki/SMTP-configuration
-        SMTP_HOST = "127.0.0.1";
-        SMTP_PORT = 25;
-        SMTP_SSL = false;
+    #       # This example assumes a mailserver running on localhost,
+    #       # thus without transport encryption.
+    #       # If you use an external mail server, follow:
+    #       #   https://github.com/dani-garcia/vaultwarden/wiki/SMTP-configuration
+    #       SMTP_HOST = "127.0.0.1";
+    #       SMTP_PORT = 25;
+    #       SMTP_SSL = false;
 
-        SMTP_FROM = "admin@passwort.istbereit.de";
-        SMTP_FROM_NAME = "Bereitwarden";
-      };
-    };
+    #       SMTP_FROM = "admin@passwort.istbereit.de";
+    #       SMTP_FROM_NAME = "Bereitwarden";
+    #     };
+    #   };
   };
 
   # Media automation Docker Compose stack
@@ -573,6 +579,36 @@
       User = "root";
       Group = "root";
     };
+  };
+  systemd.services.mining-watchdog = {
+    description = "Detect and stop mining containers";
+    serviceConfig = {
+      Type = "simple";
+      User = "vincenzo";  # Run as vincenzo to access rootless Docker
+      Group = "users";
+      Environment = [
+        "DOCKER_HOST=unix:///run/user/1000/docker.sock"
+        "XDG_RUNTIME_DIR=/run/user/1000"
+        "PATH=${pkgs.docker}/bin:/run/current-system/sw/bin"
+      ];
+      ExecStart = pkgs.writeShellScript "mining-watchdog.sh" ''
+        export DOCKER_HOST=unix:///run/user/1000/docker.sock
+        export XDG_RUNTIME_DIR=/run/user/1000
+        while true; do
+          ${pkgs.docker}/bin/docker ps -q 2>/dev/null | while read c; do
+            # Check for suspicious mining ports
+            if ${pkgs.docker}/bin/docker exec "$c" sh -c "ss -tn 2>/dev/null | grep -E ':(3333|4444|5555|7777|8333)'" 2>/dev/null; then
+              ${pkgs.docker}/bin/docker stop "$c" && \
+                logger "Mining-watchdog: Stopped container $c for mining activity on port 3333/4444/5555/7777"
+            fi
+          done
+          sleep 60
+        done
+      '';
+      Restart = "always";
+    };
+    after = [ "docker.service" ];
+    wantedBy = [ "multi-user.target" ];
   };
 
   systemd.services.paperless-consumer.after = [ "var-lib-paperless.mount" ];
@@ -646,7 +682,6 @@
       isNormalUser = true;
       extraGroups = [
         "wheel"
-        "docker"
       ];
       openssh.authorizedKeys.keys = [
         "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDg8T7GRlyOP6jme62lF6xTfLEK137MFP766m3C2G+0K3vckxxutE1dW3GPT/kqsDgGHIysRAFWeUm60X2tfdEWVaSNi9g1kb8uss+9EA8zrUuI596/HDeJnsHFo3K/hf7PhjEDhxblo8JzDMz7IF6y58Annh7fTQCdHk564k429YI65mMY16D1GiE0aL0hkiEvAk25gp5mLjEYyAHDHE2ma8csGWJCap5OaAqJ9h0mkf9mcrhczo7MlEF6iL6EWTDToDw0NWPpEVPFRvJUJM+2gNSSxIVIFZkt8eczX/TY0lFkSkSPy5FXqtedHTOazU4mxGU5Lwy3A4gmg3/3ibZ1 Marius"
@@ -656,17 +691,9 @@
       isNormalUser = true;
       extraGroups = [
         "wheel"
-        "docker"
       ];
       openssh.authorizedKeys.keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJtziDwyaqKfBPL1dDEM6kMdA+KTL+d0810PzAbOsWHn kyrill@kyrill-ThinkPad-T495"
-      ];
-    };
-    overleaf = {
-      isNormalUser = true;
-      extraGroups = [
-        "wheel"
-        "docker"
       ];
     };
     #    git = {
@@ -676,9 +703,6 @@
     #        "docker"
     #      ];
     #    };
-    coder = {
-      extraGroups = [ "docker" ];
-    };
     jellyfin = {
       extraGroups = [
         "wheel"
@@ -700,6 +724,51 @@
     };
   };
 
+  # Create a systemd service that runs the unshelve command
+  systemd.services.unshelve-server = {
+    description = "Unshelve OpenStack server";
+    serviceConfig = {
+      Type = "oneshot";
+      User = "vincenzo";
+      ExecStart = pkgs.writeShellScript "unshelve-server.sh" ''
+        source /home/vincenzo/.leafcloud_rc.sh
+        ${pkgs.openstackclient}/bin/openstack server unshelve d94fd33f-6907-4d47-9929-ea785a78676d
+      '';
+    };
+  };
+
+  # Create a timer to trigger the service on weekdays at your desired time
+  systemd.timers.unshelve-server = {
+    description = "Timer for unshelving OpenStack server";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "Mon-Fri *-*-* 07:00:00"; # Adjust time as needed
+      Persistent = true; # Run missed jobs after system restart
+      Unit = "unshelve-server.service";
+    };
+  };
+
+  systemd.services.shelve-server = {
+    description = "Shelve OpenStack server";
+    serviceConfig = {
+      Type = "oneshot";
+      User = "vincenzo";
+      ExecStart = pkgs.writeShellScript "shelve-server.sh" ''
+        source /home/vincenzo/.leafcloud_rc.sh
+        ${pkgs.openstackclient}/bin/openstack server shelve d94fd33f-6907-4d47-9929-ea785a78676d
+      '';
+    };
+  };
+
+  systemd.timers.shelve-server = {
+    description = "Timer for shelving OpenStack server";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "Mon-Fri *-*-* 19:00:00"; # Evening time
+      Persistent = true;
+      Unit = "shelve-server.service";
+    };
+  };
   security.acme.acceptTerms = true;
   security.acme.defaults.email = "vincenzo.pace94@icloud.com";
   system.stateVersion = "23.05";

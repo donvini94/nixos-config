@@ -18,10 +18,10 @@
     xorg.xhost
     blueberry
     brightnessctl
-    pinentry
+    pinentry-curses
     pinentry-rofi
     libsForQt5.qt5ct
-    qt6ct
+    qt6Packages.qt6ct
     nwg-look
     mullvad-vpn
     gparted

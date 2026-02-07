@@ -22,15 +22,11 @@
   hardware.xone.enable = true; # support for the xbox controller USB dongle
   environment.systemPackages = with pkgs; [
     mangohud
-    protonup
-    bsnes-hd
-    lutris
+    protonup-ng
     wine-wayland
     winetricks
     wineWow64Packages.full
     mono
-    (inputs.unstable.legacyPackages.x86_64-linux.heroic)
-    pokemmo-installer
     egl-wayland
   ];
 

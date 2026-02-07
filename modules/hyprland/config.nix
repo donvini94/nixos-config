@@ -92,10 +92,6 @@
           new_status = inherit
       }
 
-      gestures {
-          # See https://wiki.hyprland.org/Configuring/Variables/ for more
-          workspace_swipe = off
-      }
 
       misc {
             enable_swallow = true

@@ -106,24 +106,6 @@
     ];
     packages = with pkgs; [ firefox ];
   };
-  programs.virt-manager.enable = true;
-  virtualisation.libvirtd = {
-    enable = true;
-    qemu = {
-      package = pkgs.qemu_kvm;
-      runAsRoot = true;
-      swtpm.enable = true;
-      ovmf = {
-        enable = true;
-        packages = [
-          (pkgs.OVMF.override {
-            secureBoot = true;
-            tpmSupport = true;
-          }).fd
-        ];
-      };
-    };
-  };
 
   # Comment this in the first time you want to connect to AirPods.
   # In order to connect, you have to press the button on the back

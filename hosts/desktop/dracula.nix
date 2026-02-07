@@ -13,24 +13,18 @@
     jellyfin
     jellyfin-web
     jellyfin-ffmpeg
-    texlive.combined.scheme-full
     cudatoolkit
     mesa
     calibre
     libva
     nvitop
-    rustdesk
-    jetbrains.pycharm-professional
-    jetbrains.rust-rover
     filebot
     transmission_4-gtk
     android-tools
     nvidia-container-toolkit
 
     # photos
-    shotwell
-    darktable
-
+    lmstudio
   ];
 
   programs.adb.enable = true;
@@ -46,7 +40,7 @@
     enable = true;
     enable32Bit = true;
     extraPackages = with pkgs; [
-      vaapiVdpau
+      libva-vdpau-driver
       libvdpau-va-gl
       nvidia-vaapi-driver
     ];
