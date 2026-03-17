@@ -41,7 +41,7 @@
     ffmpeg
     yt-dlp
     openstackclient
-    inetutils  # Provides netstat
+    inetutils # Provides netstat
     claude-code
   ];
   fileSystems."/mnt/hetzner" = {
@@ -100,6 +100,11 @@
         4190
         11445
         11335
+      ];
+      allowedUDPPorts = [
+        15637 # Enshrouded
+        9876 # V Rising
+        9877 # V Rising
       ];
       # Block outbound connections to known mining pools (SECURITY FIX)
       extraCommands = ''
@@ -584,7 +589,7 @@
     description = "Detect and stop mining containers";
     serviceConfig = {
       Type = "simple";
-      User = "vincenzo";  # Run as vincenzo to access rootless Docker
+      User = "vincenzo"; # Run as vincenzo to access rootless Docker
       Group = "users";
       Environment = [
         "DOCKER_HOST=unix:///run/user/1000/docker.sock"
