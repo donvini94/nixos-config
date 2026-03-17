@@ -15,8 +15,10 @@
     ./hm-modules/hyprland.nix
     ./hm-modules/mpv.nix
     ./hm-modules/packages.nix
+    ./hm-modules/starship.nix
     ./hm-modules/yazi.nix
     ./hm-modules/zathura.nix
+    ./hm-modules/zellij.nix
     inputs.caelestia-shell.homeManagerModules.default
   ];
 
@@ -88,6 +90,12 @@
       interactiveShellInit = ''
         set fish_greeting
         fish_add_path ~/.config/emacs/bin
+
+        # Alt+E: edit current command line in emacs
+        bind \ee edit_command_buffer
+
+        # Alt+S: prepend sudo to current command
+        bind \es 'fish_commandline_prepend sudo'
       '';
     };
     kitty = {
@@ -96,7 +104,17 @@
         name = "Oxygen Mono";
         size = 18;
       };
+      themeFile = "Modus_Vivendi";
       shellIntegration.enableFishIntegration = true;
+      keybindings = {
+        "ctrl+t" = "new_tab";
+        "ctrl+w" = "close_tab";
+        "ctrl+j" = "next_tab";
+        "ctrl+k" = "previous_tab";
+      };
+      environment = {
+        "LANG" = "en_US.UTF-8";
+      };
       settings = {
         shell = "fish";
         scrollback_lines = 10000;
@@ -104,6 +122,8 @@
         window_padding_width = 8;
         confirm_os_window_close = 0;
         background_opacity = "0.9";
+        tab_bar_style = "powerline";
+        tab_powerline_style = "slanted";
       };
     };
   };
@@ -151,6 +171,7 @@
     adw-gtk3
     papirus-icon-theme
     nerd-fonts.jetbrains-mono
+    wtype # programmatic keyboard input on Wayland (for scripting)
   ];
 
   # ── Services ───────────────────────────────────────────────────

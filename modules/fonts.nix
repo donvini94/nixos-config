@@ -23,6 +23,7 @@
       noto-fonts-cjk-serif
       noto-fonts-color-emoji
       kochi-substitute
+      symbola
     ]
     ++ builtins.filter lib.attrsets.isDerivation (builtins.attrValues pkgs.nerd-fonts);
 }

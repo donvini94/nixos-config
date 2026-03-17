@@ -14,7 +14,9 @@
       pulse.enable = true;
       jack.enable = true;
     };
-    emacs.enable = true;
+    # Emacs daemon disabled — Doom Emacs manages its own server.
+    # emacsclient --alternate-editor="" auto-starts when needed.
+    # emacs.enable = true;
     printing.enable = true;
     xserver = {
       enable = true;

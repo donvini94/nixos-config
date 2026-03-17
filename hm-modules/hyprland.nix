@@ -95,29 +95,48 @@
       "$mod" = "SUPER";
 
       bind = [
-        # Caelestia integrations
+        # ── Caelestia integrations ─────────────────────────────
         "$mod, R, global, caelestia:launcher"
-        "$mod, L, global, caelestia:lock"
+        "$mod SHIFT, L, global, caelestia:lock"
         "CTRL ALT, Delete, global, caelestia:session"
         "CTRL ALT, C, global, caelestia:clearNotifs"
-        "$mod, K, global, caelestia:showall"
+        "$mod SHIFT, G, global, caelestia:showall"
+        "$mod SHIFT, Escape, global, caelestia:session"
         ", Print, global, caelestia:screenshotFreeze"
         "$mod, Print, global, caelestia:screenshot"
 
-        # Window management
+        # ── Window management ──────────────────────────────────
         "$mod, Return, exec, kitty"
         "$mod, Q, killactive,"
-        "$mod, E, exec, emacsclient -c"
-        "$mod, C, exec, emacsclient -n -e '(make-orgcapture-frame)'"
         "$mod, V, togglefloating,"
-        "$mod, S, exec, grim -g \"$(slurp)\" - | wl-copy"
-        "$mod, Y, togglesplit"
         "$mod, F, fullscreen"
+        "$mod, Y, togglesplit"
+        "$mod, S, exec, grim -g \"$(slurp)\" - | wl-copy"
+
+        # Navigate windows (vim-style j/k)
         "$mod, J, cyclenext"
+        "$mod, K, cyclenext, prev"
         "$mod SHIFT, J, movewindow, l"
         "$mod SHIFT, K, movewindow, r"
 
-        # Apps
+        # Master layout: resize and promote
+        "$mod, H, layoutmsg, mfact -0.05"
+        "$mod, L, layoutmsg, mfact +0.05"
+        "$mod, space, layoutmsg, swapwithmaster"
+
+        # Scratchpad: persistent hidden workspace
+        "$mod, minus, togglespecialworkspace, scratchpad"
+        "$mod SHIFT, minus, movetoworkspace, special:scratchpad"
+
+        # Clipboard history
+        "$mod, period, exec, cliphist list | wofi -d | cliphist decode | wl-copy"
+
+        # ── Emacs ──────────────────────────────────────────────
+        "$mod, E, exec, emacsclient -a '' -c"
+        "$mod, C, exec, emacsclient -a '' -n -e '(make-orgcapture-frame)'"
+        "$mod, O, exec, emacsclient -a '' -e '(org-agenda nil \"a\")'"
+
+        # ── Apps ───────────────────────────────────────────────
         "$mod, W, exec, firefox"
         "$mod, A, exec, steam-run anki"
         "$mod, Z, exec, zotero"
@@ -131,11 +150,11 @@
         "$mod SHIFT, D, exec, discord"
         "$mod SHIFT, T, exec, telegram-desktop"
         "$mod SHIFT, S, exec, signal-desktop"
+        "$mod, P, exec, wofi-pass -i -s -c"
         "$mod SHIFT, P, exec, pavucontrol"
         "$mod SHIFT, H, exec, kitty -e btop"
-        "$mod SHIFT, Escape, global, caelestia:session"
 
-        # Workspaces
+        # ── Workspaces ─────────────────────────────────────────
         "$mod, 1, workspace, 1"
         "$mod, 2, workspace, 2"
         "$mod, 3, workspace, 3"
@@ -160,6 +179,12 @@
         "$mod, mouse_up, workspace, e-1"
       ];
 
+      # Resize master with repeat
+      binde = [
+        ", XF86MonBrightnessUp, global, caelestia:brightnessUp"
+        ", XF86MonBrightnessDown, global, caelestia:brightnessDown"
+      ];
+
       bindm = [
         "$mod, mouse:272, movewindow"
         "$mod, mouse:273, resizewindow"
@@ -173,11 +198,6 @@
       bindl = [
         ", XF86AudioMute, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
         ", XF86AudioMicMute, exec, wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
-      ];
-
-      binde = [
-        ", XF86MonBrightnessUp, global, caelestia:brightnessUp"
-        ", XF86MonBrightnessDown, global, caelestia:brightnessDown"
       ];
     };
   };
