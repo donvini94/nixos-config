@@ -10,9 +10,6 @@
 
   networking.hostName = "dracula";
   environment.systemPackages = with pkgs; [
-    jellyfin
-    jellyfin-web
-    jellyfin-ffmpeg
     cudatoolkit
     mesa
     calibre
@@ -22,12 +19,9 @@
     transmission_4-gtk
     android-tools
     nvidia-container-toolkit
-
-    # photos
     lmstudio
   ];
 
-  programs.adb.enable = true;
   services = {
     jellyfin = {
       enable = true;

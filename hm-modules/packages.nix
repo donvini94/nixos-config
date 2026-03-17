@@ -42,7 +42,6 @@
     teams-for-linux
     zotero
     zoom-us
-    element-desktop
 
   ];
 }

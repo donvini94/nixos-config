@@ -12,19 +12,20 @@
 {
 
   imports = [
-    ./hm-modules/dunst.nix
+    #./hm-modules/dunst.nix
     ./hm-modules/helix.nix
-    ./hm-modules/kitty.nix
+    #./hm-modules/kitty.nix
     ./hm-modules/mpv.nix
     ./hm-modules/nushell.nix
     ./hm-modules/packages.nix
     ./hm-modules/starship.nix
-    ./hm-modules/swaylock.nix
-    ./hm-modules/waybar.nix
+    #./hm-modules/swaylock.nix
+    #./hm-modules/waybar.nix
     ./hm-modules/yazi.nix
     ./hm-modules/zathura.nix
     # ./hm-modules/mail.nix
-    ./modules/hyprland/config.nix
+    #./modules/hyprland/config.nix
+    inputs.caelestia-shell.homeManagerModules.default
   ];
 
   nixpkgs.config.allowUnfree = true;
@@ -56,7 +57,26 @@
       enableNushellIntegration = true;
     };
   };
-
+  programs.caelestia = {
+    enable = true;
+    systemd = {
+      enable = true; # if you prefer starting from your compositor
+      target = "graphical-session.target";
+      environment = [ ];
+    };
+    settings = {
+      bar.status = {
+        showBattery = false;
+      };
+      paths.wallpaperDir = "~/nixos-config/wallpapers/";
+    };
+    cli = {
+      enable = true; # Also add caelestia-cli to path
+      settings = {
+        theme.enableGtk = true;
+      };
+    };
+  };
   services = {
     udiskie.enable = true; # Automounter for removable media
     syncthing.enable = true;
