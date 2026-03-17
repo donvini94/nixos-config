@@ -12,11 +12,12 @@
 {
   imports = [
     ./hm-modules/helix.nix
+    ./hm-modules/hyprland.nix
     ./hm-modules/mpv.nix
     ./hm-modules/packages.nix
     ./hm-modules/yazi.nix
     ./hm-modules/zathura.nix
-    inputs.caelestia-nixos.homeManagerModules.default
+    inputs.caelestia-shell.homeManagerModules.default
   ];
 
   nixpkgs.config.allowUnfree = true;
@@ -25,11 +26,17 @@
     username = "${username}";
     homeDirectory = "/home/${username}";
     stateVersion = "23.05";
+    pointerCursor = {
+      name = "Bibata-Modern-Ice";
+      package = pkgs.bibata-cursors;
+      size = 24;
+      gtk.enable = true;
+    };
   };
 
   fonts.fontconfig.enable = true;
 
-  # ── Core programs ──────────────────────────────────────────────
+  # ── Programs ───────────────────────────────────────────────────
   programs = {
     home-manager.enable = true;
     git = {
@@ -61,48 +68,90 @@
         search_mode = "prefix";
       };
     };
-  };
-
-  # ── Caelestia (full desktop environment) ───────────────────────
-  programs.caelestia-dots = {
-    enable = true;
-
-    hypr = {
+    fish = {
       enable = true;
-      variables.settings = {
-        "$editor" = "emacsclient -c";
+      shellAbbrs = {
+        vim = "nvim";
+        e = "nvim";
+        cheat = "cht.sh";
+        c = "cht.sh";
+        cd = "z";
+        switch = "sudo nixos-rebuild switch";
+        ccs = "codecrafters submit";
+        cct = "codecrafters test";
+        nano = "nvim";
+        dr = "direnv reload";
+        bereit = "ssh vincenzo@dumusstbereitsein.de";
+        fzi = "ssh -l nl810@fzi.de fzi-gpu-mgmt-01.fzi.de";
+        windows = "bash ~/nixos-config/scripts/windows.sh";
       };
+      interactiveShellInit = ''
+        set fish_greeting
+        fish_add_path ~/.config/emacs/bin
+      '';
     };
-
-    caelestia = {
-      shell = {
-        enable = true;
-        settings = {
-          bar.status.showBattery = false;
-          paths.wallpaperDir = "~/nixos-config/wallpapers/";
-        };
+    kitty = {
+      enable = true;
+      font = {
+        name = "Oxygen Mono";
+        size = 18;
       };
-      cli = {
-        enable = true;
-        settings.theme = {
-          enableGtk = true;
-          enableQt = true;
-          enableHypr = true;
-        };
+      shellIntegration.enableFishIntegration = true;
+      settings = {
+        shell = "fish";
+        scrollback_lines = 10000;
+        cursor_shape = "beam";
+        window_padding_width = 8;
+        confirm_os_window_close = 0;
+        background_opacity = "0.9";
       };
     };
   };
 
-  # ── NVIDIA hardware workarounds (sourced last by hyprland.conf) ─
-  xdg.configFile."caelestia/hypr-user.conf".text = ''
-    env = LIBVA_DRIVER_NAME,nvidia
-    env = GBM_BACKEND,nvidia-drm
-    env = NVD_BACKEND,direct
-    env = AQ_DRM_DEVICES,/dev/dri/card2:/dev/dri/card1
-    cursor {
-        no_hardware_cursors = true
-    }
-  '';
+  # ── Caelestia shell (official module) ──────────────────────────
+  # Based on https://github.com/mawkler/nixos/blob/main/home/caelestia.nix
+  programs.caelestia = {
+    enable = true;
+    systemd = {
+      enable = true;
+      target = "xdg-desktop-portal-hyprland.service";
+    };
+    settings = {
+      bar.status.showBattery = false;
+      paths.wallpaperDir = "/home/vincenzo/nixos-config/wallpapers";
+      general.apps = {
+        terminal = [ "kitty" ];
+        audio = [ "pavucontrol" ];
+      };
+    };
+    cli = {
+      enable = true;
+      settings.theme = {
+        enableGtk = true;
+        enableQt = true;
+        enableHypr = true;
+      };
+    };
+  };
+
+  # ── Caelestia runtime dependencies ─────────────────────────────
+  # Only packages caelestia needs that aren't already in system modules.
+  # System-level: wl-clipboard, xdg-desktop-portal-hyprland, fastfetch,
+  #   btop, jq, socat, imagemagick, curl, qt5ct, qt6ct, pavucontrol
+  home.packages = with pkgs; [
+    xdg-desktop-portal-gtk
+    hyprpicker
+    cliphist
+    inotify-tools
+    app2unit
+    trash-cli
+    kitty
+    fish
+    starship
+    adw-gtk3
+    papirus-icon-theme
+    nerd-fonts.jetbrains-mono
+  ];
 
   # ── Services ───────────────────────────────────────────────────
   services = {
@@ -112,6 +161,12 @@
       enable = true;
       musicDirectory = "/media/music";
       network.startWhenNeeded = true;
+    };
+    gammastep = {
+      enable = true;
+      provider = "manual";
+      latitude = 49.782959;
+      longitude = 7.65118;
     };
   };
 

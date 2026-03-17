@@ -8,14 +8,14 @@
     # Docs
     zeal
 
-    zed-editor
+    #zed-editor
 
     # Nix
     nix-output-monitor
     nixfmt-rfc-style
 
     # Python
-    (python312.withPackages (
+    (python313.withPackages (
       ps: with ps; [
         pip
         virtualenvwrapper

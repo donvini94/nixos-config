@@ -39,7 +39,7 @@
     thunderbird
     slack
     signal-desktop
-    teams-for-linux
+    #teams-for-linux
     zotero
     zoom-us
 

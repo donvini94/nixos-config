@@ -16,7 +16,7 @@
 
   environment.systemPackages = with pkgs; [
     xorg.xhost
-    blueberry
+    blueman
     brightnessctl
     pinentry-curses
     pinentry-rofi

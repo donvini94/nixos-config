@@ -41,12 +41,6 @@
       url = "github:caelestia-dots/shell";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    caelestia-nixos = {
-      url = "github:Xellor-Dev/caelestia-nixos";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.caelestia-shell.follows = "caelestia-shell";
-    };
   };
 
   outputs =
@@ -61,6 +55,7 @@
       nil,
       unstable,
       lsfg-vk-flake,
+      caelestia-shell,
       ...
     }@inputs:
     let
@@ -88,15 +83,21 @@
           inherit system;
           specialArgs = {
             inherit inputs username unstablePkgs;
-            nix.nixPath = [ "nixpkgs=${inputs.nixpkgs}" ];
           };
           modules = [
             ./configuration.nix
             ./modules/desktop.nix
             ./hosts/dracula
+
+            hyprland.nixosModules.default
+            sops-nix.nixosModules.sops
             lsfg-vk-flake.nixosModules.default
             hosts.nixosModule
+            home-manager.nixosModules.home-manager
+
             {
+              programs.hyprland.enable = true;
+
               networking.stevenBlackHosts = {
                 enable = true;
                 blockFakenews = true;
@@ -104,29 +105,19 @@
                 blockPorn = true;
                 blockSocial = true;
               };
-            }
-            { programs.hyprland.enable = true; }
-            hyprland.nixosModules.default
-            sops-nix.nixosModules.sops
-            home-manager.nixosModules.home-manager
-            {
+
               environment.systemPackages = [
                 nil.packages.${system}.default
                 unstablePkgs.claude-code
               ];
-            }
-            {
-              home-manager.extraSpecialArgs = {
-                inherit
-                  username
-                  mail
-                  fullName
-                  unstablePkgs
-                  inputs
-                  ;
+
+              home-manager = {
+                extraSpecialArgs = {
+                  inherit username mail fullName unstablePkgs inputs;
+                };
+                backupFileExtension = "hm-backup";
+                users.${username} = import ./home.nix;
               };
-              home-manager.backupFileExtension = "hm-backup";
-              home-manager.users.${username} = import ./home.nix;
             }
           ];
         };

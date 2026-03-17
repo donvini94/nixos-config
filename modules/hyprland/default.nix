@@ -20,7 +20,6 @@
       package = inputs.hyprland.packages.${pkgs.system}.hyprland;
       xwayland.enable = true;
     };
-    light.enable = true;
     thunar.plugins = with pkgs.xfce; [
       thunar-archive-plugin
       thunar-volman
