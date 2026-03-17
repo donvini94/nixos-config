@@ -9,6 +9,7 @@
     zeal
 
     zed-editor
+
     # Nix
     nix-output-monitor
     nixfmt-rfc-style
@@ -34,10 +35,9 @@
     pipenv
     black
     isort
-    pipenv
     uv
 
-    # tooling
+    # Tooling
     devbox
     sqlite
     shfmt
@@ -50,7 +50,7 @@
     leetcode-cli
     bruno
     wakatime-cli
-    delta # syntax highlight pager for git
+    delta
     aider-chat
     codecrafters-cli
 

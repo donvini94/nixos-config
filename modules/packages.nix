@@ -6,50 +6,49 @@
 }:
 
 {
-
   environment.systemPackages = with pkgs; [
     git
-    vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
+    vim
     neovim
-    fzf # A command-line fuzzy finder
-    television # batteries included version of fzf
-    entr # Run arbitrary commands when files change
-    fastfetch # neofetch but maintained
+    fzf
+    television
+    entr
+    fastfetch
 
-    ripgrep # recursively searches directories for a regex pattern
+    ripgrep
     ripgrep-all
-    # archives
+
+    # Archives
     zip
-    p7zip
     xz
     unzip
     p7zip
     unrar
     pigz
+
     wofi-pass
     powertop
 
-    # secrets
+    # Secrets
     age
     sops
 
     piper
 
-    # networking tools
-    mtr # A network diagnostic tool
+    # Networking
+    mtr
     iperf3
-    dnsutils # `dig` + `nslookup`
-    ldns # replacement of `dig`, it provide the command `drill`
-    aria2 # A lightweight multi-protocol & multi-source command-line download utility
-    socat # replacement of openbsd-netcat
-    nmap # A utility for network discovery and security auditing
-    ipcalc # it is a calculator for the IPv4/v6 addresses
-    nextdns
+    dnsutils
+    ldns
+    aria2
+    socat
+    nmap
+    ipcalc
 
     pandoc
     mupdf
 
-    # misc
+    # Utilities
     file
     which
     tree
@@ -65,16 +64,16 @@
     groff
     ghostscript
 
-    # system tools
+    # System monitoring
     sysstat
-    lm_sensors # for `sensors` command
+    lm_sensors
     ethtool
-    pciutils # lspci
-    usbutils # lsusb
+    pciutils
+    usbutils
     libnotify
-    btop # replacement of htop/nmon
-    iotop # io monitoring
-    iftop # network monitoring
+    btop
+    iotop
+    iftop
     lazydocker
     zoxide
     psmisc
@@ -82,36 +81,39 @@
     gnumake
     gcc
     pkg-config
-    mupdf
     libtool
     cmake
     fd
     clang
     unar
 
-    #undervolting stuff
+    # Stress testing
     undervolt
     s-tui
     stress
 
     xdg-user-dirs
-    cht-sh # Cheatsheet
+    cht-sh
     tldr
     btrfs-progs
-    # system call monitoring
-    strace # system call monitoring
-    ltrace # library call monitoring
-    lsof # list open files
-    lact # GPU monitoring
+
+    # System call monitoring
+    strace
+    ltrace
+    lsof
+    lact
     efibootmgr
+
+    # Finance
     hledger
     hledger-ui
     hledger-utils
     hledger-interest
     hledger-web
 
+    # Media tools
     mediainfo
     imagemagick
-    picard # audio tagger
+    picard
   ];
 }

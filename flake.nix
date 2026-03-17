@@ -21,29 +21,31 @@
   };
 
   inputs = {
-    # Core inputs
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     unstable.url = "github:NixOS/nixpkgs/master";
     home-manager.url = "github:nix-community/home-manager/master";
 
-    # System management
-    sops-nix.url = "github:Mic92/sops-nix"; # Secret management
-    disko.url = "github:nix-community/disko"; # Declarative partitioning
-    hosts.url = "github:StevenBlack/hosts"; # Block unwanted websites
+    sops-nix.url = "github:Mic92/sops-nix";
+    disko.url = "github:nix-community/disko";
+    hosts.url = "github:StevenBlack/hosts";
 
-    # Desktop environment
-    hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1"; # Modern tiling window manager
+    hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1";
+    nil.url = "github:oxalica/nil";
 
-    # Development tools
-    nil.url = "github:oxalica/nil"; # Nix LSP
-
-    # losless scaling
-    lsfg-vk-flake.url = "github:pabloaul/lsfg-vk-flake/main";
-    lsfg-vk-flake.inputs.nixpkgs.follows = "nixpkgs";
+    lsfg-vk-flake = {
+      url = "github:pabloaul/lsfg-vk-flake/main";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     caelestia-shell = {
       url = "github:caelestia-dots/shell";
       inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    caelestia-nixos = {
+      url = "github:Xellor-Dev/caelestia-nixos";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.caelestia-shell.follows = "caelestia-shell";
     };
   };
 
@@ -62,17 +64,13 @@
       ...
     }@inputs:
     let
-      # User configuration
       username = "vincenzo";
       fullName = "Vincenzo Pace";
       mail = "vincenzo.pace94@icloud.com";
-
-      # System configuration
       system = "x86_64-linux";
 
-      # Unstable packages with allowUnfree configuration
       unstablePkgs = import unstable {
-        system = "x86_64-linux";
+        inherit system;
         config = {
           allowUnfree = true;
           cudaSupport = true;
@@ -83,80 +81,63 @@
             ];
         };
       };
-
-      # Common modules for desktop systems
-      commonDesktopModules = [
-        ./configuration.nix
-        ./modules/desktop.nix
-        ./hosts/desktop/common.nix
-        lsfg-vk-flake.nixosModules.default
-        hosts.nixosModule
-        {
-          networking.stevenBlackHosts = {
-            enable = true;
-            blockFakenews = true;
-            blockGambling = true;
-            blockPorn = true;
-            blockSocial = true;
-          };
-        }
-        { programs.hyprland.enable = true; }
-        hyprland.nixosModules.default
-        sops-nix.nixosModules.sops
-        home-manager.nixosModules.home-manager
-        {
-          environment.systemPackages = [
-            nil.packages.${system}.default
-            unstablePkgs.claude-code
-          ];
-        }
-        {
-          home-manager.extraSpecialArgs = {
-            inherit
-              username
-              mail
-              fullName
-              unstablePkgs
-              inputs
-              ;
-          };
-          home-manager.backupFileExtension = "hm-backup";
-          home-manager.users.${username} = import ./home.nix;
-        }
-      ];
-
-      # Function to create a desktop NixOS configuration
-      mkDesktopSystem =
-        hostName:
-        nixpkgs.lib.nixosSystem {
+    in
+    {
+      nixosConfigurations = {
+        dracula = nixpkgs.lib.nixosSystem {
           inherit system;
           specialArgs = {
             inherit inputs username unstablePkgs;
             nix.nixPath = [ "nixpkgs=${inputs.nixpkgs}" ];
           };
-          modules = commonDesktopModules ++ [ ./hosts/desktop/${hostName}.nix ];
+          modules = [
+            ./configuration.nix
+            ./modules/desktop.nix
+            ./hosts/dracula
+            lsfg-vk-flake.nixosModules.default
+            hosts.nixosModule
+            {
+              networking.stevenBlackHosts = {
+                enable = true;
+                blockFakenews = true;
+                blockGambling = true;
+                blockPorn = true;
+                blockSocial = true;
+              };
+            }
+            { programs.hyprland.enable = true; }
+            hyprland.nixosModules.default
+            sops-nix.nixosModules.sops
+            home-manager.nixosModules.home-manager
+            {
+              environment.systemPackages = [
+                nil.packages.${system}.default
+                unstablePkgs.claude-code
+              ];
+            }
+            {
+              home-manager.extraSpecialArgs = {
+                inherit
+                  username
+                  mail
+                  fullName
+                  unstablePkgs
+                  inputs
+                  ;
+              };
+              home-manager.backupFileExtension = "hm-backup";
+              home-manager.users.${username} = import ./home.nix;
+            }
+          ];
         };
 
-      # Function to create a server NixOS configuration
-      mkServerSystem =
-        hostName:
-        nixpkgs.lib.nixosSystem {
+        alucard = nixpkgs.lib.nixosSystem {
           inherit system;
           specialArgs = {
             inherit inputs;
           };
-          modules = [ ./hosts/server/${hostName}.nix ];
+          modules = [ ./hosts/alucard ];
         };
-    in
-    {
-      nixosConfigurations = {
-        # Desktop configurations
-        asgar = mkDesktopSystem "asgar";
-        valnar = mkDesktopSystem "valnar";
-        dracula = mkDesktopSystem "dracula";
-
-        # Server configurations
-        alucard = mkServerSystem "alucard";
       };
     };
 }

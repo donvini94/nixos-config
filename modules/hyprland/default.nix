@@ -1,32 +1,25 @@
 { pkgs, inputs, ... }:
 {
-  xdg.portal = {
-    enable = true;
-  };
+  xdg.portal.enable = true;
 
-  environment.pathsToLink = [ "/libexec" ]; # links /libexec from derivations to /run/current-system/sw
+  environment.pathsToLink = [ "/libexec" ];
+
   services = {
-    gvfs.enable = true; # Mount, trash, and other functionalities
-    tumbler.enable = true; # Thumbnail support for images
+    gvfs.enable = true;
+    tumbler.enable = true;
     displayManager.defaultSession = "hyprland";
     xserver = {
       enable = true;
-      desktopManager = {
-        xterm.enable = false;
-      };
-      displayManager = {
-        gdm.enable = true;
-      };
+      desktopManager.xterm.enable = false;
+      displayManager.gdm.enable = true;
     };
   };
 
   programs = {
     hyprland = {
-
       package = inputs.hyprland.packages.${pkgs.system}.hyprland;
       xwayland.enable = true;
     };
-    # monitor backlight control
     light.enable = true;
     thunar.plugins = with pkgs.xfce; [
       thunar-archive-plugin
@@ -35,40 +28,26 @@
   };
 
   environment.sessionVariables.NIXOS_OZONE_WL = "1";
+
+  # Caelestia-shell replaces: waybar, dunst, swww, swayidle, wlogout, wofi (launcher)
+  # Keep only tools that caelestia does NOT provide
   environment.systemPackages = with pkgs; [
-    waybar # the status bar
-    swww # the wallpaper
-    swayidle # the idle timeout
-    wlogout # logout menu
-    wl-clipboard # copying and pasting
-#    kdePackages.xwaylandvideobridge
-
+    wl-clipboard
     pass-wayland
-    wofi
-    nwg-look
-    lxappearance
-    hyprcursor
-    bibata-cursors
+    wofi # needed for wofi-pass
     egl-wayland
-
     xdg-desktop-portal-hyprland
-    wf-recorder # creen recording
-    grim # taking screenshots
-    slurp # selecting a region to screenshot
+    wf-recorder
+    grim
+    slurp
+    yad
 
-    #mako # the notification daemon, the same as dunst
-    dunst
-    yad # a fork of zenity, for creating dialogs
+    # Audio
+    alsa-utils
+    mpd
+    mpc
+    ncmpcpp
 
-    # audio
-    alsa-utils # provides amixer/alsamixer/...
-    mpd # for playing system sounds
-    mpc # command-line mpd client
-    ncmpcpp # a mpd client with a UI
-    networkmanagerapplet # provide GUI app: nm-connection-editor
-
-    xfce.thunar # xfce4's file manager
+    xfce.thunar
   ];
-
-  # fix https://github.com/ryan4yin/nix-config/issues/10
 }

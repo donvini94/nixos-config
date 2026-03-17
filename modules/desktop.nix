@@ -23,11 +23,9 @@
     libsForQt5.qt5ct
     qt6Packages.qt6ct
     nwg-look
-    mullvad-vpn
     gparted
     pavucontrol
     filezilla
-    power-profiles-daemon
     linux-firmware
     mtpfs
     droidcam

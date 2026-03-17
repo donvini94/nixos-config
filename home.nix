@@ -10,22 +10,13 @@
 }:
 
 {
-
   imports = [
-    #./hm-modules/dunst.nix
     ./hm-modules/helix.nix
-    #./hm-modules/kitty.nix
     ./hm-modules/mpv.nix
-    ./hm-modules/nushell.nix
     ./hm-modules/packages.nix
-    ./hm-modules/starship.nix
-    #./hm-modules/swaylock.nix
-    #./hm-modules/waybar.nix
     ./hm-modules/yazi.nix
     ./hm-modules/zathura.nix
-    # ./hm-modules/mail.nix
-    #./modules/hyprland/config.nix
-    inputs.caelestia-shell.homeManagerModules.default
+    inputs.caelestia-nixos.homeManagerModules.default
   ];
 
   nixpkgs.config.allowUnfree = true;
@@ -38,6 +29,7 @@
 
   fonts.fontconfig.enable = true;
 
+  # ── Core programs ──────────────────────────────────────────────
   programs = {
     home-manager.enable = true;
     git = {
@@ -54,95 +46,72 @@
     };
     zoxide = {
       enable = true;
-      enableNushellIntegration = true;
+      enableFishIntegration = true;
     };
-  };
-  programs.caelestia = {
-    enable = true;
-    systemd = {
-      enable = true; # if you prefer starting from your compositor
-      target = "graphical-session.target";
-      environment = [ ];
+    direnv = {
+      enable = true;
+      nix-direnv.enable = true;
     };
-    settings = {
-      bar.status = {
-        showBattery = false;
-      };
-      paths.wallpaperDir = "~/nixos-config/wallpapers/";
-    };
-    cli = {
-      enable = true; # Also add caelestia-cli to path
+    atuin = {
+      enable = true;
+      enableFishIntegration = true;
       settings = {
-        theme.enableGtk = true;
+        auto_sync = true;
+        sync_address = "https://dumusstbereitsein.de";
+        search_mode = "prefix";
       };
     };
   };
+
+  # ── Caelestia (full desktop environment) ───────────────────────
+  programs.caelestia-dots = {
+    enable = true;
+
+    hypr = {
+      enable = true;
+      variables.settings = {
+        "$editor" = "emacsclient -c";
+      };
+    };
+
+    caelestia = {
+      shell = {
+        enable = true;
+        settings = {
+          bar.status.showBattery = false;
+          paths.wallpaperDir = "~/nixos-config/wallpapers/";
+        };
+      };
+      cli = {
+        enable = true;
+        settings.theme = {
+          enableGtk = true;
+          enableQt = true;
+          enableHypr = true;
+        };
+      };
+    };
+  };
+
+  # ── NVIDIA hardware workarounds (sourced last by hyprland.conf) ─
+  xdg.configFile."caelestia/hypr-user.conf".text = ''
+    env = LIBVA_DRIVER_NAME,nvidia
+    env = GBM_BACKEND,nvidia-drm
+    env = NVD_BACKEND,direct
+    env = AQ_DRM_DEVICES,/dev/dri/card2:/dev/dri/card1
+    cursor {
+        no_hardware_cursors = true
+    }
+  '';
+
+  # ── Services ───────────────────────────────────────────────────
   services = {
-    udiskie.enable = true; # Automounter for removable media
+    udiskie.enable = true;
     syncthing.enable = true;
     mpd = {
       enable = true;
       musicDirectory = "/media/music";
       network.startWhenNeeded = true;
-    };
-    gammastep = {
-      enable = true;
-      provider = "manual";
-      latitude = 49.782959;
-      longitude = 7.65118;
-    };
-  };
-  dconf = {
-    settings = {
-      "org/gnome/desktop/interface" = {
-        gtk-theme = "Adwaita-dark";
-        color-scheme = "prefer-light";
-      };
-    };
-  };
-
-  gtk = {
-    enable = true;
-    theme = {
-      name = "Adwaita-dark";
-      package = pkgs.gnome-themes-extra;
-    };
-    iconTheme = {
-      name = "Papirus-Dark";
-    };
-    cursorTheme = {
-      name = "Bibata-Modern-Ice";
-      package = pkgs.bibata-cursors;
-      size = 24;
-    };
-  };
-
-  qt = {
-    enable = true;
-    platformTheme.name = "Adwaita-dark";
-    style = {
-      name = "Adwaita-dark";
-      package = pkgs.adwaita-qt;
-    };
-  };
-
-  services.darkman = {
-    enable = true;
-    settings = {
-      lat = 49.782959;
-      lng = 7.65118;
-    };
-    darkModeScripts = {
-      gtk-theme = ''
-        ${pkgs.dconf}/bin/dconf write \
-            /org/gnome/desktop/interface/color-scheme "'prefer-dark'"
-      '';
-    };
-    lightModeScripts = {
-      gtk-theme = ''
-        ${pkgs.dconf}/bin/dconf write \
-            /org/gnome/desktop/interface/color-scheme "'prefer-light'"
-      '';
     };
   };
 
@@ -150,7 +119,6 @@
     STEAM_EXTRA_COMPAT_TOOLS_PATHS = "\${HOME}/.steam/root/compatibilitytools.d";
   };
 
-  # Mimetypes
   xdg.mimeApps.defaultApplications = {
     "application/pdf" = [ "zathura.desktop" ];
     "image/*" = [ "viewnior.desktop" ];
@@ -158,5 +126,6 @@
     "video/jpg" = [ "mpv.desktop" ];
     "video/*" = [ "mpv.desktop" ];
   };
+
   systemd.user.startServices = "sd-switch";
 }
