@@ -30,6 +30,17 @@
         torchWithCuda
         transformers
         pynvml
+
+        # ML / data science
+        jupyter
+        jupyterlab
+        matplotlib
+        seaborn
+        scikit-learn
+        datasets
+        accelerate
+        wandb
+        tensorboard
       ]
     ))
     pyright
@@ -47,7 +58,7 @@
     dockfmt
     dockerfile-language-server
     helix
-    emacs
+    emacs30-pgtk
     leetcode-cli
     bruno
     wakatime-cli
@@ -71,6 +82,18 @@
     lldb
     gdb
     rustc
+
+    # Docs & writing
+    texlive.combined.scheme-medium
+    hunspell
+    hunspellDicts.en_US
+    hunspellDicts.de_DE
+    vale
+    proselint
+
+    # Emacs support
+    libvterm
+    editorconfig-core-c
 
     # Web
     html-tidy

@@ -1,9 +1,4 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}:
+{ ... }:
 {
   services = {
     pipewire = {
@@ -18,11 +13,6 @@
     # emacsclient --alternate-editor="" auto-starts when needed.
     # emacs.enable = true;
     printing.enable = true;
-    xserver = {
-      enable = true;
-      xkb.layout = "us";
-      xkb.options = "caps:escape, grp:alt_shift_toggle";
-    };
     power-profiles-daemon.enable = true;
     mullvad-vpn.enable = true;
     ratbagd.enable = true;

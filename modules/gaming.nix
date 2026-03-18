@@ -1,10 +1,4 @@
-{
-  config,
-  lib,
-  pkgs,
-  inputs,
-  ...
-}:
+{ pkgs, ... }:
 
 {
   programs = {
@@ -27,7 +21,6 @@
     winetricks
     wineWow64Packages.full
     mono
-    egl-wayland
   ];
 
   environment.sessionVariables = {

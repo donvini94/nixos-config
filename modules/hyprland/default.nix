@@ -11,6 +11,8 @@
     xserver = {
       enable = true;
       desktopManager.xterm.enable = false;
+      xkb.layout = "us";
+      xkb.options = "caps:escape, grp:alt_shift_toggle";
     };
     displayManager.gdm.enable = true;
   };

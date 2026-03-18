@@ -1,12 +1,13 @@
 {
-  inputs,
   config,
   lib,
   pkgs,
   modulesPath,
   ...
 }:
-
+let
+  openstackServerId = "${openstackServerId}";
+in
 {
   imports = [
     (modulesPath + "/profiles/qemu-guest.nix")
@@ -38,36 +39,13 @@
     supportedFilesystems = [ "cifs" ];
   };
 
-  # Nix settings
+  # Nix settings (shared base in configuration.nix)
   nix = {
     settings = {
-      download-buffer-size = 524288000;
-      experimental-features = [
-        "nix-command"
-        "flakes"
-      ];
       sandbox = true;
       max-jobs = 10;
-      auto-optimise-store = true;
-      substituters = [
-        "https://cache.nixos.org/"
-        "https://ghcide-nix.cachix.org"
-        "https://hercules-ci.cachix.org"
-        "https://iohk.cachix.org"
-        "https://nix-tools.cachix.org"
-      ];
-      trusted-public-keys = [
-        "ghcide-nix.cachix.org-1:ibAY5FD+XWLzbLr8fxK6n8fL9zZe7jS+gYeyxyWYK5c="
-        "hercules-ci.cachix.org-1:ZZeDl9Va+xe9j+KqdzoBZMFJHVQ42Uu/c/1/KMC5Lw0="
-        "iohk.cachix.org-1:DpRUyj7h7V830dp/i6Nti+NEO2/nhblbov/8MW7Rqoo="
-        "nix-tools.cachix.org-1:ebBEBZLogLxcCvipq2MTvuHlP7ZRdkazFSQsbs0Px1A="
-      ];
     };
-    gc = {
-      automatic = true;
-      dates = "23:00";
-      options = "--delete-older-than 30d";
-    };
+    gc.dates = "23:00";
   };
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
@@ -124,7 +102,7 @@
       User = "vincenzo";
       ExecStart = pkgs.writeShellScript "unshelve-server.sh" ''
         source /home/vincenzo/.leafcloud_rc.sh
-        ${pkgs.openstackclient}/bin/openstack server unshelve d94fd33f-6907-4d47-9929-ea785a78676d
+        ${pkgs.openstackclient}/bin/openstack server unshelve ${openstackServerId}
       '';
     };
   };
@@ -146,7 +124,7 @@
       User = "vincenzo";
       ExecStart = pkgs.writeShellScript "shelve-server.sh" ''
         source /home/vincenzo/.leafcloud_rc.sh
-        ${pkgs.openstackclient}/bin/openstack server shelve d94fd33f-6907-4d47-9929-ea785a78676d
+        ${pkgs.openstackclient}/bin/openstack server shelve ${openstackServerId}
       '';
     };
   };

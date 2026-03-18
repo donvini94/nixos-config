@@ -1,6 +1,4 @@
 {
-  config,
-  lib,
   pkgs,
   unstablePkgs,
   ...
@@ -16,16 +14,12 @@
     jq # A lightweight and flexible command-line JSON processor
     yq-go # yaml processer https://github.com/mikefarah/yq
     yt-dlp
-    wofi-pass
 
     # media
-    sxiv
     nsxiv
-    mpv
 
     # productivity
     glow # markdown previewer in terminal
-    zathura
     poppler-utils
     anki
     qolibri # japanese dictionaries

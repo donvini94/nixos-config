@@ -1,9 +1,4 @@
-{
-  config,
-  lib,
-  pkgs,
-  ...
-}:
+{ pkgs, ... }:
 
 {
   imports = [
@@ -29,5 +24,15 @@
     linux-firmware
     mtpfs
     droidcam
+
+    # Desktop-only tools (not needed on server)
+    wofi-pass
+    powertop
+    piper
+    lact
+    picard
+    undervolt
+    s-tui
+    stress
   ];
 }

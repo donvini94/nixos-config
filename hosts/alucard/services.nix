@@ -1,4 +1,8 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, ... }:
+let
+  domain = "dumusstbereitsein.de";
+  domain2 = "istbereit.de";
+in
 {
   # ACME / Let's Encrypt
   security.acme = {
@@ -17,7 +21,7 @@
         passwordFile = config.sops.secrets."keycloak/password".path;
       };
       settings = {
-        hostname = "auth.dumusstbereitsein.de";
+        hostname = "auth.${domain}";
         http-port = 38080;
         http-enabled = true;
         proxy-headers = "xforwarded";
@@ -57,9 +61,9 @@
       consumptionDirIsPublic = true;
       settings = {
         PAPERLESS_OCR_LANGUAGE = "deu+eng";
-        PAPERLESS_URL = "https://paperless.dumusstbereitsein.de";
-        PAPERLESS_ALLOWED_HOSTS = "paperless.dumusstbereitsein.de";
-        PAPERLESS_CSRF_TRUSTED_ORIGINS = "https://paperless.dumusstbereitsein.de";
+        PAPERLESS_URL = "https://paperless.${domain}";
+        PAPERLESS_ALLOWED_HOSTS = "paperless.${domain}";
+        PAPERLESS_CSRF_TRUSTED_ORIGINS = "https://paperless.${domain}";
       };
       passwordFile = config.sops.secrets."paperless/password".path;
     };
@@ -68,25 +72,6 @@
       enable = true;
       openFirewall = true;
     };
-
-    # Vaultwarden (disabled, pending fix)
-    # vaultwarden = {
-    #   enable = true;
-    #   backupDir = "/var/lib/vaultwarden/backup";
-    #   environmentFile = config.sops.templates."vaultwarden.env".path;
-    #   config = {
-    #     DOMAIN = "https://passwort.istbereit.de";
-    #     SIGNUPS_ALLOWED = false;
-    #     ROCKET_ADDRESS = "127.0.0.1";
-    #     ROCKET_PORT = 8222;
-    #     ROCKET_LOG = "critical";
-    #     SMTP_HOST = "127.0.0.1";
-    #     SMTP_PORT = 25;
-    #     SMTP_SSL = false;
-    #     SMTP_FROM = "admin@passwort.istbereit.de";
-    #     SMTP_FROM_NAME = "Bereitwarden";
-    #   };
-    # };
 
     # Nginx reverse proxy
     nginx = {
@@ -97,12 +82,12 @@
       recommendedProxySettings = true;
       recommendedTlsSettings = true;
       virtualHosts = {
-        "dumusstbereitsein.de" = {
+        "${domain}" = {
           enableACME = true;
           forceSSL = true;
           locations."/".proxyPass = "http://127.0.0.1:4000";
         };
-        "auth.dumusstbereitsein.de" = {
+        "auth.${domain}" = {
           enableACME = true;
           forceSSL = true;
           locations."/" = {
@@ -110,63 +95,63 @@
             proxyWebsockets = true;
           };
         };
-        "git.dumusstbereitsein.de" = {
+        "git.${domain}" = {
           enableACME = true;
           forceSSL = true;
           locations."/".proxyPass = "http://unix:/run/gitlab/gitlab-workhorse.socket";
         };
-        "registry.dumusstbereitsein.de" = {
+        "registry.${domain}" = {
           enableACME = true;
           forceSSL = true;
           locations."/".proxyPass = "http://localhost:5000";
           basicAuthFile = ../../secrets/htpasswd;
         };
-        "stream.dumusstbereitsein.de" = {
+        "stream.${domain}" = {
           enableACME = true;
           forceSSL = true;
           locations."/".proxyPass = "http://localhost:8096";
         };
-        "chat.dumusstbereitsein.de" = {
+        "chat.${domain}" = {
           enableACME = true;
           forceSSL = true;
           locations."/".proxyPass = "http://localhost:1447";
         };
-        "music.dumusstbereitsein.de" = {
+        "music.${domain}" = {
           enableACME = true;
           forceSSL = true;
           locations."/".proxyPass = "http://localhost:4533";
         };
-        "docs.dumusstbereitsein.de" = {
+        "docs.${domain}" = {
           enableACME = true;
           forceSSL = true;
           locations."/".proxyPass = "http://127.0.0.1:3000";
         };
-        "paperless.dumusstbereitsein.de" = {
+        "paperless.${domain}" = {
           enableACME = true;
           forceSSL = true;
           locations."/".proxyPass = "http://127.0.0.1:58080";
         };
-        "files.dumusstbereitsein.de" = {
+        "files.${domain}" = {
           enableACME = true;
           forceSSL = true;
           locations."/".proxyPass = "http://127.0.0.1:53842";
         };
-        "budget.istbereit.de" = {
+        "budget.${domain2}" = {
           enableACME = true;
           forceSSL = true;
           locations."/".proxyPass = "http://127.0.0.1:5006";
         };
-        "read.istbereit.de" = {
+        "read.${domain2}" = {
           enableACME = true;
           forceSSL = true;
           locations."/".proxyPass = "http://127.0.0.1:8083";
         };
-        "mail.istbereit.de" = {
+        "mail.${domain2}" = {
           enableACME = true;
           forceSSL = true;
           locations."/".proxyPass = "http://127.0.0.1:880";
         };
-        "coder.istbereit.de" = {
+        "coder.${domain2}" = {
           enableACME = true;
           forceSSL = true;
           locations."/" = {
@@ -174,14 +159,7 @@
             proxyWebsockets = true;
           };
         };
-        "passwort.istbereit.de" = {
-          enableACME = true;
-          forceSSL = true;
-          locations."/" = {
-            proxyPass = "http://127.0.0.1:8222"; # vaultwarden ROCKET_PORT
-          };
-        };
-        "requests.dumusstbereitsein.de" = {
+        "requests.${domain}" = {
           enableACME = true;
           forceSSL = true;
           locations."/" = {

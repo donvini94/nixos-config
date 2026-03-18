@@ -105,10 +105,7 @@
   # Based on https://github.com/mawkler/nixos/blob/main/home/caelestia.nix
   programs.caelestia = {
     enable = true;
-    systemd = {
-      enable = true;
-      target = "xdg-desktop-portal-hyprland.service";
-    };
+    systemd.enable = true;
     settings = {
       bar.status.showBattery = false;
       paths.wallpaperDir = "/home/vincenzo/nixos-config/wallpapers";
@@ -138,9 +135,6 @@
     inotify-tools
     app2unit
     trash-cli
-    kitty
-    fish
-    starship
     adw-gtk3
     papirus-icon-theme
     nerd-fonts.jetbrains-mono
@@ -164,15 +158,9 @@
     };
   };
 
-  home.sessionVariables = {
-    STEAM_EXTRA_COMPAT_TOOLS_PATHS = "\${HOME}/.steam/root/compatibilitytools.d";
-  };
-
   xdg.mimeApps.defaultApplications = {
     "application/pdf" = [ "zathura.desktop" ];
     "image/*" = [ "viewnior.desktop" ];
-    "video/png" = [ "mpv.desktop" ];
-    "video/jpg" = [ "mpv.desktop" ];
     "video/*" = [ "mpv.desktop" ];
   };
 

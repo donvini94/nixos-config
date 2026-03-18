@@ -41,6 +41,8 @@
       url = "github:caelestia-dots/shell";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    emacs-overlay.url = "github:nix-community/emacs-overlay";
   };
 
   outputs =
@@ -56,6 +58,7 @@
       unstable,
       lsfg-vk-flake,
       caelestia-shell,
+      emacs-overlay,
       ...
     }@inputs:
     let
@@ -88,14 +91,13 @@
             ./configuration.nix
             ./modules/desktop.nix
             ./hosts/dracula
-
             hyprland.nixosModules.default
             sops-nix.nixosModules.sops
             lsfg-vk-flake.nixosModules.default
             hosts.nixosModule
             home-manager.nixosModules.home-manager
-
             {
+              nixpkgs.overlays = [ emacs-overlay.overlay ];
               programs.hyprland.enable = true;
 
               networking.stevenBlackHosts = {
@@ -112,7 +114,13 @@
 
               home-manager = {
                 extraSpecialArgs = {
-                  inherit username mail fullName unstablePkgs inputs;
+                  inherit
+                    username
+                    mail
+                    fullName
+                    unstablePkgs
+                    inputs
+                    ;
                 };
                 backupFileExtension = "hm-backup";
                 users.${username} = import ./home.nix;

@@ -1,9 +1,4 @@
-{
-  config,
-  pkgs,
-  inputs,
-  ...
-}:
+{ pkgs, ... }:
 
 {
   environment.systemPackages = with pkgs; [
@@ -26,14 +21,9 @@
     unrar
     pigz
 
-    wofi-pass
-    powertop
-
     # Secrets
     age
     sops
-
-    piper
 
     # Networking
     mtr
@@ -87,11 +77,6 @@
     clang
     unar
 
-    # Stress testing
-    undervolt
-    s-tui
-    stress
-
     xdg-user-dirs
     cht-sh
     tldr
@@ -101,7 +86,6 @@
     strace
     ltrace
     lsof
-    lact
     efibootmgr
 
     # Finance
@@ -114,6 +98,5 @@
     # Media tools
     mediainfo
     imagemagick
-    picard
   ];
 }

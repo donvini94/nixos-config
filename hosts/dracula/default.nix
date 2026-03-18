@@ -9,6 +9,8 @@
 {
   imports = [ ../../modules/gaming.nix ];
 
+  nixpkgs.config.cudaSupport = true;
+
   networking.hostName = "dracula";
 
   # Boot
@@ -92,21 +94,8 @@
   # Nix settings
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   nix = {
-    settings = {
-      experimental-features = [
-        "nix-command"
-        "flakes"
-      ];
-      download-buffer-size = 524288000;
-      trusted-users = [ "${username}" ];
-      auto-optimise-store = true;
-    };
-    optimise.automatic = true;
-    gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 30d";
-    };
+    settings.trusted-users = [ "${username}" ];
+    gc.dates = "weekly";
   };
 
   # Desktop programs
