@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  unstablePkgs,
   ...
 }:
 
@@ -39,7 +40,7 @@
     thunderbird
     slack
     signal-desktop
-    #teams-for-linux
+    unstablePkgs.teams-for-linux
     zotero
     zoom-us
 

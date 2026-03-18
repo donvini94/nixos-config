@@ -15,7 +15,7 @@
   ];
 
   environment.systemPackages = with pkgs; [
-    xorg.xhost
+    xhost
     blueman
     brightnessctl
     pinentry-curses

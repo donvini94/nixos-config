@@ -1,5 +1,6 @@
 {
   pkgs,
+  unstablePkgs,
   ...
 }:
 
@@ -8,11 +9,11 @@
     # Docs
     zeal
 
-    #zed-editor
+    unstablePkgs.zed-editor
 
     # Nix
     nix-output-monitor
-    nixfmt-rfc-style
+    nixfmt
 
     # Python
     (python313.withPackages (
@@ -44,7 +45,7 @@
     bash-language-server
     shellcheck
     dockfmt
-    dockerfile-language-server-nodejs
+    dockerfile-language-server
     helix
     emacs
     leetcode-cli

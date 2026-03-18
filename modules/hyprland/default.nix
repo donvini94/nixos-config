@@ -11,13 +11,13 @@
     xserver = {
       enable = true;
       desktopManager.xterm.enable = false;
-      displayManager.gdm.enable = true;
     };
+    displayManager.gdm.enable = true;
   };
 
   programs = {
     hyprland = {
-      package = inputs.hyprland.packages.${pkgs.system}.hyprland;
+      package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
       xwayland.enable = true;
     };
     thunar.plugins = with pkgs.xfce; [
@@ -47,6 +47,6 @@
     mpc
     ncmpcpp
 
-    xfce.thunar
+    thunar
   ];
 }
