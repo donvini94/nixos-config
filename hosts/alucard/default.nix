@@ -6,7 +6,7 @@
   ...
 }:
 let
-  openstackServerId = "${openstackServerId}";
+  openstackServerId = "d94fd33f-6907-4d47-9929-ea785a78676d";
 in
 {
   imports = [
@@ -64,6 +64,7 @@ in
     openstackclient
     inetutils
     claude-code
+    nodejs_22
   ];
 
   programs.tmux = {
