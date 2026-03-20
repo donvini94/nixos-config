@@ -14,6 +14,10 @@
     # Nix
     nix-output-monitor
     nixfmt
+    nixd
+
+    # Java (system JDK for jdtls — project JDKs come from devbox)
+    jdk21
 
     # Python
     (python313.withPackages (
@@ -25,7 +29,7 @@
         numpy
         requests
         beautifulsoup4
-        pyflakes
+        pyflakes  # TODO: ruff replaces this — remove once ruff is confirmed working
         debugpy
         torchWithCuda
         transformers
@@ -43,10 +47,9 @@
         tensorboard
       ]
     ))
-    pyright
+    ty
+    ruff
     pipenv
-    black
-    isort
     uv
 
     # Tooling
@@ -65,6 +68,7 @@
     delta
     aider-chat
     codecrafters-cli
+    warp-terminal
 
     # Tree-sitter
     tree-sitter

@@ -34,6 +34,7 @@
     socat
     nmap
     ipcalc
+    mullvad-vpn
 
     pandoc
     mupdf
