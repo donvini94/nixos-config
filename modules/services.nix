@@ -9,9 +9,10 @@
       pulse.enable = true;
       jack.enable = true;
     };
-    # Emacs daemon disabled — Doom Emacs manages its own server.
-    # emacsclient --alternate-editor="" auto-starts when needed.
-    # emacs.enable = true;
+    emacs = {
+      enable = true;
+      startWithGraphical = true;  # wait for graphical session (needed for pgtk)
+    };
     printing.enable = true;
     power-profiles-daemon.enable = true;
     mullvad-vpn.enable = true;

@@ -9,22 +9,22 @@
     themeFile = "Modus_Vivendi";
     shellIntegration.enableFishIntegration = true;
     keybindings = {
-      # Tabs
+      # Window navigation (vim hjkl — shadows ctrl+l clear and ctrl+j newline in shell)
+      "ctrl+h" = "neighboring_window left";
+      "ctrl+j" = "neighboring_window down";
+      "ctrl+k" = "neighboring_window up";
+      "ctrl+l" = "neighboring_window right";
+
+      # Splits (mirrors vim <C-w>v / <C-w>s)
+      "ctrl+backslash" = "launch --location=vsplit";
+      "ctrl+minus" = "launch --location=hsplit";
+      "ctrl+shift+w" = "close_window";
+
+      # Tabs (bracket nav, doom-style)
       "ctrl+t" = "new_tab";
-      "ctrl+w" = "close_tab";
-      "ctrl+j" = "next_tab";
-      "ctrl+k" = "previous_tab";
-
-      # Vim-style window (split) navigation
-      "ctrl+shift+h" = "neighboring_window left";
-      "ctrl+shift+j" = "neighboring_window down";
-      "ctrl+shift+k" = "neighboring_window up";
-      "ctrl+shift+l" = "neighboring_window right";
-
-      # Splits
-      "ctrl+shift+enter" = "new_window";
-      "ctrl+shift+minus" = "launch --location=hsplit";
-      "ctrl+shift+backslash" = "launch --location=vsplit";
+      "ctrl+shift+t" = "close_tab";
+      "ctrl+shift+]" = "next_tab";
+      "ctrl+shift+[" = "previous_tab";
 
       # Scrollback in nvim
       "ctrl+shift+s" = "show_scrollback";

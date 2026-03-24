@@ -143,7 +143,7 @@
         "$mod, N, exec, kitty -e yazi"
         "$mod, T, exec, darkman toggle"
         "$mod, B, exec, blueman"
-        "$mod, G, exec, steam"
+        "$mod, G, exec, mangohud steam"
         "$mod, M, exec, thunderbird"
         "$mod, D, exec, kitty -e lazydocker"
         "$mod SHIFT, N, exec, thunar"

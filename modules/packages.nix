@@ -9,6 +9,7 @@
     television
     entr
     fastfetch
+    lnav
 
     ripgrep
     ripgrep-all

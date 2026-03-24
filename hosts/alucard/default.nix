@@ -65,6 +65,9 @@ in
     inetutils
     claude-code
     nodejs_22
+    cargo
+    gcc
+    lnav
   ];
 
   programs.tmux = {

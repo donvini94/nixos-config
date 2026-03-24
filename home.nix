@@ -91,6 +91,8 @@
       interactiveShellInit = ''
         set fish_greeting
         fish_add_path ~/.config/emacs/bin
+        fish_add_path ~/.local/bin
+        fish_add_path ~/.cargo/bin
 
         # Alt+E: edit current command line in emacs
         bind \ee edit_command_buffer
