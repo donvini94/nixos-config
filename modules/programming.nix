@@ -76,6 +76,7 @@
     tree-sitter-grammars.tree-sitter-haskell
     tree-sitter-grammars.tree-sitter-python
     tree-sitter-grammars.tree-sitter-bash
+    tree-sitter-grammars.tree-sitter-typst
 
     # Rust
     rust-analyzer
@@ -86,6 +87,10 @@
     lldb
     gdb
     rustc
+
+    # Typst
+    typst
+    tinymist
 
     # Docs & writing
     texlive.combined.scheme-medium
