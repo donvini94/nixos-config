@@ -3,7 +3,7 @@
   programs.kitty = {
     enable = true;
     font = {
-      name = "Oxygen Mono";
+      name = "Iosevka Term";
       size = 18;
     };
     themeFile = "Modus_Vivendi_Tinted";

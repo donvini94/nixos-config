@@ -58,7 +58,7 @@
  (pass +auth)              ; password manager for nerds
  ;;pdf             ; replaced by emacs-reader (supports PDF, EPUB, MOBI, etc.)
  tree-sitter
- llm               ; AI chat with Claude, GPT, Gemini (gptel)
+ ;;llm             ; replaced by agent-shell (ACP-based agentic interface)
 
  :os
  (:if IS-MAC macos)  ; improve compatibility with macOS

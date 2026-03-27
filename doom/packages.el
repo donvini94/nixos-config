@@ -17,6 +17,7 @@
 (package! ultra-scroll)  ; ~40% faster than pixel-scroll-precision-mode
 (package! claude-code-ide
   :recipe (:host github :repo "manzaltu/claude-code-ide.el"))
+(package! agent-shell)
 (package! devcontainer
   :recipe (:host github :repo "johannes-mueller/devcontainer.el"))
 ;; TOML support (Cargo.toml, pyproject.toml, etc.)

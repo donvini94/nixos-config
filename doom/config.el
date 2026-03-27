@@ -393,8 +393,11 @@
       modus-themes-completions '((matches . (extrabold))
                                  (selection . (semibold italic))))
 
-;; Frame transparency (background only, text stays opaque)
-(add-to-list 'default-frame-alist '(alpha-background . 90))
+;; Frame transparency
+;; alpha-background (bg-only) works on PGTK/X11; NS lacks it, fall back to whole-frame alpha
+(if (eq window-system 'ns)
+    (add-to-list 'default-frame-alist '(alpha . (95 . 95)))
+  (add-to-list 'default-frame-alist '(alpha-background . 90)))
 
 (setq modus-themes-to-toggle '(modus-operandi-tinted modus-vivendi-tinted))
 (map! "<f5>" #'modus-themes-toggle)
@@ -797,28 +800,19 @@
       "C" #'claude-code-ide-menu)
 ;; Claude Code IDE:1 ends here
 
-;; [[file:config.org::*AI Chat (gptel)][AI Chat (gptel):1]]
-(after! gptel
-  ;; Claude backend (API key from env or auth-sources)
-  (setq gptel-backend
-        (gptel-make-anthropic "Claude"
-          :stream t
-          :key (lambda ()
-                 (or (getenv "ANTHROPIC_API_KEY")
-                     (auth-source-pick-first-password :host "api.anthropic.com"))))
-        gptel-model 'claude-sonnet-4-6-20250610
-        gptel-default-mode 'org-mode))
+;; [[file:config.org::*Agent Shell][Agent Shell:1]]
+(use-package! agent-shell
+  :config
+  (setq agent-shell-anthropic-authentication
+        (agent-shell-anthropic-make-authentication :login t)))
 
-;; Keybindings
 (map! :leader
       (:prefix ("l" . "LLM")
-       :desc "Chat buffer" "l" #'gptel
-       :desc "Send region/buffer" "RET" #'gptel-send
-       :desc "Menu" "m" #'gptel-menu
-       :desc "Add file" "f" #'gptel-add-file
-       :desc "Add buffer" "b" #'gptel-add
-       :desc "Clear context" "c" #'gptel-context-clear))
-;; AI Chat (gptel):1 ends here
+       :desc "Agent shell" "l" #'agent-shell
+       :desc "Send region" "RET" #'agent-shell-send-region
+       :desc "Send file" "f" #'agent-shell-send-file
+       :desc "Interrupt" "x" #'agent-shell-interrupt))
+;; Agent Shell:1 ends here
 
 ;; [[file:config.org::*Document Reader (emacs-reader)][Document Reader (emacs-reader):1]]
 (use-package! reader
