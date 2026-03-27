@@ -6,7 +6,7 @@
       name = "Oxygen Mono";
       size = 18;
     };
-    themeFile = "Modus_Vivendi";
+    themeFile = "Modus_Vivendi_Tinted";
     shellIntegration.enableFishIntegration = true;
     keybindings = {
       # Window navigation (vim hjkl — shadows ctrl+l clear and ctrl+j newline in shell)

@@ -29,7 +29,7 @@
         numpy
         requests
         beautifulsoup4
-        pyflakes  # TODO: ruff replaces this — remove once ruff is confirmed working
+        pyflakes # TODO: ruff replaces this — remove once ruff is confirmed working
         debugpy
         torchWithCuda
         transformers
@@ -69,6 +69,7 @@
     aider-chat
     codecrafters-cli
     warp-terminal
+    claude-code-acp
 
     # Tree-sitter
     tree-sitter

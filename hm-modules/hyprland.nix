@@ -104,6 +104,7 @@
         "$mod SHIFT, Escape, global, caelestia:session"
         ", Print, global, caelestia:screenshotFreeze"
         "$mod, Print, global, caelestia:screenshot"
+        "$mod, BackSpace, global, caelestia:sidebar"
 
         # ── Window management ──────────────────────────────────
         "$mod, Return, exec, kitty"
