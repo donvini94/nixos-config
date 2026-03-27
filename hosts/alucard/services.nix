@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ config, lib, pkgs, ... }:
 let
   domain = "dumusstbereitsein.de";
   domain2 = "istbereit.de";
@@ -76,6 +76,7 @@ in
     # Nginx reverse proxy
     nginx = {
       enable = true;
+      additionalModules = [ pkgs.nginxModules.dav ];
       clientMaxBodySize = "0";
       recommendedGzipSettings = true;
       recommendedOptimisation = true;
@@ -167,6 +168,26 @@ in
             proxyWebsockets = true;
           };
         };
+        "webdav.${domain2}" = {
+          enableACME = true;
+          forceSSL = true;
+          basicAuthFile = ../../secrets/htpasswd;
+          locations."/" = {
+            root = config.services.paperless.consumptionDir;
+            extraConfig = ''
+              dav_methods PUT MKCOL;
+              dav_ext_methods PROPFIND OPTIONS;
+              create_full_put_path on;
+              dav_access user:rw group:rw all:r;
+              client_max_body_size 100m;
+
+              # Block read/delete methods, allow upload and discovery
+              limit_except PUT MKCOL PROPFIND OPTIONS {
+                deny all;
+              }
+            '';
+          };
+        };
       };
     };
   };
@@ -206,6 +227,12 @@ in
         echo "Keycloak export completed successfully to: $EDIRT"
       '';
     };
+
+  # Allow nginx to write to paperless consume dir (WebDAV uploads)
+  systemd.services.nginx.serviceConfig = {
+    ReadWritePaths = [ (config.services.paperless.dataDir + "/consume") ];
+    UMask = lib.mkForce "0022";
+  };
 
   # Paperless depends on mount
   systemd.services.paperless-consumer.after = [ "var-lib-paperless.mount" ];
