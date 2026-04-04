@@ -38,6 +38,11 @@
     };
   };
 
+  home.activation.ensureSshControlDir = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    mkdir -p $HOME/.ssh/sockets
+    chmod 700 $HOME/.ssh/sockets
+  '';
+
   fonts.fontconfig.enable = true;
 
   # ── Programs ───────────────────────────────────────────────────
@@ -47,6 +52,37 @@
       enable = true;
       settings.user.name = "${fullName}";
       settings.user.email = "${mail}";
+    };
+    ssh = {
+      enable = true;
+      controlMaster = "auto";
+      controlPath = "~/.ssh/sockets/%r@%h-%p";
+      controlPersist = "600";
+      matchBlocks = {
+        "github.com" = {
+          hostname = "ssh.github.com";
+          port = 443;
+        };
+        "Bereitserver" = {
+          hostname = "dumusstbereitsein.de";
+          user = "vincenzo";
+        };
+        "media-admin" = {
+          hostname = "dumusstbereitsein.de";
+          user = "vincenzo";
+          localForwards = [
+            { bind.port = 18989; host.address = "localhost"; host.port = 18989; }
+            { bind.port = 18080; host.address = "localhost"; host.port = 18080; }
+            { bind.port = 19696; host.address = "localhost"; host.port = 19696; }
+            { bind.port = 17878; host.address = "localhost"; host.port = 17878; }
+            { bind.port = 16767; host.address = "localhost"; host.port = 16767; }
+            { bind.port = 19090; host.address = "localhost"; host.port = 19090; }
+          ];
+          extraOptions = {
+            SetEnv = "TERM=xterm";
+          };
+        };
+      };
     };
     bash = {
       enable = true;
@@ -85,8 +121,10 @@
         cct = "codecrafters test";
         nano = "nvim";
         dr = "direnv reload";
+        arr = "ssh media-admin";
+        py = "python3";
+        lg = "lazygit";
         bereit = "ssh vincenzo@dumusstbereitsein.de";
-        fzi = "ssh -l nl810@fzi.de fzi-gpu-mgmt-01.fzi.de";
         windows = "bash ~/nixos-config/scripts/windows.sh";
       };
       interactiveShellInit = ''

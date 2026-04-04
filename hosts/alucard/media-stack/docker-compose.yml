@@ -125,7 +125,8 @@ services:
 
   # Jellyseerr - User request interface for Jellyfin (publicly accessible)
   jellyseerr:
-    image: fallenbagel/jellyseerr:latest
+    image: ghcr.io/seerr-team/seerr:latest
+    init: true
     container_name: jellyseerr
     environment:
       - LOG_LEVEL=info

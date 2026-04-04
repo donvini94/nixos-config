@@ -26,6 +26,8 @@
         15637 # Enshrouded
         9876 # V Rising
         9877 # V Rising
+        9878 # Giacomo V Rising
+        9879 # Giacomo V Rising
       ];
       # Block outbound connections to known mining pools (SECURITY FIX)
       extraCommands = ''

@@ -18,7 +18,11 @@
     "d /var/lib/media-stack/prowlarr 0755 jellyfin jellyfin"
     "d /var/lib/media-stack/qbittorrent 0755 jellyfin jellyfin"
     "d /var/lib/media-stack/gluetun 0755 jellyfin jellyfin"
+    "d /var/lib/media-stack/sabnzbd 0755 jellyfin jellyfin"
     "d /mnt/hetzner/downloads 0755 jellyfin jellyfin"
+    "d /mnt/hetzner/downloads/usenet 0755 jellyfin jellyfin"
+    "d /mnt/hetzner/downloads/usenet/complete 0755 jellyfin jellyfin"
+    "d /mnt/hetzner/downloads/usenet/incomplete 0755 jellyfin jellyfin"
     "d /mnt/hetzner/shows 0755 jellyfin jellyfin"
     "d /mnt/hetzner/movies 0755 jellyfin jellyfin"
   ];
