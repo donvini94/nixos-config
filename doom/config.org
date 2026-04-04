@@ -450,7 +450,7 @@ ty is Astral's Rust-based Python type checker and language server (from the Ruff
 ;; Frame transparency
 ;; alpha-background (bg-only) works on PGTK/X11; NS lacks it, fall back to whole-frame alpha
 (if (eq window-system 'ns)
-    (add-to-list 'default-frame-alist '(alpha . (95 . 95)))
+    (add-to-list 'default-frame-alist '(alpha . (90 . 90)))
   (add-to-list 'default-frame-alist '(alpha-background . 90)))
 
 (setq modus-themes-to-toggle '(modus-operandi-tinted modus-vivendi-tinted))
@@ -483,7 +483,9 @@ ty is Astral's Rust-based Python type checker and language server (from the Ruff
   (setq org-agenda-files
         (append (directory-files-recursively (concat org-directory "gtd/") "\\.org$")
                 (my/recent-org-files (concat org-directory "roam/daily/") 90)
-                (my/recent-org-files (concat org-directory "roam/main/") 90))))
+                (my/recent-org-files (concat org-directory "roam/main/") 90)
+                (my/recent-org-files (concat org-directory "roam/people/") 90)
+                (my/recent-org-files (concat org-directory "roam/meetings/") 90))))
 
 (after! org-download
   (setq org-download-method 'directory
@@ -1145,6 +1147,57 @@ Replaces pdf-tools with a modern reader supporting PDF, EPUB, MOBI, FB2, XPS, CB
   (map! :n "z=" #'jinx-correct
         :n "]s" #'jinx-next
         :n "[s" #'jinx-previous))
+#+end_src
+
+** TRAMP (remote editing)
+#+begin_src emacs-lisp
+;;; Strategy: treat remote buffers as "dumb" — syntax highlighting + editing only.
+;;; Whitelist things back as needed (e.g. LSP for future remote dev).
+
+;; Use ssh method (not scp) — avoids extra connection per file operation.
+(setq tramp-default-method "ssh")
+
+;; Reduce TRAMP logging noise (default 3 is very chatty).
+(setq tramp-verbose 1)
+
+;; Increase chunk size for better throughput on fast connections.
+(setq tramp-chunksize 2000)
+
+;; Don't stat remote files in recentf — causes hangs on startup.
+(after! recentf
+  (add-to-list 'recentf-exclude tramp-file-name-regexp))
+
+;; Kill heavy modes on remote buffers.
+(defun vp/tramp-disable-heavy-modes ()
+  "Disable expensive minor modes for remote (TRAMP) buffers."
+  (when (file-remote-p default-directory)
+    ;; Version control — no git round-trips over SSH
+    (setq-local vc-handled-backends nil)
+    ;; Flycheck/flymake — no remote linter invocations
+    (when (bound-and-true-p flycheck-mode) (flycheck-mode -1))
+    (when (bound-and-true-p flymake-mode) (flymake-mode -1))
+    ;; Auto-revert — no periodic remote stat calls
+    (when (bound-and-true-p auto-revert-mode) (auto-revert-mode -1))
+    (when (bound-and-true-p global-auto-revert-mode)
+      (setq-local auto-revert-mode nil))
+    ;; LSP — don't start a language server on the remote host
+    (setq-local lsp-inhibit-lsp-hooks t)
+    (when (bound-and-true-p lsp-mode) (lsp-disconnect))
+    ;; Treemacs file watcher — no remote inotify
+    (when (bound-and-true-p treemacs-filewatch-mode)
+      (treemacs-filewatch-mode -1))
+    ;; Git gutter — no remote git diff per line
+    (when (bound-and-true-p git-gutter-mode) (git-gutter-mode -1))
+    (when (bound-and-true-p diff-hl-mode) (diff-hl-mode -1))))
+
+(add-hook 'find-file-hook #'vp/tramp-disable-heavy-modes)
+
+;; Also suppress projectile indexing for remote projects — it tries to
+;; enumerate every file over SSH which is the main cause of directory freezes.
+(defadvice! vp/tramp-skip-projectile-remote (fn &rest args)
+  :around #'projectile-project-root
+  (unless (file-remote-p default-directory)
+    (apply fn args)))
 #+end_src
 
 ** Ultra-scroll
