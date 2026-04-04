@@ -1,50 +1,137 @@
-This repository contains my configuration files for managing multiple NixOS systems, including desktops, laptops, and a server. The configuration is structured to support modularity, allowing anyone to start with these configs and selectively enable the modules they need for their own homeserver setup.
+#+TITLE: NixOS Configuration
+#+DESCRIPTION: Flake-based NixOS config for a desktop (dracula) and home server (alucard)
 
-* Goals
-The primary goal of this repository is to provide a flexible and modular configuration for:
-- Desktop systems running Hyprland, Waybar, Doom Emacs, and other key tools
-- A server hosting various services accessible through a secure setup with Keycloak authentication
+* Overview
 
-* Structure
-The repository is organized into separate configuration files for each machine, with reusable modules for common services and setups.
-- /hm-modules/ contains configurations for specific tools I use on my machine.
-- /modules/ contains thematic packages like in /programming.nix/ as well as my /hyprland/ config.
-- /hosts/ contains machine specific information. It is the place where you would put your /hardware-configuration.nix/
-** modules
-- [[file:modules/services.nix::{][services.nix]] contains the desktop services I want to have running for all users (not managed by home-manager)
+Flake-based NixOS configuration managing two systems:
+- *dracula* — Desktop workstation (AMD CPU, NVIDIA GPU, Hyprland + caelestia-shell)
+- *alucard* — Home server (Hetzner OpenStack VM, nginx reverse proxy, Docker media stack)
 
-* Desktop Software
-| Software   | Purpose                             |
-|------------|-------------------------------------|
-| Hyprland   | Window manager                      |
-| Waybar     | Status bar                          |
-| Doom Emacs | Code editor and personal organizer  |
-| Kitty      | Terminal emulator                   |
-| Nushell    | Modern shell                        |
-| Swaylock   | Screen locker                       |
-* Desktop config
-2 main files drive the desktop configuration: [[file:hosts/desktop/common.nix::{][common.nix]], which contains the commmon configuration for my desktop systems like user setup, filesystems and hardware config like bluetooth and network.
-[[file:modules/desktop.nix::{][desktop.nix]] is the entrance file for all packages and services running on my desktop systems.
-* Server Setup
-The server configuration, found in `[[file:hosts/server/alucard.nix::{][alucard.nix]]`, is designed to create a home server environment with the following services, all routed through nginx reverse proxies and accessible via Dashy, an entry point dashboard:
+Shared base config in =configuration.nix=, per-user tooling via home-manager in =home.nix=.
 
-| Service      | Description                  |
-|--------------|------------------------------|
-| Dashy        | Homepage and service portal  |
-| Jellyfin     | Media server                 |
-| Paperless    | Document management          |
-| Navidrome    | Music server                 |
-| Calibre-Web  | E-book library               |
-| Overleaf     | Collaborative document editor|
-| Coder        | Code-server for development  |
+For detailed architecture, module descriptions, and file-level documentation, see [[file:CLAUDE.md][CLAUDE.md]].
 
-All access to these services is managed via Keycloak for unified authentication.
+* Repository Structure
 
-* How to Use
-To get started, clone this repository and review the [[file:hosts/server/alucard.nix::{][alucard.nix]] configuration file and other system-specific files for module options. Each module can be selectively enabled depending on the services you want to deploy on your own system.
-** Secret Management
-To manage secrets on my system and the server, I utilize [[https://github.com/Mic92/sops-nix][sops-nix]], which is managed via the configuration files [[file:.sops.yaml::keys:][.sops.yaml]], [[file:secrets/secrets.nix::{][secrets.nix]] and the secrets file [[file:secrets/dmbs.yaml::keycloak:][dmbs.yaml]] for the server.
+#+begin_src
+.
+├── flake.nix                 # Flake inputs/outputs, two nixosConfigurations
+├── configuration.nix         # Shared base config (shells, locale, gnupg)
+├── home.nix                  # Home-manager root (caelestia-shell, tool imports)
+├── modules/                  # System-level desktop modules
+│   ├── desktop.nix           #   Meta-module importing all below
+│   ├── hyprland/default.nix  #   Hyprland + GDM + portals
+│   ├── packages.nix          #   System-wide packages (shared by both hosts)
+│   ├── fonts.nix             #   Font definitions
+│   ├── programming.nix       #   Dev tools (Python, Rust, Node, Nix, Java)
+│   ├── services.nix          #   Pipewire, Emacs daemon, printing, Mullvad
+│   └── gaming.nix            #   Steam, Proton, Wine, GameMode
+├── hm-modules/               # Home-manager user-level modules
+│   ├── doom.nix              #   Doom Emacs symlink setup
+│   ├── hyprland.nix          #   Keybinds, window rules, input config
+│   ├── kitty.nix             #   Terminal emulator
+│   ├── helix.nix, starship.nix, mpv.nix, yazi.nix, zathura.nix, zellij.nix
+│   └── packages.nix          #   User-level packages
+├── hosts/
+│   ├── dracula/default.nix   # Desktop: hardware, boot, NVIDIA, Docker
+│   └── alucard/              # Server: split into networking, services, media, etc.
+│       ├── default.nix       #   Base system, Hetzner mount, scheduled tasks
+│       ├── disk-config.nix   #   Disko BTRFS partitioning
+│       ├── networking.nix    #   Firewall, SSH, fail2ban
+│       ├── services.nix      #   Nginx, Keycloak, Jellyfin, Navidrome, Paperless, etc.
+│       ├── media.nix         #   Docker media automation stack
+│       ├── syncthing.nix     #   Syncthing devices and folders
+│       └── users.nix         #   User accounts and SSH keys
+├── secrets/                  # sops-nix encrypted secrets (age)
+├── doom/                     # Doom Emacs config (org-tangle based)
+├── scripts/                  # Helper scripts (power profile toggle)
+└── wallpapers/               # Desktop wallpapers
+#+end_src
 
-* Future Goals
-I aim to continuously improve the modularity of these configurations, adding more reusable modules and further simplifying the setup process for both desktop and server configurations.
+* Desktop (dracula)
 
+| Component       | Tool                                          |
+|-----------------+-----------------------------------------------|
+| Window manager  | Hyprland                                      |
+| Desktop shell   | caelestia-shell (bar, notifications, launcher, lock, OSD) |
+| Editor          | Doom Emacs, Helix                             |
+| Terminal        | Kitty                                         |
+| Shell           | Fish (with direnv, zoxide, atuin, starship)   |
+| File manager    | Yazi (TUI), Thunar (GUI)                      |
+| PDF viewer      | Zathura                                       |
+| Media           | mpv                                           |
+| VPN             | Mullvad                                       |
+
+* Server (alucard)
+
+Hetzner OpenStack VM with nginx reverse proxies, ACME/Let's Encrypt, and Keycloak authentication.
+
+Domains: =dumusstbereitsein.de=, =istbereit.de=
+
+** Native NixOS Services
+
+| Service    | Description              | Domain                           |
+|------------+--------------------------+----------------------------------|
+| Keycloak   | SSO authentication       | auth.dumusstbereitsein.de        |
+| Jellyfin   | Media streaming          | stream.dumusstbereitsein.de      |
+| Navidrome  | Music streaming          | music.dumusstbereitsein.de       |
+| Calibre-Web| E-book library           | read.istbereit.de                |
+| Paperless  | Document management      | paperless.dumusstbereitsein.de   |
+| Coder      | Code-server              | coder.istbereit.de               |
+| Syncthing  | File synchronization     | (local network)                  |
+
+** Docker Media Automation Stack
+
+| Service      | Purpose             |
+|--------------+---------------------|
+| Sonarr       | TV show automation  |
+| Radarr       | Movie automation    |
+| Prowlarr     | Indexer management  |
+| Bazarr       | Subtitle management |
+| qBittorrent  | Torrent client      |
+| SABnzbd      | Usenet downloader   |
+| Gluetun      | VPN tunnel (Mullvad)|
+| Jellyseerr   | Media requests      |
+
+See [[file:hosts/alucard/MEDIA_AUTOMATION_SETUP.md][MEDIA_AUTOMATION_SETUP.md]] for the full media stack documentation.
+
+* Build Commands
+
+#+begin_src bash
+# Desktop
+sudo nixos-rebuild switch --flake .#dracula
+
+# Server
+sudo nixos-rebuild switch --flake .#alucard
+
+# Test build (no switch)
+sudo nixos-rebuild build --flake .#dracula
+
+# Update flake inputs
+nix flake update
+
+# Check / show flake
+nix flake check
+nix flake show
+#+end_src
+
+* Secret Management
+
+Uses [[https://github.com/Mic92/sops-nix][sops-nix]] with age encryption. Three recipient keys (desktop, server, macbook).
+
+#+begin_src bash
+sops secrets/dmbs.yaml    # Edit encrypted secrets
+#+end_src
+
+Config files: [[file:.sops.yaml][.sops.yaml]], [[file:secrets/secrets.nix][secrets.nix]], [[file:secrets/dmbs.yaml][dmbs.yaml]]
+
+* Adapting This Config
+
+1. Fork and clone
+2. Replace =hosts/dracula/default.nix= with your hardware config (or generate via =nixos-generate-config=)
+3. Edit =flake.nix= to point at your host
+4. Enable/disable modules in =modules/desktop.nix= as needed
+5. For server: adapt =hosts/alucard/= — each file is self-contained (networking, services, media, users)
+6. Set up your own sops-nix age keys in =.sops.yaml= and re-encrypt secrets
+
+See [[file:CLAUDE.md][CLAUDE.md]] for detailed architecture notes and module documentation.
