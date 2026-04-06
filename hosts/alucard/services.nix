@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   domain = "dumusstbereitsein.de";
   domain2 = "istbereit.de";
@@ -157,6 +162,14 @@ in
           forceSSL = true;
           locations."/" = {
             proxyPass = "http://127.0.0.1:1337";
+            proxyWebsockets = true;
+          };
+        };
+        "comics.${domain2}" = {
+          enableACME = true;
+          forceSSL = true;
+          locations."/" = {
+            proxyPass = "http://127.0.0.1:25600";
             proxyWebsockets = true;
           };
         };

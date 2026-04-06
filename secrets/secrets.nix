@@ -21,6 +21,7 @@
       "vaultwarden/admin_token" = {};
       "mullvad/private_key" = {};
       "mullvad/addresses" = {};
+      "komga/oidc_secret" = {};
     };
 
     templates."smb-hetzner".content = ''
@@ -42,6 +43,7 @@
     templates."mullvad.env".content = ''
       MULLVAD_PRIVATE_KEY=${config.sops.placeholder."mullvad/private_key"}
       MULLVAD_ADDRESSES=${config.sops.placeholder."mullvad/addresses"}
+      KOMGA_OIDC_SECRET=${config.sops.placeholder."komga/oidc_secret"}
     '';
     templates."mullvad.env".mode = "0640";
     templates."mullvad.env".owner = "root";

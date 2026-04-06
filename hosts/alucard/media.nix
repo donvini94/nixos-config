@@ -25,6 +25,9 @@
     "d /mnt/hetzner/downloads/usenet/incomplete 0755 jellyfin jellyfin"
     "d /mnt/hetzner/shows 0755 jellyfin jellyfin"
     "d /mnt/hetzner/movies 0755 jellyfin jellyfin"
+    "d /mnt/hetzner/comics 0755 jellyfin jellyfin"
+    "d /var/lib/media-stack/kapowarr 0755 jellyfin jellyfin"
+    "d /var/lib/media-stack/komga 0755 jellyfin jellyfin"
   ];
 
   # Media automation Docker Compose stack

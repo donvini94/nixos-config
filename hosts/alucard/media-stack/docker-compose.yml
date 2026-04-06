@@ -163,6 +163,50 @@ services:
     networks:
       - media-network
 
+  # Komga - Comic/manga reader (publicly accessible via nginx)
+  komga:
+    image: gotson/komga:latest
+    container_name: komga
+    environment:
+      - TZ=Europe/Berlin
+      - KOMGA_OAUTH2ACCOUNTCREATION=true
+      # OIDC / Keycloak
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_ID=komga
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_SECRET=${KOMGA_OIDC_SECRET}
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_SCOPE=openid,email,profile
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_CLIENT_NAME=Keycloak
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_AUTHORIZATION_GRANT_TYPE=authorization_code
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KEYCLOAK_REDIRECT_URI={baseUrl}/login/oauth2/code/{registrationId}
+      - SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_ISSUER_URI=https://auth.dumusstbereitsein.de/realms/Abschleppdienst
+      - SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_USER_NAME_ATTRIBUTE=preferred_username
+    volumes:
+      - /var/lib/media-stack/komga:/config
+      - /mnt/hetzner/comics:/data
+    ports:
+      - "127.0.0.1:25600:25600"
+    user: "1001:987"
+    restart: unless-stopped
+    networks:
+      - media-network
+
+  # Kapowarr - Comic book management (uses regular internet)
+  kapowarr:
+    image: mrcas/kapowarr:latest
+    container_name: kapowarr
+    environment:
+      - PUID=1001
+      - PGID=987
+      - TZ=Europe/Berlin
+    volumes:
+      - /var/lib/media-stack/kapowarr:/app/db
+      - /mnt/hetzner/downloads:/app/temp_downloads
+      - /mnt/hetzner/comics:/comics
+    ports:
+      - "127.0.0.1:15656:5656"  # LOCALHOST ONLY - SECURITY FIX
+    restart: unless-stopped
+    networks:
+      - media-network
+
 networks:
   media-network:
     driver: bridge
