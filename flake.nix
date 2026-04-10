@@ -67,75 +67,60 @@
       mail = "vincenzo.pace94@icloud.com";
       system = "x86_64-linux";
 
+      # Packages from nixpkgs/master that aren't yet in nixos-unstable
       unstablePkgs = import unstable {
         inherit system;
-        config = {
-          allowUnfree = true;
-          cudaSupport = true;
-          allowUnfreePredicate =
-            pkg:
-            builtins.elem (unstable.lib.getName pkg) [
-              "claude-code"
-            ];
-        };
+        config.allowUnfree = true;
+      };
+
+      overlays = [
+        emacs-overlay.overlay
+        (final: prev: {
+          claude-code = unstablePkgs.claude-code;
+          zed-editor = unstablePkgs.zed-editor;
+        })
+      ];
+
+      mkDesktopHost = hostname: nixpkgs.lib.nixosSystem {
+        inherit system;
+        specialArgs = { inherit inputs username; };
+        modules = [
+          # Local configuration
+          ./configuration.nix
+          ./hosts/${hostname}
+
+          # Flake modules
+          hyprland.nixosModules.default
+          sops-nix.nixosModules.sops
+          lsfg-vk-flake.nixosModules.default
+          hosts.nixosModule
+          home-manager.nixosModules.home-manager
+
+          # Desktop wiring
+          {
+            nixpkgs.overlays = overlays;
+            home-manager = {
+              extraSpecialArgs = { inherit username mail fullName inputs; };
+              backupFileExtension = "hm-backup";
+              users.${username} = import ./home.nix;
+            };
+          }
+        ];
+      };
+
+      mkServerHost = hostname: nixpkgs.lib.nixosSystem {
+        inherit system;
+        specialArgs = { inherit inputs; };
+        modules = [
+          ./configuration.nix
+          ./hosts/${hostname}
+        ];
       };
     in
     {
       nixosConfigurations = {
-        dracula = nixpkgs.lib.nixosSystem {
-          inherit system;
-          specialArgs = {
-            inherit inputs username unstablePkgs;
-          };
-          modules = [
-            ./configuration.nix
-            ./modules/desktop.nix
-            ./hosts/dracula
-            hyprland.nixosModules.default
-            sops-nix.nixosModules.sops
-            lsfg-vk-flake.nixosModules.default
-            hosts.nixosModule
-            home-manager.nixosModules.home-manager
-            {
-              nixpkgs.overlays = [ emacs-overlay.overlay ];
-              programs.hyprland.enable = true;
-
-              networking.stevenBlackHosts = {
-                enable = true;
-                blockFakenews = true;
-                blockGambling = true;
-                blockSocial = true;
-              };
-
-              environment.systemPackages = [
-                nil.packages.${system}.default
-                unstablePkgs.claude-code
-              ];
-
-              home-manager = {
-                extraSpecialArgs = {
-                  inherit
-                    username
-                    mail
-                    fullName
-                    unstablePkgs
-                    inputs
-                    ;
-                };
-                backupFileExtension = "hm-backup";
-                users.${username} = import ./home.nix;
-              };
-            }
-          ];
-        };
-
-        alucard = nixpkgs.lib.nixosSystem {
-          inherit system;
-          specialArgs = {
-            inherit inputs;
-          };
-          modules = [ ./hosts/alucard ];
-        };
+        dracula = mkDesktopHost "dracula";
+        alucard = mkServerHost "alucard";
       };
     };
 }

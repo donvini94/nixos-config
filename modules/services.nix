@@ -1,5 +1,7 @@
 { ... }:
 {
+  security.rtkit.enable = true;
+
   services = {
     pipewire = {
       enable = true;
@@ -11,7 +13,7 @@
     };
     emacs = {
       enable = true;
-      startWithGraphical = true;  # wait for graphical session (needed for pgtk)
+      startWithGraphical = true;
     };
     printing.enable = true;
     power-profiles-daemon.enable = true;

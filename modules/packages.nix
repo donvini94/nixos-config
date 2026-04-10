@@ -5,100 +5,84 @@
     git
     vim
     neovim
-    fzf
-    television
-    entr
-    fastfetch
-    lnav
 
+    # Search & navigation (useful on all hosts)
     ripgrep
-    ripgrep-all
+    fd
+    tree
+    fzf
+    fastfetch
 
-    # Archives
+    # Archives (other packages depend on these)
     zip
     xz
     unzip
     p7zip
     unrar
     pigz
+    unar
+    zstd
 
     # Secrets
     age
     sops
 
-    # Networking
+    # Networking (setuid/capabilities required)
     mtr
     iperf3
     dnsutils
     ldns
-    aria2
     socat
     nmap
     ipcalc
     mullvad-vpn
 
-    pandoc
-    mupdf
-
-    # Utilities
+    # Base system utilities
     file
     which
-    tree
+    coreutils
     gnused
     gnutar
     gawk
-    zstd
     gnupg
     wget
     curl
-    csvlens
-    graphviz
     groff
     ghostscript
-
-    # System monitoring
-    sysstat
-    lm_sensors
-    ethtool
-    pciutils
-    usbutils
-    libnotify
-    btop
-    iotop
-    iftop
-    lazydocker
-    zoxide
-    psmisc
-    coreutils
     gnumake
     gcc
     pkg-config
     libtool
     cmake
-    fd
     clang
-    unar
 
-    xdg-user-dirs
-    cht-sh
-    tldr
+    # Hardware / filesystem
     btrfs-progs
+    efibootmgr
+    pciutils
+    usbutils
 
-    # System call monitoring
+    # System monitoring
+    sysstat
+    lm_sensors
+    ethtool
+    btop
+    iotop
+    iftop
+    lazydocker
+    psmisc
+
+    # System debugging
     strace
     ltrace
     lsof
-    efibootmgr
 
-    # Finance
-    hledger
-    hledger-ui
-    hledger-utils
-    hledger-interest
-    hledger-web
-
-    # Media tools
+    # Media tools (server has media stack too)
     mediainfo
     imagemagick
+
+    # XDG / dbus integration
+    xdg-user-dirs
+    libnotify
   ];
 }

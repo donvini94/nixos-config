@@ -4,10 +4,8 @@
     enable = true;
     settings = {
       env = [
-        # NVIDIA
-        "LIBVA_DRIVER_NAME,nvidia"
-        "GBM_BACKEND,nvidia-drm"
-        "NVD_BACKEND,direct"
+        # Device-specific: GPU device ordering for Aquamarine backend
+        # Update this value when adding a new host with different GPU topology
         "AQ_DRM_DEVICES,/dev/dri/card2:/dev/dri/card1"
 
         # Wayland / toolkit

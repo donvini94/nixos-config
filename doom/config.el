@@ -88,6 +88,11 @@
   (setq mac-command-modifier 'control
         mac-control-modifier 'super))
 
+;; Use POSIX shell internally (fish causes issues with TRAMP, diff-hl, subprocesses)
+(setq shell-file-name (executable-find "bash"))
+(setq-default vterm-shell (executable-find "fish"))
+(setq-default explicit-shell-file-name (executable-find "fish"))
+
 ;; Frameless window
 (add-to-list 'default-frame-alist '(undecorated . t))
 ;; Defaults:1 ends here
@@ -386,10 +391,10 @@
       modus-themes-bold-constructs t
       modus-themes-mixed-fonts t
       modus-themes-org-blocks 'gray-background
-      modus-themes-headings '((1 . (variable-pitch 1.5))
-                              (2 . (variable-pitch 1.3))
-                              (3 . (variable-pitch 1.1))
-                              (t . (variable-pitch 1.0)))
+      modus-themes-headings '((1 . (1.5))
+                              (2 . (1.3))
+                              (3 . (1.1))
+                              (t . (1.0)))
       modus-themes-completions '((matches . (extrabold))
                                  (selection . (semibold italic))))
 

@@ -1,25 +1,12 @@
 {
   pkgs,
-  unstablePkgs,
+  inputs,
   ...
 }:
 
 {
   environment.systemPackages = with pkgs; [
-    # Docs
-    zeal
-
-    unstablePkgs.zed-editor
-
-    # Nix
-    nix-output-monitor
-    nixfmt
-    nixd
-
-    # Java (system JDK for jdtls — project JDKs come from devbox)
-    jdk21
-
-    # Python
+    # Python (system CUDA linkage)
     (python313.withPackages (
       ps: with ps; [
         pip
@@ -52,63 +39,37 @@
     pipenv
     uv
 
-    # Tooling
-    devbox
-    sqlite
-    shfmt
-    bash-language-server
-    shellcheck
-    dockfmt
-    dockerfile-language-server
-    helix
-    emacs30-pgtk
-    leetcode-cli
-    bruno
-    wakatime-cli
-    delta
-    aider-chat
-    codecrafters-cli
-    warp-terminal
-    claude-code-acp
-
-    # Tree-sitter
-    tree-sitter
-    tree-sitter-grammars.tree-sitter-rust
-    tree-sitter-grammars.tree-sitter-haskell
-    tree-sitter-grammars.tree-sitter-python
-    tree-sitter-grammars.tree-sitter-bash
-    tree-sitter-grammars.tree-sitter-typst
-
-    # Rust
+    # Rust (system toolchain)
     rust-analyzer
     rustup
     rustfmt
     cargo-watch
     clippy
-    lldb
-    gdb
     rustc
 
-    # Typst
-    typst
-    tinymist
+    # Debuggers (need ptrace capabilities)
+    lldb
+    gdb
 
-    # Docs & writing
-    texlive.combined.scheme-medium
-    hunspell
-    hunspellDicts.en_US
-    hunspellDicts.de_DE
-    vale
-    proselint
+    # Java (system JDK for jdtls)
+    jdk21
 
-    # Emacs support
+    # Emacs (system service in modules/services.nix)
+    emacs30-pgtk
     libvterm
     editorconfig-core-c
 
-    # Web
-    html-tidy
-    nodePackages.js-beautify
-    stylelint
+    # System runtimes
+    sqlite
     nodejs_22
+
+    # Shell tooling (system scripts)
+    shfmt
+    bash-language-server
+    shellcheck
+
+    # Nix LSP and tools from flake inputs
+    inputs.nil.packages.${pkgs.stdenv.hostPlatform.system}.default
+    claude-code
   ];
 }

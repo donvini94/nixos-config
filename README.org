@@ -7,44 +7,55 @@ Flake-based NixOS configuration managing two systems:
 - *dracula* — Desktop workstation (AMD CPU, NVIDIA GPU, Hyprland + caelestia-shell)
 - *alucard* — Home server (Hetzner OpenStack VM, nginx reverse proxy, Docker media stack)
 
-Shared base config in =configuration.nix=, per-user tooling via home-manager in =home.nix=.
+The flake provides two host-builder functions:
+- =mkDesktopHost "hostname"= — Full desktop with Hyprland, home-manager, sops, hosts blocking
+- =mkServerHost "hostname"= — Minimal server (host imports what it needs)
 
-For detailed architecture, module descriptions, and file-level documentation, see [[file:CLAUDE.md][CLAUDE.md]].
+For detailed architecture and module documentation, see [[file:CLAUDE.md][CLAUDE.md]].
 
 * Repository Structure
 
 #+begin_src
 .
-├── flake.nix                 # Flake inputs/outputs, two nixosConfigurations
-├── configuration.nix         # Shared base config (shells, locale, gnupg)
-├── home.nix                  # Home-manager root (caelestia-shell, tool imports)
-├── modules/                  # System-level desktop modules
-│   ├── desktop.nix           #   Meta-module importing all below
+├── flake.nix                 # Host-builder functions (mkDesktopHost, mkServerHost)
+├── configuration.nix         # Shared base config (shells, locale, gnupg, nix settings)
+├── home.nix                  # Home-manager import manifest
+├── modules/                  # Shared system-level modules
+│   ├── desktop.nix           #   Meta-module: imports all desktop sub-modules + PAM + hosts blocking
+│   ├── nvidia.nix            #   Opt-in: NVIDIA driver, graphics, env vars, container toolkit
 │   ├── hyprland/default.nix  #   Hyprland + GDM + portals
-│   ├── packages.nix          #   System-wide packages (shared by both hosts)
+│   ├── packages.nix          #   System packages shared by ALL hosts (desktop + server)
+│   ├── programming.nix       #   Dev tools needing system integration (Python+CUDA, Rust, Emacs)
+│   ├── services.nix          #   Pipewire, rtkit, Emacs daemon, printing, Mullvad
 │   ├── fonts.nix             #   Font definitions
-│   ├── programming.nix       #   Dev tools (Python, Rust, Node, Nix, Java)
-│   ├── services.nix          #   Pipewire, Emacs daemon, printing, Mullvad
-│   └── gaming.nix            #   Steam, Proton, Wine, GameMode
-├── hm-modules/               # Home-manager user-level modules
-│   ├── doom.nix              #   Doom Emacs symlink setup
+│   └── gaming.nix            #   Opt-in: Steam, Proton, Wine, GameMode
+├── hm-modules/               # Home-manager user-level modules (one file per tool)
+│   ├── git.nix               #   Git identity
+│   ├── ssh.nix               #   SSH config + control master sockets
+│   ├── fish.nix              #   Fish shell + abbreviations
+│   ├── shell.nix             #   Bash, zoxide, direnv, atuin
+│   ├── caelestia.nix         #   Desktop shell config + runtime dependencies
+│   ├── services.nix          #   User services (udiskie, syncthing, mpd, gammastep)
+│   ├── packages.nix          #   User-level packages (dev tools, writing, communication)
 │   ├── hyprland.nix          #   Keybinds, window rules, input config
-│   ├── kitty.nix             #   Terminal emulator
-│   ├── helix.nix, starship.nix, mpv.nix, yazi.nix, zathura.nix, zellij.nix
-│   └── packages.nix          #   User-level packages
+│   ├── doom.nix              #   Doom Emacs symlink setup
+│   └── helix, kitty, mpv, starship, yazi, zathura, zellij  # Per-tool configs
 ├── hosts/
-│   ├── dracula/default.nix   # Desktop: hardware, boot, NVIDIA, Docker
-│   └── alucard/              # Server: split into networking, services, media, etc.
+│   ├── dracula/              # Desktop workstation
+│   │   ├── default.nix       #   Import manifest + hostname + user + stateVersion
+│   │   ├── hardware.nix      #   Boot, filesystems, CPU (AMD), peripherals
+│   │   └── services.nix      #   Jellyfin, Docker, OBS, host-specific packages
+│   └── alucard/              # Home server
 │       ├── default.nix       #   Base system, Hetzner mount, scheduled tasks
 │       ├── disk-config.nix   #   Disko BTRFS partitioning
 │       ├── networking.nix    #   Firewall, SSH, fail2ban
-│       ├── services.nix      #   Nginx, Keycloak, Jellyfin, Navidrome, Paperless, etc.
+│       ├── services.nix      #   Nginx, Keycloak, Jellyfin, Navidrome, Paperless
 │       ├── media.nix         #   Docker media automation stack
 │       ├── syncthing.nix     #   Syncthing devices and folders
 │       └── users.nix         #   User accounts and SSH keys
 ├── secrets/                  # sops-nix encrypted secrets (age)
 ├── doom/                     # Doom Emacs config (org-tangle based)
-├── scripts/                  # Helper scripts (power profile toggle)
+├── scripts/                  # Helper scripts
 └── wallpapers/               # Desktop wallpapers
 #+end_src
 
@@ -125,13 +136,54 @@ sops secrets/dmbs.yaml    # Edit encrypted secrets
 
 Config files: [[file:.sops.yaml][.sops.yaml]], [[file:secrets/secrets.nix][secrets.nix]], [[file:secrets/dmbs.yaml][dmbs.yaml]]
 
+* Adding a New Desktop Host
+
+#+begin_src nix
+# 1. In flake.nix, add one line:
+newhost = mkDesktopHost "newhost";
+#+end_src
+
+#+begin_src bash
+# 2. Create the host directory:
+mkdir -p hosts/newhost
+#+end_src
+
+#+begin_src nix
+# 3. hosts/newhost/default.nix — import shared modules + set identity:
+{ lib, pkgs, username, ... }:
+{
+  imports = [
+    ../../modules/desktop.nix    # Full desktop stack
+    ../../modules/nvidia.nix     # Opt-in: only for NVIDIA GPUs
+    ../../modules/gaming.nix     # Opt-in: Steam, Wine, etc.
+    ./hardware.nix
+  ];
+  networking.hostName = "newhost";
+  users.users."${username}" = {
+    isNormalUser = true;
+    extraGroups = [ "networkmanager" "wheel" ];
+    packages = with pkgs; [ firefox ];
+  };
+  system.stateVersion = "24.11";
+}
+#+end_src
+
+#+begin_src bash
+# 4. Generate hardware config on the target machine:
+nixos-generate-config --show-hardware-config > hosts/newhost/hardware.nix
+#+end_src
+
+#+begin_src bash
+# 5. Build and switch:
+sudo nixos-rebuild switch --flake .#newhost
+#+end_src
+
 * Adapting This Config
 
 1. Fork and clone
-2. Replace =hosts/dracula/default.nix= with your hardware config (or generate via =nixos-generate-config=)
-3. Edit =flake.nix= to point at your host
-4. Enable/disable modules in =modules/desktop.nix= as needed
-5. For server: adapt =hosts/alucard/= — each file is self-contained (networking, services, media, users)
-6. Set up your own sops-nix age keys in =.sops.yaml= and re-encrypt secrets
+2. Create your host under =hosts/<name>/= following the pattern above
+3. Enable/disable opt-in modules (=nvidia.nix=, =gaming.nix=) as needed
+4. For a server: adapt =hosts/alucard/= — each file is self-contained
+5. Set up your own sops-nix age keys in =.sops.yaml= and re-encrypt secrets
 
 See [[file:CLAUDE.md][CLAUDE.md]] for detailed architecture notes and module documentation.

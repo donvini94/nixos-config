@@ -9,6 +9,18 @@
     ./services.nix
   ];
 
+  security = {
+    pam.services.swaylock = { };
+    pam.services.login.enableKwallet = true;
+  };
+
+  networking.stevenBlackHosts = {
+    enable = true;
+    blockFakenews = true;
+    blockGambling = true;
+    blockSocial = true;
+  };
+
   environment.systemPackages = with pkgs; [
     xhost
     blueman
@@ -23,16 +35,8 @@
     filezilla
     linux-firmware
     mtpfs
-    droidcam
-
-    # Desktop-only tools (not needed on server)
     wofi-pass
     powertop
-    piper
-    lact
     picard
-    undervolt
-    s-tui
-    stress
   ];
 }
