@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   # VPN container - all torrent traffic goes through this
   gluetun:
-    image: qmcgaw/gluetun:latest
+    image: qmcgaw/gluetun@sha256:18a0abe7a020acdf9f80db45440d18487239abde5495a357ceb36517f7ea67cf
     container_name: gluetun
     cap_add:
       - NET_ADMIN
@@ -24,7 +22,6 @@ services:
       # DNS and firewall
       - SERVER_COUNTRIES=Switzerland,Netherlands  # Closest to your location
       - FIREWALL_INPUT_PORTS=18080  # Allow qBittorrent web UI
-      - DOT=off
       - TZ=Europe/Amsterdam
     restart: unless-stopped
     networks:
@@ -32,7 +29,7 @@ services:
 
   # qBittorrent - uses Gluetun's network stack (VPN-isolated)
   qbittorrent:
-    image: lscr.io/linuxserver/qbittorrent:libtorrentv1
+    image: lscr.io/linuxserver/qbittorrent:libtorrentv1-5.2.0_v1.2.20-ls115@sha256:010229898a5ba67e17d37261906c389eab8a0faea02d56caba36dd859633396a
     container_name: qbittorrent
     network_mode: "service:gluetun"  # Share Gluetun's network (VPN)
     environment:
@@ -52,7 +49,7 @@ services:
 
   # Sonarr - TV show automation (uses regular internet)
   sonarr:
-    image: lscr.io/linuxserver/sonarr:latest
+    image: lscr.io/linuxserver/sonarr@sha256:60f3b6b5c7647ba2bafd81163acfe34b11117b9b834ebd7fbcc3e5f1b309c7ef
     container_name: sonarr
     environment:
       - PUID=1001
@@ -70,7 +67,7 @@ services:
 
   # Radarr - Movie automation (uses regular internet)
   radarr:
-    image: lscr.io/linuxserver/radarr:latest
+    image: lscr.io/linuxserver/radarr:6.1.1.10360-ls302@sha256:15417a594ebda4c660a9fa9748e7199d33e2d17b31bbc5ad7ba2e86f0b414763
     container_name: radarr
     environment:
       - PUID=1001
@@ -88,7 +85,7 @@ services:
 
   # Prowlarr - Indexer management (uses regular internet)
   prowlarr:
-    image: lscr.io/linuxserver/prowlarr:latest
+    image: lscr.io/linuxserver/prowlarr@sha256:4b52038b7b6452a20c145239fa07d8218d1541d736a96c43aa0a5f60141cab28
     container_name: prowlarr
     environment:
       - PUID=1001
@@ -104,7 +101,7 @@ services:
 
     # Bazarr - Subtitle management for TV shows and movies (uses regular internet)
   bazarr:
-    image: lscr.io/linuxserver/bazarr:latest
+    image: lscr.io/linuxserver/bazarr@sha256:7adfe3ede9ce3562098a6f944fb644da16bdf245220e707260f89f1507c87b54
     container_name: bazarr
     environment:
       - PUID=1001
@@ -125,9 +122,10 @@ services:
 
   # Jellyseerr - User request interface for Jellyfin (publicly accessible)
   jellyseerr:
-    image: ghcr.io/seerr-team/seerr:latest
+    image: ghcr.io/seerr-team/seerr:v3.2.0@sha256:c4cbd5121236ac2f70a843a0b920b68a27976be57917555f1c45b08a1e6b2aad
     init: true
     container_name: jellyseerr
+    user: "1001:987"  # match host dir owner (jellyfin:jellyfin)
     environment:
       - LOG_LEVEL=info
       - TZ=Europe/Berlin
@@ -147,7 +145,7 @@ services:
       - media-network
 
   sabnzbd:
-    image: lscr.io/linuxserver/sabnzbd:latest
+    image: lscr.io/linuxserver/sabnzbd:version-5.0.1@sha256:05c14b2823f5c3b154e73069827ed4645f116e8ab0fc80feb53dfca13b019b88
     container_name: sabnzbd
     environment:
       - PUID=1001  # jellyfin user ID
@@ -165,7 +163,7 @@ services:
 
   # Komga - Comic/manga reader (publicly accessible via nginx)
   komga:
-    image: gotson/komga:latest
+    image: gotson/komga@sha256:dae630271561b642d47c9723803ec77900d1f0a803fbe6a42da69db5b21ebaeb
     container_name: komga
     environment:
       - TZ=Europe/Berlin
@@ -191,7 +189,7 @@ services:
 
   # Kapowarr - Comic book management (uses regular internet)
   kapowarr:
-    image: mrcas/kapowarr:latest
+    image: mrcas/kapowarr@sha256:d455797e4f2c5b1a8ccc5ce05c427f1af2179451bb1af195ca3fa8c3e928623b
     container_name: kapowarr
     environment:
       - PUID=1001
