@@ -12,7 +12,16 @@
     };
     gamescope.enable = true;
   };
-  programs.gamemode.enable = true;
+  programs.gamemode = {
+    enable = true;
+    settings = {
+      general = {
+        renicer = 10;
+        softrealtime = "auto";
+        inhibit_screensaver = 1;
+      };
+    };
+  };
   hardware.xone.enable = true; # support for the xbox controller USB dongle
   environment.systemPackages = with pkgs; [
     mangohud

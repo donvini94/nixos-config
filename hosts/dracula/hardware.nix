@@ -9,7 +9,7 @@
   boot = {
     loader.systemd-boot.enable = true;
     loader.efi.canTouchEfiVariables = true;
-    kernelPackages = pkgs.linuxPackages_6_12;
+    kernelPackages = pkgs.linuxPackages_zen;
     initrd = {
       kernelModules = [ ];
       availableKernelModules = [
@@ -29,12 +29,17 @@
     extraModprobeConfig = ''
       options v4l2loopback devices=1 video_nr=2 card_label="DroidCam" exclusive_caps=1
     '';
+    tmp = {
+      useTmpfs = true;
+      tmpfsSize = "50%";
+    };
   };
 
   fileSystems = {
     "/" = {
       device = "/dev/disk/by-label/nixos";
       fsType = "ext4";
+      options = [ "noatime" ];
     };
     "/boot" = {
       device = "/dev/disk/by-label/BOOT";
@@ -43,10 +48,15 @@
     "/media" = {
       device = "/dev/disk/by-label/media";
       fsType = "ext4";
+      options = [ "noatime" ];
     };
   };
 
-  swapDevices = [ ];
+  zramSwap = {
+    enable = true;
+    algorithm = "zstd";
+    memoryPercent = 50;
+  };
 
   hardware = {
     bluetooth = {

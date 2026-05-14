@@ -1,4 +1,4 @@
-{ ... }:
+{ lib, pkgs, ... }:
 {
   security.rtkit.enable = true;
 
@@ -16,9 +16,14 @@
       startWithGraphical = true;
     };
     printing.enable = true;
-    power-profiles-daemon.enable = true;
+    power-profiles-daemon.enable = lib.mkDefault true;
     mullvad-vpn.enable = true;
     ratbagd.enable = true;
     usbmuxd.enable = true;
+    ananicy = {
+      enable = true;
+      package = pkgs.ananicy-cpp;
+      rulesProvider = pkgs.ananicy-rules-cachyos;
+    };
   };
 }

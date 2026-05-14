@@ -21,6 +21,11 @@
     openFirewall = true;
   };
 
+  # Desktop tower: no battery, so power-profiles-daemon's balance_performance EPP
+  # is dead weight. Pin governor to performance instead.
+  services.power-profiles-daemon.enable = false;
+  powerManagement.cpuFreqGovernor = "performance";
+
   virtualisation.docker = {
     enable = true;
     autoPrune.enable = true;
