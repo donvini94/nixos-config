@@ -492,6 +492,15 @@ ty is Astral's Rust-based Python type checker and language server (from the Ruff
                 (my/recent-org-files (concat org-directory "roam/people/") 90)
                 (my/recent-org-files (concat org-directory "roam/meetings/") 90))))
 
+;; Flycheck runs `org-lint' on every save, and `org-lint-invalid-id-link'
+;; rebuilds `org-id-locations' by `file-truename'ing every agenda file.
+;; With a large agenda list that costs several seconds per save. Run
+;; org-lint manually via M-x org-lint when you want it.
+(add-hook 'org-mode-hook
+          (lambda ()
+            (when (bound-and-true-p flycheck-mode)
+              (flycheck-mode -1))))
+
 (after! org-download
   (setq org-download-method 'directory
         org-download-image-org-width 600
