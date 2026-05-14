@@ -15,16 +15,26 @@
         lockBeforeSleep = true;
         inhibitWhenAudio = true;
         timeouts = [
-          { timeout = 300; idleAction = "lock"; }
-          { timeout = 600; idleAction = "dpms off"; returnAction = "dpms on"; }
+          {
+            timeout = 300;
+            idleAction = "lock";
+          }
+          {
+            timeout = 600;
+            idleAction = "dpms off";
+            returnAction = "dpms on";
+          }
         ];
       };
       notifs.expire = true;
-      lock.sizes.heightMult = 1.0;
       general.apps = {
         terminal = [ "kitty" ];
         audio = [ "pavucontrol" ];
-        explorer = [ "kitty" "-e" "yazi" ];
+        explorer = [
+          "kitty"
+          "-e"
+          "yazi"
+        ];
         playback = [ "mpv" ];
       };
     };
