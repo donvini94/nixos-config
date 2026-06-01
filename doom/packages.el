@@ -30,6 +30,16 @@
 ;; HTTP client (lives inside org-mode buffers)
 (package! verb)
 
+;; mu4e enhancements
+;; consult-mu: async Consult-based mail search with live preview + Embark actions.
+;; Replaces the default mu4e headers search UX for ad-hoc queries.
+(package! consult-mu
+  :recipe (:host github :repo "armindarvish/consult-mu"
+           :files (:defaults "extras/*.el")
+           :branch "main"))
+;; mu4e-views: HTML email rendering via xwidget-webkit (uses macOS native WebKit).
+(package! mu4e-views)
+
 ;; Case conversion (camelCase ↔ snake_case ↔ kebab-case)
 (package! string-inflection)
 

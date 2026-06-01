@@ -21,8 +21,7 @@
   };
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    unstable.url = "github:NixOS/nixpkgs/master";
+    nixpkgs.url = "github:NixOS/nixpkgs/master";
     home-manager.url = "github:nix-community/home-manager/master";
 
     sops-nix.url = "github:Mic92/sops-nix";
@@ -55,7 +54,6 @@
       hosts,
       sops-nix,
       nil,
-      unstable,
       lsfg-vk-flake,
       caelestia-shell,
       emacs-overlay,
@@ -67,18 +65,8 @@
       mail = "vincenzo.pace94@icloud.com";
       system = "x86_64-linux";
 
-      # Packages from nixpkgs/master that aren't yet in nixos-unstable
-      unstablePkgs = import unstable {
-        inherit system;
-        config.allowUnfree = true;
-      };
-
       overlays = [
         emacs-overlay.overlay
-        (final: prev: {
-          claude-code = unstablePkgs.claude-code;
-          zed-editor = unstablePkgs.zed-editor;
-        })
       ];
 
       mkDesktopHost = hostname: nixpkgs.lib.nixosSystem {

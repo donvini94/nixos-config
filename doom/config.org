@@ -1225,3 +1225,237 @@ Replaces pdf-tools with a modern reader supporting PDF, EPUB, MOBI, FB2, XPS, CB
   :config
   (ultra-scroll-mode 1))
 #+end_src
+
+* Email (mu4e)
+
+Stack: mbsync (IMAP sync) → ~/Maildir → mu (Xapian index) → mu4e (Emacs UI) → msmtp (send).
+Two accounts: ~personal~ (iCloud, active) and ~work~ (amiconsult.de M365, pending IT consent).
+
+Sync is driven by a launchd agent every 5 minutes — mu4e itself does not fetch.
+~U~ in mu4e re-indexes from disk (cheap); ~mbsync -a~ in a terminal force-pulls.
+
+** Make Homebrew's mu4e discoverable
+On macOS, Homebrew installs mu4e under the ~mu~ formula's prefix instead of
+the default Emacs site-lisp dir. Emacs cannot find it without this hint.
+Must run BEFORE any ~(after! mu4e ...)~ block — if mu4e fails to load,
+nothing inside ~after!~ ever fires.
+
+The path is derived from the active Homebrew cellar so it survives ~brew upgrade mu~.
+
+#+begin_src emacs-lisp
+(let* ((brew-prefix (or (getenv "HOMEBREW_PREFIX") "/opt/homebrew"))
+       (mu4e-share (expand-file-name "share/emacs/site-lisp/mu/mu4e" brew-prefix)))
+  (when (file-directory-p mu4e-share)
+    (add-to-list 'load-path mu4e-share)))
+#+end_src
+
+** General
+Doom autoloads mu4e on first invocation (~SPC o m~). We set the binary path
+explicitly so it works regardless of ~exec-path~ at startup.
+
+#+begin_src emacs-lisp
+(after! mu4e
+  (setq mu4e-mu-binary (executable-find "mu")
+        mu4e-maildir (expand-file-name "Maildir" (getenv "HOME"))
+        mu4e-attachment-dir (expand-file-name "~/Downloads")
+
+        ;; Sync is handled by launchd. `U` (mu4e-update-mail-and-index) only re-indexes.
+        mu4e-get-mail-command "true"
+        mu4e-update-interval nil
+        mu4e-index-update-in-background t
+
+        ;; Behavior
+        mu4e-change-filenames-when-moving t   ; mbsync-safe — required to avoid UID confusion
+        mu4e-confirm-quit nil
+        mu4e-headers-include-related t
+        mu4e-headers-skip-duplicates t
+        mu4e-view-show-images t
+        mu4e-view-show-addresses t
+        mu4e-compose-dont-reply-to-self t
+        mu4e-compose-format-flowed t          ; soft-wrap so recipient's client can rewrap
+        mu4e-completing-read-function #'completing-read   ; honour vertico
+        mu4e-context-policy 'pick-first
+        mu4e-compose-context-policy 'ask-if-none
+
+        ;; Trash properly: Apple Mail / iCloud will purge on its end if we mark+expunge
+        mu4e-sent-messages-behavior 'sent     ; copy outgoing to Sent (iCloud needs this)
+
+        ;; Visual
+        mu4e-use-fancy-chars t
+        mu4e-headers-thread-child-prefix '("├─> " . "├─> ")))
+#+end_src
+
+** Accounts and contexts
+A ~mu4e-context~ binds an identity to a maildir tree, signature, sent-folder, and
+SMTP account. Switching context (=SPC m c= or auto-pick on reply) changes
+~user-mail-address~, ~smtpmail-default-smtp-server~, etc. simultaneously.
+
+Doom's ~set-email-account!~ macro wraps the underlying ~make-mu4e-context~.
+
+#+begin_src emacs-lisp
+(after! mu4e
+  ;; --- Personal: iCloud (active) ---
+  (set-email-account! "personal"
+    '((mu4e-sent-folder       . "/personal/Sent Messages")
+      (mu4e-drafts-folder     . "/personal/Drafts")
+      (mu4e-trash-folder      . "/personal/Deleted Messages")
+      (mu4e-refile-folder     . "/personal/Archive")
+      (smtpmail-smtp-user     . "vincenzo.pace94@icloud.com")
+      (user-mail-address      . "vincenzo.pace94@icloud.com")
+      (user-full-name         . "Vincenzo Pace")
+      (mu4e-compose-signature . "Vincenzo Pace"))
+    t)
+
+  ;; --- Work: amiconsult.de M365 (uncomment after IT consents Thunderbird app) ---
+  ;; (set-email-account! "work"
+  ;;   '((mu4e-sent-folder       . "/work/Sent Items")
+  ;;     (mu4e-drafts-folder     . "/work/Drafts")
+  ;;     (mu4e-trash-folder      . "/work/Deleted Items")
+  ;;     (mu4e-refile-folder     . "/work/Archive")
+  ;;     (smtpmail-smtp-user     . "pace@amiconsult.de")
+  ;;     (user-mail-address      . "pace@amiconsult.de")
+  ;;     (user-full-name         . "Vincenzo Pace")
+  ;;     (mu4e-compose-signature . "Vincenzo Pace\nIT Consultant\namiconsult GmbH"))
+  ;;   nil)
+  )
+#+end_src
+
+** Sending mail (msmtp)
+mu4e composes the message, then pipes it to ~msmtp -a <account>~. msmtp reads
+~/.msmtprc, selects the account, and handles TLS + auth. Logs land in
+~/Library/Logs/msmtp.log — first place to grep when sending breaks.
+
+The key trick: ~message-sendmail-envelope-from 'header~ tells msmtp to derive the
+account from the ~From:~ header, which we control via mu4e-context. So context
+switching automatically picks the right SMTP account.
+
+#+begin_src emacs-lisp
+(after! mu4e
+  (setq sendmail-program (executable-find "msmtp")
+        send-mail-function #'smtpmail-send-it
+        message-sendmail-f-is-evil t
+        message-sendmail-extra-arguments '("--read-envelope-from")
+        message-send-mail-function #'message-send-mail-with-sendmail
+        message-sendmail-envelope-from 'header))
+#+end_src
+
+** Headers view (columns + sorting)
+Custom column layout inspired by James Endres Howell's post on mu4e headers
+sorting. ~:human-date~ shows relative dates ("3d", "Mon"), ~:flags~ shows
+read/replied/attachment glyphs.
+
+#+begin_src emacs-lisp
+(after! mu4e
+  (setq mu4e-headers-fields
+        '((:human-date    . 12)
+          (:flags         .  6)
+          (:mailing-list  . 10)
+          (:from-or-to    . 25)
+          (:subject       . nil))   ; nil = use remaining width
+        mu4e-headers-date-format "%Y-%m-%d %H:%M"
+        mu4e-headers-time-format "%H:%M"
+        mu4e-headers-results-limit 500))
+#+end_src
+
+** Maildir shortcuts
+~J~ in mu4e jumps to a folder by single keypress.
+
+#+begin_src emacs-lisp
+(after! mu4e
+  (setq mu4e-maildir-shortcuts
+        '((:maildir "/personal/INBOX"            :key ?i)
+          (:maildir "/personal/Sent Messages"    :key ?s)
+          (:maildir "/personal/Drafts"           :key ?d)
+          (:maildir "/personal/Archive"          :key ?a)
+          (:maildir "/personal/Deleted Messages" :key ?t)
+          ;; Uncomment once work account is live:
+          ;; (:maildir "/work/INBOX"     :key ?I)
+          ;; (:maildir "/work/Sent Items" :key ?S)
+          ;; (:maildir "/work/Archive"   :key ?A)
+          )))
+#+end_src
+
+** Bookmarks (saved searches)
+Bookmarks are the IT consultant's killer feature: queries you run constantly
+get a single-key shortcut. Press ~b~ in mu4e to see the list.
+
+These are starter defaults — replace with your real triage queries once you
+know what you actually look at every day.
+
+#+begin_src emacs-lisp
+(after! mu4e
+  (setq mu4e-bookmarks
+        '((:name "Unread (all accounts)"
+           :query "flag:unread AND NOT flag:trashed"
+           :key ?u)
+          (:name "Today"
+           :query "date:today..now"
+           :key ?t)
+          (:name "Last 7 days"
+           :query "date:7d..now AND NOT flag:trashed"
+           :key ?w)
+          (:name "Flagged / Starred"
+           :query "flag:flagged"
+           :key ?f)
+          (:name "With attachments (last 30d)"
+           :query "flag:attach AND date:30d..now"
+           :key ?a)
+          (:name "Drafts (any account)"
+           :query "maildir:/personal/Drafts OR maildir:/work/Drafts"
+           :key ?d))))
+#+end_src
+
+** consult-mu — async live-preview search
+The piece from Armin Darvish's blog post. Replaces ~mu4e-headers-search~ with
+a Consult interface: type a query, see results stream in with live preview,
+Embark gives you actions (reply, archive, copy link).
+
+Trigger via ~M-x consult-mu~ (we also bind ~SPC s m~).
+
+#+begin_src emacs-lisp
+(use-package! consult-mu
+  :after mu4e
+  :commands (consult-mu consult-mu-async)
+  :init
+  (map! :leader
+        (:prefix-map ("s" . "search")
+         :desc "mu4e (consult)" "m" #'consult-mu))
+  :config
+  (setq consult-mu-maxnum 200
+        consult-mu-search-sort-field :date
+        consult-mu-preview-key 'any              ; preview without explicit M-.
+        consult-mu-mark-previewed-as-read nil
+        consult-mu-mark-viewed-as-read t
+        consult-mu-headers-template "%d %s %f %g"
+        consult-mu-use-wide-reply nil))
+#+end_src
+
+** HTML rendering — mu4e-views (optional)
+xwidget-webkit gives real WebKit rendering inside Emacs. Only works if your
+Emacs was compiled with xwidgets support. Test by running ~M-x xwidget-webkit-browse-url~;
+if it errors, leave this disabled and use the default shr renderer.
+
+#+begin_src emacs-lisp
+;; Uncomment after confirming xwidgets work in your Emacs build:
+;;
+;; (use-package! mu4e-views
+;;   :after mu4e
+;;   :config
+;;   (setq mu4e-views-completion-method 'default
+;;         mu4e-views-default-view-method "html"
+;;         mu4e-views-next-previous-message-behaviour 'stick-to-current-window
+;;         mu4e-views-auto-view-selected-message t)
+;;   (mu4e-views-mu4e-use-view-msg-method "html"))
+#+end_src
+
+** Keybindings (under SPC m for "mail")
+Doom binds =SPC o m= to open mu4e. The leader prefix ~SPC m~ is reserved per-major-mode,
+but in non-mail buffers we hijack a sub-namespace for cross-buffer mail actions.
+
+#+begin_src emacs-lisp
+(map! :leader
+      (:prefix-map ("o" . "open")
+       :desc "mu4e"               "m" #'mu4e)
+      (:prefix-map ("n" . "notes")
+       :desc "Compose mail (org)" "M" #'mu4e-compose-new))
+#+end_src

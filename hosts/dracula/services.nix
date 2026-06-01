@@ -26,6 +26,10 @@
   services.power-profiles-daemon.enable = false;
   powerManagement.cpuFreqGovernor = "performance";
 
+  # UPower has no battery to report on, but caelestia-shell queries it for
+  # AC/idle-inhibitor state and a few widgets. Cheap to keep available.
+  services.upower.enable = true;
+
   virtualisation.docker = {
     enable = true;
     autoPrune.enable = true;

@@ -1086,3 +1086,170 @@
   :config
   (ultra-scroll-mode 1))
 ;; Ultra-scroll:1 ends here
+
+;; [[file:config.org::*Make Homebrew's mu4e discoverable][Make Homebrew's mu4e discoverable:1]]
+(let* ((brew-prefix (or (getenv "HOMEBREW_PREFIX") "/opt/homebrew"))
+       (mu4e-share (expand-file-name "share/emacs/site-lisp/mu/mu4e" brew-prefix)))
+  (when (file-directory-p mu4e-share)
+    (add-to-list 'load-path mu4e-share)))
+;; Make Homebrew's mu4e discoverable:1 ends here
+
+;; [[file:config.org::*General][General:1]]
+(after! mu4e
+  (setq mu4e-mu-binary (executable-find "mu")
+        mu4e-maildir (expand-file-name "Maildir" (getenv "HOME"))
+        mu4e-attachment-dir (expand-file-name "~/Downloads")
+
+        ;; Sync is handled by launchd. `U` (mu4e-update-mail-and-index) only re-indexes.
+        mu4e-get-mail-command "true"
+        mu4e-update-interval nil
+        mu4e-index-update-in-background t
+
+        ;; Behavior
+        mu4e-change-filenames-when-moving t   ; mbsync-safe — required to avoid UID confusion
+        mu4e-confirm-quit nil
+        mu4e-headers-include-related t
+        mu4e-headers-skip-duplicates t
+        mu4e-view-show-images t
+        mu4e-view-show-addresses t
+        mu4e-compose-dont-reply-to-self t
+        mu4e-compose-format-flowed t          ; soft-wrap so recipient's client can rewrap
+        mu4e-completing-read-function #'completing-read   ; honour vertico
+        mu4e-context-policy 'pick-first
+        mu4e-compose-context-policy 'ask-if-none
+
+        ;; Trash properly: Apple Mail / iCloud will purge on its end if we mark+expunge
+        mu4e-sent-messages-behavior 'sent     ; copy outgoing to Sent (iCloud needs this)
+
+        ;; Visual
+        mu4e-use-fancy-chars t
+        mu4e-headers-thread-child-prefix '("├─> " . "├─> ")))
+;; General:1 ends here
+
+;; [[file:config.org::*Accounts and contexts][Accounts and contexts:1]]
+(after! mu4e
+  ;; --- Personal: iCloud (active) ---
+  (set-email-account! "personal"
+    '((mu4e-sent-folder       . "/personal/Sent Messages")
+      (mu4e-drafts-folder     . "/personal/Drafts")
+      (mu4e-trash-folder      . "/personal/Deleted Messages")
+      (mu4e-refile-folder     . "/personal/Archive")
+      (smtpmail-smtp-user     . "vincenzo.pace94@icloud.com")
+      (user-mail-address      . "vincenzo.pace94@icloud.com")
+      (user-full-name         . "Vincenzo Pace")
+      (mu4e-compose-signature . "Vincenzo Pace"))
+    t)
+
+  ;; --- Work: amiconsult.de M365 (uncomment after IT consents Thunderbird app) ---
+  ;; (set-email-account! "work"
+  ;;   '((mu4e-sent-folder       . "/work/Sent Items")
+  ;;     (mu4e-drafts-folder     . "/work/Drafts")
+  ;;     (mu4e-trash-folder      . "/work/Deleted Items")
+  ;;     (mu4e-refile-folder     . "/work/Archive")
+  ;;     (smtpmail-smtp-user     . "pace@amiconsult.de")
+  ;;     (user-mail-address      . "pace@amiconsult.de")
+  ;;     (user-full-name         . "Vincenzo Pace")
+  ;;     (mu4e-compose-signature . "Vincenzo Pace\nIT Consultant\namiconsult GmbH"))
+  ;;   nil)
+  )
+;; Accounts and contexts:1 ends here
+
+;; [[file:config.org::*Sending mail (msmtp)][Sending mail (msmtp):1]]
+(after! mu4e
+  (setq sendmail-program (executable-find "msmtp")
+        send-mail-function #'smtpmail-send-it
+        message-sendmail-f-is-evil t
+        message-sendmail-extra-arguments '("--read-envelope-from")
+        message-send-mail-function #'message-send-mail-with-sendmail
+        message-sendmail-envelope-from 'header))
+;; Sending mail (msmtp):1 ends here
+
+;; [[file:config.org::*Headers view (columns + sorting)][Headers view (columns + sorting):1]]
+(after! mu4e
+  (setq mu4e-headers-fields
+        '((:human-date    . 12)
+          (:flags         .  6)
+          (:mailing-list  . 10)
+          (:from-or-to    . 25)
+          (:subject       . nil))   ; nil = use remaining width
+        mu4e-headers-date-format "%Y-%m-%d %H:%M"
+        mu4e-headers-time-format "%H:%M"
+        mu4e-headers-results-limit 500))
+;; Headers view (columns + sorting):1 ends here
+
+;; [[file:config.org::*Maildir shortcuts][Maildir shortcuts:1]]
+(after! mu4e
+  (setq mu4e-maildir-shortcuts
+        '((:maildir "/personal/INBOX"            :key ?i)
+          (:maildir "/personal/Sent Messages"    :key ?s)
+          (:maildir "/personal/Drafts"           :key ?d)
+          (:maildir "/personal/Archive"          :key ?a)
+          (:maildir "/personal/Deleted Messages" :key ?t)
+          ;; Uncomment once work account is live:
+          ;; (:maildir "/work/INBOX"     :key ?I)
+          ;; (:maildir "/work/Sent Items" :key ?S)
+          ;; (:maildir "/work/Archive"   :key ?A)
+          )))
+;; Maildir shortcuts:1 ends here
+
+;; [[file:config.org::*Bookmarks (saved searches)][Bookmarks (saved searches):1]]
+(after! mu4e
+  (setq mu4e-bookmarks
+        '((:name "Unread (all accounts)"
+           :query "flag:unread AND NOT flag:trashed"
+           :key ?u)
+          (:name "Today"
+           :query "date:today..now"
+           :key ?t)
+          (:name "Last 7 days"
+           :query "date:7d..now AND NOT flag:trashed"
+           :key ?w)
+          (:name "Flagged / Starred"
+           :query "flag:flagged"
+           :key ?f)
+          (:name "With attachments (last 30d)"
+           :query "flag:attach AND date:30d..now"
+           :key ?a)
+          (:name "Drafts (any account)"
+           :query "maildir:/personal/Drafts OR maildir:/work/Drafts"
+           :key ?d))))
+;; Bookmarks (saved searches):1 ends here
+
+;; [[file:config.org::*consult-mu — async live-preview search][consult-mu — async live-preview search:1]]
+(use-package! consult-mu
+  :after mu4e
+  :commands (consult-mu consult-mu-async)
+  :init
+  (map! :leader
+        (:prefix-map ("s" . "search")
+         :desc "mu4e (consult)" "m" #'consult-mu))
+  :config
+  (setq consult-mu-maxnum 200
+        consult-mu-search-sort-field :date
+        consult-mu-preview-key 'any              ; preview without explicit M-.
+        consult-mu-mark-previewed-as-read nil
+        consult-mu-mark-viewed-as-read t
+        consult-mu-headers-template "%d %s %f %g"
+        consult-mu-use-wide-reply nil))
+;; consult-mu — async live-preview search:1 ends here
+
+;; [[file:config.org::*HTML rendering — mu4e-views (optional)][HTML rendering — mu4e-views (optional):1]]
+;; Uncomment after confirming xwidgets work in your Emacs build:
+;;
+;; (use-package! mu4e-views
+;;   :after mu4e
+;;   :config
+;;   (setq mu4e-views-completion-method 'default
+;;         mu4e-views-default-view-method "html"
+;;         mu4e-views-next-previous-message-behaviour 'stick-to-current-window
+;;         mu4e-views-auto-view-selected-message t)
+;;   (mu4e-views-mu4e-use-view-msg-method "html"))
+;; HTML rendering — mu4e-views (optional):1 ends here
+
+;; [[file:config.org::*Keybindings (under SPC m for "mail")][Keybindings (under SPC m for "mail"):1]]
+(map! :leader
+      (:prefix-map ("o" . "open")
+       :desc "mu4e"               "m" #'mu4e)
+      (:prefix-map ("n" . "notes")
+       :desc "Compose mail (org)" "M" #'mu4e-compose-new))
+;; Keybindings (under SPC m for "mail"):1 ends here

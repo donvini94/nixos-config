@@ -48,9 +48,11 @@
     };
   };
 
-  # Caelestia runtime dependencies not already in system modules
+  # Caelestia runtime dependencies not already in system modules.
+  # xdg-desktop-portal-gtk lives in modules/hyprland/default.nix under
+  # xdg.portal.extraPortals — it must be registered system-side, not installed
+  # as a user binary, or xdg-desktop-portal will not delegate to it.
   home.packages = with pkgs; [
-    xdg-desktop-portal-gtk
     hyprpicker
     cliphist
     inotify-tools

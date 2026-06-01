@@ -1,6 +1,17 @@
 { pkgs, inputs, ... }:
 {
-  xdg.portal.enable = true;
+  # programs.hyprland.enable already registers xdg-desktop-portal-hyprland
+  # via xdg.portal.{extraPortals,configPackages}. We only need to add the gtk
+  # backend, which provides org.freedesktop.portal.Settings (used by Qt/GTK
+  # apps to read color-scheme/font-config) and the GTK file chooser.
+  xdg.portal = {
+    enable = true;
+    extraPortals = with pkgs; [ xdg-desktop-portal-gtk ];
+    config.common.default = [
+      "hyprland"
+      "gtk"
+    ];
+  };
 
   environment.pathsToLink = [ "/libexec" ];
 
@@ -38,7 +49,6 @@
     pass-wayland
     wofi # needed for wofi-pass
     egl-wayland
-    xdg-desktop-portal-hyprland
     wf-recorder
     grim
     slurp

@@ -37,6 +37,9 @@
  (undo +tree)              ; persistent, smarter undo for your inevitable mistakes
  vc                ; version-control and Emacs, sitting in a tree
 
+ :email
+ (mu4e +org)       ; Maildir-backed email; +org enables org-msg HTML composition
+
  :term
  eshell            ; the elisp shell that works everywhere
  vterm
