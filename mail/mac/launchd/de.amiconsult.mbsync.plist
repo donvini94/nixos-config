@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+      Mail sync + indexing pipeline. Runs every 5 minutes and at login.
+      Invokes ~/.local/bin/mail-sync which does:
+        mbsync -a → notmuch new → bulk-killer → afew --tag --new
+      See that script for the rationale on why bulk-killer runs outside afew.
+
+      First run will trigger a pinentry-mac dialog for the GPG passphrase
+      (because PassCmd in ~/.mbsyncrc decrypts ~/.authinfo.gpg). Once entered,
+      gpg-agent caches it for 2h (configured in ~/.gnupg/gpg-agent.conf).
+    -->
+    <key>Label</key>
+    <string>de.amiconsult.mbsync</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/vincenzopace/.local/bin/mail-sync</string>
+    </array>
+
+    <!-- Sync every 5 minutes -->
+    <key>StartInterval</key>
+    <integer>300</integer>
+
+    <!-- Sync immediately when this agent loads (login) -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Don't restart if mbsync exits with an error; just wait for next interval -->
+    <key>KeepAlive</key>
+    <false/>
+
+    <!-- Logs (rotate manually if they get large) -->
+    <key>StandardOutPath</key>
+    <string>/Users/vincenzopace/Library/Logs/mbsync.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/vincenzopace/Library/Logs/mbsync.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <!-- mbsync calls gpg (PassCmd) and possibly pizauth — both need to be on PATH -->
+        <key>PATH</key>
+        <string>/Users/vincenzopace/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/vincenzopace</string>
+        <!-- Tell gpg-agent which TTY (none, but pinentry-mac is graphical so OK) -->
+        <key>GPG_TTY</key>
+        <string>/dev/null</string>
+    </dict>
+
+    <!-- macOS will not nap this process while it's running -->
+    <key>ProcessType</key>
+    <string>Background</string>
+
+    <!-- Run at low priority so a sync doesn't fight with Emacs/Chrome -->
+    <key>LowPriorityIO</key>
+    <true/>
+    <key>Nice</key>
+    <integer>10</integer>
+</dict>
+</plist>

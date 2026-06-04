@@ -1,0 +1,65 @@
+# ~/.mbsyncrc — isync (mbsync) configuration.
+#
+# Two accounts: personal (iCloud, active) and work (M365, staged but blocked
+# pending tenant admin consent for OAuth2). Run `mbsync -a` to sync all
+# active accounts, or `mbsync personal` / `mbsync work` for one.
+#
+# PassCmd pattern: decrypt ~/.authinfo.gpg in-memory via gpg-agent and pull
+# the right password field with awk. Never writes plaintext to disk.
+
+# ── Global defaults ──────────────────────────────────────────────────────
+Create     Both
+Expunge    Both
+SyncState  *
+
+# ════════════════════════════════════════════════════════════════════════
+# Personal: iCloud Mail (active)
+# ════════════════════════════════════════════════════════════════════════
+IMAPAccount icloud
+Host        imap.mail.me.com
+Port        993
+User        vincenzo.pace94@icloud.com
+PassCmd     "gpg --quiet --no-tty --decrypt ~/.authinfo.gpg | awk '/^machine imap\\.mail\\.me\\.com/ {print $6; exit}'"
+TLSType     IMAPS
+TLSVersions +1.2 +1.3
+AuthMechs   LOGIN
+
+IMAPStore   icloud-remote
+Account     icloud
+
+MaildirStore icloud-local
+Subfolders   Verbatim
+Path         ~/Maildir/personal/
+Inbox        ~/Maildir/personal/INBOX
+
+Channel     personal
+Far         :icloud-remote:
+Near        :icloud-local:
+# iCloud's actual folder names. Add more here as you create them.
+Patterns    "INBOX" "Sent Messages" "Drafts" "Deleted Messages" "Archive" "Junk"
+
+# ════════════════════════════════════════════════════════════════════════
+# Work: amiconsult.de M365 (BLOCKED — uncomment after IT admin-consents
+# Thunderbird app in the tenant, then run `pizauth show work`)
+# ════════════════════════════════════════════════════════════════════════
+# IMAPAccount o365
+# Host        outlook.office365.com
+# Port        993
+# User        pace@amiconsult.de
+# PassCmd     "$HOME/.cargo/bin/pizauth show work"
+# AuthMechs   XOAUTH2
+# TLSType     IMAPS
+# TLSVersions +1.2 +1.3
+#
+# IMAPStore   o365-remote
+# Account     o365
+#
+# MaildirStore o365-local
+# Subfolders   Verbatim
+# Path         ~/Maildir/work/
+# Inbox        ~/Maildir/work/INBOX
+#
+# Channel     work
+# Far         :o365-remote:
+# Near        :o365-local:
+# Patterns    "INBOX" "Sent Items" "Drafts" "Deleted Items" "Archive" "Junk Email"

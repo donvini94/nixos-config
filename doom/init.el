@@ -38,7 +38,7 @@
  vc                ; version-control and Emacs, sitting in a tree
 
  :email
- (mu4e +org)       ; Maildir-backed email; +org enables org-msg HTML composition
+ notmuch           ; xapian-indexed mail; tagging pipeline is a shell script (see ~/.local/bin/mail-sync)
 
  :term
  eshell            ; the elisp shell that works everywhere

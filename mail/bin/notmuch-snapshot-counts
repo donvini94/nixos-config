@@ -1,0 +1,42 @@
+#!/bin/sh
+# Daily count snapshot for the notmuch hello dashboard.
+#
+# Writes ~/org/notmuch-counts/YYYY-MM-DD.csv with the current count of every
+# tracked tag. The hello buffer's delta widget compares "now" (live count)
+# against "today's baseline" (this file) to surface "what arrived since the
+# start of the day".
+#
+# Invoked once per day at 03:00 by ~/Library/LaunchAgents/de.amiconsult.notmuch-tag-dump.plist.
+# Safe to re-run: writes only if today's file doesn't already exist.
+
+set -u
+PATH=$HOME/.local/bin:/opt/homebrew/bin:/run/current-system/sw/bin:/usr/bin:/bin
+export PATH
+
+DIR=$HOME/org/notmuch-counts
+TODAY=$(date '+%Y-%m-%d')
+OUT="$DIR/$TODAY.csv"
+
+mkdir -p "$DIR"
+
+# Don't clobber today's baseline if we already snapshot today (e.g. manual rerun).
+# The snapshot is intentionally TAKEN AT THE START OF THE DAY so that "delta"
+# reads as "mail received today since 03:00".
+if [ -e "$OUT" ]; then
+    echo "[snapshot-counts] $OUT already exists, leaving alone"
+    exit 0
+fi
+
+# Tags worth tracking on the dashboard. Order shown left-to-right in the
+# delta line. Add tags here as they earn the dashboard real estate.
+TAGS="inbox owed/reply s/waiting s/follow-up reading sent bulk c/VAC c/Metro f/leadership f/partner f/sales t/IGA t/AI"
+
+{
+    printf 'tag,count\n'
+    for t in $TAGS; do
+        c=$(notmuch count "tag:$t" 2>/dev/null || echo 0)
+        printf '%s,%d\n' "$t" "$c"
+    done
+} > "$OUT"
+
+echo "[snapshot-counts] wrote $OUT"

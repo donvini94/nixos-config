@@ -1,0 +1,43 @@
+# notmuch configuration.
+#
+# Path is absolute (notmuch doesn't expand $HOME). On macOS this file is
+# symlinked from ~/.notmuch-config directly. On NixOS the email home-manager
+# module rewrites `database.path` to `/home/<user>/Maildir` before placing
+# the file (see hm-modules/email.nix).
+#
+# Database root is the parent of all maildir accounts so that when the work
+# account is activated (~/Maildir/work/) it gets picked up automatically
+# without reconfiguration.
+
+[database]
+path=/Users/vincenzopace/Maildir
+
+[user]
+name=Vincenzo Pace
+primary_email=vincenzo.pace94@icloud.com
+other_email=pace@amiconsult.de
+
+[new]
+# Tags applied to every newly discovered message. The mail-sync pipeline
+# consumes tag:new and either promotes it to tag:inbox or strips it for
+# bulk/sent/reading/other terminal states.
+tags=new;unread
+# Filenames to skip during indexing (mbsync state, lockfiles, notmuch's own dir).
+ignore=.mbsyncstate;.uidvalidity;.notmuch;.mbsyncstate.lock;.mbsyncstate.new;.mbsyncstate.journal
+
+[search]
+# Defense in depth: mail with these tags is hidden from default searches
+# even if it carries other tags. Means a bulk-killer false positive still
+# vanishes from the inbox view by virtue of the +bulk tag alone.
+exclude_tags=bulk;deleted;spam;trash
+
+[maildir]
+# Sync maildir flags (S=seen, F=flagged, R=replied, T=trashed) with notmuch
+# tags so the standard IMAP flags round-trip through mbsync.
+synchronize_flags=true
+
+[index]
+# Make the List-Unsubscribe header queryable. Required by the bulk-mail
+# killer rule in mail-sync. Prefix must be uppercase with no special chars
+# (notmuch reserves lowercase prefixes for built-ins and rejects dashes).
+header.LISTUNSUB=List-Unsubscribe

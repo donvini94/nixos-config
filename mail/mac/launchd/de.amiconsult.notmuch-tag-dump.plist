@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+      Daily notmuch maintenance at 03:00:
+        1. Tag backup — full tag state to ~/org/notmuch-tags.dump. Restore with
+             notmuch restore < ~/org/notmuch-tags.dump
+           Idempotent, ~one line per tagged message.
+        2. Counts snapshot — per-tag totals to ~/org/notmuch-counts/YYYY-MM-DD.csv.
+           Used by the hello-buffer delta widget to compute "what arrived today".
+    -->
+    <key>Label</key>
+    <string>de.amiconsult.notmuch-tag-dump</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/sh</string>
+        <string>-c</string>
+        <string>/opt/homebrew/bin/notmuch dump --output=/Users/vincenzopace/org/notmuch-tags.dump &amp;&amp; /Users/vincenzopace/.local/bin/notmuch-snapshot-counts</string>
+    </array>
+
+    <!-- Daily at 03:00 local time -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>3</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/vincenzopace/Library/Logs/notmuch-tag-dump.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/vincenzopace/Library/Logs/notmuch-tag-dump.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>/Users/vincenzopace</string>
+    </dict>
+</dict>
+</plist>

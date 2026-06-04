@@ -1,0 +1,108 @@
+#!/bin/sh
+# Compute transient tags for the inbox dashboard:
+#   +owed/reply   — inbox thread where the last message is NOT from me
+#   +age/today    — last decisive message <  1 day old
+#   +age/3d       — last decisive message <  3 days old
+#   +age/7d       — last decisive message <  7 days old
+#   +age/old      — last decisive message >= 7 days old
+#
+# "Last decisive message" depends on the queue:
+#   - For owed/reply: the timestamp of the latest *them* message
+#       (i.e. how long they've been waiting on me)
+#   - For s/waiting:  the timestamp of the latest *me* message
+#       (i.e. how long I've been waiting on them)
+#
+# These tags are CLEARED at the top of every run and recomputed from scratch,
+# so the dashboard stays accurate without manual maintenance.
+#
+# Invoked by ~/.local/bin/mail-sync after the persistent tagging rules.
+
+set -u
+PATH=$HOME/.local/bin:/opt/homebrew/bin:/run/current-system/sw/bin:/usr/bin:/bin
+export PATH
+
+ME='(from:vincenzo.pace94@icloud.com OR from:pace@amiconsult.de)'
+NOW=$(date +%s)
+
+log() { printf '[compute-state %s] %s\n' "$(date '+%H:%M:%S')" "$*"; }
+
+# --- 1. Clear computed tags everywhere -----------------------------------
+log "clearing previous owed/* and age/* tags"
+notmuch tag -owed/reply -- tag:owed/reply 2>/dev/null
+notmuch tag -age/today  -- tag:age/today  2>/dev/null
+notmuch tag -age/3d     -- tag:age/3d     2>/dev/null
+notmuch tag -age/7d     -- tag:age/7d     2>/dev/null
+notmuch tag -age/old    -- tag:age/old    2>/dev/null
+
+# Translate seconds-of-age into a bucket name. Buckets are cumulative upper
+# bounds: <1d = today, <3d = 3d, <7d = 7d, else old.
+age_bucket() {
+    secs=$1
+    if   [ "$secs" -lt 86400  ]; then echo "age/today"
+    elif [ "$secs" -lt 259200 ]; then echo "age/3d"
+    elif [ "$secs" -lt 604800 ]; then echo "age/7d"
+    else                              echo "age/old"
+    fi
+}
+
+# Return the unix timestamp of one message id, or empty string if absent.
+msg_ts() {
+    mid=$1
+    [ -z "$mid" ] && { echo ""; return; }
+    notmuch show --format=json --body=false --entire-thread=false "$mid" \
+        | jq -r '.[0][0][0].timestamp // empty' 2>/dev/null
+}
+
+# --- 2. owed/reply pass --------------------------------------------------
+# A thread in inbox where the last message came from someone else.
+log "computing owed/reply"
+owed_count=0
+for tid in $(notmuch search --output=threads tag:inbox); do
+    last_them=$(notmuch search --output=messages --sort=newest-first --limit=1 \
+                    "$tid AND NOT $ME")
+    [ -z "$last_them" ] && continue
+
+    last_me=$(notmuch search --output=messages --sort=newest-first --limit=1 \
+                  "$tid AND $ME")
+
+    them_ts=$(msg_ts "$last_them")
+    [ -z "$them_ts" ] && continue
+
+    if [ -n "$last_me" ]; then
+        me_ts=$(msg_ts "$last_me")
+        # If my last message is newer than theirs, the ball is in their court.
+        [ -n "$me_ts" ] && [ "$me_ts" -ge "$them_ts" ] && continue
+    fi
+
+    age=$(( NOW - them_ts ))
+    bucket=$(age_bucket "$age")
+    notmuch tag +owed/reply "+$bucket" -- "$tid"
+    owed_count=$(( owed_count + 1 ))
+done
+log "owed/reply: $owed_count thread(s) tagged"
+
+# --- 3. s/waiting age pass -----------------------------------------------
+# Threads I've explicitly marked s/waiting. Age = since my last outbound msg
+# (because that's the touchpoint I'm waiting on a reply to).
+log "computing age for s/waiting"
+waiting_count=0
+for tid in $(notmuch search --output=threads tag:s/waiting); do
+    last_me=$(notmuch search --output=messages --sort=newest-first --limit=1 \
+                  "$tid AND $ME")
+    if [ -z "$last_me" ]; then
+        # No outbound from me: fall back to thread's newest message.
+        last_me=$(notmuch search --output=messages --sort=newest-first --limit=1 "$tid")
+    fi
+    [ -z "$last_me" ] && continue
+
+    ts=$(msg_ts "$last_me")
+    [ -z "$ts" ] && continue
+
+    age=$(( NOW - ts ))
+    bucket=$(age_bucket "$age")
+    notmuch tag "+$bucket" -- "$tid"
+    waiting_count=$(( waiting_count + 1 ))
+done
+log "s/waiting: $waiting_count thread(s) aged"
+
+log "done"

@@ -23,6 +23,7 @@
     ./hm-modules/zellij.nix
     ./hm-modules/caelestia.nix
     ./hm-modules/services.nix
+    ./hm-modules/email.nix
     inputs.caelestia-shell.homeManagerModules.default
   ];
 
