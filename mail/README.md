@@ -82,26 +82,206 @@ launchctl load $HOME/Library/LaunchAgents/de.amiconsult.mbsync.plist
 launchctl load $HOME/Library/LaunchAgents/de.amiconsult.notmuch-tag-dump.plist
 ```
 
-### NixOS
+### NixOS — routine deploy
 
-`hm-modules/email.nix` (imported by `home.nix`) handles everything:
-installs the four scripts under `~/.local/bin/`, places the dotfiles
-(rewriting the notmuch DB path to `/home/<user>/Maildir`), pulls
-`notmuch isync msmtp jq gnupg` via `home.packages`, and replaces the
-launchd jobs with two systemd user timers — `mail-sync.timer` (5 min)
-and `notmuch-daily.timer` (03:00).
-
-Apply:
+Once the machine is set up (see *First-time setup* below), iteration is
+just:
 
 ```sh
-sudo nixos-rebuild switch --flake .#<host>
-systemctl --user enable --now mail-sync.timer notmuch-daily.timer
-systemctl --user start mail-sync.service      # immediate first run
+sudo nixos-rebuild switch --flake .#<host>      # applies module changes
+systemctl --user restart mail-sync.timer        # only if timer config changed
 ```
 
-You still need to provision `~/.authinfo.gpg` (mbsync's `PassCmd`
-shells out to gpg to decrypt it) and run the first interactive
-`mbsync personal` to set up the maildir tree.
+`hm-modules/email.nix` handles the rest: scripts under `~/.local/bin/`,
+dotfiles with the notmuch DB path rewritten to `/home/<user>/Maildir`,
+`notmuch isync msmtp jq gnupg` via `home.packages`, and two systemd
+user timers — `mail-sync.timer` (5 min) + `notmuch-daily.timer` (03:00) —
+replacing the macOS launchd jobs. Home-manager auto-enables units listed
+in `Install.WantedBy`, so no manual `systemctl enable` is needed.
+
+### NixOS — first-time setup
+
+For a clean machine. Steps are in order; each one's *Why* explains what
+breaks if you skip it.
+
+#### 0. Get the repo onto the box
+
+```sh
+git clone <repo-url> ~/nixos-config
+```
+
+**Why:** `hm-modules/doom.nix` symlinks `~/.config/doom` →
+`~/nixos-config/doom` via `mkOutOfStoreSymlink`. The symlink is created
+unconditionally — if the target path doesn't exist, you get a dangling
+link and Doom won't load. Same for `hm-modules/email.nix` which reads
+files from `../mail/` relative to the module.
+
+#### 1. GPG keypair
+
+If migrating from the existing Mac (recommended — keeps the same key
+identity across machines so `~/.authinfo.gpg` doesn't have to be
+re-encrypted):
+
+```sh
+# On the Mac:
+gpg --list-secret-keys --keyid-format=long      # find your <keyid>
+gpg --export-secret-keys --armor <keyid> > /tmp/sec.asc
+gpg --export             --armor <keyid> > /tmp/pub.asc
+gpg --export-ownertrust > /tmp/trust.txt
+scp /tmp/{sec,pub,trust}* <nixos-host>:/tmp/
+
+# On NixOS:
+gpg --import /tmp/pub.asc
+gpg --import /tmp/sec.asc
+gpg --import-ownertrust < /tmp/trust.txt
+shred -u /tmp/{sec,pub,trust}*
+gpg --list-secret-keys                          # verify
+```
+
+If starting fresh: `gpg --full-generate-key` (RSA 4096, no expiry, your
+real email). Then you'll generate a new `~/.authinfo.gpg` in step 3.
+
+**Why:** mbsync's `PassCmd` shells out to `gpg --decrypt
+~/.authinfo.gpg`. No key, no password, no IMAP login.
+
+#### 2. Pinentry
+
+Add to `configuration.nix` (or wherever `programs.gnupg.agent` is set):
+
+```nix
+programs.gnupg.agent = {
+  enable = true;
+  pinentryPackage = pkgs.pinentry-curses;   # for TTY-friendly first run
+  # Switch to pkgs.pinentry-rofi later if you want graphical prompts
+  # under Hyprland.
+};
+```
+
+Then `sudo nixos-rebuild switch`.
+
+**Why:** Without an explicit pinentry, gpg-agent picks a default that
+may not work in your environment. `pinentry-curses` always works in any
+terminal; `pinentry-rofi` is nicer once Hyprland is up but blocks
+headless first runs.
+
+#### 3. `~/.authinfo.gpg`
+
+Generate an iCloud **app-specific password** at
+[appleid.apple.com](https://appleid.apple.com/) →
+*Sign-in and Security → App-Specific Passwords → Generate* (label it
+e.g. `notmuch on <host>`). Apple will only show it once.
+
+Then encrypt it:
+
+```sh
+cat > /tmp/authinfo <<'EOF'
+machine imap.mail.me.com login vincenzo.pace94@icloud.com password xxxx-xxxx-xxxx-xxxx
+EOF
+gpg --encrypt --recipient <your-keyid> --output ~/.authinfo.gpg /tmp/authinfo
+shred -u /tmp/authinfo
+
+# Verify:
+gpg --decrypt ~/.authinfo.gpg
+```
+
+**Why:** Apple ID passwords don't work over IMAP since 2017 — you must
+use an app-specific password. Encrypting it means no plaintext
+credential on disk, and the `PassCmd` in `mbsyncrc` pulls it through
+gpg-agent on every sync.
+
+#### 4. Apply the email module
+
+```sh
+cd ~/nixos-config
+sudo nixos-rebuild switch --flake .#<host>
+```
+
+**Verify:**
+
+```sh
+ls -la ~/.local/bin/mail-sync ~/.notmuch-config ~/.mbsyncrc ~/.msmtprc
+systemctl --user list-timers | grep -E 'mail-sync|notmuch-daily'
+which notmuch mbsync msmtp jq
+```
+
+#### 5. Create the maildir + org parents
+
+```sh
+mkdir -p ~/Maildir/personal ~/org
+```
+
+**Why:** mbsync's `Create Both` creates folders *inside* a maildir
+account dir, but won't create the account dir or its parent. Same for
+the org dir — the daily-snapshot script does `mkdir -p $DIR/notmuch-counts`
+but doesn't create `~/org/` itself. Doing it once up front avoids two
+classes of silent first-run failures.
+
+#### 6. First mbsync (interactive)
+
+```sh
+mbsync personal
+```
+
+First invocation triggers gpg-agent which will prompt (via pinentry)
+for your GPG key passphrase. The passphrase is then cached for the
+session, so subsequent syncs are silent.
+
+**Verify:**
+
+```sh
+ls ~/Maildir/personal/INBOX/cur/ | head -5      # message files present
+```
+
+If it hangs on pinentry: `gpg --decrypt ~/.authinfo.gpg` directly to
+unstick the prompt and prime the cache.
+
+#### 7. Initialize notmuch
+
+```sh
+notmuch new                                     # first full index
+notmuch count '*'                               # should equal mail volume
+```
+
+**Why:** The `mail-sync` script does `notmuch new` every run, but the
+first index over a fresh maildir takes longer than the 5-min timer
+window — better to run it once manually and confirm before the timer
+fires.
+
+#### 8. Doom packages
+
+```sh
+cd ~/nixos-config/doom
+doom sync                                       # installs consult-notmuch etc.
+```
+
+**Why:** `nixos-rebuild` installs Doom itself (via `hm-modules/doom.nix`)
+but doesn't run `doom sync`. `consult-notmuch` and the other entries in
+`packages.el` aren't fetched until you do.
+
+#### 9. Trigger the pipeline manually once
+
+```sh
+systemctl --user start mail-sync.service
+journalctl --user -u mail-sync -n 50            # confirm clean run
+```
+
+Expect to see: mbsync, notmuch new, tagging steps, compute-state,
+emit-followups, done. Errors here usually mean a missing dependency
+or a `~/.notmuch-config` path that didn't get rewritten — check
+`grep path= ~/.notmuch-config` shows `/home/<you>/Maildir`.
+
+#### 10. Verify in Emacs
+
+Open Doom, hit `SPC o m`. You should see the same dashboard as on macOS
+— header line, action queues, today's flow, saved searches. `SPC a M`
+opens the org-agenda mail follow-ups view.
+
+#### Optional: syncthing for `~/org/`
+
+If you want `~/org/notmuch-tags.dump` and `~/org/notmuch-counts/*.csv`
+replicated to your other devices, accept the org folder in syncthing's
+web UI. The daily backup job writes there; without syncthing the dump
+is local-only (and can't help if this machine's notmuch DB is wiped).
 
 ## Where things live operationally
 

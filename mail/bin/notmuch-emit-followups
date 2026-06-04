@@ -16,6 +16,11 @@ OUT=$HOME/org/mail-followups.org
 TMP=$(mktemp -t mail-followups.org.XXXXXX)
 NOW=$(date +%s)
 
+# Ensure the parent dir exists. On a fresh machine (especially the NixOS
+# bootstrap before syncthing has accepted the org folder) this saves the
+# script from silently failing at the final mv.
+mkdir -p "$(dirname "$OUT")"
+
 # Map an age tag back to a property value the agenda can sort by.
 # Lower = more urgent in agenda sort. We bias by recency, then by age bucket.
 priority_for_age() {
