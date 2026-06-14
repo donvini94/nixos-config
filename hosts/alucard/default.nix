@@ -53,6 +53,11 @@ in
   # Packages
   environment.systemPackages = with pkgs; [
     yazi
+    # Multiplexer for SSH-disconnect persistence: `ssh Bereitserver`, then
+    # `zellij a` resumes work intact after a dropped connection. zellij defaults
+    # already detach-on-close and serialize sessions, so the package is enough.
+    # (tmux below is the incumbent — kept until the zellij workflow is proven.)
+    zellij
     openssl
     apacheHttpd
     filebot
