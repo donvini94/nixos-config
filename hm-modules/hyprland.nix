@@ -2,6 +2,9 @@
 {
   wayland.windowManager.hyprland = {
     enable = true;
+    # Keep hyprlang syntax; the default flipped to "lua" in newer HM but our
+    # config below is in hyprlang. Drop this line if/when we migrate to lua.
+    configType = "hyprlang";
     settings = {
       env = [
         # Device-specific: GPU device ordering for Aquamarine backend
@@ -49,13 +52,19 @@
         gaps_in = 5;
         gaps_out = 5;
         border_size = 2;
-        "col.active_border" = "rgba(33ccffee) rgba(00ff99ee) 45deg";
-        "col.inactive_border" = "rgba(595959aa)";
+        # Border colours are set in extraConfig below (sourced from caelestia's
+        # runtime-generated scheme). They must NOT live here: HM sorts top-level
+        # settings keys alphabetically, so a `source` key would emit AFTER
+        # `general`, leaving $primary undefined at point of use.
         layout = "master";
       };
 
       decoration = {
         rounding = 16;
+        # Subtle dimming of unfocused windows: adds depth and reinforces which
+        # window has focus. Kept low so inactive Modus-black content stays legible.
+        dim_inactive = true;
+        dim_strength = "0.1";
         blur = {
           enabled = true;
           size = 10;
@@ -70,17 +79,21 @@
 
       animations = {
         enabled = true;
-        animation = [
-          "border, 1, 2, default"
-          "fade, 1, 2, default"
-          "windows, 1, 2, default, popin 80%"
-          "workspaces, 1, 2, default, slide"
+        # Custom curves: easeOutQuint for smooth settles, overshot for a small
+        # springy pop on window open. `bezier` lines are hoisted by HM (it's an
+        # importantPrefix), so they are defined before the animation block uses them.
+        bezier = [
+          "easeOutQuint, 0.23, 1, 0.32, 1"
+          "overshot, 0.05, 0.9, 0.1, 1.05"
+          "almostLinear, 0.5, 0.5, 0.75, 1.0"
         ];
-      };
-
-      dwindle = {
-        pseudotile = true;
-        preserve_split = true;
+        animation = [
+          "windows, 1, 3.5, overshot, popin 80%"
+          "windowsOut, 1, 3, easeOutQuint, popin 80%"
+          "border, 1, 5.4, easeOutQuint"
+          "fade, 1, 3, almostLinear"
+          "workspaces, 1, 4, easeOutQuint, slide"
+        ];
       };
 
       master.new_status = "inherit";
@@ -89,6 +102,18 @@
         enable_swallow = true;
         force_default_wallpaper = 0;
       };
+
+      # Pause caelestia's idle monitor while any window is fullscreen. Games
+      # (gamepad input bypasses wl_seat, so it never resets the idle timer) and
+      # fullscreen video both run here. Hyprland holds a Wayland idle-inhibitor;
+      # caelestia honors it via IdleMonitor.respectInhibitors (default true).
+      # Hyprland 0.55 rewrote the rule engine (v3 flat syntax): effect/value and
+      # match-prop/value are space-separated, elements comma-separated, and
+      # matchers need a `match:` prefix. So `idleinhibit fullscreen, class:.*`
+      # (pre-0.55) becomes `idle_inhibit fullscreen, match:class .*`.
+      windowrule = [
+        "idle_inhibit fullscreen, match:class .*"
+      ];
 
       "$mod" = "SUPER";
 
@@ -109,7 +134,7 @@
         "$mod, Q, killactive,"
         "$mod, V, togglefloating,"
         "$mod, F, fullscreen"
-        "$mod, Y, togglesplit"
+        "$mod, Y, layoutmsg, orientationnext"
         "$mod, S, exec, grim -g \"$(slurp)\" - | wl-copy"
 
         # Navigate windows (vim-style j/k)
@@ -199,5 +224,30 @@
         ", XF86AudioMicMute, exec, wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
       ];
     };
+
+    # Dynamic border colours, driven by caelestia's wallpaper-extracted scheme.
+    #
+    # caelestia (programs.caelestia.cli.settings.theme.enableHypr = true) writes
+    # ~/.config/hypr/scheme/current.conf at runtime, defining $primary, $tertiary,
+    # $surfaceVariant, ... as bare hex. We source it here and re-declare the
+    # `general` border colours so they track the active wallpaper palette.
+    #
+    # Why extraConfig and not settings.source:
+    #   HM appends extraConfig verbatim AFTER the generated settings, as one
+    #   contiguous block. That guarantees (a) `source` is evaluated before the
+    #   $vars are used, and (b) this `general {}` overrides the structured one
+    #   above. Putting `source` in settings would sort it after `general`
+    #   (alphabetical) and break variable resolution.
+    #
+    # Not reproducible from a bare checkout: current.conf is runtime state. On a
+    # fresh machine run `caelestia scheme set -n dynamic` once; if the file is
+    # missing at launch hyprland just logs a source error and keeps defaults.
+    extraConfig = ''
+      source = /home/vincenzo/.config/hypr/scheme/current.conf
+      general {
+        col.active_border = rgb($primary) rgb($tertiary) 45deg
+        col.inactive_border = rgb($surfaceVariant)
+      }
+    '';
   };
 }
