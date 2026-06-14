@@ -65,8 +65,17 @@
       mail = "vincenzo.pace94@icloud.com";
       system = "x86_64-linux";
 
+      # TEMP: nixpkgs ships highlight-4.20 with shellscript-crash-fix.patch, but the
+      # upstream tarball already contains those changes — patch is rejected as
+      # "Reversed (or previously applied)" and the build fails. Drop the patch list
+      # until nixpkgs drops it. Tracked in memory/highlight_overlay_temp.md.
+      highlightFixOverlay = _final: prev: {
+        highlight = prev.highlight.overrideAttrs (_old: { patches = [ ]; });
+      };
+
       overlays = [
         emacs-overlay.overlay
+        highlightFixOverlay
       ];
 
       mkDesktopHost = hostname: nixpkgs.lib.nixosSystem {
@@ -90,6 +99,7 @@
             home-manager = {
               extraSpecialArgs = { inherit username mail fullName inputs; };
               backupFileExtension = "hm-backup";
+              sharedModules = [ { nixpkgs.overlays = [ highlightFixOverlay ]; } ];
               users.${username} = import ./home.nix;
             };
           }
