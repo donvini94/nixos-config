@@ -39,11 +39,14 @@ in
   # mbsyncrc and msmtprc are checked in verbatim; both reference
   # ~/.authinfo.gpg via PassCmd / passwordeval so no secrets are in-repo.
   home.file.".mbsyncrc".source = "${configs}/mbsyncrc";
-  home.file.".msmtprc" = {
-    source = "${configs}/msmtprc";
-    # msmtp refuses to start if the file is world/group readable.
-    onChange = ''chmod 600 "$HOME/.msmtprc"'';
-  };
+
+  # msmtprc ships with macOS paths (CA bundle + log file). Substitute the
+  # Linux equivalents before placing. The /nix/store file ends up mode 444,
+  # which msmtp accepts when using passwordeval (no in-file credentials).
+  home.file.".msmtprc".text = builtins.replaceStrings
+    [ "/etc/ssl/cert.pem"            "~/Library/Logs/msmtp.log" ]
+    [ "/etc/ssl/certs/ca-bundle.crt" "~/.local/state/msmtp.log" ]
+    (builtins.readFile "${configs}/msmtprc");
 
   # notmuch refuses $HOME expansion in its config, so it has to be an
   # absolute path. The repo file ships the macOS path; we substitute the
