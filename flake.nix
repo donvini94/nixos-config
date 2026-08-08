@@ -21,14 +21,17 @@
   };
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/master";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     home-manager.url = "github:nix-community/home-manager/master";
 
     sops-nix.url = "github:Mic92/sops-nix";
     disko.url = "github:nix-community/disko";
     hosts.url = "github:StevenBlack/hosts";
 
-    hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1";
+    # Pinned to the last .conf-primary release: 0.55 deprecated hyprlang in favour
+    # of Lua config, and home-manager still only emits hyprland.conf. Unpin (drop
+    # the ref) once HM can generate hyprland.lua, then migrate the config.
+    hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/v0.54.3";
     nil.url = "github:oxalica/nil";
 
     lsfg-vk-flake = {
