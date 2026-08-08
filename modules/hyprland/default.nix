@@ -1,42 +1,99 @@
 { pkgs, inputs, ... }:
 let
-  # Animated greeter background: a CC0 purple-aurora-over-lake loop (Pexels
-  # #34794659, 3238x2160) fetched at build time. Kept out of git, reproducible via
-  # the fixed-output hash. Chosen to match the desktop wallpaper (magenta aurora)
-  # and the magenta login panel. The black_hole layout only paints the right ~60%
-  # of the screen behind the form, so at 2160 tall this covers that region with no
-  # upscaling on the 5120x2160 ultrawide (PreserveAspectCrop trims the sides).
-  auroraWallpaper = pkgs.fetchurl {
-    name = "sddm-aurora-loop.mp4"; # extension matters: the theme QML branches on it
-    url = "https://videos.pexels.com/video-files/34794659/14752174_3238_2160_25fps.mp4";
-    hash = "sha256-r0n94I8aM/xjjcwihe2DxfHDFjXctPW/SfBml57QHYo=";
-  };
+  # Animated greeter background: a user-supplied Dragon Ball "Goku sunset" loop,
+  # 3840x2160 @60fps, living in-repo under wallpapers/. NOTE: this is a Nix path
+  # literal, so the file MUST be git-tracked or the flake won't see it (and it is a
+  # ~62MB binary committed to the repo — a deliberate tradeoff for using a local,
+  # curated clip instead of an external fetch). The basename keeps its .mp4
+  # extension, which the theme QML needs to pick the MediaPlayer (video) branch.
+  greeterWallpaper = ../../wallpapers/goku-shadow-sunset-dragon-ball-moewalls-com.mp4;
 
   # Poster shown for the instant before the video starts (theme hides it on play).
-  # A still frame OF the aurora itself, so there is no jarring flash of a different
-  # image. Built from the clip above; no extra asset in git.
-  auroraPoster = pkgs.runCommand "sddm-aurora-poster.png"
+  # A still frame OF the clip itself, so there is no jarring flash. Built at build
+  # time; no extra committed asset.
+  greeterPoster = pkgs.runCommand "sddm-greeter-poster.png"
     { nativeBuildInputs = [ pkgs.ffmpeg-headless ]; } ''
-      ffmpeg -ss 2 -i ${auroraWallpaper} -frames:v 1 -update 1 $out
+      ffmpeg -ss 2 -i ${greeterWallpaper} -frames:v 1 -update 1 $out
     '';
 
   # unixporn SDDM greeter (sddm-astronaut, Qt6). Swap `embeddedTheme` for any of:
   #   astronaut · black_hole · cyberpunk · hyprland_kath · jake_the_dog
   #   japanese_aesthetic · pixel_sakura · pixel_sakura_static
   #   post-apocalyptic_hacker · purple_leaves
-  sddm-astronaut = pkgs.sddm-astronaut.override {
+  sddm-astronaut = (pkgs.sddm-astronaut.override {
     embeddedTheme = "black_hole";
     # themeConfig is emitted as `black_hole.conf.user`, which SDDM MERGES over the
-    # base conf (non-empty keys only). So this overrides ONLY the background and
-    # keeps all of black_hole's styling. The QML branches on the file extension:
-    # .mp4 → MediaPlayer/VideoOutput (FFmpeg backend, already bundled in
-    # qtmultimedia). The absolute store path resolves to file:// via Qt.resolvedUrl;
-    # the placeholder PNG shows instantly so there is no black flash while it loads.
+    # base conf (non-empty keys only). The QML branches on the Background file
+    # extension: .mp4 → MediaPlayer/VideoOutput (FFmpeg backend, bundled in
+    # qtmultimedia). Absolute store paths resolve to file:// via Qt.resolvedUrl.
     themeConfig = {
-      Background = "${auroraWallpaper}";
-      BackgroundPlaceholder = "${auroraPoster}";
+      Background = "${greeterWallpaper}";
+      BackgroundPlaceholder = "${greeterPoster}";
+      CropBackground = "true"; # region == video size (3840x2160), so this is a 1:1 no-op
+      DimBackground = "0.0";
+
+      # Layout: solid panel on the LEFT, video to its right (anchored to the form).
+      # The form WIDTH is patched in Main.qml below (no config key for it).
+      FormPosition = "left";
+      HaveFormBackground = "true";
+
+      # --- Palette adapted to the Goku-sunset wallpaper (colours sampled from the
+      # frame: dark-purple base, sun-orange accent, warm-cream text, coral warning).
+      # Re-derive these if the wallpaper changes. ---
+      FormBackgroundColor = "#211728"; # dominant dark purple → the solid left panel
+      BackgroundColor = "#211728";
+      DimBackgroundColor = "#211728";
+      DropdownBackgroundColor = "#211728";
+
+      LoginFieldBackgroundColor = "#382342"; # mid dark purple, distinct from panel
+      PasswordFieldBackgroundColor = "#382342";
+
+      LoginButtonBackgroundColor = "#fb5d37"; # sun orange = accent
+      HighlightBackgroundColor = "#fb5d37";
+      DropdownSelectedBackgroundColor = "#fb5d37";
+      HighlightBorderColor = "#ab3a51";
+
+      TimeTextColor = "#fcda89"; # warm cream = primary text (high contrast on dark)
+      LoginFieldTextColor = "#fcda89";
+      PasswordFieldTextColor = "#fcda89";
+      UserIconColor = "#fcda89";
+      PasswordIconColor = "#fcda89";
+      SystemButtonsIconsColor = "#fcda89";
+      SessionButtonTextColor = "#fcda89";
+      VirtualKeyboardButtonTextColor = "#fcda89";
+      DropdownTextColor = "#fcda89";
+
+      HeaderTextColor = "#f7a35a"; # secondary text = softer orange
+      DateTextColor = "#f7a35a";
+
+      LoginButtonTextColor = "#211728"; # dark text on the orange accent (contrast)
+      HighlightTextColor = "#211728";
+
+      PlaceholderTextColor = "#a8746e"; # muted warm
+      WarningColor = "#f35d50"; # coral red = alert
+
+      HoverUserIconColor = "#fb5d37";
+      HoverPasswordIconColor = "#fb5d37";
+      HoverSystemButtonsIconsColor = "#fb5d37";
+      HoverSessionButtonTextColor = "#fb5d37";
+      HoverVirtualKeyboardButtonTextColor = "#fb5d37";
     };
-  };
+  }).overrideAttrs (old: {
+    # The login-form width is hard-coded in Main.qml (`parent.width / 2.5`) with no
+    # config key. Repoint it so on the 5120-wide ultrawide the video keeps its
+    # NATIVE 3840px on the right and the form takes the remaining 1280px (1:1, no
+    # scaling). The Math.max floor keeps the form usable if the greeter ever comes
+    # up narrower than 5120 (e.g. NVIDIA auto-selecting the monitor's 2560 base-EDID
+    # mode): `parent.width - 3840` == `parent.width * 0.25` at exactly 5120, so the
+    # intended layout is unchanged, but the form can never collapse to <=0 width.
+    # Use postFixup, NOT postInstall: the override's custom installPhase never calls
+    # `runHook postInstall`, but fixupPhase runs by default and calls postFixup.
+    postFixup = (old.postFixup or "") + ''
+      f=$out/share/sddm/themes/sddm-astronaut-theme/Main.qml
+      chmod u+w "$f"
+      substituteInPlace "$f" --replace 'parent.width / 2.5' 'Math.max(parent.width - 3840, parent.width * 0.25)'
+    '';
+  });
 in
 {
   # programs.hyprland.enable already registers xdg-desktop-portal-hyprland
@@ -63,6 +120,17 @@ in
       desktopManager.xterm.enable = false;
       xkb.layout = "us";
       xkb.options = "caps:escape, grp:alt_shift_toggle";
+      # The Dell U4025QW advertises 2560x1080 as its base-EDID preferred mode and
+      # exposes native 5120x2160 only via a DisplayID extension. NVIDIA 595.84
+      # auto-selects the 2560 base mode for the X greeter (it picked 5120 before
+      # the driver bump), which squeezes the login form. SDDM runs setupCommands
+      # in its Xsetup, so force native mode there. Session is Wayland/Hyprland and
+      # unaffected (it sets its own mode via `highres`). Output name is detected so
+      # this survives NVIDIA's DP-N enumeration.
+      displayManager.setupCommands = ''
+        out=$(${pkgs.xrandr}/bin/xrandr --query | ${pkgs.gnugrep}/bin/grep -m1 ' connected' | ${pkgs.coreutils}/bin/cut -d' ' -f1)
+        [ -n "$out" ] && ${pkgs.xrandr}/bin/xrandr --output "$out" --mode 5120x2160 || true
+      '';
     };
     # X11-backed greeter on purpose: the Wayland greeter path (mesa/egl-wayland
     # + nvidia) was implicated in the June-2026 GDM black screen. The Hyprland
