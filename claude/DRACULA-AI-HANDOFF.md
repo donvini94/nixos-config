@@ -55,7 +55,7 @@ where marked *future*.
                       │
       ┌───────────────┼────────────────────┐
       ▼               ▼                    ▼
-    n8n            Hermes          oh-my-pi (OMP)
+    n8n            Hermes          OMP / opencode
   workflows     agent worker        coding agents
    Phase 3        Phase 4             Phase 1
       │               │                    │
@@ -130,13 +130,14 @@ against what an API would have cost. That requires a single stable ingress. See
 **The action space today is `~/org`, not SaaS.** Vincenzo already has an org-roam workflow.
 When mail ingestion lands, the useful output is org entries / roam nodes.
 
-**The coding harness is oh-my-pi (OMP), not stock Pi or opencode.** Implement it in Phase
-1, not Phase 0. [OMP](https://github.com/can1357/oh-my-pi) is a Pi fork with a substantially
-richer coding harness: hash-anchored edits, LSP/DAP integration, persistent code execution,
-subagents, and explicit custom OpenAI-compatible providers. Package a pinned version with
-Nix; do not use its curl installer as machine configuration. Stock Pi and opencode are not
-part of the initial build. They may become comparison arms later, but only if the measured
-question warrants the extra variable.
+**The coding harnesses are oh-my-pi (OMP) and opencode, compared deliberately.** Implement
+both in Phase 1, not Phase 0. [OMP](https://github.com/can1357/oh-my-pi) is a Pi fork with a
+substantially richer coding harness: hash-anchored edits, LSP/DAP integration, persistent
+code execution, subagents, and explicit custom OpenAI-compatible providers.
+[opencode](https://opencode.ai/docs/) is the second real daily-use harness and the
+comparison arm. Package pinned versions of both with Nix; do not use OMP's curl installer
+or either tool's autoupdater as machine configuration. Stock Pi is not part of the initial
+build.
 
 This choice sharpens the measurement requirement. The write-up [The Right Harness Is All
 You Need](https://hkinsley.com/reflections/right-harness-is-all-you-need) reports a large,
@@ -144,9 +145,12 @@ model-dependent harness effect on Terminal-Bench v2.1: OMP moved DeepSeek-V4-Fla
 from 44/89 to 64/89 solved tasks, but moved the tested GLM-5.2 quant only from 61/89 to
 65/89, while using more turns, time, and tokens. That is evidence that **model × harness is
 an interaction**, not evidence that OMP automatically makes Qwen better for this repo.
-During model comparisons, pin the OMP version, prompts, enabled tools, role routing, and
-configuration. A later harness comparison must hold the model constant and report total
-task tokens/time, not just one-call generation speed.
+During model comparisons, pin the selected harness version, prompts, enabled tools, role
+routing, and configuration. The OMP-vs-opencode comparison must hold the model constant and
+report total task tokens/time, not just one-call generation speed. Because tool surfaces
+are the thing being compared, do not pretend they can be made identical; instead hold the
+task, starting worktree, permissions, model, context budget, and success oracle constant,
+and record each harness's native tool/prompt configuration.
 
 **Agents vs. workflows — a measurement frame, not a filter.** Vincenzo observed he keeps
 inventing *agentic workflows* but few real *agent* use cases. The distinction is real:
@@ -506,15 +510,16 @@ including `SIGKILL` recovery and a cold reboot.
 
 ### Phase 1 — model ingress + coding agents
 
-**Goal.** One stable address every client uses forever, and the first real workload behind
-it.
+**Goal.** One stable address every client uses forever, and two attributable coding
+harnesses behind it.
 
 **Build.** Choose the ingress against the requirements in **Measurement** — report the
 comparison and the trade-off *before* installing. Then install and configure
-[oh-my-pi](https://github.com/can1357/oh-my-pi) as the coding harness (pure client config,
-no persistent service):
+[oh-my-pi](https://github.com/can1357/oh-my-pi) and [opencode](https://opencode.ai/docs/)
+as coding harnesses (pure client configuration, no persistent services):
 
-- Package a pinned OMP release through Nix. Do not pipe its network installer into a shell.
+- Package pinned OMP and opencode releases through Nix. Do not pipe network installers into
+  a shell; disable application-managed updates.
 - Manage `~/.omp/agent/models.yml` and `config.yml` declaratively. Define one custom
   `openai-completions` provider whose `baseUrl` is the stable ingress `/v1` address, whose
   model ID is the stable llama `--alias`, and whose context window reflects the **32,768
@@ -522,29 +527,42 @@ no persistent service):
 - Point every OMP model role at the local provider initially, or disable unused auxiliary
   roles. Do not allow an implicit cloud fallback, OAuth provider, or bundled remote model
   to violate the full-local decision.
-- Establish caller attribution before the first real session. Prefer an OMP custom header
-  if the pinned version supports it; otherwise give OMP a dedicated ingress credential
-  that maps to caller `omp`. Treat this as an ingress acceptance test, not an optional
-  cleanup—the Phase 2 task set depends on it.
-- Record the pinned OMP version and a hash of its effective harness configuration alongside
-  every harvested eval task. Start with a deliberate enabled-tool set; adding LSP,
-  debugger, browser, subagents, or persistent code execution changes the harness and must
-  be recorded as such.
+- Manage opencode's global `~/.config/opencode/opencode.json` declaratively. Define one
+  provider using `@ai-sdk/openai-compatible` and the same ingress `/v1` address; point both
+  `model` and `small_model` at the local alias so lightweight tasks cannot silently select
+  a remote model. Set `enabled_providers` to only that provider, `share = "disabled"`, and
+  `autoupdate = false`.
+- Establish separate caller attribution before the first real sessions. Prefer custom
+  headers if the pinned clients support them; otherwise give each harness a dedicated
+  ingress credential mapping to callers `omp` and `opencode`. Treat two correctly
+  attributed log records as an ingress acceptance test—the Phase 2 task set depends on it.
+- Record each pinned client version and a hash of its effective harness configuration
+  alongside every harvested eval task. Start with deliberate tool and permission sets;
+  adding LSP, debugger, browser, subagents, MCP, or persistent code execution changes the
+  harness and must be recorded as such.
+- Set an explicit, equivalent high-level approval boundary in both clients instead of
+  comparing OMP's and opencode's defaults. Record approval prompts and operator
+  interventions as friction; they are part of the harness result.
+- Use both for real work, but do not infer a winner from different tasks. For a paired
+  comparison, replay the same harvested task from the same clean git worktree against the
+  same model and oracle. Randomize execution order and report prompt-cache hits, since the
+  second run may otherwise inherit a speed advantage.
 
-Do not install stock Pi or opencode in the initial Phase 1 implementation. OMP inherits
-Pi's core but is the selected harness.
+Do not install stock Pi in the initial Phase 1 implementation. OMP inherits Pi's core;
+opencode is the independent comparison harness.
 
 **Why ingress before agents.** Real usage starts here, and the eval task-set is harvested
 from real traffic. Point clients at llama-server directly and you either lose the first
 weeks of data or re-point every client later.
 
-**Teaches.** Whether a local 27B is actually sufficient for day-to-day agentic coding —
-the single most consequential question in the whole prototype, since it decides whether the
-rented-inference-server plan is worth pursuing at all.
+**Teaches.** Whether a local 27B is actually sufficient for day-to-day agentic coding, and
+how much the OMP-vs-opencode harness choice changes success, speed, token use, retries, and
+operator friction. Model sufficiency remains the single most consequential question in the
+prototype because it decides whether the rented-inference-server plan is worth pursuing.
 
 **Done when.** A week of real coding has run through it and the logs contain attributable
-per-caller token counts, the effective OMP harness version/config is recorded, and no model
-request silently leaves dracula.
+per-caller token counts for both harnesses, both effective versions/configs are recorded,
+and no model request silently leaves dracula.
 
 ---
 
@@ -559,12 +577,14 @@ agnostic (targets an OpenAI-compatible endpoint, so it runs against an API uncha
 Results committed to the repo. First comparison: Qwen3.6-27B dense vs an MoE using
 `--n-cpu-moe` expert offload into the 48GB of system RAM.
 
-Hold the OMP version, tool set, role mapping, prompts, and configuration constant for that
-dense-vs-MoE comparison. Otherwise the experiment varies model and harness simultaneously.
-After the model comparison is complete, an optional second experiment may hold the winning
-model constant and compare OMP against a deliberately minimal harness. Report success,
-elapsed time, total tokens across the complete agent loop, tool retries, and surprising
-actions; OMP's extra test-time compute is part of its cost, not noise to normalize away.
+Phase 2 has two orthogonal comparisons. First, hold Qwen3.6-27B, quantization, task,
+starting worktree, permissions, and oracle constant while comparing OMP with opencode.
+Second, hold one chosen harness version/config constant for dense-vs-MoE. If the curated
+task set is small enough, a 2×2 model × harness run is better because it exposes the
+interaction directly; otherwise state which harness was used for the model comparison.
+Report success, elapsed time, total tokens across the complete agent loop, tool retries,
+cache hits, and surprising actions. Extra test-time compute is part of a harness's cost,
+not noise to normalize away.
 
 **Read the "Evaluation — where you will fool yourself" section before designing this.** The
 dense-vs-MoE quantization confound is the trap that will silently invalidate the result.
@@ -577,7 +597,8 @@ actually lost at Q4; how to run an eval that isn't self-deception. This phase pr
 data for the local-vs-API decision.
 
 **Done when.** A committed results table compares at least two models on a task set drawn
-from real work, with speed and quality reported together.
+from real work with speed and quality reported together, plus a paired OMP-vs-opencode
+table over the same starting worktrees and Qwen model.
 
 ---
 
@@ -683,7 +704,8 @@ known traps. Then read CLAUDE.md for the repo's module conventions.
 ## Scope
 
 ONE deliverable: llama-server running, instrumented, verified, surviving a reboot. Do NOT
-install n8n, oh-my-pi, llama-swap, LiteLLM, Wirken, or Hermes — those are later phases.
+install n8n, oh-my-pi, opencode, llama-swap, LiteLLM, Wirken, or Hermes — those are later
+phases.
 Do not create ~/agent. Do not build a Grafana dashboard.
 
 ## Constraints
