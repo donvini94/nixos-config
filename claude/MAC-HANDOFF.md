@@ -8,6 +8,49 @@ You can hand this whole file to Claude Code on the Mac and work through it, or r
 commands yourself. All paths use `$HOME`, so they work despite `/Users/vincenzopace`
 vs `/home/vincenzo`.
 
+---
+
+## ✅ STATUS: executed on the Mac 2026-08-08 — read the corrections below first
+
+This ran successfully, but **five steps were wrong as written**. Corrections are recorded
+here because this file is the template for any future machine.
+
+1. **🐛 Step 2's strip script deletes the RTK hook.** The predicate
+   `keep = ("rtk-rewrite.sh" in c) or ("block-no-verify" in c)` matches neither of the
+   Mac's real hooks — it uses rtk's native subcommand `rtk hook claude` (rtk ≥ 0.24), plus
+   `dippy`. Running it as written leaves only `block-no-verify` and silently kills RTK.
+   **Match on intent, print what you dropped:**
+   ```python
+   MINE = ("rtk hook", "rtk-rewrite.sh", "dippy", "block-no-verify")
+   keep = lambda c: any(m in c for m in MINE)
+   ```
+   Also strip only the `ECC_*` keys from `env`, not the whole `env` block.
+2. **Step 6's Syncthing order is backwards.** Narrow `.stignore` to `!/memory` **first**,
+   force a rescan, verify via `/rest/db/ignores`, *then* delete locally. Ignored paths are
+   neither sent nor received, so the delete can never reach the peer. The order as written
+   deliberately fires a cross-machine delete for no benefit.
+3. **Step 0's backup path is wrong.** `~/.claude` is not a symlink on the Mac — it *is* the
+   Syncthing folder root (`.stfolder/` lives inside). Back up `.claude` itself and exclude
+   `plugins/`, `projects/`, `.stversions/` or you get a >1.2 GB tarball (7.2 MB with them
+   excluded).
+4. **Step 1 (`git pull`) was a no-op** — the harness tree was local, staged, and never
+   committed. It needed a *commit*, not a pull.
+5. **Step 7 over-deletes.** `sessions/`, `file-history/`, `ide/`, `shell-snapshots/`,
+   `paste-cache/`, `debug/`, `downloads/`, `mcp-configs/`, `cache/` and `history.jsonl` are
+   Claude Code's own state, not ECC's — deleting them costs prompt history and edit-undo
+   history for no disk gain. It also **misses** real ECC debris: `~/.claude/README.md`
+   ("Plugin Manifest Gotchas"), `plugins/marketplaces/everything-claude-code`, and
+   `plugins/cache/ecc` — which together were ~456 MB, the actual disk win.
+
+Also worth knowing: **Step 4 was a no-op** (official plugins already loaded), the
+`learning-opportunities` marketplace was already registered, and `settings.local.json`
+should be *edited* to drop its one `mcp__plugin_ecc_*` permission rather than deleted —
+its other entries are real.
+
+**Divergence to keep:** the Mac uses `rtk hook claude`; dracula still uses
+`hooks/rtk-rewrite.sh`. Don't delete the script from the repo until dracula's
+`settings.json` is switched over, or dracula's hook breaks.
+
 ## Guiding principle
 - **Machine-independent → shared/owned:** `memory/` syncs via Syncthing; authored config
   (`CLAUDE.md`, `RTK.md`, `rules/`, `skills/`, `agents/`, statusline) lives in
