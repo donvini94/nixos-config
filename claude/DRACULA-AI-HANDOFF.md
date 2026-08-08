@@ -11,7 +11,7 @@ or walk into known traps.
 
 ---
 
-## ✅ STATUS: Phase 0 complete; Phase 1 clients activated 2026-08-08 — one-week trial open
+## ✅ STATUS: Phase 1 active; multi-model router built — activation verification pending
 
 When this runs, record corrections at the bottom under **Post-execution corrections**,
 following the `MAC-HANDOFF.md` convention. This file was written by a session that inspected
@@ -265,8 +265,10 @@ Requirements for whatever fills that slot:
 - **A thin custom logging proxy** — ~100 lines, exactly the log schema wanted, no
   dependencies. Viable, and honest for a prototype.
 
-These compose (llama-swap behind LiteLLM) if it comes to that. Don't install both at once.
-Pick against the requirements above, state the trade-off, and say what you'd swap to.
+The selected local path is the thin logging proxy at the permanent client-facing address,
+with llama-swap behind it for model residency and routing. LiteLLM remains deferred until
+remote APIs require its provider accounting and credential surface. Do not add LiteLLM on
+top merely to duplicate working local behavior.
 
 ### Metrics
 
@@ -484,7 +486,10 @@ model comparison and usage accounting only.
 ## Phases
 
 Each phase ends in a working, verified thing that survives a reboot and an `ai-stack-stop` /
-`ai-stack-start` cycle. Don't start the next until the previous one does.
+`ai-stack-start` cycle. Construction may overlap observation: the Phase 1 OMP/opencode week
+continues while multi-model switching and the Phase 2 evaluation machinery are built. Only
+the final model/harness conclusions remain gated on enough real traffic; do not delay stack
+construction merely to let a calendar interval elapse.
 
 Every phase attaches its services to `ai-stack.target`, keeps config in the repo and state
 out of it, and logs through the ingress. Those are not per-phase decisions.
@@ -569,17 +574,18 @@ one-week done criterion is deliberately still open:
 
 - The Phase 0 thin logging proxy remains the stable ingress at `127.0.0.1:8080`. It won on
   exact full-payload JSONL, TTFT, caller attribution, and zero additional runtime state.
-  llama-swap is deferred until Phase 2 introduces a second local model; LiteLLM is deferred
-  until remote providers, budgets, or real credential management enter scope. Clients must
-  continue using port 8080 through either later change.
+  Pinned llama-swap `v247` now sits behind it at `127.0.0.1:18080`, launching the selected
+  llama-server on ports beginning at 18100. LiteLLM is deferred until remote providers,
+  budgets, or real credential management enter scope. Clients remain on port 8080.
 - OMP `17.2.11` and opencode `1.18.13` are installed declaratively from
   `hm-modules/ai-clients.nix`. OMP is a fixed-output release package in `packages/omp.nix`;
   opencode is pinned by the flake's nixpkgs lock. Both autoupdate paths are disabled or
   bypassed.
-- OMP's only enabled model and every configured role point at
-  `dracula-local/qwen3.6-27b-local`; its implicit `llama.cpp` discovery provider is disabled.
-  Opencode's only enabled provider is `dracula-local`, and both `model` and `small_model`
-  use that same alias. Both target `http://127.0.0.1:8080/v1`.
+- OMP enables both `dracula-local/qwen3.6-27b-local` and
+  `dracula-local/qwen3.6-35b-a3b`, while every automatic role still defaults to the dense
+  model; its implicit `llama.cpp` discovery provider is disabled. Opencode's only enabled
+  provider is `dracula-local`, exposes both aliases, and keeps both `model` and
+  `small_model` on the dense default. Both target `http://127.0.0.1:8080/v1`.
 - Both use an explicit read-only-without-prompt boundary: OMP `always-ask`; opencode asks by
   default while allowing only read/search/LSP/question/skill operations explicitly. Tool
   calls that mutate the workspace or run shell commands therefore require approval.
@@ -599,12 +605,14 @@ one-week done criterion is deliberately still open:
 
 **Goal.** Turn accumulated traffic into an answer about which model to run.
 
-**Build.** Harvest and curate a task set from Phase 1 logs into `eval/tasks/` in the repo.
+**Build.** The model-switching substrate can be built while Phase 1 traffic accumulates.
+Harvest and curate a task set from Phase 1 logs into `eval/tasks/` in the repo.
 Graders: `nixos-rebuild build` exit code for config tasks, schema validity for extraction
 tasks, human judgment where nothing automatable exists — say which is which. Provider-
 agnostic (targets an OpenAI-compatible endpoint, so it runs against an API unchanged).
-Results committed to the repo. First comparison: Qwen3.6-27B dense vs an MoE using
-`--n-cpu-moe` expert offload into the 48GB of system RAM.
+Results committed to the repo. The selected first MoE is Qwen3.6-35B-A3B UD-Q3_K_M,
+fully GPU-offloaded without the optional vision projector. Both it and the dense 27B use a
+65,536-token total context over two slots: 32,768 tokens per request.
 
 Phase 2 has two orthogonal comparisons. First, hold Qwen3.6-27B, quantization, task,
 starting worktree, permissions, and oracle constant while comparing OMP with opencode.
@@ -618,8 +626,12 @@ not noise to normalize away.
 **Read the "Evaluation — where you will fool yourself" section before designing this.** The
 dense-vs-MoE quantization confound is the trap that will silently invalidate the result.
 
-**Open.** The MoE counterpart is not chosen yet — pick it at build time based on what fits
-the RAM budget for expert offload, and record why.
+Run two model comparisons. The practical 3090 comparison uses the best viable build of
+each architecture: dense 27B Q4_K_M versus MoE 35B-A3B UD-Q3_K_M initially, with
+UD-IQ4_XS as the next fit test if Q3 leaves enough headroom. The controlled comparison uses
+comparable quantization and context settings to separate architecture gains from
+quantization gains. Do not start with the 22.1 GB UD-Q4_K_M MoE or load its roughly 0.9 GB
+vision projector; either would consume the headroom needed for KV/runtime/desktop use.
 
 **Teaches.** Whether MoE-with-offload beats dense-on-GPU for this hardware; what quality is
 actually lost at Q4; how to run an eval that isn't self-deception. This phase produces the
@@ -895,13 +907,11 @@ Several details were wrong or incomplete as written:
 
 ### Phase 1 ingress and harness corrections
 
-1. **The existing thin proxy is the correct Phase 1 ingress.** llama-swap has the best
-   local multi-model switching ergonomics, but adding it for one model would introduce a
-   daemon without replacing the required exact JSONL/TTFT logger. LiteLLM has stronger
-   multi-provider accounting, budgets, and key management, but that operational surface is
-   premature while every request is loopback-local. Add llama-swap behind the stable proxy
-   when Phase 2 adds the second model. Reconsider LiteLLM as the front door when remote paid
-   providers enter; do not repoint clients.
+1. **The existing thin proxy is the permanent client-facing ingress.** It retains exact
+   JSONL/TTFT/caller measurement at port 8080. Once the second model was selected,
+   llama-swap became justified behind it at port 18080: routing and residency change while
+   measurement and clients do not. LiteLLM still waits for remote paid providers; do not
+   repoint clients when it eventually enters.
 2. **OMP's release executable cannot be packaged with ordinary `patchelf`/strip fixups.**
    It is a Bun single-file executable whose application lives in an appended trailer.
    Rewriting or stripping the ELF left a working Bun runtime but destroyed OMP. The Nix
@@ -921,15 +931,42 @@ Several details were wrong or incomplete as written:
    `stream_completed`, `client_disconnected`, and `proxy_error`; `ai-usage-summary` counts
    incomplete and missing-usage requests separately so this overhead cannot disappear from
    the comparison.
+6. **The single model option is now a registry.** Each `services.localLlama.models.<id>`
+   entry pins repository, revision, filename, SHA-256, display name, aliases, total context,
+   parallel slots, GPU layers, and extra llama-server arguments. Generated downloaders
+   retain resumable downloads plus verified-hash markers; generated runners re-check the
+   selected artifact before exec. `ExecStartPre` prepares the complete registry so a cold
+   boot never depends on a manual model-fetch command.
+7. **The switching path preserves the measurement boundary.** OMP/opencode/API requests
+   still enter the logging proxy on 8080. It forwards to pinned llama-swap `v247` on 18080;
+   llama-swap reads `model` and starts the matching pinned llama-server on dynamic ports
+   from 18100. The generated config was accepted by llama-swap and `/v1/models` returned
+   both IDs before activation. Runtime swap, VRAM, and throughput evidence must be appended
+   after the passworded system switch downloads the MoE artifact.
+
+### Pinned Phase 2 model registry
+
+- Dense default: `qwen3.6-27b-local`, `unsloth/Qwen3.6-27B-GGUF` revision
+  `82d411acf4a06cfb8d9b073a5211bf410bfc29bf`, `Qwen3.6-27B-Q4_K_M.gguf`, SHA-256
+  `5ed60d0af4650a854b1755bd392f9aef4872643dc25a254bc68043fa638392a0`.
+- MoE candidate: `qwen3.6-35b-a3b`, `unsloth/Qwen3.6-35B-A3B-GGUF` revision
+  `a483e9e6cbd595906af30beda3187c2663a1118c`,
+  `Qwen3.6-35B-A3B-UD-Q3_K_M.gguf`, 16,600,710,112 bytes, SHA-256
+  `1b715841683f960bd9a49f008181bd910ee169b78d4cf465b6fde7f4d929ff99`.
+- Official architecture metadata: 40 layers, 256 experts with 8 selected per token, and
+  262,144 native context. The local registry deliberately caps both models to two
+  32,768-token slots for the first comparison.
+- llama-swap: official `v247` Linux amd64 archive, SHA-256
+  `4001a068dc1dd154513919a31cc009d4f544426d2040bd02fbf33d90240c17df`.
 
 ### Measured Phase 1 starting point
 
 - OMP: `17.2.11`; opencode: `1.18.13`.
 - Effective SHA-256 hashes: OMP `config.yml`
-  `2282a72181d1212d5510762f4004df0d3df053a8646c17bebf2b556efb982cda`, OMP
-  `models.yml` `0f6004411ce8992929f08f7318ad981230a5bd39578c055451a258dd6a660d7c`,
+  `cb7bc8cde0a5b594cac860ec21bed3d90b50d86eb6f6a6602e949d31eb1beae9`, OMP
+  `models.yml` `f897bcc0ba11a28e254e1a48f46c564e75fe810e1d3ac34b30cdcc36ab581cb2`,
   opencode `opencode.json`
-  `4f434eb720aa705adaddfdcadd61476074ff76b8dcda29cd779f2d3ffb1ea61e`.
+  `ae01628eeb5635f0638166301724a8e60ebabac309503456171d4c44a12bbb10`.
 - Paired no-tools smoke prompt: `Reply with exactly HARNESS_OK and nothing else.` Both
   returned `HARNESS_OK` against `qwen3.6-27b-local` with HTTP 200.
 - OMP log record at `2026-08-08T19:09:50Z`: caller `omp`, 3,776 prompt + 33 completion =

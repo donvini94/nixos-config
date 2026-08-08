@@ -7,9 +7,23 @@
 
 let
   endpoint = "http://127.0.0.1:8080/v1";
-  model = "qwen3.6-27b-local";
   provider = "dracula-local";
-  modelSelector = "${provider}/${model}";
+  defaultModel = "qwen3.6-27b-local";
+  modelDefinitions = {
+    "qwen3.6-27b-local" = {
+      name = "Qwen3.6 27B Q4_K_M (Dracula local)";
+      context = 32768;
+      output = 8192;
+    };
+    "qwen3.6-35b-a3b" = {
+      name = "Qwen3.6 35B-A3B UD-Q3_K_M (Dracula local)";
+      context = 32768;
+      output = 8192;
+    };
+  };
+  modelSelector = model: "${provider}/${model}";
+  defaultModelSelector = modelSelector defaultModel;
+  enabledModels = map modelSelector (builtins.attrNames modelDefinitions);
   omp = pkgs.callPackage ../packages/omp.nix { };
   yaml = pkgs.formats.yaml { };
 in
@@ -24,17 +38,17 @@ in
     # lightweight/background tasks from discovering a remote fallback.
     home.file.".omp/agent/config.yml".source = yaml.generate "omp-config.yml" {
       modelRoles = {
-        default = modelSelector;
-        smol = modelSelector;
-        slow = modelSelector;
-        plan = modelSelector;
-        commit = modelSelector;
-        tiny = modelSelector;
-        task = modelSelector;
-        advisor = modelSelector;
+        default = defaultModelSelector;
+        smol = defaultModelSelector;
+        slow = defaultModelSelector;
+        plan = defaultModelSelector;
+        commit = defaultModelSelector;
+        tiny = defaultModelSelector;
+        task = defaultModelSelector;
+        advisor = defaultModelSelector;
       };
       cycleOrder = [ "default" ];
-      enabledModels = [ modelSelector ];
+      inherit enabledModels;
       disabledProviders = [ "llama.cpp" ];
       advisor.enabled = false;
       tools.approvalMode = "always-ask";
@@ -49,35 +63,33 @@ in
         auth = "none";
         disableStrictTools = true;
         headers.X-AI-Caller = "omp";
-        models = [
-          {
-            id = model;
-            name = "Qwen3.6 27B Q4_K_M (Dracula local)";
-            reasoning = false;
-            input = [ "text" ];
-            cost = {
-              input = 0;
-              output = 0;
-              cacheRead = 0;
-              cacheWrite = 0;
-            };
-            contextWindow = 32768;
-            maxTokens = 8192;
-            compat = {
-              supportsStore = false;
-              supportsDeveloperRole = false;
-              supportsReasoningEffort = false;
-              maxTokensField = "max_tokens";
-            };
-          }
-        ];
+        models = lib.mapAttrsToList (id: model: {
+          inherit id;
+          inherit (model) name;
+          reasoning = false;
+          input = [ "text" ];
+          cost = {
+            input = 0;
+            output = 0;
+            cacheRead = 0;
+            cacheWrite = 0;
+          };
+          contextWindow = model.context;
+          maxTokens = model.output;
+          compat = {
+            supportsStore = false;
+            supportsDeveloperRole = false;
+            supportsReasoningEffort = false;
+            maxTokensField = "max_tokens";
+          };
+        }) modelDefinitions;
       };
     };
 
     xdg.configFile."opencode/opencode.json".text = builtins.toJSON {
       "$schema" = "https://opencode.ai/config.json";
-      model = modelSelector;
-      small_model = modelSelector;
+      model = defaultModelSelector;
+      small_model = defaultModelSelector;
       enabled_providers = [ provider ];
       share = "disabled";
       autoupdate = false;
@@ -99,13 +111,12 @@ in
           baseURL = endpoint;
           headers.X-AI-Caller = "opencode";
         };
-        models.${model} = {
-          name = "Qwen3.6 27B Q4_K_M (Dracula local)";
+        models = lib.mapAttrs (_id: model: {
+          inherit (model) name;
           limit = {
-            context = 32768;
-            output = 8192;
+            inherit (model) context output;
           };
-        };
+        }) modelDefinitions;
       };
     };
   };
