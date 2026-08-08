@@ -5,7 +5,9 @@
     enable = true;
     systemd.enable = true;
     settings = {
-      bar.status.showBattery = false;
+      # NOTE: caelestia dropped `bar.status.showBattery`; the bar's battery is now
+      # an entry in the `bar.statusIcons` list. Omitted entirely here — this is a
+      # battery-less desktop, so caelestia renders no battery icon regardless.
       paths.wallpaperDir = "/home/vincenzo/nixos-config/wallpapers";
       background.desktopClock = {
         enabled = true;
@@ -58,8 +60,6 @@
     inotify-tools
     app2unit
     trash-cli
-    adw-gtk3
-    papirus-icon-theme
     nerd-fonts.jetbrains-mono
     wtype
   ];

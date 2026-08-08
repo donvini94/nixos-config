@@ -58,7 +58,7 @@
     # Writing & docs
     typst
     tinymist
-    texlive.combined.scheme-medium
+    texliveMedium
     hunspell
     hunspellDicts.en_US
     hunspellDicts.de_DE
