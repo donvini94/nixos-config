@@ -583,10 +583,15 @@ one-week done criterion is deliberately still open:
 - Both use an explicit read-only-without-prompt boundary: OMP `always-ask`; opencode asks by
   default while allowing only read/search/LSP/question/skill operations explicitly. Tool
   calls that mutate the workspace or run shell commands therefore require approval.
-- The acceptance prompt produced exactly one successful log record from each caller with
-  `X-AI-Caller: omp` and `X-AI-Caller: opencode`. See the Phase 1 corrections below for the
-  versions, hashes, and smoke-test numbers. These two trivial calls validate plumbing only;
+- The acceptance prompt produced successful attributed records with `X-AI-Caller: omp` and
+  `X-AI-Caller: opencode`. Opencode also launched a concurrent background request, which is
+  harness overhead rather than noise to discard. See the Phase 1 corrections below for the
+  versions, hashes, and smoke-test numbers. These trivial calls validate plumbing only;
   they do not select a harness winner.
+- `ai-usage-summary --caller omp --caller opencode` reports seven-day per-harness request,
+  error, incomplete-stream, missing-usage, token, latency, and TTFT aggregates without
+  printing request or response content. Use `--since all`, an ISO timestamp, or `--json`
+  when harvesting the trial.
 
 ---
 
@@ -909,6 +914,13 @@ Several details were wrong or incomplete as written:
 4. **Both clients support explicit custom headers.** No bearer-token mapping or secrets are
    needed for loopback attribution. OMP sets the header on its custom provider; opencode
    sets it in the OpenAI-compatible provider options.
+5. **One visible harness turn is not necessarily one model request.** The opencode smoke
+   run launched its visible 9,729-token request and a concurrent lightweight/background
+   stream consistent with title generation. The latter was canceled when the CLI exited,
+   before llama-server emitted `[DONE]` or usage. New proxy records include
+   `stream_completed`, `client_disconnected`, and `proxy_error`; `ai-usage-summary` counts
+   incomplete and missing-usage requests separately so this overhead cannot disappear from
+   the comparison.
 
 ### Measured Phase 1 starting point
 
@@ -924,6 +936,10 @@ Several details were wrong or incomplete as written:
   3,809 tokens, 3,881 ms TTFT, 4,862 ms total latency.
 - Opencode log record at `2026-08-08T19:10:04Z`: caller `opencode`, 9,666 prompt + 63
   completion = 9,729 tokens, 10,469 ms TTFT, 12,803 ms total latency.
+- Opencode also produced a second attributed HTTP 200 stream: 13,392 ms latency, 10,925 ms
+  TTFT, no terminal `[DONE]`, and no usage block because the client disconnected. The
+  starting-point aggregate is therefore OMP 1 request / 3,809 known tokens versus opencode
+  2 requests / 9,729 known tokens / 1 incomplete stream / 1 missing-usage record.
 - The prompt is far too small to compare quality, and the clients carry different native
   system prompts. The token/latency difference is useful proof that the harness itself is
   now observable, not evidence that OMP has won. Complete the week of real work, then run

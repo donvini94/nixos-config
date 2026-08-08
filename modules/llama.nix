@@ -11,6 +11,7 @@ let
   modelPath = "${cfg.stateDirectory}/models/${cfg.model.file}";
   modelUrl = "https://huggingface.co/${cfg.model.repo}/resolve/${cfg.model.revision}/${cfg.model.file}";
   proxy = pkgs.writeText "llama-logging-proxy.py" (builtins.readFile ./llama-logging-proxy.py);
+  usageSummary = pkgs.writeText "llama-usage-summary.py" (builtins.readFile ./llama-usage-summary.py);
   prepareLogs = pkgs.writeShellScript "prepare-local-llama-logs" ''
     ${pkgs.coreutils}/bin/install -d -m 0750 ${lib.escapeShellArg (builtins.dirOf cfg.requestLog)}
     ${pkgs.coreutils}/bin/touch ${lib.escapeShellArg cfg.requestLog}
@@ -279,6 +280,10 @@ in
         exit 1
       '')
       (pkgs.writeShellScriptBin "ai-stack-health" "exec ${pkgs.curl}/bin/curl --fail --silent --show-error http://${cfg.bindAddress}:${toString cfg.port}/health")
+      (pkgs.writeShellScriptBin "ai-usage-summary" ''
+        export LLAMA_REQUEST_LOG=${lib.escapeShellArg cfg.requestLog}
+        exec ${pkgs.python3}/bin/python3 ${usageSummary} "$@"
+      '')
     ];
   };
 }
