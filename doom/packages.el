@@ -9,6 +9,10 @@
   :recipe (:host github :repo "minad/org-modern"))
 (package! org-super-agenda)
 
+;; macOS: pull real PATH from the login shell (daemon launched by launchd gets
+;; only the bare /usr/bin:/bin:... PATH, missing /opt/homebrew/bin etc.)
+(package! exec-path-from-shell)
+
 ;; Themes
 (package! modus-themes)
 

@@ -72,6 +72,26 @@ Comprehensive performance tuning for snappy Emacs on macOS.
       global-auto-revert-non-file-buffers nil)       ; Only revert file buffers
 #+end_src
 
+** Shell Environment (PATH)
+The Emacs daemon is launched by launchd (the Homebrew =emacs-plus= LaunchAgent),
+which provides only the bare macOS PATH (=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin=).
+That omits =/opt/homebrew/bin=, so ~executable-find~ can't see Homebrew tools
+(pngpaste, fish, rust-analyzer, tex, …) — e.g. =org-download-clipboard= fails with
+"Please install the pngpaste program". Pull the real environment from the login shell.
+
+Must run *before* any load-time ~(executable-find …)~ calls below (e.g. the =fish=
+lookups in Defaults). Gated on daemon/GUI so batch invocations (=doom sync/doctor=)
+don't pay the shell-probe cost.
+
+#+begin_src emacs-lisp
+(use-package! exec-path-from-shell
+  :when (eq system-type 'darwin)
+  :demand t
+  :config
+  (when (or (daemonp) (display-graphic-p))
+    (exec-path-from-shell-initialize)))
+#+end_src
+
 ** Defaults
 #+begin_src emacs-lisp
 (setq user-full-name "Vincenzo Pace"
@@ -1701,4 +1721,25 @@ ad-hoc lookups when a saved search doesn't fit.
        :desc "Notmuch"             "m" #'notmuch)
       (:prefix-map ("n" . "notes")
        :desc "Compose mail"        "M" #'notmuch-mua-new-mail))
+#+end_src
+
+* Native Compilation Toolchain Fix
+This Emacs is the =emacs-plus-app= Homebrew *cask* (a prebuilt binary) that
+bundles its own libgccjit. When Homebrew's =gcc= rolls to a new major version
+(e.g. 15 -> 16), the bundled libgccjit can no longer find gcc's runtime libs
+(=libemutls_w.a=, =libgcc=, crt objects) and native compilation breaks with
+=ld: library 'emutls_w' not found / error invoking gcc driver=.
+
+The *primary* fix is shell-level: =~/.config/fish/conf.d/emacs-libgccjit-fix.fish=
+exports =LIBRARY_PATH= before =doom=/Emacs launch. That is required because subr
+trampolines compile in child processes during Doom *core boot*, before any user
+Lisp loads — too early for a Doom-config hook to help.
+
+The =native-comp-driver-fix.el= loaded below is only a safety net for a
+*Dock-launched* GUI Emacs (no inherited shell env): its =setenv= lets
+post-startup lazy/async native compiles inherit =LIBRARY_PATH=. Globbed so it
+self-heals across gcc major bumps; a no-op on non-Homebrew hosts.
+
+#+begin_src emacs-lisp
+(load (expand-file-name "native-comp-driver-fix.el" doom-user-dir) nil 'nomessage)
 #+end_src

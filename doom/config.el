@@ -53,6 +53,15 @@
       global-auto-revert-non-file-buffers nil)       ; Only revert file buffers
 ;; Performance Optimizations:1 ends here
 
+;; [[file:config.org::*Shell Environment (PATH)][Shell Environment (PATH):1]]
+(use-package! exec-path-from-shell
+  :when (eq system-type 'darwin)
+  :demand t
+  :config
+  (when (or (daemonp) (display-graphic-p))
+    (exec-path-from-shell-initialize)))
+;; Shell Environment (PATH):1 ends here
+
 ;; [[file:config.org::*Defaults][Defaults:1]]
 (setq user-full-name "Vincenzo Pace"
       user-mail-address "pace@amiconsult.de")
@@ -1483,3 +1492,7 @@
       (:prefix-map ("n" . "notes")
        :desc "Compose mail"        "M" #'notmuch-mua-new-mail))
 ;; Top-level bindings:1 ends here
+
+;; [[file:config.org::*Native Compilation Toolchain Fix][Native Compilation Toolchain Fix:1]]
+(load (expand-file-name "native-comp-driver-fix.el" doom-user-dir) nil 'nomessage)
+;; Native Compilation Toolchain Fix:1 ends here
