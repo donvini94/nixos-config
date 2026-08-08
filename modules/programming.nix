@@ -71,5 +71,6 @@
     # Nix LSP and tools from flake inputs
     inputs.nil.packages.${pkgs.stdenv.hostPlatform.system}.default
     claude-code
+    codex
   ];
 }
