@@ -11,7 +11,7 @@ or walk into known traps.
 
 ---
 
-## ⏳ STATUS: not yet executed
+## ✅ STATUS: Phase 0 executed on dracula 2026-08-08 — read the corrections below
 
 When this runs, record corrections at the bottom under **Post-execution corrections**,
 following the `MAC-HANDOFF.md` convention. This file was written by a session that inspected
@@ -730,6 +730,68 @@ from it.
 
 ## Post-execution corrections
 
-_(Fill in after the build, following MAC-HANDOFF.md's format: what was wrong as written, the
-correct version, and measured numbers. This file is the template for the next machine and
-the record of what the prototype actually taught us.)_
+Phase 0 is running and survived a real reboot, target stop/start, and standalone `SIGKILL`.
+Several details were wrong or incomplete as written:
+
+1. **The first downloader checksum command quoted `$partial` literally.** The 15.66 GiB
+   download completed, but `sha256sum` tried to open a file named `$partial`. Use `printf`
+   with the path as a separate shell argument. The corrected downloader resumed the
+   complete partial, verified SHA-256
+   `5ed60d0af4650a854b1755bd392f9aef4872643dc25a254bc68043fa638392a0`, and promoted it.
+2. **Hashing 15.66 GiB on every recovery made the recovery path needlessly slow.** A full
+   hash took about 42 seconds. The downloader now writes a verified-SHA marker after the
+   required full verification; later starts compare the pinned hash to that marker. Warm
+   stop/start is healthy in 3.5–4.1 seconds. A standalone `SIGKILL`, including the explicit
+   five-second `RestartSec`, recovered in 9.05 seconds.
+3. **`StateDirectoryMode` does not repair modes of an existing nested log directory.** The
+   first `logs/` directory remained `0700`, so even an operator in the `llama` group could
+   not harvest it. Logger startup now idempotently enforces directory `0750` and JSONL
+   `0640`; `services.localLlama.operators` grants deliberate read access.
+4. **A 64 KiB buffered read makes SSE TTFT equal total latency.** The first proxy measured
+   2.72 seconds for both. Reading SSE line-by-line produced real measurements: 344.7 ms
+   TTFT and 3.61 seconds total latency on the verification request. Non-streaming TTFT is
+   necessarily response-complete time; use streaming for TTFT comparisons.
+5. **Stopping a target can return before propagated `PartOf=` stop jobs settle.** An
+   immediate sample still showed llama holding 20,218 MiB while the service was
+   `deactivating`. `ai-stack-stop` now waits for terminal service states. It returned after
+   224–231 ms with no llama process. Because stop deliberately uses `SIGKILL`, llama ends
+   in `failed`; the wrapper accepts that terminal state. Do not add `SuccessExitStatus=KILL`:
+   doing so prevents the required `Restart=on-failure` recovery after a standalone kill.
+6. **"Zero compute processes" is not literally attainable on this desktop while Signal is
+   open.** After stack stop, llama was absent and 21,372 MiB GPU memory was free, but
+   Signal's Electron GPU process retained 155–199 MiB. The correct assertion here is zero
+   *AI* compute processes and complete release of llama's approximately 20.2 GiB.
+7. **Cold and warm model loads are very different.** After a real reboot, services started
+   unattended at 20:48:21 and llama became ready at 20:49:00: about 39 seconds, dominated
+   by reading 15.7 GiB from disk. A warm start from page cache was about 3.5–4.1 seconds.
+8. **The default chat template spends output tokens on reasoning.** A 256-token test ended
+   with only `reasoning_content` and empty visible content. For deterministic short checks,
+   pass `chat_template_kwargs.enable_thinking=false`; normal coding-agent policy remains a
+   later client decision.
+
+### Measured Phase 0 numbers
+
+- llama.cpp: `llama-cpp-10273`, fetched from `cache.nixos-cuda.org` (378.5 MiB package,
+  1.2 GiB recursive closure); no source build.
+- Model: Qwen3.6-27B Q4_K_M, 16,817,244,384 bytes (15.66 GiB), revision
+  `82d411acf4a06cfb8d9b073a5211bf410bfc29bf`.
+- Architecture from `config.json`: 64 layers = 16 full-attention + 48 linear-attention
+  (1:3). Configured total context is 65,536 with two slots; llama.cpp confirmed 32,768
+  tokens per slot.
+- VRAM: llama process 20,202 MiB immediately after load and 20,224 MiB after the 30k
+  request. This implies roughly 4.5 GiB beyond the 15.66 GiB GGUF for KV, compute, and
+  runtime buffers. Total GPU usage varies with desktop applications.
+- Normal warmed generation: 39.2–41.7 tok/s, with short-prompt processing varying from
+  45 to 142 tok/s. One post-reboot cold first request measured only 22.0 generation tok/s;
+  do not use the first request after boot as the steady-state benchmark.
+- Long-context oracle: a 30,015-token prompt in a 32,768-token slot completed without OOM
+  or truncation in 32.97 seconds; prompt processing was 911.8 tok/s, generation 53.1 tok/s,
+  and llama held 20,224 MiB.
+- Logging: `/var/lib/llama/logs/requests.jsonl` persisted across reboot and contained full
+  request/response payloads, caller, status, model, usage, latency, and streaming TTFT.
+  After 90 build-verification records (including the 60,009-character long prompt), it was
+  166,253 bytes. The earlier 2–10 GiB/week heavy-coding estimate remains unvalidated; keep
+  the 1 GiB/daily rotation and measure a real week in Phase 1.
+- Cold reboot: `ai-stack.target`, inference, and logger all returned automatically; a
+  post-reboot request returned `COLD BOOT OK`, Prometheus showed 19 prompt and 5 generated
+  tokens, and the same request appeared in the persisted JSONL log.
