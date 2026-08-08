@@ -26,6 +26,7 @@
     ./hm-modules/services.nix
     ./hm-modules/email.nix
     ./hm-modules/claude.nix
+    ./hm-modules/ai-clients.nix
     inputs.caelestia-shell.homeManagerModules.default
   ];
 

@@ -11,7 +11,7 @@ or walk into known traps.
 
 ---
 
-## ✅ STATUS: Phase 0 executed on dracula 2026-08-08 — read the corrections below
+## ✅ STATUS: Phase 0 complete; Phase 1 clients activated 2026-08-08 — one-week trial open
 
 When this runs, record corrections at the bottom under **Post-execution corrections**,
 following the `MAC-HANDOFF.md` convention. This file was written by a session that inspected
@@ -564,6 +564,30 @@ prototype because it decides whether the rented-inference-server plan is worth p
 per-caller token counts for both harnesses, both effective versions/configs are recorded,
 and no model request silently leaves dracula.
 
+**Implementation checkpoint (2026-08-08).** The Phase 1 starting point is active, but the
+one-week done criterion is deliberately still open:
+
+- The Phase 0 thin logging proxy remains the stable ingress at `127.0.0.1:8080`. It won on
+  exact full-payload JSONL, TTFT, caller attribution, and zero additional runtime state.
+  llama-swap is deferred until Phase 2 introduces a second local model; LiteLLM is deferred
+  until remote providers, budgets, or real credential management enter scope. Clients must
+  continue using port 8080 through either later change.
+- OMP `17.2.11` and opencode `1.18.13` are installed declaratively from
+  `hm-modules/ai-clients.nix`. OMP is a fixed-output release package in `packages/omp.nix`;
+  opencode is pinned by the flake's nixpkgs lock. Both autoupdate paths are disabled or
+  bypassed.
+- OMP's only enabled model and every configured role point at
+  `dracula-local/qwen3.6-27b-local`; its implicit `llama.cpp` discovery provider is disabled.
+  Opencode's only enabled provider is `dracula-local`, and both `model` and `small_model`
+  use that same alias. Both target `http://127.0.0.1:8080/v1`.
+- Both use an explicit read-only-without-prompt boundary: OMP `always-ask`; opencode asks by
+  default while allowing only read/search/LSP/question/skill operations explicitly. Tool
+  calls that mutate the workspace or run shell commands therefore require approval.
+- The acceptance prompt produced exactly one successful log record from each caller with
+  `X-AI-Caller: omp` and `X-AI-Caller: opencode`. See the Phase 1 corrections below for the
+  versions, hashes, and smoke-test numbers. These two trivial calls validate plumbing only;
+  they do not select a harness winner.
+
 ---
 
 ### Phase 2 — evaluation harness
@@ -863,3 +887,44 @@ Several details were wrong or incomplete as written:
 - Cold reboot: `ai-stack.target`, inference, and logger all returned automatically; a
   post-reboot request returned `COLD BOOT OK`, Prometheus showed 19 prompt and 5 generated
   tokens, and the same request appeared in the persisted JSONL log.
+
+### Phase 1 ingress and harness corrections
+
+1. **The existing thin proxy is the correct Phase 1 ingress.** llama-swap has the best
+   local multi-model switching ergonomics, but adding it for one model would introduce a
+   daemon without replacing the required exact JSONL/TTFT logger. LiteLLM has stronger
+   multi-provider accounting, budgets, and key management, but that operational surface is
+   premature while every request is loopback-local. Add llama-swap behind the stable proxy
+   when Phase 2 adds the second model. Reconsider LiteLLM as the front door when remote paid
+   providers enter; do not repoint clients.
+2. **OMP's release executable cannot be packaged with ordinary `patchelf`/strip fixups.**
+   It is a Bun single-file executable whose application lives in an appended trailer.
+   Rewriting or stripping the ELF left a working Bun runtime but destroyed OMP. The Nix
+   package now preserves the upstream bytes exactly and uses a wrapper around Nix's glibc
+   loader. The installed payload still hashes to the upstream SHA-256
+   `b864d5ec59133761b95b387ad28377a54da5459b5aaa7e5a34e82b0595350ba3`.
+3. **OMP discovers llama.cpp automatically at port 8080.** Merely defining the attributed
+   custom provider produced a duplicate un-attributed local choice. Setting
+   `disabledProviders: [llama.cpp]` leaves exactly the custom `dracula-local` model.
+4. **Both clients support explicit custom headers.** No bearer-token mapping or secrets are
+   needed for loopback attribution. OMP sets the header on its custom provider; opencode
+   sets it in the OpenAI-compatible provider options.
+
+### Measured Phase 1 starting point
+
+- OMP: `17.2.11`; opencode: `1.18.13`.
+- Effective SHA-256 hashes: OMP `config.yml`
+  `2282a72181d1212d5510762f4004df0d3df053a8646c17bebf2b556efb982cda`, OMP
+  `models.yml` `0f6004411ce8992929f08f7318ad981230a5bd39578c055451a258dd6a660d7c`,
+  opencode `opencode.json`
+  `4f434eb720aa705adaddfdcadd61476074ff76b8dcda29cd779f2d3ffb1ea61e`.
+- Paired no-tools smoke prompt: `Reply with exactly HARNESS_OK and nothing else.` Both
+  returned `HARNESS_OK` against `qwen3.6-27b-local` with HTTP 200.
+- OMP log record at `2026-08-08T19:09:50Z`: caller `omp`, 3,776 prompt + 33 completion =
+  3,809 tokens, 3,881 ms TTFT, 4,862 ms total latency.
+- Opencode log record at `2026-08-08T19:10:04Z`: caller `opencode`, 9,666 prompt + 63
+  completion = 9,729 tokens, 10,469 ms TTFT, 12,803 ms total latency.
+- The prompt is far too small to compare quality, and the clients carry different native
+  system prompts. The token/latency difference is useful proof that the harness itself is
+  now observable, not evidence that OMP has won. Complete the week of real work, then run
+  paired clean-worktree tasks before drawing that conclusion.
