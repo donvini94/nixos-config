@@ -11,7 +11,7 @@ or walk into known traps.
 
 ---
 
-## ✅ STATUS: Multi-model ingress active; Phase 2 evaluator built; Phase 3 platform complete
+## ✅ STATUS: Phase 4 Hermes infrastructure active; agent/workflow experiment pending
 
 When this runs, record corrections at the bottom under **Post-execution corrections**,
 following the `MAC-HANDOFF.md` convention. This file was written by a session that inspected
@@ -687,6 +687,14 @@ for inference. Isolated workspace under `/var/lib` with git for rollback. Tool a
 MCP where possible — the tool layer is the reusable part and should make adding Notion,
 Linear, or a Paperless client later a config change rather than a code change.
 
+**Implementation checkpoint (2026-08-09).** The infrastructure slice is active. The pinned
+official Hermes Agent release, persistent gateway, loopback dashboard, Git-backed workspace,
+local inference attribution, and host confinement passed live acceptance. The first real
+agent-vs-workflow experiment remains pending because the corresponding production n8n
+business workflow was deliberately deferred to its own session; do not confuse a successful
+smoke test with the comparison this phase exists to produce. See **Phase 4 Hermes deployment
+checkpoint** under Post-execution corrections for measured evidence and approval semantics.
+
 **Scope the first experiment.** Point it at a sandboxed workspace, *not* at `~/org` or the
 nixos-config checkout, until its behaviour is understood. Give it a task where the
 deterministic version already exists (the Phase 3 mail workflow is ideal) so the comparison
@@ -975,8 +983,10 @@ Several details were wrong or incomplete as written:
   `Qwen3.6-35B-A3B-UD-Q3_K_M.gguf`, 16,600,710,112 bytes, SHA-256
   `1b715841683f960bd9a49f008181bd910ee169b78d4cf465b6fde7f4d929ff99`.
 - Official architecture metadata: 40 layers, 256 experts with 8 selected per token, and
-  262,144 native context. The local registry deliberately caps both models to two
-  32,768-token slots for the first comparison.
+  262,144 native context. Phase 2 initially capped both models to two 32,768-token slots.
+  Phase 4 now uses one 65,536-token slot because Hermes rejects advertised contexts below
+  64,000 tokens; total context/KV budget remains 65,536 and paired evaluator tasks may still
+  impose a 32,768-token task budget.
 - llama-swap: official `v247` Linux amd64 archive, SHA-256
   `4001a068dc1dd154513919a31cc009d4f544426d2040bd02fbf33d90240c17df`.
 
@@ -1095,6 +1105,51 @@ Several details were wrong or incomplete as written:
   workflows, including the production mail workflow, to a separate session. When that is
   built, do not place the mailbox password or exported decrypted credentials in workflow
   JSON or git.
+
+### Phase 4 Hermes deployment checkpoint
+
+- Hermes uses the official Nous Research Nix flake pinned to tag `v2026.8.3`, commit
+  `3c27eb6234bf91b8ceee9e9071591b31e9b148cb`; the packaged CLI reports Hermes Agent
+  `0.20.0 (2026.8.3)`. The upstream NixOS module owns its persistent profile and gateway;
+  `modules/hermes.nix` adds the local provider, lifecycle wiring, and confinement rather
+  than replacing upstream behavior with a custom worker.
+- `hermes-agent.service` and `hermes-dashboard.service` are attached to `ai-stack.target`
+  as user/group `hermes`. State lives at `/var/lib/hermes/.hermes`, the agent repository at
+  `/var/lib/hermes/workspace`, and the dashboard listens only on `127.0.0.1:9119`.
+  systemd reports an exposure score of 2.7 for both long-running services: no capabilities,
+  `NoNewPrivileges`, strict read-only host filesystem, hidden `/home`, loopback-only IP
+  allow-list, namespace restrictions, and writes limited to `/var/lib/hermes`.
+- The workspace initializer created branch `main` and committed the managed `AGENTS.md` and
+  `SOUL.md` baseline. A real Hermes tool call subsequently reported `HOME_BLOCKED` for
+  `/home/vincenzo/nixos-config/flake.nix` and `WORKSPACE_WRITABLE` for its own repository.
+- Native dashboard WebSocket session `20260809_085118_6107d7` returned exactly
+  `HERMES_PHASE4_OK` through the permanent ingress. Cold model load plus the turn took
+  45.36 seconds. The authoritative JSONL record attributes caller `hermes`, model
+  `qwen3.6-27b-local`, HTTP 200, 12,805 prompt + 27 completion tokens, 42,580 ms TTFT, and
+  43,420 ms request latency. Hermes' browser analytics independently showed the same first
+  call, then accumulated tool and cache-use data across the boundary tests.
+- The dashboard WebSocket rejects unauthenticated connections even on loopback; its SPA
+  injects an ephemeral session token. The failed unauthenticated probe returned HTTP 403,
+  while the authenticated browser-equivalent path succeeded.
+- `approvals.mode=manual` does **not** mean every tool call or every effectful workspace
+  action asks the operator. Upstream documents it as prompting for terminal commands that
+  match dangerous-command patterns. Read-only terminal checks, `write_file`/`patch` inside
+  `HERMES_WRITE_SAFE_ROOT`, and ordinary `git add`/`git commit` all ran without an approval
+  event. The write-safe-root hard limit and systemd service confinement are therefore the
+  security boundary; describe manual approvals only as a risk-pattern gate.
+- Hermes itself created and committed `/var/lib/hermes/workspace/SURPRISES.md`. Commit
+  `f773807` recorded the initial observation; follow-up commit `5050782` corrected the
+  approval semantics after the write-and-commit test. The runtime repository finished
+  clean, so rollback and surprising-behavior logging are functioning rather than merely
+  documented.
+- No MCP server is enabled yet because no external integration is in scope. The upstream
+  MCP client is packaged and `services.hermes-agent.mcpServers` is the declarative extension
+  point for established adapters when Notion, Linear, Paperless, or another real tool is
+  introduced. Do not build a bespoke adapter first.
+- Phase 4 infrastructure is ready for use, but the phase's scientific conclusion is not
+  complete. Once the real deterministic n8n workflow exists, run the same task through
+  Hermes and report tokens, latency, success, operator interventions, and surprising
+  actions. Until then, the records above are acceptance evidence only.
 
 ### Measured Phase 1 starting point
 

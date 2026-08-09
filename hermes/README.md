@@ -17,6 +17,12 @@ sandbox hides `/home`, makes the host filesystem read-only, allows writes only b
 agent does not receive Docker access. Browser-chat child processes inherit the same
 service boundary.
 
+`approvals.mode = "manual"` is a dangerous-command gate, not approval of every action.
+Hermes prompts for terminal commands that match its risk patterns. Routine reads,
+`write_file`/`patch` below `HERMES_WRITE_SAFE_ROOT`, and ordinary Git commits can proceed
+without a prompt. The write-safe-root restriction and systemd confinement are the actual
+host boundary; use the session transcript and ingress log as the audit record.
+
 The workspace is initialized as a Git repository on first start. Inspect it with:
 
 ```bash
