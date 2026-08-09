@@ -146,6 +146,12 @@ in
       group = "root";
     };
 
+    # Restart when the environment template's shape changes. Secret-value
+    # changes are handled separately by the template's restartUnits hook.
+    systemd.services.hermes-dashboard.restartTriggers = [
+      config.sops.templates."hermes-dashboard.env".file
+    ];
+
     sops.templates."observability.env" = {
       content = ''
         POSTGRES_PASSWORD=${config.sops.placeholder."langfuse/postgres_password"}

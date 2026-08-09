@@ -52,7 +52,43 @@ let
   modelSelector = model: "${provider}/${model}";
   defaultModelSelector = modelSelector defaultModel;
   enabledModels = map modelSelector (builtins.attrNames modelDefinitions);
-  omp = pkgs.callPackage ../packages/omp.nix { };
+  yaml = pkgs.formats.yaml { };
+  ompPackage = pkgs.callPackage ../packages/omp.nix { };
+  ompManagedConfig = yaml.generate "omp-nixos-config.yml" {
+    modelRoles = {
+      default = defaultModelSelector;
+      smol = defaultModelSelector;
+      slow = defaultModelSelector;
+      plan = defaultModelSelector;
+      commit = defaultModelSelector;
+      tiny = defaultModelSelector;
+      task = defaultModelSelector;
+      advisor = defaultModelSelector;
+    };
+    cycleOrder = [ "default" ];
+    inherit enabledModels;
+    disabledProviders = [ "llama.cpp" ];
+    advisor.enabled = false;
+    tools.approvalMode = "always-ask";
+    startup.checkUpdate = false;
+    marketplace.autoUpdate = "off";
+  };
+  omp = pkgs.writeShellApplication {
+    name = "omp";
+    text = ''
+      managed_config=${lib.escapeShellArg (toString ompManagedConfig)}
+      if [[ -n "''${PI_CONFIG_FILES-}" ]]; then
+        export PI_CONFIG_FILES="$PI_CONFIG_FILES:$managed_config"
+      else
+        export PI_CONFIG_FILES="$managed_config"
+      fi
+
+      # The model endpoint and policy are already configured. Upstream's
+      # explicit `omp setup` command remains available when deliberately run.
+      export OMP_SKIP_SETUP="''${OMP_SKIP_SETUP:-1}"
+      exec ${lib.getExe ompPackage} "$@"
+    '';
+  };
   opencode = pkgs.writeShellApplication {
     name = "opencode";
     runtimeInputs = [ pkgs.jq ];
@@ -97,7 +133,6 @@ let
       exec ${lib.getExe pkgs.opencode} "$@"
     '';
   };
-  yaml = pkgs.formats.yaml { };
 in
 {
   config = lib.mkIf active {
@@ -105,28 +140,6 @@ in
       omp
       opencode
     ];
-
-    # Keep every OMP role on the local allow-listed model. This also prevents
-    # lightweight/background tasks from discovering a remote fallback.
-    home.file.".omp/agent/config.yml".source = yaml.generate "omp-config.yml" {
-      modelRoles = {
-        default = defaultModelSelector;
-        smol = defaultModelSelector;
-        slow = defaultModelSelector;
-        plan = defaultModelSelector;
-        commit = defaultModelSelector;
-        tiny = defaultModelSelector;
-        task = defaultModelSelector;
-        advisor = defaultModelSelector;
-      };
-      cycleOrder = [ "default" ];
-      inherit enabledModels;
-      disabledProviders = [ "llama.cpp" ];
-      advisor.enabled = false;
-      tools.approvalMode = "always-ask";
-      startup.checkUpdate = false;
-      marketplace.autoUpdate = "off";
-    };
 
     home.file.".omp/agent/models.yml".source = yaml.generate "omp-models.yml" {
       providers.${provider} = {

@@ -77,6 +77,17 @@ These are the two interactive coding harnesses. Both are configured to use the p
 local ingress and ask before changing files or executing commands. Use both on real tasks;
 their different prompts and tool loops are part of the comparison.
 
+OMP receives the Nix-managed model and safety policy through its supported `PI_CONFIG_FILES`
+overlay. Its own `~/.omp/agent/config.yml` remains a normal writable file for settings that OMP
+persists. Automatic onboarding is skipped because the provider is already configured; run
+`omp setup` explicitly only when you intend to revisit upstream's setup flow. Useful diagnostics:
+
+```console
+omp --version
+omp config path
+omp models
+```
+
 ### n8n
 
 n8n is for visible, repeatable workflows: scheduled jobs, mail processing, webhooks, and

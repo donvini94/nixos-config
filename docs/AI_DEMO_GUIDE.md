@@ -16,7 +16,9 @@ Alucard's AI tools are private. They are not reachable from the public internet.
    administrator for an invitation rather than sharing an administrator password.
 
 If a link does not open, check that Tailscale is connected before troubleshooting the
-application. The stable server name is `alucard.tailf117a1.ts.net`.
+application. The stable server name is `alucard.tailf117a1.ts.net`. Use that full name in every
+HTTPS URL: Tailscale's certificate and the Hermes host check are bound to it, so the shortened
+`https://alucard:29119` address is intentionally unsupported.
 
 ## What to open
 
@@ -85,6 +87,14 @@ open **Settings → Gateway → Remote gateway** and enter:
 Sign in, save, and reconnect. The desktop client then uses Alucard's models, sessions, memory,
 skills, and isolated workspace. Tailscale must remain connected. Do not install Alucard's model
 credential on the client.
+
+Until the password has been placed in the company password manager, the platform operator can
+retrieve it locally on either managed host without storing plaintext in this repository:
+
+```console
+cd ~/nixos-config
+sops --decrypt secrets/alucard-ai.yaml | yq -r '.hermes.dashboard_password'
+```
 
 ## API example
 

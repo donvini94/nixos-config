@@ -43,6 +43,15 @@ customers can install the official macOS, Windows, or Linux build and use the sa
 Alucard uses Hermes' official authentication gate in addition to Tailscale; clients never receive
 the Requesty credential.
 
+The full MagicDNS name is required for the HTTPS certificate and Hermes host validation; the
+shortened `https://alucard:29119` URL is not supported. An operator retrieves the current password
+without committing plaintext:
+
+```console
+cd ~/nixos-config
+sops --decrypt secrets/alucard-ai.yaml | yq -r '.hermes.dashboard_password'
+```
+
 The gateway and dashboard run as the unprivileged `hermes` system user. Their systemd
 sandbox hides `/home`, makes the host filesystem read-only, allows writes only below
 `/var/lib/hermes`, drops every capability, and limits network access to loopback. The
