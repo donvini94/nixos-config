@@ -22,7 +22,7 @@ application. The stable server name is `alucard.tailf117a1.ts.net`.
 
 | Component | What it demonstrates | Link |
 | --- | --- | --- |
-| Hermes | A conversational agent that can use tools and complete multi-step work | [Open Hermes](http://alucard.tailf117a1.ts.net:29119) |
+| Hermes | A conversational agent that can use tools and complete multi-step work | [Open Hermes Sessions](http://alucard.tailf117a1.ts.net:29119/sessions) |
 | Wirken | Experimental governed-agent UI and signed audit-chain inspection; effectful browser tools are not yet usable | [Open Wirken](http://alucard.tailf117a1.ts.net:28790) |
 | n8n | Visual business automation and AI workflows | [Open n8n](http://alucard.tailf117a1.ts.net:25678) |
 | Langfuse | Traces of model and agent activity: prompts, responses, latency, tokens, and evaluation | [Open Langfuse](http://alucard.tailf117a1.ts.net:23000) |
@@ -67,6 +67,11 @@ their integration endpoint.
 Do not improvise claims about benchmark superiority, guaranteed savings, compliance, data
 residency, or production availability. Those require an agreed model evaluation, retention
 policy, backup/restore evidence, and customer-specific architecture.
+
+For the first Hermes demonstration, create a session and ask it to write a short Markdown plan
+inside its workspace, then inspect the result in **Files**. Alucard's Hermes intentionally has no
+general web-search/browser tool and cannot modify the host outside its isolated workspace. See
+the [Hermes operator guide](../hermes/README.md) for the exact boundaries.
 
 ## API example
 

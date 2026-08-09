@@ -1,15 +1,32 @@
-# Hermes Agent on Dracula
+# Hermes Agent on Dracula and Alucard
 
 Phase 4 uses the official Nous Research Hermes Agent Nix flake, pinned in `flake.lock`.
 The upstream NixOS module owns the gateway and persistent profile; this repository adds
-the local inference route and the host isolation policy.
+the inference route and host isolation policy.
 
 After activation:
 
-- Dashboard and browser chat: <http://127.0.0.1:9119>
+- Dracula dashboard and browser chat: <http://127.0.0.1:9119/sessions>
+- Alucard tailnet dashboard and browser chat:
+  <http://alucard.tailf117a1.ts.net:29119/sessions>
 - State and session history: `/var/lib/hermes/.hermes`
 - Agent workspace: `/var/lib/hermes/workspace`
-- Inference: the permanent logger at `127.0.0.1:8080`, attributed as `hermes`
+- Inference: each host's permanent logger at `127.0.0.1:8080`, attributed as `hermes`
+
+## Browser quick start
+
+1. Open **Sessions** with one of the links above.
+2. Create a session and send a concrete task. For a safe first demo, ask Hermes to create a
+   short Markdown research plan in its workspace and then summarize what it wrote.
+3. Keep the session open while the agent works. If a terminal action matches Hermes' danger
+   rules, approve or reject it in the browser.
+4. Use **Files** to inspect workspace output and **Analytics** to inspect Hermes' local token
+   estimate. Use Grafana for authoritative aggregate request/token/cost metrics.
+
+Alucard uses the hosted Requesty model configured for the business demo; Dracula uses the local
+model registry. The UI itself is otherwise the same. Hermes has no general browser or web-search
+tool in this deployment, so demonstrate file, terminal, planning, memory, and session workflows
+instead of promising live internet research.
 
 The gateway and dashboard run as the unprivileged `hermes` system user. Their systemd
 sandbox hides `/home`, makes the host filesystem read-only, allows writes only below

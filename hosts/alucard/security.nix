@@ -1,4 +1,9 @@
-{ lib, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   services.crowdsec = {
@@ -67,6 +72,13 @@
   };
 
   users.users.crowdsec.extraGroups = lib.mkAfter [ "nginx" ];
+
+  # The firewall-bouncer module invokes upstream cscli, which expects this
+  # conventional path. CrowdSec itself uses the identical generated config
+  # directly from the Nix store.
+  environment.etc."crowdsec/config.yaml".source =
+    (pkgs.formats.yaml { }).generate "crowdsec.yaml"
+      config.services.crowdsec.settings.general;
 
   services.localObservability.extraScrapeTargets.crowdsec = 6060;
 }
