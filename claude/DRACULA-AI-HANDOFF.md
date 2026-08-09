@@ -1356,8 +1356,10 @@ Several details were wrong or incomplete as written:
   backends, and a loopback-bound/hardened Keycloak unit. From Dracula, the normal Jellyfin path
   returned HTTP 302, the traversal/shell WAF probe returned HTTP 403, Keycloak returned HTTP
   302 through public HTTPS, and its raw port 38080 was closed over the tailnet. A hot reload
-  produced one nginx segfault despite a successful syntax test; a clean restart recovered and
-  all acceptance probes passed. Repeated reload/certificate-renewal stability remains open.
+  initially exposed a libmodsecurity 3.0.16 / PCRE2 10.47 JIT cleanup crash. Alucard now uses
+  libmodsecurity's maintained interpreter fallback while keeping standard nginx reloads and
+  systemd hardening. Three consecutive reloads, a full restart, normal HTTP 200, malicious
+  HTTP 403, zero new coredumps, and zero failed units passed live acceptance.
 - CrowdSec gains the maintained Jellyfin brute-force collection and reads Jellyfin's systemd
   journal. Existing firewall remediation remains unchanged and already has live evidence.
 - `lib/requesty-models.nix` contains a 2026-08-09 authenticated-catalog snapshot covering
@@ -1382,6 +1384,11 @@ Several details were wrong or incomplete as written:
   WebChat roots return HTTP 200. No-tool chat is usable. The known WebChat effectful-approval
   defect remains upstream; the supported Signal adapter provides a separate approval surface
   once linked. Do not create an unofficial image or local source patch.
+- `wirken-admin doctor` passed live on Alucard: provider, vault, adapter registry, MCP signing,
+  signed audit chain, Docker runtime, and alarm log were healthy. No channel is configured yet.
+  The first Trivy run scanned 40 image references and exported 175 critical, 2,265 high, and
+  one failure through node-exporter; all six Prometheus targets are up and textfile scraping
+  reports no error. Per-image vulnerability triage remains a production gate.
 
 ### Measured Phase 1 starting point
 

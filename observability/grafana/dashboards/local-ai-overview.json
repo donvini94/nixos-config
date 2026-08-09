@@ -99,6 +99,20 @@
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 32 },
       "fieldConfig": { "defaults": { "unit": "s", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 172800 }] } } },
       "targets": [{ "expr": "time() - security_container_scan_timestamp_seconds", "refId": "A" }]
+    },
+    {
+      "type": "bargauge", "title": "Critical vulnerabilities by resident image", "id": 16,
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 36 },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } } },
+      "options": { "displayMode": "gradient", "orientation": "horizontal", "showUnfilled": true },
+      "targets": [{ "expr": "sort_desc(security_container_image_vulnerabilities{severity=\"critical\"} > 0)", "instant": true, "legendFormat": "{{image}} ({{engine}})", "refId": "A" }]
+    },
+    {
+      "type": "bargauge", "title": "High vulnerabilities by resident image", "id": 17,
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 36 },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }] } } },
+      "options": { "displayMode": "gradient", "orientation": "horizontal", "showUnfilled": true },
+      "targets": [{ "expr": "sort_desc(security_container_image_vulnerabilities{severity=\"high\"} > 0)", "instant": true, "legendFormat": "{{image}} ({{engine}})", "refId": "A" }]
     }
   ],
   "refresh": "30s",
@@ -109,5 +123,5 @@
   "timezone": "browser",
   "title": "AI and machine overview",
   "uid": "local-ai-overview",
-  "version": 3
+  "version": 4
 }

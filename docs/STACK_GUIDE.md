@@ -352,10 +352,11 @@ registration and the remaining live acceptance test.
 
 Alucard runs Aqua Trivy's official rolling container daily and after the manual
 `containers-scan` command. It scans distinct images running in both the root Docker daemon and
-Vincenzo's rootless daemon, retains root-only JSON reports, and publishes only aggregate
-counts through node-exporter's textfile collector. Grafana shows critical, high, failure, and
-scan-age panels. This complements update automation: pulling a newer image and proving that
-the deployed image has no known fixed critical issue are separate operations.
+Vincenzo's rootless daemon from local Docker archives, retains root-only JSON reports, and
+publishes aggregate and per-image counts through node-exporter's textfile collector. Grafana
+shows critical, high, per-image, failure, and scan-age panels. The scanner never receives a
+Docker socket. This complements update automation: pulling a newer image and proving that the
+deployed image has no known fixed critical issue are separate operations.
 
 Deployment checklist:
 

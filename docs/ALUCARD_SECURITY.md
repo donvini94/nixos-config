@@ -147,7 +147,7 @@ their own explicit firewall justification and protocol-specific protection.
 | P1 | Retire dead DNS/vhosts and remove unused firewall ports | Dead root/Git/docs/Coder backends return 404; unused TCP 53/873/11335/11445 removed |
 | P2 | Define Keycloak/2FA policy for every public application | Pending identity review |
 | P2 | Harden native services and containers | Keycloak loopback bind and systemd sandbox prepared; remaining application policy review pending |
-| P2 | Add vulnerability scanning and security alerts | Trivy daily scan and Grafana/Prometheus export active; first on-demand Alucard report and external notification routing pending |
+| P2 | Add vulnerability scanning and security alerts | Trivy daily scan and Grafana/Prometheus export verified; per-image remediation and external notification routing pending |
 | P2 | Implement and test application-aware backups/restores | Pending; required before customer use |
 | P3 | Add GeoIP restrictions to selected web services | Pending explicit country policy; never global mail blocking |
 
@@ -157,12 +157,18 @@ Signal transport encryption authenticates the sender but does not make the messa
 input.
 
 Run an on-demand scan with `containers-scan`. The official rolling Trivy container inspects
-every distinct image currently running in the root Docker daemon and the `vincenzo` rootless
-daemon when present. Full JSON reports stay root-only under
+an archive exported from every distinct image currently resident in the root Docker daemon and
+the `vincenzo` rootless daemon when present. This avoids registry drift and does not expose a
+Docker socket to the scanner. Full JSON reports stay root-only under
 `/var/lib/container-vulnerability-scan/reports`; aggregate critical/high/failure counts and
 scan age appear in the **AI and machine overview** Grafana dashboard. A finding is inventory,
 not proof of exploitability: review the package, reachable surface, and upstream fix before
 changing production images.
+
+The first live scan on 2026-08-09 inspected 40 image references and exported 175 critical,
+2,265 high, and one failed-image count. These totals include duplicate packages across related
+images, but all requested findings have published fixes because the scan uses `--ignore-unfixed`.
+Per-image triage and remediation are required before calling Alucard production-ready.
 
 The WAF uses the current OWASP CRS v4 LTS rather than Nixpkgs' older CRS 3.3.4,
 which predates July 2026 security fixes. Response-body inspection is disabled to
