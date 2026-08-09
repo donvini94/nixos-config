@@ -1,7 +1,7 @@
 """Loopback reverse proxy that records complete OpenAI requests and responses as JSONL."""
 
-import json
 import hmac
+import json
 import os
 import time
 import urllib.error

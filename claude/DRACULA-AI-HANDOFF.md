@@ -716,11 +716,42 @@ surprising-behaviour log is non-empty and understood.
 **Goal.** Put a governance layer over the workers and operate it. This is the phase with
 the highest commercial transfer value for bereit.
 
-**Build.** Wirken (https://github.com/gebruder/wirken) as the operator-facing control surface in front of Hermes, n8n, and the
-coding agents: per-channel isolation, graduated approval tiers, encrypted credential vault,
-hash-chained per-session audit log. Use its own security model rather than wrapping it in
-homemade confirmation scripts. Credentials migrate from ad-hoc sops env files into its
-vault where that makes sense — decide deliberately, since sops is already working.
+**Build.** Wirken (https://github.com/gebruder/wirken) as an operator-facing governed
+agent runtime alongside Hermes, n8n, and the coding agents: per-channel isolation,
+graduated approval tiers, encrypted credential vault, and a hash-chained per-session audit
+log. Use its own security model rather than wrapping it in homemade confirmation scripts.
+Credentials migrate from ad-hoc sops env files into its vault where that makes sense —
+decide deliberately, since sops is already working.
+
+**Architecture correction (2026-08-09).** Upstream Wirken is not a transparent policy
+proxy that can govern an independent Hermes, n8n, OMP, or OpenCode process. Its approval,
+tool, credential, channel, and audit enforcement applies to agents constructed inside the
+Wirken runtime. Those existing clients can still call the permanent inference ingress or
+their own tools without passing through Wirken. Phase 5 therefore adds one real governed
+agent path and measures it; it must not claim that the other paths are governed until they
+are actually migrated to an upstream-supported Wirken runtime or connector. Do not build a
+fake universal wrapper to satisfy the old diagram.
+
+**Implementation checkpoint (pre-activation, 2026-08-09).** The module pins the latest
+published signed release, Wirken v1.13.0, rather than the newer tag-only commits. The
+official x86_64 musl binary's Ed25519 release signature and signed SHA-256 manifest were
+verified before its Nix hash was recorded. The declarative service seeds the custom local
+provider and fail-closed `exec-only` sandbox, bootstraps an ingress credential into the
+encrypted vault through systemd credentials, pins the sandbox container by digest, binds
+WebChat to upstream's loopback-only port 18790, and attaches the gateway to
+`ai-stack.target`. The audit public key is captured once into a root-owned directory outside
+Wirken's data directory; a timer verifies signed chains against that anchor every six hours.
+The upstream headless age-vault CLI requires a TTY and ignores its documented passphrase
+environment variable in this release, so a no-transcript Expect bridge feeds the systemd
+credential over a private pseudo-terminal. Acceptance tests proved both successful unlock
+and wrong-passphrase failure without exposing the submitted value.
+
+**Credential decision.** sops remains the machine-bootstrap root for the vault passphrase
+and the local inference-attribution token. Provider and connector credentials added later
+belong in Wirken's encrypted vault; duplicating them in sops is unnecessary unless another
+non-Wirken service also needs the same credential. The inference token is an attribution
+mechanism, not authentication: the logging proxy maps a matching bearer value to caller
+`wirken`, while clients capable of `X-AI-Caller` continue using their explicit identity.
 
 **Why last.** You have to feel the problem before the solution teaches you anything. By
 Phase 5 there is a real agent doing real things with real credentials, and the approval
@@ -735,8 +766,12 @@ containing a determined process on this box. Do not overclaim this to clients.
 the interruption, and what an audit trail is actually good for — the questions clients will
 ask.
 
-**Done when.** Every agent path runs through Wirken, the audit log verifies, an emergency
-stop works, and the friction has been tuned over at least a week of real use.
+**Platform done when.** The governed Wirken path reaches local inference with correct
+attribution, approval and sandbox behavior are exercised, the operator-pinned audit log
+verifies, and `ai-stack-stop` terminates it with the rest of the stack. The longer
+experiment is done after the friction has been tuned over at least a week of real use and
+each other agent path has either been migrated to real Wirken enforcement or explicitly
+accepted and documented as a bypass.
 
 ---
 
