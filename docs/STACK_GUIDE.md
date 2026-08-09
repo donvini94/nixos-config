@@ -23,9 +23,9 @@ The browser interfaces are:
 | Hermes | <http://127.0.0.1:9119> | Persistent autonomous agent and chat | Usable |
 | Wirken | <http://127.0.0.1:18790> | Governed-agent experiment and audit inspection | Experimental; no effectful work |
 | Inference API | <http://127.0.0.1:8080/v1> | Stable OpenAI-compatible API | Usable |
-| Langfuse | <http://127.0.0.1:13000> | Agent traces, token analysis, annotations, datasets, and evaluations | Ready after next switch |
-| Grafana | <http://127.0.0.1:13001> | Machine, container, GPU, n8n, and inference metrics | Ready after next switch |
-| Prometheus | <http://127.0.0.1:19091> | Metrics database and query interface | Ready after next switch |
+| Langfuse | <http://127.0.0.1:13000> | Agent traces, token analysis, annotations, datasets, and evaluations | Usable |
+| Grafana | <http://127.0.0.1:13001> | Machine, container, GPU, n8n, and inference metrics | Usable |
+| Prometheus | <http://127.0.0.1:19091> | Metrics database and query interface | Usable |
 
 All addresses are loopback-only: they are reachable from `dracula`, not the LAN or
 internet.
@@ -109,6 +109,15 @@ The two browser tools answer different questions:
   RTX 3090 utilization and VRAM, n8n runtime metrics, request rate, input/output token rate,
   average latency, and time to first token. The provisioned **Local AI and machine
   overview** dashboard is the starting point.
+
+The live acceptance test on 2026-08-09 verified every Prometheus target, including the RTX
+3090 DCGM exporter, and sent a real OpenCode request through port `8080`. Langfuse v4
+recorded the turn as an agent observation, a user-message event, and a generation with
+9,720 total tokens; ingress metrics independently recorded 9,667 input and 53 output
+tokens. Langfuse v4 is observations-first, so API consumers should use
+`/api/public/v2/observations`, not the removed legacy `/api/public/traces` endpoint. The
+OpenCode plugin did not populate `providedModelName` in this smoke trace, so the ingress
+model label remains the reliable model dimension until that integration improves.
 
 Coverage is deliberately honest. OMP and n8n already appear in ingress token/latency
 metrics because all model calls pass port `8080`; their complete prompts and responses are

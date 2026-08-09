@@ -11,7 +11,7 @@ or walk into known traps.
 
 ---
 
-## ⚠️ STATUS: Phase 5 Wirken trial active; observability built, awaiting activation
+## ⚠️ STATUS: Phase 5 Wirken trial and observability active; Alucard demo profile pending
 
 When this runs, record corrections at the bottom under **Post-execution corrections**,
 following the `MAC-HANDOFF.md` convention. This file was written by a session that inspected
@@ -1228,7 +1228,7 @@ Several details were wrong or incomplete as written:
   Hermes and report tokens, latency, success, operator interventions, and surprising
   actions. Until then, the records above are acceptance evidence only.
 
-### Observability deployment checkpoint (pre-activation, 2026-08-09)
+### Observability deployment checkpoint (active, 2026-08-09)
 
 - `modules/observability.nix` and the official-container Compose project under
   `observability/` add two complementary layers. Langfuse v4 owns LLM/agent traces,
@@ -1257,17 +1257,24 @@ Several details were wrong or incomplete as written:
   upstream Nix package rejects the SDK's overlapping HTTP/Pydantic closure. Keep nested
   Hermes Langfuse tracing disabled until upstream exposes a compatible dependency group;
   do not bypass the collision guard or create a mutable service environment.
-- The complete Dracula system built successfully before activation. Live acceptance still
-  needs the next NixOS switch: verify all Compose containers, all Prometheus targets, the
-  DCGM GPU path, an OpenCode trace, a Hermes trace, and ingress token graphs.
+- Dracula's live acceptance passed after activation. The system has no failed units, all 11
+  observability containers are running, Langfuse reports v4.6.0 healthy, Grafana reports
+  its database healthy, and every Prometheus target is up: ingress, containers, n8n, node,
+  NVIDIA DCGM, and Prometheus itself. DCGM reports the RTX 3090 and its VRAM, temperature,
+  and utilization rather than a synthetic or empty target.
+- A real OpenCode `OBSERVABILITY_OK` turn produced an HTTP 200 ingress record with 9,667
+  prompt + 53 completion tokens, 9.809 seconds total latency, and 8.424 seconds TTFT.
+  Langfuse v4 independently exposed three observations for the same turn—an agent, a user
+  event, and a generation with 9,720 total tokens. The plugin did not populate
+  `providedModelName`, so model attribution still comes from the ingress label. Langfuse v4
+  removed the legacy trace-list API; use `/api/public/v2/observations` and group by trace ID.
 - The first activation exposed three configuration errors while preserving the other
   containers: Compose v5 translated generic `gpus: all` into a missing AMD CDI device,
   optional Nix string indentation produced invalid Prometheus YAML, and
   `vincenzo@localhost` failed Langfuse's email validation. The correction requests the
   host's real `nvidia.com/gpu=all` CDI device (independently proven with `nvidia-smi`),
   generates Prometheus configuration with Nix's YAML formatter and validates it with
-  `promtool`, and initializes `vincenzo@istbereit.de`. A second activation is required for
-  live acceptance.
+  `promtool`, and initializes `vincenzo@istbereit.de`. The corrected activation passed.
 - `docs/SECRETS.md` inventories every SOPS key, runtime rendering, consumer, rotation
   class, backup boundary, and the future Alucard/customer separation rule without storing
   values. Cryptographic roots and first-boot database/application credentials are not
@@ -1279,6 +1286,12 @@ Several details were wrong or incomplete as written:
   redundant gateway by default. Enabling it is gated on SOPS-managed Requesty keys, an
   explicit demo-model allow-list/fallback policy, authenticated HTTPS exposure, and tested
   trace backup/retention/redaction policy.
+- Syncthing previously copied `.git` between Dracula and Alucard and left Alucard's branch
+  ref pointing at an object that had not arrived. Commit `0455d96` excludes `/.git` both in
+  `.stignore` and in Alucard's declarative Syncthing folder. Alucard was repaired without
+  replacing its working tree by importing a complete Git bundle, preserving its matching
+  edits in a temporary stash, and fast-forwarding to `0455d96`; the exact flake build that
+  originally failed now succeeds. Future commits must move through Git, not Syncthing.
 
 ### Measured Phase 1 starting point
 
