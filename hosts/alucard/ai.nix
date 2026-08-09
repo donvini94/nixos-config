@@ -7,13 +7,8 @@
 
 let
   enableAI = true;
-  defaultModel = "deepinfra/deepseek-v4-flash-0731";
-  models.${defaultModel} = {
-    name = "DeepSeek V4 Flash 0731 (DeepInfra via Requesty)";
-    context = 131072;
-    output = 32768;
-    reasoning = true;
-  };
+  requesty = import ../../lib/requesty-models.nix;
+  inherit (requesty) defaultModel models;
   secretFile = ../../secrets/alucard-ai.yaml;
 in
 {
@@ -22,6 +17,7 @@ in
     ../../modules/n8n.nix
     ../../modules/hermes.nix
     ../../modules/wirken.nix
+    ../../modules/signal.nix
   ];
 
   config = lib.mkIf enableAI {
@@ -223,6 +219,11 @@ in
       model = defaultModel;
       vaultPassphraseFile = config.sops.secrets."wirken/vault_passphrase".path;
       ingressCredentialFile = config.sops.secrets."wirken/ingress_token".path;
+      operators = [ username ];
+    };
+
+    services.localSignal = {
+      enable = true;
       operators = [ username ];
     };
 

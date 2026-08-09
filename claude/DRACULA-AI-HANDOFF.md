@@ -1349,6 +1349,31 @@ Several details were wrong or incomplete as written:
   administration services returned successful application responses, and every Prometheus
   target was up, including CrowdSec.
 
+### Security, Requesty choice, and Signal checkpoint (prepared, 2026-08-09)
+
+- Alucard's next activation adds ModSecurity with pinned OWASP CRS 4.25.1 LTS, nginx request
+  and connection limits, bounded request bodies, consistent low-risk headers, explicit 404s
+  for four dead backends, and a loopback-bound/hardened Keycloak unit. The full Alucard
+  system build passed; live WAF and application acceptance remain mandatory after switching.
+- CrowdSec gains the maintained Jellyfin brute-force collection and reads Jellyfin's systemd
+  journal. Existing firewall remediation remains unchanged and already has live evidence.
+- `lib/requesty-models.nix` now contains a 2026-08-09 authenticated-catalog snapshot covering
+  cheap DeepSeek/Qwen, stronger DeepSeek, Kimi K3, and three current frontier comparisons.
+  Alucard enforces the registry. Dracula exposes it to OMP/OpenCode over the private Alucard
+  Tailscale ingress while preserving its local models and local default; Dracula receives no
+  Requesty credential. Both host system builds passed; live selections require activation.
+- The official signal-cli 0.14.7 native release is packaged for Alucard. Its service remains
+  skipped until an operator runs `signal-link` and scans the QR code. One daemon then provides
+  Hermes' loopback HTTP transport and Wirken's group-permissioned Unix socket. Sender
+  allowlists are not inferred and must be configured after the operator chooses one Signal
+  front door or separate accounts/groups; running both agents on the same conversation would
+  produce competing replies.
+- Wirken v1.13.0 remains the latest signed binary release; v1.14-v1.16 are tag-only and have
+  no release artifacts. Both live gateways and their audit services are active and their
+  WebChat roots return HTTP 200. No-tool chat is usable. The known WebChat effectful-approval
+  defect remains upstream; the supported Signal adapter provides a separate approval surface
+  once linked. Do not create an unofficial image or local source patch.
+
 ### Measured Phase 1 starting point
 
 - OMP: `17.2.11`; opencode: `1.18.13`.

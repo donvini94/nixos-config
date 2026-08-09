@@ -303,14 +303,15 @@ local Grafana machine/container view. Requesty's response cost and `x-requesty-*
 cache, latency, and request-ID metadata are also retained in the sensitive ingress JSONL;
 cost is exported as `ai_ingress_cost_usd_total` for the Grafana dashboard.
 
-The initial registry contains only `deepinfra/deepseek-v4-flash-0731`, selected from the
-authenticated live [`GET /v1/models`](https://docs.requesty.ai/api-reference/endpoint/models-list)
-catalog. Requesty currently advertises a 1,048,576-token provider window; clients are
-deliberately capped at 131,072 context and 32,768 output until real workload data justifies
-larger limits. Add cheaper Qwen, Kimi, or DeepSeek routes and selected frontier routes to the
-same registry only after confirming their current canonical IDs in that authenticated
-catalog. OMP's `smol`/`tiny` roles can then use the cheap model while `slow`/`advisor` use a
-frontier model; with one model registered, all roles intentionally use the initial default.
+The shared registry in `lib/requesty-models.nix` was checked against Requesty's authenticated
+[`GET /v1/models`](https://docs.requesty.ai/api-reference/endpoint/models-list) catalog on
+2026-08-09. It contains the cheap DeepSeek V4 Flash default, Qwen 3.7 Plus, DeepSeek V4 Pro,
+Kimi K3, and three closed frontier comparisons. OMP receives the catalog's current per-million
+token prices. Re-check IDs, capabilities, prices, and retention before changing this registry.
+
+Dracula's OMP and OpenCode expose the same Requesty registry through
+`http://alucard.tailf117a1.ts.net:28080/v1` over Tailscale while retaining both local GPU
+models and the local dense default. No Requesty credential is installed on Dracula.
 
 Use the initial model through the unchanged ingress:
 
@@ -323,6 +324,20 @@ curl http://127.0.0.1:8080/v1/chat/completions \
   -H 'X-AI-Caller: manual' \
   -d '{"model":"deepinfra/deepseek-v4-flash-0731","messages":[{"role":"user","content":"Say hello"}]}'
 ```
+
+### Signal transport
+
+Alucard uses the official signal-cli 0.14.7 native release under `signal-cli.service`.
+The unit remains skipped until `/var/lib/signal-cli/signal-cli/data/accounts.json` exists,
+so a rebuild never creates a partially authorized messaging surface. Once linked with
+`signal-link`, one daemon exposes two local transports:
+
+- `http://127.0.0.1:18083` for Hermes' supported Signal adapter;
+- `/run/signal-cli/signal-cli.sock` for Wirken's supported Signal adapter.
+
+The HTTP endpoint is never published by the firewall or Tailscale Serve. The Unix socket is
+owned by the `signal-cli` group. Signal account state contains impersonation-capable keys and
+must be treated as a secret backup. Sender allowlists are mandatory and agent-specific.
 
 Deployment checklist:
 

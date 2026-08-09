@@ -139,6 +139,11 @@ their own explicit firewall justification and protocol-specific protection.
 | P2 | Implement and test application-aware backups/restores | Pending; required before customer use |
 | P3 | Add GeoIP restrictions to selected web services | Pending explicit country policy; never global mail blocking |
 
+Signal's loopback HTTP bridge is intentionally not included in Tailscale Serve. Its Unix socket
+is group-scoped, and its linked-device state is mode 0700. Sender allowlists remain mandatory:
+Signal transport encryption authenticates the sender but does not make the message safe agent
+input.
+
 The WAF uses the current OWASP CRS v4 LTS rather than Nixpkgs' older CRS 3.3.4,
 which predates July 2026 security fixes. Response-body inspection is disabled to
 avoid reflected denial-of-service behavior. After switching, verify both normal

@@ -101,6 +101,12 @@ Requesty key is encrypted there and is exposed at runtime only to the port-8080 
 | `langfuse/*` | Alucard Langfuse project and dependencies | Independent databases, cryptographic roots, project, and administrator |
 | `grafana/admin_password` | Alucard Grafana bootstrap | Independent administrator password |
 
+Signal linking state is not a SOPS scalar. It lives at
+`/var/lib/signal-cli/signal-cli/data`, contains the linked device's cryptographic identity,
+and must be protected like a password. Agent account numbers and sender allowlists will be
+added to SOPS only after the operator chooses whether Hermes, Wirken, or separate Signal
+accounts/groups own the channel.
+
 Edit it without printing values:
 
 ```console

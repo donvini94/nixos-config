@@ -108,6 +108,49 @@ curl http://alucard.tailf117a1.ts.net:28080/v1/models
 The model list is deliberately narrower than Requesty's full catalog. Calls with unregistered
 model IDs are rejected locally before they can create upstream cost.
 
+The current curated choices are:
+
+| Use | Model |
+| --- | --- |
+| Cheapest default | `deepinfra/deepseek-v4-flash-0731` |
+| Cheap Qwen comparison | `alibaba/qwen3.7-plus` |
+| Stronger open DeepSeek | `deepinfra/deepseek-ai/DeepSeek-V4-Pro` |
+| Open frontier comparison | `sference/kimi-k3` |
+| Closed frontier comparisons | Gemini 3.1 Pro, Claude Sonnet 5, GPT-5.6 Terra |
+
+The registry and displayed token prices were checked against Requesty's authenticated catalog
+on 2026-08-09. The catalog reported 30-day provider retention for the selected Claude and
+OpenAI routes; do not use those routes for sensitive customer data without an agreed policy.
+The selected DeepSeek, Qwen, Kimi, and Gemini routes reported no provider retention.
+
+OMP and OpenCode on Alucard expose these models directly. On Dracula they appear alongside
+the two local GPU models through Alucard's private tailnet ingress; the Requesty key never
+leaves Alucard. Examples:
+
+```console
+omp --model alucard-requesty/alibaba/qwen3.7-plus
+omp --model alucard-requesty/sference/kimi-k3
+opencode run -m alucard-requesty/deepinfra/deepseek-v4-flash-0731 "your task"
+```
+
+Dracula keeps `dracula-local/qwen3.6-27b-local` as its no-cost default.
+
+## Signal agent channel
+
+The shared Signal transport is installed but deliberately fails closed until an operator links
+a Signal device and configures sender allowlists. On Alucard, run:
+
+```console
+signal-link "Alucard AI"
+signal-accounts
+```
+
+Scan the displayed QR code in **Signal → Settings → Linked devices → +**. Linking only
+establishes the encrypted transport; it does not authorize anyone to drive an agent. Hermes
+and Wirken each require an explicit E.164 sender allowlist. Do not connect both agents to the
+same unpartitioned conversation: both would receive the message and could reply. Use separate
+bot accounts/groups or choose one agent as the Signal front door.
+
 ## Troubleshooting
 
 ```console

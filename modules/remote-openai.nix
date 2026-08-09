@@ -66,6 +66,19 @@ let
           type = lib.types.bool;
           default = true;
         };
+        cost = lib.mkOption {
+          type = lib.types.submodule {
+            options = {
+              input = lib.mkOption { type = lib.types.number; };
+              output = lib.mkOption { type = lib.types.number; };
+            };
+          };
+          default = {
+            input = 0;
+            output = 0;
+          };
+          description = "USD per million input and output tokens.";
+        };
       };
     }
   );
