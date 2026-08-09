@@ -17,6 +17,7 @@ in
     ./media.nix
     ./users.nix
     ./syncthing.nix
+    ./ai.nix
     ../../modules/packages.nix
     ../../modules/observability.nix
     ../../modules/container-updates.nix

@@ -107,7 +107,7 @@ The two browser tools answer different questions:
   Langfuse's official rolling plugin.
 - **Grafana** explains the machines and services: CPU, RAM, disk, Docker-container memory,
   RTX 3090 utilization and VRAM, n8n runtime metrics, request rate, input/output token rate,
-  average latency, and time to first token. The provisioned **Local AI and machine
+  Requesty cost, average latency, and time to first token. The provisioned **AI and machine
   overview** dashboard is the starting point.
 
 The live acceptance test on 2026-08-09 verified every Prometheus target, including the RTX
@@ -260,20 +260,52 @@ Compose images and recreates the active media stack.
 
 ## Business-demo stack on Alucard
 
-The reusable observability module is already imported on Alucard but intentionally disabled
-until the AI stack and its secrets are defined there. The target is the same operator
+The reusable profile is defined in `hosts/alucard/ai.nix` but intentionally disabled until
+the Requesty key and exact model registry are supplied. It builds the same operator
 experience—OMP, OpenCode, n8n, Hermes, Wirken, Langfuse, Grafana, and the stable logged
 ingress—while inference goes to Requesty's OpenAI-compatible router instead of a local GPU.
+Alucard's minimal Home Manager profile installs only the two coding harnesses, not Dracula's
+desktop configuration.
 
 Requesty is already the maintained routing product, so the default plan does not add another
 gateway merely to proxy it. Alucard will use `https://router.requesty.ai/v1`, SOPS-managed
-Requesty keys with model access lists and spending limits, and explicit provider/model IDs.
+Requesty credentials with model access lists and spending limits, and explicit
+   `provider/model` or `policy/name` IDs. The key is loaded into the loopback ingress with a
+systemd credential and injected upstream; OMP, OpenCode, n8n, Hermes, and Wirken never
+receive the Requesty key. Attach one Alucard workload key to a named access list unless a
+real isolation requirement justifies more keys.
 Requesty's cost and provider-routing analytics complement Langfuse's agent traces and the
-local Grafana machine/container view.
+local Grafana machine/container view. Requesty's response cost and `x-requesty-*` provider,
+cache, latency, and request-ID metadata are also retained in the sensitive ingress JSONL;
+cost is exported as `ai_ingress_cost_usd_total` for the Grafana dashboard.
 
-Before enabling this profile, the operator must provide the Requesty keys and select the
-demo model allow-list and fallback policies. The implementation must then generalize the
-current port-8080 ingress backend, preserve per-caller attribution, keep secrets out of the
-Nix store, and expose the browser UIs only through an authenticated HTTPS reverse proxy or
-an SSH tunnel. Dracula remains the local-model comparison machine; Alucard becomes the
-customer-facing business demo.
+Before enabling the profile:
+
+1. In Requesty, create an `alucard-demo` project or workload key, attach a named Access List,
+   set its monthly spend limit, and optionally create reviewed fallback policies.
+2. Run `sops secrets/alucard-ai.yaml` on Dracula or Alucard and replace only
+   `requesty.api_key`. The other machine-specific service secrets are already generated.
+3. Put the exact allowed model/policy IDs, display names, context limits, and output limits
+   in the registry at the top of `hosts/alucard/ai.nix`; select a default and set
+   `enableAI = true`.
+4. Build, switch, and verify `/v1/models` through port `8080` before sending a paid prompt.
+
+Startup authenticates to Requesty's model-list endpoint and requires its returned Access
+List to match the Nix registry exactly. A placeholder key, missing model, or overly broad
+key therefore fails closed before the ingress begins accepting traffic.
+
+The browser listeners remain loopback-only. Use one SSH session during initial operation:
+
+```console
+ssh -L 5678:127.0.0.1:5678 \
+    -L 9119:127.0.0.1:9119 \
+    -L 13000:127.0.0.1:13000 \
+    -L 13001:127.0.0.1:13001 \
+    -L 18790:127.0.0.1:18790 \
+    Bereitserver
+```
+
+Then use the same browser addresses documented for Dracula. Authenticated HTTPS and tested
+backup/restore, retention, deletion, and redaction policies are mandatory before presenting
+the interfaces as a remotely reachable customer service. Dracula remains the local-model
+comparison machine; Alucard becomes the business demo.

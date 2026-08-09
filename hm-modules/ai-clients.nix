@@ -7,21 +7,48 @@
 }:
 
 let
-  endpoint = "http://127.0.0.1:8080/v1";
-  provider = "dracula-local";
-  defaultModel = "qwen3.6-27b-local";
-  modelDefinitions = {
-    "qwen3.6-27b-local" = {
-      name = "Qwen3.6 27B Q4_K_M (Dracula local)";
-      context = 32768;
-      output = 8192;
-    };
-    "qwen3.6-35b-a3b" = {
-      name = "Qwen3.6 35B-A3B UD-Q3_K_M (Dracula local)";
-      context = 32768;
-      output = 8192;
-    };
-  };
+  hostname = osConfig.networking.hostName;
+  isDracula = hostname == "dracula";
+  isRemote = osConfig.services.remoteOpenAI.enable;
+  active = isDracula || isRemote;
+  profile =
+    if isDracula then
+      {
+        endpoint = "http://127.0.0.1:8080/v1";
+        provider = "dracula-local";
+        providerName = "Dracula local llama.cpp";
+        defaultModel = "qwen3.6-27b-local";
+        disableStrictTools = true;
+        models = {
+          "qwen3.6-27b-local" = {
+            name = "Qwen3.6 27B Q4_K_M (Dracula local)";
+            context = 32768;
+            output = 8192;
+            reasoning = false;
+          };
+          "qwen3.6-35b-a3b" = {
+            name = "Qwen3.6 35B-A3B UD-Q3_K_M (Dracula local)";
+            context = 32768;
+            output = 8192;
+            reasoning = false;
+          };
+        };
+      }
+    else
+      {
+        endpoint = "http://127.0.0.1:8080/v1";
+        provider = "alucard-requesty";
+        providerName = "Alucard Requesty ingress";
+        defaultModel = osConfig.services.remoteOpenAI.defaultModel;
+        disableStrictTools = false;
+        models = osConfig.services.remoteOpenAI.models;
+      };
+  inherit (profile)
+    endpoint
+    provider
+    defaultModel
+    ;
+  modelDefinitions = profile.models;
   modelSelector = model: "${provider}/${model}";
   defaultModelSelector = modelSelector defaultModel;
   enabledModels = map modelSelector (builtins.attrNames modelDefinitions);
@@ -73,7 +100,7 @@ let
   yaml = pkgs.formats.yaml { };
 in
 {
-  config = lib.mkIf (osConfig.networking.hostName == "dracula") {
+  config = lib.mkIf active {
     home.packages = [
       omp
       opencode
@@ -106,12 +133,12 @@ in
         baseUrl = endpoint;
         api = "openai-completions";
         auth = "none";
-        disableStrictTools = true;
+        disableStrictTools = profile.disableStrictTools;
         headers.X-AI-Caller = "omp";
         models = lib.mapAttrsToList (id: model: {
           inherit id;
           inherit (model) name;
-          reasoning = false;
+          reasoning = model.reasoning;
           input = [ "text" ];
           cost = {
             input = 0;
@@ -153,13 +180,14 @@ in
       };
       provider.${provider} = {
         npm = "@ai-sdk/openai-compatible";
-        name = "Dracula local llama.cpp";
+        name = profile.providerName;
         options = {
           baseURL = endpoint;
           headers.X-AI-Caller = "opencode";
         };
         models = lib.mapAttrs (_id: model: {
           inherit (model) name;
+          reasoning = model.reasoning;
           limit = {
             inherit (model) context output;
           };

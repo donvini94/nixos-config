@@ -13,6 +13,7 @@
     ../../modules/nvidia.nix
     ../../modules/gaming.nix
     ../../modules/llama.nix
+    ../../modules/remote-openai.nix
     ../../modules/n8n.nix
     ../../modules/hermes.nix
     ../../modules/wirken.nix

@@ -69,6 +69,12 @@
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
       "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100 } },
       "targets": [{ "expr": "100 * (1 - node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay\"})", "legendFormat": "{{mountpoint}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "title": "AI cost by caller and model", "id": 11,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD" } },
+      "targets": [{ "expr": "sum by (caller, model) (increase(ai_ingress_cost_usd_total[5m]))", "legendFormat": "{{caller}} · {{model}}", "refId": "A" }]
     }
   ],
   "refresh": "30s",
@@ -77,7 +83,7 @@
   "templating": { "list": [] },
   "time": { "from": "now-6h", "to": "now" },
   "timezone": "browser",
-  "title": "Local AI and machine overview",
+  "title": "AI and machine overview",
   "uid": "local-ai-overview",
-  "version": 1
+  "version": 2
 }

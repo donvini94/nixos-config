@@ -86,9 +86,27 @@ maintenance window, then recreate and verify every consumer.
 
 ## Alucard and customer machines
 
-Alucard gets a separate encrypted AI secret file and separate Langfuse, Grafana, and
-Requesty credentials. Do not copy Dracula's project keys or administrative passwords.
-Requesty keys should be split by machine or client role, restricted with model access lists
-and spending limits, and labeled so Requesty's cost records can be reconciled with
-Langfuse callers. Customer machines need their own age recipient, credentials, retention
-policy, and documented revocation owner.
+Alucard uses the separate encrypted `secrets/alucard-ai.yaml`. Its n8n, Wirken, Langfuse,
+and Grafana values have been generated independently from Dracula. The Requesty value is an
+encrypted placeholder until the operator supplies a restricted workload key.
+
+| SOPS key group | Consumer | Rule |
+| --- | --- | --- |
+| `requesty/api_key` | Port-8080 ingress only | Attach an Access List and monthly spend limit; never distribute to clients |
+| `n8n/*` | Alucard n8n and runners | Independent encryption root and runner token |
+| `wirken/*` | Alucard Wirken and ingress attribution | Independent vault passphrase and local-only attribution token |
+| `langfuse/*` | Alucard Langfuse project and dependencies | Independent databases, cryptographic roots, project, and administrator |
+| `grafana/admin_password` | Alucard Grafana bootstrap | Independent administrator password |
+
+Edit it without printing values:
+
+```console
+sops secrets/alucard-ai.yaml
+```
+
+Do not copy Dracula's project keys or administrative passwords. Prefer one Alucard workload
+key with an attached Requesty Access List and spending limit; create additional keys only
+when a real workload or customer isolation boundary requires separate revocation and cost
+ownership. Label keys so Requesty's records can be reconciled with Langfuse and ingress
+callers. Customer machines need their own age recipient, credentials, retention policy,
+and documented revocation owner.

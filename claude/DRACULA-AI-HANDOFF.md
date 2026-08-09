@@ -1292,6 +1292,13 @@ Several details were wrong or incomplete as written:
   replacing its working tree by importing a complete Git bundle, preserving its matching
   edits in a temporary stash, and fast-forwarding to `0455d96`; the exact flake build that
   originally failed now succeeds. Future commits must move through Git, not Syncthing.
+- The Alucard business-demo scaffold now builds behind an explicit disabled gate in
+  `hosts/alucard/ai.nix`. It reuses n8n, Hermes, Wirken, Langfuse/Grafana, OMP/OpenCode, and
+  the permanent port-8080 ingress but injects a root-only Requesty workload key upstream.
+  Requesty cost and `x-requesty-*` routing metadata are preserved; Prometheus exposes
+  `ai_ingress_cost_usd_total`. Machine-specific non-Requesty secrets are generated in the
+  separate encrypted `secrets/alucard-ai.yaml`. Activation still requires the restricted
+  Requesty key and exact canonical model or policy registry from the operator.
 
 ### Measured Phase 1 starting point
 

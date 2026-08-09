@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 BACKEND = os.environ["LLAMA_BACKEND"]
+BACKEND_HEALTH_PATH = os.environ.get("LLAMA_BACKEND_HEALTH_PATH", "/health")
 LOG_PATH = os.environ["LLAMA_REQUEST_LOG"]
 HOP_HEADERS = {
     "connection",
@@ -26,22 +27,39 @@ HOP_HEADERS = {
 }
 
 
-def load_bearer_caller():
-    credential_name = os.environ.get("LLAMA_BEARER_TOKEN_CREDENTIAL")
+def load_credential(environment_name):
+    credential_name = os.environ.get(environment_name)
     credential_directory = os.environ.get("CREDENTIALS_DIRECTORY")
-    caller = os.environ.get("LLAMA_BEARER_CALLER", "wirken")
     if not credential_name or not credential_directory:
-        return None, None
+        return None
     with open(
         os.path.join(credential_directory, credential_name), encoding="utf-8"
     ) as handle:
-        token = handle.read().rstrip("\n")
-    if not token:
-        raise RuntimeError("configured bearer attribution credential is empty")
-    return token, caller
+        value = handle.read().rstrip("\n")
+    if not value:
+        raise RuntimeError(f"configured credential {credential_name!r} is empty")
+    return value
+
+
+def load_bearer_caller():
+    credential_name = os.environ.get("LLAMA_BEARER_TOKEN_CREDENTIAL")
+    caller = os.environ.get("LLAMA_BEARER_CALLER", "wirken")
+    if not credential_name:
+        return None, None
+    return load_credential("LLAMA_BEARER_TOKEN_CREDENTIAL"), caller
 
 
 BEARER_TOKEN, BEARER_CALLER = load_bearer_caller()
+UPSTREAM_BEARER_TOKEN = load_credential("LLAMA_UPSTREAM_BEARER_CREDENTIAL")
+
+
+def upstream_headers(headers):
+    forwarded = {
+        key: value for key, value in headers.items() if key.lower() not in HOP_HEADERS
+    }
+    if UPSTREAM_BEARER_TOKEN:
+        forwarded["Authorization"] = f"Bearer {UPSTREAM_BEARER_TOKEN}"
+    return forwarded
 
 
 class Metrics:
@@ -53,6 +71,7 @@ class Metrics:
         self.requests = {}
         self.prompt_tokens = {}
         self.completion_tokens = {}
+        self.cost_usd = {}
         self.latency = {}
         self.ttft = {}
 
@@ -66,7 +85,9 @@ class Metrics:
         with self.lock:
             self.in_flight -= 1
             self.requests[request_labels] = self.requests.get(request_labels, 0) + 1
-            self.latency[labels] = self._add_sample(self.latency, labels, latency_ms / 1000)
+            self.latency[labels] = self._add_sample(
+                self.latency, labels, latency_ms / 1000
+            )
             if ttft_ms is not None:
                 self.ttft[labels] = self._add_sample(self.ttft, labels, ttft_ms / 1000)
             if isinstance(usage, dict):
@@ -74,6 +95,7 @@ class Metrics:
                 self._add_tokens(
                     self.completion_tokens, labels, usage.get("completion_tokens")
                 )
+                self._add_tokens(self.cost_usd, labels, usage.get("cost"))
 
     @staticmethod
     def _add_sample(target, labels, value):
@@ -88,11 +110,20 @@ class Metrics:
     @staticmethod
     def _labels(names, values):
         def escape(value):
-            return str(value).replace("\\", "\\\\").replace("\n", "\\n").replace('"', '\\"')
+            return (
+                str(value)
+                .replace("\\", "\\\\")
+                .replace("\n", "\\n")
+                .replace('"', '\\"')
+            )
 
-        return "{" + ",".join(
-            f'{name}="{escape(value)}"' for name, value in zip(names, values)
-        ) + "}"
+        return (
+            "{"
+            + ",".join(
+                f'{name}="{escape(value)}"' for name, value in zip(names, values)
+            )
+            + "}"
+        )
 
     def render(self):
         lines = [
@@ -101,10 +132,31 @@ class Metrics:
         ]
         with self.lock:
             lines.append(f"ai_ingress_in_flight_requests {self.in_flight}")
-            lines.extend(self._render_counter("ai_ingress_requests", self.requests, ("caller", "model", "status")))
-            lines.extend(self._render_counter("ai_ingress_prompt_tokens", self.prompt_tokens, ("caller", "model")))
-            lines.extend(self._render_counter("ai_ingress_completion_tokens", self.completion_tokens, ("caller", "model")))
-            lines.extend(self._render_summary("ai_ingress_latency_seconds", self.latency))
+            lines.extend(
+                self._render_counter(
+                    "ai_ingress_requests", self.requests, ("caller", "model", "status")
+                )
+            )
+            lines.extend(
+                self._render_counter(
+                    "ai_ingress_prompt_tokens", self.prompt_tokens, ("caller", "model")
+                )
+            )
+            lines.extend(
+                self._render_counter(
+                    "ai_ingress_completion_tokens",
+                    self.completion_tokens,
+                    ("caller", "model"),
+                )
+            )
+            lines.extend(
+                self._render_counter(
+                    "ai_ingress_cost_usd", self.cost_usd, ("caller", "model")
+                )
+            )
+            lines.extend(
+                self._render_summary("ai_ingress_latency_seconds", self.latency)
+            )
             lines.extend(self._render_summary("ai_ingress_ttft_seconds", self.ttft))
         return "\n".join(lines) + "\n"
 
@@ -158,16 +210,14 @@ class Proxy(BaseHTTPRequestHandler):
     def _proxy(self):
         if self.path == "/metrics" and self.command == "GET":
             return self._metrics()
+        if self.path == "/health" and self.command == "GET":
+            return self._health()
 
         started = time.monotonic()
         METRICS.begin()
         length = int(self.headers.get("Content-Length", "0"))
         request_body = self.rfile.read(length)
-        headers = {
-            key: value
-            for key, value in self.headers.items()
-            if key.lower() not in HOP_HEADERS
-        }
+        headers = upstream_headers(self.headers)
         request = urllib.request.Request(
             BACKEND + self.path,
             data=request_body if length else None,
@@ -286,6 +336,11 @@ class Proxy(BaseHTTPRequestHandler):
                     if response_json is not None
                     else response_body.decode("utf-8", "replace"),
                     "response_content_type": response_headers.get("Content-Type"),
+                    "upstream": {
+                        key.lower(): value
+                        for key, value in response_headers.items()
+                        if key.lower().startswith("x-requesty-")
+                    },
                 }
             )
             METRICS.finish(
@@ -307,6 +362,26 @@ class Proxy(BaseHTTPRequestHandler):
             pass
         self.send_response(200)
         self.send_header("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+        self.send_header("Content-Length", str(len(payload)))
+        self.send_header("Connection", "close")
+        self.end_headers()
+        self.wfile.write(payload)
+        self.close_connection = True
+
+    def _health(self):
+        request = urllib.request.Request(
+            BACKEND + BACKEND_HEALTH_PATH,
+            headers=upstream_headers({}),
+            method="GET",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=10) as upstream:
+                healthy = 200 <= upstream.status < 300
+        except (OSError, urllib.error.URLError):
+            healthy = False
+        payload = json.dumps({"status": "ok" if healthy else "unavailable"}).encode()
+        self.send_response(200 if healthy else 503)
+        self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(payload)))
         self.send_header("Connection", "close")
         self.end_headers()

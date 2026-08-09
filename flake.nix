@@ -128,10 +128,18 @@
         hostname:
         nixpkgs.lib.nixosSystem {
           inherit system;
-          specialArgs = { inherit inputs; };
+          specialArgs = { inherit inputs username; };
           modules = [
             ./configuration.nix
             ./hosts/${hostname}
+            home-manager.nixosModules.home-manager
+            {
+              home-manager = {
+                extraSpecialArgs = { inherit username; };
+                backupFileExtension = "hm-backup";
+                users.${username} = import ./hosts/${hostname}/home.nix;
+              };
+            }
           ];
         };
     in
