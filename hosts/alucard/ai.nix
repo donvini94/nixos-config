@@ -126,6 +126,7 @@ in
       content = ''
         N8N_RUNNERS_AUTH_TOKEN=${config.sops.placeholder."n8n/runner_auth_token"}
       '';
+      restartUnits = [ "docker-n8n-runners.service" ];
       mode = "0400";
       owner = "root";
       group = "root";
@@ -139,6 +140,7 @@ in
         }
         HERMES_DASHBOARD_BASIC_AUTH_SECRET=${config.sops.placeholder."hermes/dashboard_session_secret"}
       '';
+      restartUnits = [ "hermes-dashboard.service" ];
       mode = "0400";
       owner = "root";
       group = "root";
@@ -160,6 +162,7 @@ in
         LANGFUSE_INIT_USER_PASSWORD=${config.sops.placeholder."langfuse/admin_password"}
         GRAFANA_ADMIN_PASSWORD=${config.sops.placeholder."grafana/admin_password"}
       '';
+      restartUnits = [ "observability-stack.service" ];
       mode = "0400";
       owner = "root";
       group = "root";
