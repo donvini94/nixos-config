@@ -1370,9 +1370,10 @@ Several details were wrong or incomplete as written:
   seven Requesty entries and both Dracula-local entries; OMP 17.2.12 used its writable config
   path without repeating onboarding.
 - Signal was deferred because no dedicated account exists. Telegram is now the selected first
-  mobile channel. Hermes' pinned upstream adapter supports strict numeric allowlists, long
-  polling, topics, files, voice, and `/model`; its BotFather token and operator ID are still
-  pending and must be added through SOPS before activation. Wirken 1.13's Telegram adapter is
+  mobile channel. Hermes now uses the upstream `messaging` Nix variant and a domain-filtered
+  loopback proxy for only Telegram API plus Nous managed onboarding. Its dashboard QR flow
+  persists the token and numeric owner allowlist in Hermes' protected application state;
+  live pairing and denied-user acceptance remain. Wirken 1.13's Telegram adapter is
   not enabled because its released documentation says it responds to all private messages and
   sender identity is audited rather than authorized. One bot must never feed both agents.
 - CrowdSec state ownership was normalized after the NixOS module's DynamicUser migration left

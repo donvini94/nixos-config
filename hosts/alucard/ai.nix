@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  pkgs,
   username,
   ...
 }:
@@ -10,6 +11,12 @@ let
   requesty = import ../../lib/requesty-models.nix;
   inherit (requesty) defaultModel models;
   secretFile = ../../secrets/alucard-ai.yaml;
+  hermesProxyPort = 18084;
+  hermesProxyUrl = "http://127.0.0.1:${toString hermesProxyPort}";
+  hermesEgressAllowlist = pkgs.writeText "hermes-egress-allowlist" ''
+    ^api\.telegram\.org$
+    ^setup\.hermes-agent\.nousresearch\.com$
+  '';
 in
 {
   imports = [
@@ -45,6 +52,7 @@ in
             13000
             13001
             18081
+            hermesProxyPort
             18790
             19000
             19091
@@ -207,11 +215,53 @@ in
       enable = true;
       model = defaultModel;
       contextLength = models.${defaultModel}.context;
+      extraDependencyGroups = [ "messaging" ];
+      proxyUrl = hermesProxyUrl;
       operators = [ username ];
       dashboard = {
         bindAddress = "0.0.0.0";
         environmentFile = config.sops.templates."hermes-dashboard.env".path;
       };
+    };
+
+    # Hermes retains its direct-network deny. Telegram and the upstream QR
+    # onboarding service are the only HTTPS destinations reachable through
+    # this loopback, domain-filtered proxy.
+    services.tinyproxy = {
+      enable = true;
+      settings = {
+        Port = hermesProxyPort;
+        Listen = "127.0.0.1";
+        Allow = [ "127.0.0.1" ];
+        Timeout = 120;
+        MaxClients = 32;
+        ConnectPort = 443;
+        Filter = hermesEgressAllowlist;
+        FilterType = "ere";
+        FilterDefaultDeny = true;
+        LogLevel = "Warning";
+        Syslog = true;
+      };
+    };
+
+    systemd.services.tinyproxy.serviceConfig = {
+      NoNewPrivileges = true;
+      CapabilityBoundingSet = "";
+      AmbientCapabilities = "";
+      PrivateTmp = true;
+      PrivateDevices = true;
+      ProtectSystem = "strict";
+      ProtectHome = true;
+      ProtectKernelTunables = true;
+      ProtectKernelModules = true;
+      ProtectControlGroups = true;
+      RestrictSUIDSGID = true;
+      LockPersonality = true;
+      RestrictAddressFamilies = [
+        "AF_UNIX"
+        "AF_INET"
+        "AF_INET6"
+      ];
     };
 
     services.localWirken = {

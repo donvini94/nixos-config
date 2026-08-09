@@ -144,6 +144,12 @@ in
       default = "http://127.0.0.1:8080/v1";
     };
 
+    proxyUrl = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = "Optional HTTPS egress proxy for messaging adapters and onboarding.";
+    };
+
     stateDirectory = lib.mkOption {
       type = lib.types.str;
       default = "/var/lib/hermes";
@@ -218,10 +224,6 @@ in
         jq
         ripgrep
       ];
-
-      environment = {
-        HERMES_WRITE_SAFE_ROOT = "${cfg.workspace}:${hermesHome}";
-      };
 
       settings = {
         database.journal_mode = "wal";
@@ -366,14 +368,31 @@ in
     systemd.services.hermes-agent = {
       wantedBy = lib.mkForce [ "ai-stack.target" ];
       partOf = [ "ai-stack.target" ];
-      after = [
-        "hermes-workspace-init.service"
-        "local-llama-logger.service"
-      ];
+      after =
+        [
+          "hermes-workspace-init.service"
+          "local-llama-logger.service"
+        ]
+        ++ lib.optional (cfg.proxyUrl != null) "tinyproxy.service";
+      wants = lib.optional (cfg.proxyUrl != null) "tinyproxy.service";
       requires = [
         "hermes-workspace-init.service"
         "local-llama-logger.service"
       ];
+      # Keep process controls outside the upstream module's managed .env.
+      # Dashboard QR onboarding owns runtime messaging credentials there;
+      # declarative rebuilds must preserve them.
+      environment =
+        {
+          HERMES_WRITE_SAFE_ROOT = "${cfg.workspace}:${hermesHome}";
+        }
+        // lib.optionalAttrs (cfg.proxyUrl != null) {
+          HTTPS_PROXY = cfg.proxyUrl;
+          https_proxy = cfg.proxyUrl;
+          TELEGRAM_PROXY = cfg.proxyUrl;
+          NO_PROXY = "127.0.0.1,localhost";
+          no_proxy = "127.0.0.1,localhost";
+        };
       serviceConfig = serviceHardening // {
         ReadWritePaths = [
           cfg.stateDirectory
@@ -389,14 +408,22 @@ in
       after = [
         "hermes-workspace-init.service"
         "hermes-agent.service"
-      ];
+      ] ++ lib.optional (cfg.proxyUrl != null) "tinyproxy.service";
+      wants = lib.optional (cfg.proxyUrl != null) "tinyproxy.service";
       requires = [ "hermes-workspace-init.service" ];
       restartTriggers = [ modelMetadataRefresh ];
-      environment = {
-        HOME = cfg.stateDirectory;
-        HERMES_HOME = hermesHome;
-        HERMES_MANAGED = "true";
-      };
+      environment =
+        {
+          HOME = cfg.stateDirectory;
+          HERMES_HOME = hermesHome;
+          HERMES_MANAGED = "true";
+        }
+        // lib.optionalAttrs (cfg.proxyUrl != null) {
+          HTTPS_PROXY = cfg.proxyUrl;
+          https_proxy = cfg.proxyUrl;
+          NO_PROXY = "127.0.0.1,localhost";
+          no_proxy = "127.0.0.1,localhost";
+        };
       path = [
         hermesPackage
         pkgs.bash

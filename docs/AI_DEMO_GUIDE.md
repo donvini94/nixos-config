@@ -140,11 +140,10 @@ Dracula keeps `dracula-local/qwen3.6-27b-local` as its no-cost default.
 
 ## Telegram agent channel
 
-Telegram is the selected mobile channel because BotFather provides a bot identity without a
-dedicated SIM. Hermes will be the only Telegram front door initially. Its maintained adapter
-supports strict numeric-user allowlists, topic sessions, files, voice messages, and `/model`.
-The bot is not enabled until its token and the operator's numeric user ID are encrypted in
-Alucard's SOPS file and a live allowlist test passes.
+Telegram is the selected mobile channel because it provides a bot identity without a dedicated
+SIM. Hermes is the only Telegram front door initially. In Hermes **Channels**, use **Telegram →
+Create with QR**; the managed setup returns the owner ID for a strict numeric allowlist. The
+bot is not considered ready until the allowed/denied-account and `/model` checks pass.
 
 Do not connect this bot to Wirken. Wirken 1.13 has a native Telegram adapter, but its own
 security documentation says platform sender identities are audited rather than authorized,

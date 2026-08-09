@@ -98,16 +98,16 @@ Requesty key is encrypted there and is exposed at runtime only to the port-8080 
 | `hermes/dashboard_password` | Hermes browser and Desktop login | Share through a password manager; rotate when demo access changes |
 | `hermes/dashboard_password_hash` | Hermes authentication runtime | Regenerate whenever the demo password changes; plaintext is not exposed to the service |
 | `hermes/dashboard_session_secret` | Hermes login-session signing | Planned rotation signs every Hermes client out |
-| `hermes/telegram_bot_token` (pending) | Hermes Telegram adapter | BotFather credential; revoke immediately with `/revoke` if exposed |
-| `hermes/telegram_allowed_users` (pending) | Hermes Telegram adapter | Comma-separated numeric user IDs; never use `*` |
 | `langfuse/*` | Alucard Langfuse project and dependencies | Independent databases, cryptographic roots, project, and administrator |
 | `grafana/admin_password` | Alucard Grafana bootstrap | Independent administrator password |
 
-The pending Telegram values do not exist in the encrypted file yet, so no Telegram adapter is
-active. Create one Hermes bot with BotFather, learn the operator's numeric Telegram user ID,
-then add both values using `sops secrets/alucard-ai.yaml`. Do not send the token through chat.
-Signal linking state, if ever used, is not a SOPS scalar; its inactive state directory remains
-under `/var/lib/signal-cli`.
+Hermes' supported QR onboarding stores `TELEGRAM_BOT_TOKEN` and `TELEGRAM_ALLOWED_USERS` in
+`/var/lib/hermes/.hermes/.env`, not SOPS. This is application-owned persistent state, mode
+`0640` for the isolated `hermes` group, and rebuilds preserve it. Include it in the encrypted
+Hermes state backup. If the token is exposed, revoke it through BotFather `/revoke`, reconnect
+through the dashboard, and verify the previous token fails. Never use `*` as an allowlist.
+Signal linking state, if ever used, is similarly application state rather than a SOPS scalar;
+its inactive directory remains under `/var/lib/signal-cli`.
 
 Edit it without printing values:
 

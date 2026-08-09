@@ -329,30 +329,30 @@ curl http://127.0.0.1:8080/v1/chat/completions \
 
 ### Messaging transport
 
-Telegram is the selected first mobile channel. BotFather supplies a bot identity without a
-dedicated phone number, and Hermes' maintained adapter supports numeric user/chat allowlists,
-long polling, topics, attachments, voice, and `/model`. Long polling is outbound, so no public
-webhook or new inbound firewall port is required. Initial deployment is DM-only, allows only
-the explicitly configured operator IDs, and keeps BotFather group joining disabled.
-
-The token must enter `secrets/alucard-ai.yaml` only through `sops`; never paste it into chat,
-shell arguments, documentation, or Git plaintext. Telegram is not active yet because those
-credentials have not been created. Signal-cli remains installed but inactive and can be
-removed after the Telegram acceptance test if no customer requirement justifies retaining it.
+Telegram is the selected first mobile channel. Hermes' official `messaging` Nix variant
+supports numeric user/chat allowlists, long polling, topics, attachments, voice, and `/model`.
+Long polling is outbound, so no public webhook or new inbound firewall port is required.
+Hermes still cannot reach the general Internet: a hardened proxy on loopback port `18084`
+allows only Telegram's API and Nous's managed-bot onboarding service.
 
 Operator enrollment:
 
-1. In Telegram, open the verified `@BotFather`, run `/newbot`, and create a unique Hermes bot.
-2. In BotFather's bot settings, disable **Allow Groups?** for the initial DM-only deployment;
-   leave group privacy enabled.
-3. Keep the returned token private. Use `@userinfobot` to obtain each intended operator's
-   numeric user ID; a Telegram username is not an authorization identity.
-4. Run `sops secrets/alucard-ai.yaml` and add `hermes.telegram_bot_token` plus the quoted,
-   comma-separated `hermes.telegram_allowed_users`. Close the editor and confirm the file
-   still contains only `ENC[...]` values.
-5. Rebuild only after the declarative consumer has been enabled. Acceptance must prove an
-   allowed DM succeeds, a non-allowed account gets no agent response, `/model` works, the
-   inference call is attributed to Hermes, and no inbound network port was opened.
+1. Open Alucard Hermes **Channels → Telegram → Create with QR**.
+2. Scan the displayed code in Telegram and confirm the managed bot creation. The owner ID
+   returned by Telegram seeds Hermes' strict numeric allowlist.
+3. Keep BotFather group joining disabled for the initial DM-only deployment.
+4. Acceptance must prove an allowed DM succeeds, a non-allowed account gets no agent response,
+   `/model` works, inference is attributed to Hermes, and no inbound port was opened.
+
+The upstream dashboard writes the generated bot token and allowlist to the isolated service
+state at `/var/lib/hermes/.hermes/.env`, mode `0640`, readable only by the `hermes` service
+group. Nix deliberately does not regenerate that file, so QR-created credentials survive
+rebuilds. Revoke a compromised bot with BotFather `/revoke`; manual BotFather token entry in
+the same dashboard is the fallback when the managed setup service is unavailable.
+
+The personal-account WhatsApp QR bridge is not shipped: Hermes' upstream Nix package omits
+the mutable Node bridge, and upstream calls WhatsApp Business Cloud API the production path.
+It is deferred until a business number and Meta application exist rather than locally patched.
 
 Wirken's upstream administrative CLI remains available through `wirken-admin`. Do not attach
 the Hermes bot—or another publicly discoverable bot—to Wirken 1.13: its released Telegram
