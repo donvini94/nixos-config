@@ -25,13 +25,57 @@ let
   defaultModelSelector = modelSelector defaultModel;
   enabledModels = map modelSelector (builtins.attrNames modelDefinitions);
   omp = pkgs.callPackage ../packages/omp.nix { };
+  opencode = pkgs.writeShellApplication {
+    name = "opencode";
+    runtimeInputs = [ pkgs.jq ];
+    text = ''
+      selected_model=${lib.escapeShellArg defaultModelSelector}
+      expect_model=false
+
+      for argument in "$@"; do
+        if [[ "$expect_model" == true ]]; then
+          selected_model="$argument"
+          expect_model=false
+          continue
+        fi
+
+        case "$argument" in
+          -m|--model)
+            expect_model=true
+            ;;
+          --model=*)
+            selected_model="''${argument#--model=}"
+            ;;
+        esac
+      done
+
+      existing_config="''${OPENCODE_CONFIG_CONTENT-}"
+      if [[ -z "$existing_config" ]]; then
+        existing_config='{}'
+      fi
+      merged_config="$(${lib.getExe pkgs.jq} -cn \
+        --argjson existing "$existing_config" \
+        --arg model "$selected_model" \
+        '$existing * {
+          small_model: $model,
+          agent: {
+            title: { disable: true },
+            summary: { model: $model },
+            compaction: { model: $model }
+          }
+        }')"
+      export OPENCODE_CONFIG_CONTENT="$merged_config"
+
+      exec ${lib.getExe pkgs.opencode} "$@"
+    '';
+  };
   yaml = pkgs.formats.yaml { };
 in
 {
   config = lib.mkIf (osConfig.networking.hostName == "dracula") {
     home.packages = [
       omp
-      pkgs.opencode
+      opencode
     ];
 
     # Keep every OMP role on the local allow-listed model. This also prevents

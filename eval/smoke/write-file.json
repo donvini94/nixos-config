@@ -1,0 +1,19 @@
+{
+  "$schema": "../task.schema.json",
+  "id": "write-file-smoke",
+  "description": "Infrastructure acceptance test; excluded from model-quality conclusions.",
+  "prompt": "Create a file named eval-smoke.txt in the repository root containing exactly EVAL_SMOKE_OK followed by one newline. Do not change any other file.",
+  "revision": "48d970f28180459c423ae74322394b06984d9f4d",
+  "timeout_seconds": 300,
+  "tags": ["smoke", "infrastructure", "invented"],
+  "source": {
+    "notes": "Synthetic acceptance task. It is not part of the real-traffic evaluation set."
+  },
+  "oracles": [
+    {
+      "type": "command",
+      "name": "exact-file-content",
+      "command": ["bash", "-c", "test \"$(git status --short | wc -l)\" -eq 1 && test \"$(git status --short)\" = '?? eval-smoke.txt' && test \"$(cat eval-smoke.txt)\" = EVAL_SMOKE_OK"]
+    }
+  ]
+}

@@ -143,6 +143,7 @@ class Proxy(BaseHTTPRequestHandler):
                 {
                     "timestamp": datetime.now(timezone.utc).isoformat(),
                     "caller": self.headers.get("X-AI-Caller", "unattributed"),
+                    "eval_run": self.headers.get("X-AI-Eval-Run"),
                     "method": self.command,
                     "endpoint": self.path,
                     "model": request_json.get("model")

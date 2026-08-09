@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source_dir="${1:-${N8N_WORKFLOW_DIR:-"$script_dir/../workflows"}}"
+container="${N8N_CONTAINER_NAME:-n8n}"
+
+if [[ ! -d "$source_dir" ]]; then
+  echo "workflow directory does not exist: $source_dir" >&2
+  exit 1
+fi
+if ! docker inspect --format '{{.State.Running}}' "$container" 2>/dev/null | grep -qx true; then
+  echo "n8n container is not running: $container" >&2
+  exit 1
+fi
+
+mapfile -d '' workflow_files < <(find "$source_dir" -maxdepth 1 -type f -name '*.json' -print0 | sort -z)
+if [[ "${#workflow_files[@]}" -eq 0 ]]; then
+  echo "no workflow JSON files found in $source_dir" >&2
+  exit 1
+fi
+for workflow_file in "${workflow_files[@]}"; do
+  jq empty "$workflow_file" >/dev/null
+done
+
+container_dir="/tmp/n8n-workflow-import-$$"
+cleanup() {
+  docker exec "$container" rm -rf -- "$container_dir" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
+
+docker exec "$container" mkdir -p -- "$container_dir"
+for workflow_file in "${workflow_files[@]}"; do
+  container_file="$container_dir/$(basename -- "$workflow_file")"
+  docker exec -i "$container" sh -c 'cat > "$1"' sh "$container_file" < "$workflow_file"
+done
+docker exec "$container" n8n import:workflow \
+  --separate \
+  --input="$container_dir"
+
+for workflow_file in "${workflow_files[@]}"; do
+  if [[ "$(jq -r '.active // false' "$workflow_file")" == true ]]; then
+    workflow_id="$(jq -er '.id | select(type == "string" and length > 0)' "$workflow_file")"
+    docker exec "$container" n8n publish:workflow --id="$workflow_id"
+  fi
+done
+
+echo "Imported ${#workflow_files[@]} workflow(s). Restart ai-stack.target before testing triggers."

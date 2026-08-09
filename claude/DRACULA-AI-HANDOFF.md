@@ -11,7 +11,7 @@ or walk into known traps.
 
 ---
 
-## ✅ STATUS: Phase 1 active; multi-model router built — activation verification pending
+## ✅ STATUS: Multi-model ingress active; Phase 2 evaluator built; Phase 3 platform complete
 
 When this runs, record corrections at the bottom under **Post-execution corrections**,
 following the `MAC-HANDOFF.md` convention. This file was written by a session that inspected
@@ -647,14 +647,22 @@ table over the same starting worktrees and Qwen model.
 
 **Goal.** The deterministic-pipeline half of the agents-vs-workflows experiment.
 
-**Build.** Native `services.n8n` module — **not** a container; the module exists and
-containerizing on a host that has it is strictly worse. SQLite in WAL mode (see Lifecycle
-rule 6). Encryption key via sops → `EnvironmentFile`, never in the Nix store. Bind
-localhost. Workflows exported to `n8n/workflows/*.json` in the repo as source of truth.
-First workflow: mail forwarded to `agent@istbereit.de` → structured extraction through the
-ingress → org entry in `~/org`.
+**Build.** Use the official, digest-pinned n8n image plus the matching official external
+`n8nio/runners` sidecar. n8n 2.32.6 warns that running outside a container is deprecated,
+and its current documentation recommends Docker for most self-hosting and external task
+runners for production. The previous claim that the native NixOS module was categorically
+better is obsolete. Keep orchestration declarative through `virtualisation.oci-containers`
+and systemd; do not introduce an unmanaged Compose directory. SQLite remains in WAL mode
+(see Lifecycle rule 6). Encryption and runner keys come from sops and never enter the Nix
+store. Bind the editor/metrics port to localhost, put n8n and its runner on a private Docker
+bridge, and expose the permanent AI ingress to that bridge through a container-only systemd
+socket proxy. Workflows are exported to `n8n/workflows/*.json` in the repo as source of
+truth. First workflow: mail forwarded to `agent@istbereit.de` → structured extraction
+through the ingress → org entry in `~/org`.
 
-**Blocked on.** The mailbox existing. Vincenzo is creating it.
+**Workflow scope.** The reusable n8n platform is part of this phase. The exact business
+workflow, including mail ingestion and its credentials, is intentionally deferred to a
+separate workflow-building session; it is not an infrastructure blocker.
 
 **Watch for.** The backlog burst on first poll after downtime (see Lifecycle), and timer
 `Persistent=` catch-up behaviour.
@@ -662,8 +670,10 @@ ingress → org entry in `~/org`.
 **Teaches.** How much of "agentic" mail handling is really deterministic plumbing plus one
 extraction call. Establishes the baseline that Phase 4 must beat.
 
-**Done when.** Mail lands in `~/org` unattended, and the workflow survives a stack restart
-and a week of accumulated mail.
+**Platform done when.** n8n, its external runners, persistence, workflow provisioning,
+restricted org output, local-model ingress, metrics, and lifecycle recovery pass live
+acceptance. A specific mail workflow gets its own later acceptance criterion: mail lands
+in `~/org` unattended and survives a stack restart and a week of accumulated mail.
 
 ---
 
@@ -863,9 +873,10 @@ Several details were wrong or incomplete as written:
 5. **Stopping a target can return before propagated `PartOf=` stop jobs settle.** An
    immediate sample still showed llama holding 20,218 MiB while the service was
    `deactivating`. `ai-stack-stop` now waits for terminal service states. It returned after
-   224–231 ms with no llama process. Because stop deliberately uses `SIGKILL`, llama ends
-   in `failed`; the wrapper accepts that terminal state. Do not add `SuccessExitStatus=KILL`:
-   doing so prevents the required `Restart=on-failure` recovery after a standalone kill.
+   224–231 ms with no llama process. The Phase 0 unit deliberately used `SIGKILL`, so llama
+   ended in `failed`; the wrapper accepted that terminal state. The multi-model service
+   now uses SIGTERM for normal cgroup shutdown while preserving `Restart=on-failure` and a
+   final timeout kill for actual failure recovery.
 6. **"Zero compute processes" is not literally attainable on this desktop while Signal is
    open.** After stack stop, llama was absent and 21,372 MiB GPU memory was free, but
    Signal's Electron GPU process retained 155–199 MiB. The correct assertion here is zero
@@ -941,8 +952,18 @@ Several details were wrong or incomplete as written:
    still enter the logging proxy on 8080. It forwards to pinned llama-swap `v247` on 18080;
    llama-swap reads `model` and starts the matching pinned llama-server on dynamic ports
    from 18100. The generated config was accepted by llama-swap and `/v1/models` returned
-   both IDs before activation. Runtime swap, VRAM, and throughput evidence must be appended
-   after the passworded system switch downloads the MoE artifact.
+   both IDs before activation. Runtime swapping and crash recovery are now verified below.
+8. **A per-invocation OpenCode model was not initially a complete selection.** `-m` changed
+   the primary agent, but title generation still used the statically configured dense
+   `small_model`. During the first MoE smoke test, OpenCode launched a 61-second dense title
+   request concurrently; llama-swap correctly serialized it, leaving the visible MoE
+   request waiting about 61 seconds. The managed wrapper now maps the requested model to
+   `small_model`, summary, and compaction for that process and disables automatic titles.
+   An immediate retest produced one MoE request in 599 ms with no dense background request.
+9. **Normal target stop must not use the crash signal.** `KillSignal=SIGKILL` released the
+   model reliably but left an intentional `ai-stack-stop` in `failed`. The unit now uses
+   SIGTERM for normal cgroup shutdown, retains the ten-second timeout and systemd's final
+   SIGKILL cleanup, and still uses `Restart=on-failure` for genuine crashes.
 
 ### Pinned Phase 2 model registry
 
@@ -958,6 +979,122 @@ Several details were wrong or incomplete as written:
   32,768-token slots for the first comparison.
 - llama-swap: official `v247` Linux amd64 archive, SHA-256
   `4001a068dc1dd154513919a31cc009d4f544426d2040bd02fbf33d90240c17df`.
+
+### Multi-model activation evidence
+
+- Both pinned GGUFs downloaded, passed SHA-256 verification, and retained verified-hash
+  markers. At router idle no llama-server was resident; `/v1/models` through permanent
+  port 8080 listed both IDs.
+- Dense request `phase2-dense-swap` selected port 18100 and returned HTTP 200. Cold
+  load-plus-response was 4,860 ms with 4,750 ms TTFT; llama held 20,216 MiB. llama.cpp
+  confirmed two 32,768-token slots and measured 38.52 generation tokens/s on the tiny
+  acceptance response.
+- MoE request `phase2-moe-swap` removed the dense process, selected port 18101, and returned
+  HTTP 200. Cold swap-plus-response was 5,988 ms with 5,950 ms TTFT; llama held 17,246 MiB.
+  It also confirmed two 32,768-token slots and measured 111.55 generation tokens/s on the
+  tiny response. These numbers prove fit and routing, not quality or steady-state speed.
+- A request back to the dense alias removed the MoE process and left only dense resident.
+  `ai-stack-stop` removed every llama process and listener; `ai-stack-start` restored the
+  ingress and router with no model resident, as expected for on-demand loading.
+- A standalone router SIGKILL changed its main PID from 39909 to 40060, incremented
+  `NRestarts` to one, removed the resident child, and recovered `/health` plus both model
+  aliases through the unchanged logger. A subsequent dense request reloaded port 18100.
+
+### Phase 2 evaluator checkpoint
+
+- Langfuse is deliberately **not** the source-of-truth evaluator. Its current self-hosted
+  stack adds web and worker containers plus PostgreSQL, ClickHouse, Redis/Valkey, and object
+  storage. It provides valuable traces, datasets, annotations, scores, and comparison UI,
+  but does not create clean git worktrees or run repository-specific build oracles. It may
+  be added later as an OpenTelemetry visualization sink; the experiment must remain
+  reproducible without it. See the official [self-hosting architecture](https://langfuse.com/self-hosting),
+  [experiment model](https://langfuse.com/docs/evaluation/core-concepts), and
+  [OpenTelemetry endpoint](https://langfuse.com/integrations/native/opentelemetry).
+- `eval/ai_eval.py` runs each task from a pinned revision in a disposable git worktree,
+  selects OMP/OpenCode and the model explicitly, executes deterministic command or human
+  oracles, captures complete patches and harness artifacts, and joins all ingress requests
+  with `X-AI-Eval-Run`. `matrix` randomizes a seeded model × harness order while remaining
+  sequential on the one-GPU machine; `report` renders committed-table-ready Markdown.
+- `eval/harvest.py` lists candidates without payloads and copies only a selected last user
+  message into ignored `eval/drafts/`. Curation must inspect secrets, reconstruct the true
+  starting commit, and add task-specific oracles before moving a task to `eval/tasks/`.
+- The synthetic `write-file-smoke` acceptance task passed in a disposable worktree and was
+  cleaned up. On OMP+dense it took 71.977 seconds and eight model requests: 156,419 prompt
+  tokens, 883 completion tokens, and 118,256 cached prompt tokens. That intentionally
+  surprising overhead validates why the evaluator counts the complete agent loop. The
+  smoke task is invented infrastructure testing and is excluded from quality conclusions.
+- Raw artifacts live under ignored `eval/.runs/`; only curated tasks and reviewed results
+  belong in git. `--auto-approve` is explicit and is not a security sandbox, even though
+  the worktree is disposable.
+
+### Phase 3 deployment correction and checkpoint
+
+- Native n8n 2.32.6 initially passed live acceptance: loopback-only editor and broker,
+  `/healthz`, real Prometheus metrics, SQLite WAL enforced by `ExecStartPost`, and both
+  JavaScript and Python runners registered. A complete `ai-stack-stop` took 245 ms and
+  removed all five services/listeners; `ai-stack-start` restored them in 4,356 ms.
+- That same startup emitted n8n's deprecation warning for non-container deployment. The
+  official documentation now recommends Docker for most self-hosting and a separate
+  `n8nio/runners` sidecar for production Code-node isolation. This supersedes the original
+  native-only instruction before any workflows or credentials have been created.
+- The replacement uses official n8n and runners 2.32.6 OCI indexes pinned respectively to
+  `sha256:5f7856f4fc7cd935230f7596e39fdb3d5eda0e379c5b40b699b9c0eb35ebd0bf`
+  and `sha256:9c9ddc41410b56650605f44c3af6366abb467c33176569be371ccc5f476439fc`.
+  The images are on a fixed private bridge; only `127.0.0.1:5678` is published. A systemd
+  socket on the bridge proxies container requests to the unchanged `127.0.0.1:8080`
+  inference boundary without exposing that boundary on the LAN.
+- Migration is copy-only: the native `/var/lib/private/n8n/.n8n` remains untouched while
+  the official `/home/node/.n8n` layout uses `/var/lib/n8n-container`. The same sops key is
+  mounted read-only. The runner receives only its root-only rendered auth environment and
+  no database, secret-key, or org-directory mount.
+- The live container deployment reports n8n 2.32.6, both JavaScript and Python runners
+  registered, `/healthz/readiness` healthy, real Prometheus metrics, SQLite `wal`, and
+  `PRAGMA quick_check=ok`. Both container root filesystems are read-only, all capabilities
+  are dropped, and only bounded tmpfs paths remain writable outside the explicit n8n state
+  and org-inbox mounts. Only `127.0.0.1:5678` is published to the host.
+- The bridge-only inference relay returned HTTP 200 for `/health` and `/v1/models` from
+  inside n8n; both pinned model aliases were visible through the unchanged logger. The
+  fixed `n8n-local0` bridge is the only firewall interface allowed to reach its
+  `172.30.0.1:8080` relay socket. Port 8080 remains loopback-only everywhere else.
+- Complete target stop took 658 ms and left zero n8n containers or AI listeners. Start to
+  full ingress+n8n readiness took 7,863 ms. Every service reported `Result=success` after
+  adding exit 143 as the runner launcher's normal Docker-stop status.
+- A real n8n-container SIGKILL changed the main and dependent runner container IDs,
+  incremented `docker-n8n.service`'s restart counter, restored readiness and relay access,
+  and re-registered both runners. A separate runner SIGKILL changed only its container ID,
+  incremented only its restart counter, and re-registered both runner types in 3.1 seconds.
+- The first activation that introduced the stable bridge converged but returned status 4:
+  `basic.target -> sockets.target -> n8n-ai-ingress.socket -> n8n-docker-network.service
+  -> basic.target`. The socket now disables only its implicit default dependencies and
+  retains its explicit `After=/Requires=` on the bridge. Static unit verification is clean;
+  the corrected generation activated successfully on its first attempt with no cycle log
+  and no failed units.
+- `n8n-workflows-import` and `n8n-workflows-export` are thin container-boundary wrappers
+  around n8n's official CLI. Import validates every JSON file, imports drafts, and then uses
+  `publish:workflow` for reviewed definitions with `active: true`; regular SQLite mode
+  rejects the otherwise documented `--activeState=fromJson` flag. Export streams files out
+  of the container tmpfs into a new, never-overwritten review directory. A complete
+  import/export round trip preserved the tracked workflow ID and active state.
+- The tracked `Dracula / Provisioning smoke` webhook imported and published, survived a
+  complete target restart, executed its Code node using the external JavaScript runner,
+  and returned JSON successfully. Its extended path called the dense model through the
+  bridge-only relay. The ingress recorded caller `n8n:dracula-provisioning-smoke`, HTTP 200,
+  23 prompt + 32 completion = 55 tokens, and 30,993 ms cold-load-plus-generation latency.
+  This is infrastructure evidence only; it is excluded from model-quality evaluation.
+- A subsequent acceptance run exercised both external runner languages in one persisted
+  production execution. The response reported `javascript_runner=ok` and
+  `python_runner=ok`; n8n's execution counter increased, and its workflow-duration metric
+  carried workflow ID `draculaProvisioningSmoke`, mode `webhook`, and status `success`.
+  The same request produced a warm ingress record with caller
+  `n8n:dracula-provisioning-smoke`, HTTP 200, 55 total tokens, and 5,791 ms latency.
+- Runtime mount inspection confirms that n8n can write its state and `/org-inbox`, its two
+  secret mounts are read-only, and the external runner has zero mounts: it cannot see n8n
+  state, the org inbox, or secret files. The tracked workflow has neither credential
+  references nor secret-like fields.
+- Phase 3's reusable platform is complete. Vincenzo intentionally deferred exact business
+  workflows, including the production mail workflow, to a separate session. When that is
+  built, do not place the mailbox password or exported decrypted credentials in workflow
+  JSON or git.
 
 ### Measured Phase 1 starting point
 

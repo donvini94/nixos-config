@@ -1,4 +1,5 @@
 {
+  config,
   lib,
   pkgs,
   username,
@@ -11,6 +12,7 @@
     ../../modules/nvidia.nix
     ../../modules/gaming.nix
     ../../modules/llama.nix
+    ../../modules/n8n.nix
     ./hardware.nix
     ./services.nix
   ];
@@ -55,6 +57,37 @@
     backendPort = 18080;
     modelStartPort = 18100;
     operators = [ username ];
+  };
+
+  sops.secrets = {
+    "n8n/encryption_key" = {
+      sopsFile = ../../secrets/dracula-ai.yaml;
+      owner = username;
+      mode = "0400";
+    };
+    "n8n/runner_auth_token" = {
+      sopsFile = ../../secrets/dracula-ai.yaml;
+      owner = username;
+      mode = "0400";
+    };
+  };
+
+  sops.templates."n8n-runner.env" = {
+    content = ''
+      N8N_RUNNERS_AUTH_TOKEN=${config.sops.placeholder."n8n/runner_auth_token"}
+    '';
+    mode = "0400";
+    owner = "root";
+    group = "root";
+  };
+
+  services.localN8n = {
+    enable = true;
+    encryptionKeyFile = config.sops.secrets."n8n/encryption_key".path;
+    runnerAuthTokenFile = config.sops.secrets."n8n/runner_auth_token".path;
+    runnerEnvironmentFile = config.sops.templates."n8n-runner.env".path;
+    operators = [ username ];
+    orgInbox = "/home/${username}/org/ai-inbox";
   };
 
   nix = {

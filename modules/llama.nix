@@ -10,6 +10,8 @@ let
   stateDirectoryName = lib.removePrefix "/var/lib/" cfg.stateDirectory;
   proxy = pkgs.writeText "llama-logging-proxy.py" (builtins.readFile ./llama-logging-proxy.py);
   usageSummary = pkgs.writeText "llama-usage-summary.py" (builtins.readFile ./llama-usage-summary.py);
+  evalRunner = pkgs.writeText "ai-eval.py" (builtins.readFile ../eval/ai_eval.py);
+  evalHarvester = pkgs.writeText "ai-eval-harvest.py" (builtins.readFile ../eval/harvest.py);
   yaml = pkgs.formats.yaml { };
 
   modelType = lib.types.submodule (
@@ -310,7 +312,7 @@ in
         TimeoutStartSec = "infinity";
         TimeoutStopSec = "10s";
         KillMode = "control-group";
-        KillSignal = "SIGKILL";
+        KillSignal = "SIGTERM";
       };
     };
 
@@ -376,23 +378,31 @@ in
       (pkgs.writeShellScriptBin "ai-stack-start" ''
         set -euo pipefail
         ${pkgs.systemd}/bin/systemctl start ai-stack.target
-        for _ in $(${pkgs.coreutils}/bin/seq 1 120); do
-          if ${pkgs.curl}/bin/curl --fail --silent --max-time 1 http://${cfg.bindAddress}:${toString cfg.port}/health >/dev/null; then
+        read -r -a stack_units <<< "$(${pkgs.systemd}/bin/systemctl show --property=Wants --value ai-stack.target)"
+        for _ in $(${pkgs.coreutils}/bin/seq 1 200); do
+          if ${pkgs.systemd}/bin/systemctl is-active --quiet ai-stack.target "''${stack_units[@]}" \
+            && ${pkgs.curl}/bin/curl --fail --silent --max-time 1 http://${cfg.bindAddress}:${toString cfg.port}/health >/dev/null; then
             exit 0
           fi
           ${pkgs.coreutils}/bin/sleep 1
         done
-        echo "AI stack did not become healthy within 120 seconds" >&2
+        echo "AI stack did not become healthy within 200 seconds" >&2
         exit 1
       '')
       (pkgs.writeShellScriptBin "ai-stack-stop" ''
         set -euo pipefail
+        read -r -a stack_units <<< "$(${pkgs.systemd}/bin/systemctl show --property=Wants --value ai-stack.target)"
         ${pkgs.systemd}/bin/systemctl stop ai-stack.target
         for _ in $(${pkgs.coreutils}/bin/seq 1 150); do
-          swap_state="$(${pkgs.systemd}/bin/systemctl is-active local-llama-swap.service || true)"
-          logger_state="$(${pkgs.systemd}/bin/systemctl is-active local-llama-logger.service || true)"
-          if { [ "$swap_state" = inactive ] || [ "$swap_state" = failed ]; } \
-            && [ "$logger_state" = inactive ]; then
+          all_stopped=true
+          for unit in "''${stack_units[@]}"; do
+            state="$(${pkgs.systemd}/bin/systemctl is-active "$unit" || true)"
+            if [ "$state" != inactive ] && [ "$state" != failed ]; then
+              all_stopped=false
+              break
+            fi
+          done
+          if [ "$all_stopped" = true ]; then
             exit 0
           fi
           ${pkgs.coreutils}/bin/sleep 0.2
@@ -400,10 +410,23 @@ in
         echo "AI services did not stop within 30 seconds" >&2
         exit 1
       '')
-      (pkgs.writeShellScriptBin "ai-stack-health" "exec ${pkgs.curl}/bin/curl --fail --silent --show-error http://${cfg.bindAddress}:${toString cfg.port}/health")
+      (pkgs.writeShellScriptBin "ai-stack-health" ''
+        set -euo pipefail
+        read -r -a stack_units <<< "$(${pkgs.systemd}/bin/systemctl show --property=Wants --value ai-stack.target)"
+        ${pkgs.systemd}/bin/systemctl is-active --quiet ai-stack.target "''${stack_units[@]}"
+        exec ${pkgs.curl}/bin/curl --fail --silent --show-error http://${cfg.bindAddress}:${toString cfg.port}/health
+      '')
       (pkgs.writeShellScriptBin "ai-usage-summary" ''
         export LLAMA_REQUEST_LOG=${lib.escapeShellArg cfg.requestLog}
         exec ${pkgs.python3}/bin/python3 ${usageSummary} "$@"
+      '')
+      (pkgs.writeShellScriptBin "ai-eval" ''
+        export PATH=${lib.makeBinPath [ pkgs.git pkgs.coreutils pkgs.bash ]}:"$PATH"
+        exec ${pkgs.python3}/bin/python3 ${evalRunner} "$@"
+      '')
+      (pkgs.writeShellScriptBin "ai-eval-harvest" ''
+        export PATH=${lib.makeBinPath [ pkgs.git ]}:"$PATH"
+        exec ${pkgs.python3}/bin/python3 ${evalHarvester} "$@"
       '')
     ];
   };
