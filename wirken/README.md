@@ -22,6 +22,21 @@ The relevant units are `wirken-init.service`, `wirken-sandbox-image.service`,
 `wirken.service`, `wirken-audit-anchor.service`, and `wirken-audit-verify.timer`.
 `ai-stack-stop` is also the emergency stop; it does not depend on the Wirken UI or agent.
 
+Use the upstream CLI through the state- and vault-aware operator launcher:
+
+```console
+wirken-admin doctor
+wirken-admin channel list
+wirken-admin permissions pending
+wirken-admin approvers list
+```
+
+`wirken-admin` asks for sudo, runs as the isolated `wirken` account, and obtains the vault
+passphrase through a systemd credential and private pseudo-terminal. The passphrase does not
+enter argv, the environment, shell history, or the journal. Commands that mutate upstream
+state still require an intentional operator invocation; Nix does not replace Wirken's vault,
+adapter registry, permission database, or audit model.
+
 ## State and secrets
 
 - Gateway state and workspace: `/var/lib/wirken/.wirken`
@@ -61,6 +76,33 @@ ephemeral exec sandbox. Docker access is root-equivalent for the gateway process
 the agent's exec container never receives the Docker socket. The human operator is also
 already in the Docker group; do not describe this workstation as a boundary against a
 determined same-UID process.
+
+## Signal channel
+
+After `signal-link` has completed on Alucard and `signal-cli.service` is active, register
+Wirken's maintained adapter with:
+
+```console
+wirken-admin channel add signal
+```
+
+Enter the linked account's E.164 number, socket
+`/run/signal-cli/signal-cli.sock`, and a strict sender allowlist. Prefer a dedicated Signal
+group ID for Wirken while Hermes owns approved DMs; do not allow the same conversation in
+both agents or both can reply. Restart `wirken.service` after changing the channel.
+
+Effectful Signal turns also require an explicit approver and approval conversation:
+
+```console
+wirken-admin approvers add signal E164_OR_ACI --display "Operator"
+wirken-admin approvers set-chat signal GROUP_ID_OR_E164
+sudo systemctl restart wirken.service
+```
+
+The Signal path uses Wirken's own released Unix-socket adapter and channel approval gate. It
+is the supported route for testing governed effectful work while WebChat's approval-session
+bug remains unresolved. It is not considered shipped until an allowlisted inbound turn, an
+approval/denial, inference attribution, and the signed audit chain have all been verified.
 
 ## Upgrade procedure
 

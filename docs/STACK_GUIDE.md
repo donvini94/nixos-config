@@ -341,6 +341,13 @@ The HTTP endpoint is never published by the firewall or Tailscale Serve. The Uni
 owned by the `signal-cli` group. Signal account state contains impersonation-capable keys and
 must be treated as a secret backup. Sender allowlists are mandatory and agent-specific.
 
+Wirken's upstream administrative CLI is available through `wirken-admin`; the launcher enters
+the correct service account/state namespace and unlocks the encrypted vault through a systemd
+credential. After linking, `wirken-admin channel add signal` registers the released adapter.
+Use a dedicated Signal group for Wirken and reserve approved DMs for Hermes so the two agents
+never consume the same conversation. See [the Wirken guide](../wirken/README.md) for approval
+registration and the remaining live acceptance test.
+
 ### Container vulnerability visibility
 
 Alucard runs Aqua Trivy's official rolling container daily and after the manual

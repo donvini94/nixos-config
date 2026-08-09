@@ -56,6 +56,10 @@ let
               puts stderr "Wirken exited during gateway initialization"
             }
           }
+        } elseif {$mode eq "interactive"} {
+          log_user 1
+          set timeout -1
+          interact
         } else {
           set timeout -1
           expect eof
@@ -73,6 +77,35 @@ let
       }
     }
   '';
+
+  wirkenAdmin = pkgs.writeShellApplication {
+    name = "wirken-admin";
+    text = ''
+      if (( EUID != 0 )); then
+        exec ${config.security.wrapperDir}/sudo "$0" "$@"
+      fi
+
+      if (( $# == 0 )); then
+        set -- --help
+      fi
+
+      exec ${pkgs.systemd}/bin/systemd-run --quiet --wait --pty --collect \
+        --property=Type=exec \
+        --property=User=wirken \
+        --property=Group=wirken \
+        --property=StateDirectory=${lib.escapeShellArg stateDirectoryName} \
+        --property=WorkingDirectory=${lib.escapeShellArg dataDirectory} \
+        --property=Environment=${lib.escapeShellArg "HOME=${cfg.stateDirectory}"} \
+        --property=LoadCredential=${lib.escapeShellArg "vault-passphrase:${cfg.vaultPassphraseFile}"} \
+        --property=NoNewPrivileges=yes \
+        --property=PrivateTmp=yes \
+        --property=ProtectHome=yes \
+        --property=ProtectSystem=strict \
+        --property=ReadWritePaths=${lib.escapeShellArg cfg.stateDirectory} \
+        ${pkgs.expect}/bin/expect ${vaultPty} interactive \
+        ${cfg.package}/bin/wirken "$@"
+    '';
+  };
 
   initialize = pkgs.writeShellScript "initialize-wirken" ''
     set -euo pipefail
@@ -428,6 +461,7 @@ in
     };
 
     environment.systemPackages = [
+      wirkenAdmin
       (pkgs.writeShellScriptBin "wirken-audit-verify" ''
         exec ${config.security.wrapperDir}/sudo ${pkgs.coreutils}/bin/env \
           HOME=${lib.escapeShellArg cfg.stateDirectory} \
