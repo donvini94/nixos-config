@@ -25,6 +25,35 @@ in
   ];
 
   config = lib.mkIf enableAI {
+    assertions = [
+      {
+        assertion = lib.all (address: address == "127.0.0.1") [
+          config.services.remoteOpenAI.bindAddress
+          config.services.localN8n.bindAddress
+          config.services.localHermes.dashboard.bindAddress
+          config.services.localObservability.bindAddress
+        ];
+        message = "Alucard AI services must remain loopback-only; use SSH tunnels or Tailscale Serve";
+      }
+      {
+        assertion =
+          lib.intersectLists [
+            5678
+            8080
+            9119
+            13000
+            13001
+            18081
+            18790
+            19000
+            19091
+            19100
+            19991
+          ] config.networking.firewall.allowedTCPPorts == [ ];
+        message = "Alucard AI ports must not be opened on the global firewall";
+      }
+    ];
+
     sops.secrets = {
       "requesty/api_key" = {
         sopsFile = secretFile;

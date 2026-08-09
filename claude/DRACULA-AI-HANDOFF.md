@@ -11,7 +11,7 @@ or walk into known traps.
 
 ---
 
-## ⚠️ STATUS: Dracula and Alucard stacks active; Alucard cAdvisor correction pending switch
+## ⚠️ STATUS: Dracula and Alucard stacks active; private-access guardrails ready to switch
 
 When this runs, record corrections at the bottom under **Post-execution corrections**,
 following the `MAC-HANDOFF.md` convention. This file was written by a session that inspected
@@ -1305,8 +1305,14 @@ Several details were wrong or incomplete as written:
   Wirken, Langfuse, Grafana, and all five Prometheus scrape targets. A green cAdvisor target
   initially exposed only the root cgroup because Docker 29's embedded containerd socket is
   `/run/docker/containerd/containerd.sock`, not cAdvisor's default. A disposable probe with
-  the explicit endpoint exposed all 42 running containers; the Compose correction must be
-  switched and re-verified before declaring container metrics complete.
+  the explicit endpoint exposed all 42 running containers. After switching the Compose
+  correction, Prometheus reports 40 non-root named container series and both the containerd
+  and Docker cAdvisor factories register successfully.
+- Every live Alucard AI API, UI, and exporter listener is loopback-only and no AI port is in
+  the global firewall or public reverse proxy. Host assertions protect the configurable bind
+  addresses and global firewall boundary. Dracula's configuration provides an `ai-admin` SSH profile with
+  non-conflicting local forwards; Tailscale Serve is the documented later option for
+  multi-device private access, while Tailscale Funnel is explicitly prohibited.
 
 ### Measured Phase 1 starting point
 

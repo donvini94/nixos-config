@@ -323,18 +323,41 @@ Startup authenticates to Requesty's model-list endpoint and requires every local
 registered model to exist in the key's returned catalog. A placeholder key or missing model
 fails closed before the ingress accepts traffic; a broader key is narrowed locally.
 
-The browser listeners remain loopback-only. Use one SSH session during initial operation:
+The AI browser and API listeners are deliberately loopback-only and their ports are not
+opened in Alucard's global firewall or public reverse proxy. The host configuration contains
+evaluation assertions which fail if a future change makes the configurable listeners
+non-loopback or adds an AI port to the global firewall.
+
+From Dracula, start the declarative private tunnel:
 
 ```console
-ssh -L 5678:127.0.0.1:5678 \
-    -L 9119:127.0.0.1:9119 \
-    -L 13000:127.0.0.1:13000 \
-    -L 13001:127.0.0.1:13001 \
-    -L 18790:127.0.0.1:18790 \
-    Bereitserver
+ssh -N ai-admin
 ```
 
-Then use the same browser addresses documented for Dracula. Authenticated HTTPS and tested
-backup/restore, retention, deletion, and redaction policies are mandatory before presenting
-the interfaces as a remotely reachable customer service. Dracula remains the local-model
-comparison machine; Alucard becomes the business demo.
+Keep that terminal open and use these local addresses:
+
+| Alucard component | Address on Dracula |
+| --- | --- |
+| n8n | <http://127.0.0.1:25678> |
+| Requesty-backed API | <http://127.0.0.1:28080/v1> |
+| Hermes | <http://127.0.0.1:29119> |
+| Langfuse | <http://127.0.0.1:23000> |
+| Grafana | <http://127.0.0.1:23001> |
+| Wirken | <http://127.0.0.1:28790> |
+| Prometheus | <http://127.0.0.1:29091> |
+
+The alternate local ports avoid collisions with Dracula's own stack. Stop the tunnel with
+Ctrl-C. From a different computer without the `ai-admin` SSH profile, use equivalent `-L`
+arguments or copy that profile; do not publish these ports in nginx or the host firewall.
+
+SSH remains the default because it is already operated for the media stack and adds no new
+identity or network control plane. If access from several laptops or phones becomes routine,
+the preferred next step is Tailscale Serve: keep every backend on localhost, proxy selected
+UIs privately into the tailnet, and restrict them with Tailscale grants. Serve is tailnet-only
+and honors access controls; **do not enable Tailscale Funnel**, which is the public-internet
+feature. See the official [Tailscale Serve guide](https://tailscale.com/docs/features/tailscale-serve)
+and [grant policy reference](https://tailscale.com/kb/1337/policy-syntax).
+
+Authenticated HTTPS and tested backup/restore, retention, deletion, and redaction policies
+are mandatory before presenting the interfaces as a customer service. Dracula remains the
+local-model comparison machine; Alucard is the business demo.
