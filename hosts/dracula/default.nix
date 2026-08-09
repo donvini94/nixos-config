@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   pkgs,
   username,
@@ -13,6 +14,7 @@
     ../../modules/gaming.nix
     ../../modules/llama.nix
     ../../modules/n8n.nix
+    ../../modules/hermes.nix
     ./hardware.nix
     ./services.nix
   ];
@@ -35,9 +37,9 @@
         file = "Qwen3.6-27B-Q4_K_M.gguf";
         sha256 = "5ed60d0af4650a854b1755bd392f9aef4872643dc25a254bc68043fa638392a0";
         displayName = "Qwen3.6 27B Q4_K_M (dense)";
-        description = "Dense baseline; 32,768 tokens per parallel slot.";
+        description = "Dense baseline; one 65,536-token agent slot.";
         contextSize = 65536;
-        parallelSlots = 2;
+        parallelSlots = 1;
         gpuLayers = 999;
       };
       "qwen3.6-35b-a3b" = {
@@ -46,9 +48,9 @@
         file = "Qwen3.6-35B-A3B-UD-Q3_K_M.gguf";
         sha256 = "1b715841683f960bd9a49f008181bd910ee169b78d4cf465b6fde7f4d929ff99";
         displayName = "Qwen3.6 35B-A3B UD-Q3_K_M (MoE)";
-        description = "35B-total MoE baseline; no vision projector; 32,768 tokens per parallel slot.";
+        description = "35B-total MoE baseline; no vision projector; one 65,536-token agent slot.";
         contextSize = 65536;
-        parallelSlots = 2;
+        parallelSlots = 1;
         gpuLayers = 999;
       };
     };
@@ -90,12 +92,23 @@
     orgInbox = "/home/${username}/org/ai-inbox";
   };
 
+  services.localHermes = {
+    enable = true;
+    model = "qwen3.6-27b-local";
+    contextLength = 65536;
+    operators = [ username ];
+  };
+
   nix = {
     settings = {
       trusted-users = [ "${username}" ];
-      substituters = [ "https://cuda-maintainers.cachix.org" ];
+      substituters = [
+        "https://cuda-maintainers.cachix.org"
+        "https://hermes-agent.cachix.org"
+      ];
       trusted-public-keys = [
         "cuda-maintainers.cachix.org-1:0dq3bujKpuEPMCX6U4WylrUDZ9JyUG0VpVZa7CNfq5E="
+        "hermes-agent.cachix.org-1:jN3pjR50Mxi4SESKC/FIMNM6/LCosvPk2VUwzVvebzU="
       ];
     };
     gc.dates = "weekly";
