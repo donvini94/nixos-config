@@ -1260,6 +1260,18 @@ Several details were wrong or incomplete as written:
 - The complete Dracula system built successfully before activation. Live acceptance still
   needs the next NixOS switch: verify all Compose containers, all Prometheus targets, the
   DCGM GPU path, an OpenCode trace, a Hermes trace, and ingress token graphs.
+- The first activation exposed three configuration errors while preserving the other
+  containers: Compose v5 translated generic `gpus: all` into a missing AMD CDI device,
+  optional Nix string indentation produced invalid Prometheus YAML, and
+  `vincenzo@localhost` failed Langfuse's email validation. The correction requests the
+  host's real `nvidia.com/gpu=all` CDI device (independently proven with `nvidia-smi`),
+  generates Prometheus configuration with Nix's YAML formatter and validates it with
+  `promtool`, and initializes `vincenzo@istbereit.de`. A second activation is required for
+  live acceptance.
+- `docs/SECRETS.md` inventories every SOPS key, runtime rendering, consumer, rotation
+  class, backup boundary, and the future Alucard/customer separation rule without storing
+  values. Cryptographic roots and first-boot database/application credentials are not
+  rotated by merely editing SOPS.
 - Alucard imports the reusable module but leaves it disabled. Its later business-demo
   profile will reuse the complete clients/workers/governance/observability surface and
   route the permanent logged ingress to `https://router.requesty.ai/v1`. Use Requesty's

@@ -127,7 +127,7 @@ its application data in Docker volumes. The ingress JSONL remains the complete,
 provider-independent source of truth for model evaluation; Langfuse is the inspection,
 annotation, dataset, and experiment UI, not a replacement for reproducible task graders.
 
-Log in to Langfuse as `vincenzo@localhost` and Grafana as `admin`. Retrieve the generated
+Log in to Langfuse as `vincenzo@istbereit.de` and Grafana as `admin`. Retrieve the generated
 passwords locally without placing them in shell history:
 
 ```console
@@ -139,7 +139,8 @@ Check the stack and individual scrape targets with:
 
 ```console
 observability-status
-docker compose --project-directory /var/lib/observability-stack logs -f langfuse-web
+sudo docker compose --env-file /run/secrets/rendered/observability.env \
+  --project-directory /var/lib/observability-stack logs -f langfuse-web
 curl -fsS http://127.0.0.1:19091/-/ready
 curl -fsS http://127.0.0.1:8080/metrics | grep '^ai_ingress_'
 ```
@@ -148,6 +149,10 @@ Prompts, responses, tool arguments, and tool output may contain customer or comp
 All current UIs bind only to loopback. Before any customer deployment is remotely exposed,
 put it behind authenticated TLS, define trace retention and deletion, test backups and
 restores, and decide which fields must be redacted at ingestion.
+
+The encrypted secret inventory, consumers, generated runtime files, and rotation cautions
+are documented in [SECRETS.md](SECRETS.md). Read it before changing any SOPS value: several
+bootstrap values cannot be rotated merely by editing the encrypted file.
 
 ## Usage and troubleshooting
 

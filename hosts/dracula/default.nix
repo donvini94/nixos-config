@@ -129,7 +129,7 @@
       NEXTAUTH_SECRET=${config.sops.placeholder."langfuse/nextauth_secret"}
       LANGFUSE_PROJECT_PUBLIC_KEY=${config.sops.placeholder."langfuse/project_public_key"}
       LANGFUSE_PROJECT_SECRET_KEY=${config.sops.placeholder."langfuse/project_secret_key"}
-      LANGFUSE_INIT_USER_EMAIL=vincenzo@localhost
+      LANGFUSE_INIT_USER_EMAIL=vincenzo@istbereit.de
       LANGFUSE_INIT_USER_NAME=Vincenzo
       LANGFUSE_INIT_USER_PASSWORD=${config.sops.placeholder."langfuse/admin_password"}
       GRAFANA_ADMIN_PASSWORD=${config.sops.placeholder."grafana/admin_password"}

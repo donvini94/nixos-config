@@ -61,6 +61,7 @@ services:
       LANGFUSE_INIT_ORG_NAME: Local AI
       LANGFUSE_INIT_PROJECT_ID: local-ai-stack
       LANGFUSE_INIT_PROJECT_NAME: Local AI Stack
+      LANGFUSE_INIT_PROJECT_RETENTION: "90"
       LANGFUSE_INIT_PROJECT_PUBLIC_KEY: ${LANGFUSE_PROJECT_PUBLIC_KEY}
       LANGFUSE_INIT_PROJECT_SECRET_KEY: ${LANGFUSE_PROJECT_SECRET_KEY}
       LANGFUSE_INIT_USER_EMAIL: ${LANGFUSE_INIT_USER_EMAIL}
@@ -164,6 +165,7 @@ services:
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_ANALYTICS_REPORTING_ENABLED: "false"
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
@@ -211,7 +213,8 @@ services:
     restart: always
     cap_add:
       - SYS_ADMIN
-    gpus: all
+    devices:
+      - nvidia.com/gpu=all
     ports:
       - ${OBSERVABILITY_BIND_ADDRESS:-127.0.0.1}:${DCGM_EXPORTER_PORT:-19400}:9400
 

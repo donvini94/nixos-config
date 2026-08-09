@@ -8,39 +8,25 @@
 let
   cfg = config.services.localObservability;
   stateDirectory = "/var/lib/observability-stack";
-  prometheusConfig = pkgs.writeText "prometheus.yml" ''
-    global:
-      scrape_interval: 15s
-      evaluation_interval: 15s
-      external_labels:
-        host: ${cfg.hostLabel}
-
-    scrape_configs:
-      - job_name: prometheus
-        static_configs:
-          - targets: ["127.0.0.1:${toString cfg.prometheusPort}"]
-      - job_name: node
-        static_configs:
-          - targets: ["127.0.0.1:${toString cfg.nodeExporterPort}"]
-      - job_name: containers
-        static_configs:
-          - targets: ["127.0.0.1:${toString cfg.cadvisorPort}"]
-      ${lib.optionalString cfg.gpuMetrics ''
-        - job_name: nvidia
-          static_configs:
-            - targets: ["127.0.0.1:${toString cfg.dcgmExporterPort}"]
-      ''}
-      ${lib.optionalString (cfg.inferencePort != null) ''
-        - job_name: ai-ingress
-          static_configs:
-            - targets: ["127.0.0.1:${toString cfg.inferencePort}"]
-      ''}
-      ${lib.optionalString (cfg.n8nPort != null) ''
-        - job_name: n8n
-          static_configs:
-            - targets: ["127.0.0.1:${toString cfg.n8nPort}"]
-      ''}
-  '';
+  scrape = job_name: port: {
+    inherit job_name;
+    static_configs = [ { targets = [ "127.0.0.1:${toString port}" ]; } ];
+  };
+  prometheusConfig = (pkgs.formats.yaml { }).generate "prometheus.yml" {
+    global = {
+      scrape_interval = "15s";
+      evaluation_interval = "15s";
+      external_labels.host = cfg.hostLabel;
+    };
+    scrape_configs = [
+      (scrape "prometheus" cfg.prometheusPort)
+      (scrape "node" cfg.nodeExporterPort)
+      (scrape "containers" cfg.cadvisorPort)
+    ]
+    ++ lib.optional cfg.gpuMetrics (scrape "nvidia" cfg.dcgmExporterPort)
+    ++ lib.optional (cfg.inferencePort != null) (scrape "ai-ingress" cfg.inferencePort)
+    ++ lib.optional (cfg.n8nPort != null) (scrape "n8n" cfg.n8nPort);
+  };
   prepare = pkgs.writeShellScript "observability-prepare" ''
     set -euo pipefail
     ${pkgs.coreutils}/bin/install -d -m 0750 ${stateDirectory}/textfile
@@ -172,7 +158,9 @@ in
     environment.systemPackages = [
       (pkgs.writeShellScriptBin "observability-status" ''
         ${pkgs.systemd}/bin/systemctl --no-pager status observability-stack.service
-        ${pkgs.docker}/bin/docker compose --project-directory ${stateDirectory} ps
+        ${pkgs.sudo}/bin/sudo ${pkgs.docker}/bin/docker compose \
+          --env-file ${cfg.environmentFile} \
+          --project-directory ${stateDirectory} ps
       '')
     ];
   };
