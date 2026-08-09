@@ -1,2 +1,1 @@
-// Git owns repository history. Synchronizing .git corrupts refs and objects.
 /.git

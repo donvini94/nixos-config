@@ -62,7 +62,8 @@ in
 
     environment.systemPackages = [
       (pkgs.writeShellScriptBin "containers-update" ''
-        exec ${pkgs.sudo}/bin/sudo ${pkgs.systemd}/bin/systemctl start --wait container-update.service
+        exec ${config.security.wrapperDir}/sudo \
+          ${pkgs.systemd}/bin/systemctl start --wait container-update.service
       '')
     ];
   };

@@ -158,7 +158,7 @@ in
     environment.systemPackages = [
       (pkgs.writeShellScriptBin "observability-status" ''
         ${pkgs.systemd}/bin/systemctl --no-pager status observability-stack.service
-        ${pkgs.sudo}/bin/sudo ${pkgs.docker}/bin/docker compose \
+        ${config.security.wrapperDir}/sudo ${pkgs.docker}/bin/docker compose \
           --env-file ${cfg.environmentFile} \
           --project-directory ${stateDirectory} ps
       '')

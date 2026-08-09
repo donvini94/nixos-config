@@ -429,13 +429,13 @@ in
 
     environment.systemPackages = [
       (pkgs.writeShellScriptBin "wirken-audit-verify" ''
-        exec ${pkgs.sudo}/bin/sudo ${pkgs.coreutils}/bin/env \
+        exec ${config.security.wrapperDir}/sudo ${pkgs.coreutils}/bin/env \
           HOME=${lib.escapeShellArg cfg.stateDirectory} \
           ${cfg.package}/bin/wirken audit verify --require-signed \
           --anchor ${lib.escapeShellArg auditAnchor} "$@"
       '')
       (pkgs.writeShellScriptBin "wirken-audit-log" ''
-        exec ${pkgs.sudo}/bin/sudo ${pkgs.coreutils}/bin/env \
+        exec ${config.security.wrapperDir}/sudo ${pkgs.coreutils}/bin/env \
           HOME=${lib.escapeShellArg cfg.stateDirectory} \
           ${cfg.package}/bin/wirken audit log "$@"
       '')
