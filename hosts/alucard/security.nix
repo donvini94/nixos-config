@@ -6,6 +6,32 @@
 }:
 
 let
+  # Nixpkgs still carries CRS 3.3.4, which predates the July 2026 security
+  # fixes. Pin the current v4 LTS rules independently of the nginx module.
+  coreruleset = pkgs.fetchFromGitHub {
+    owner = "coreruleset";
+    repo = "coreruleset";
+    rev = "v4.25.1";
+    hash = "sha256-dSzy1rJgPxc7qAivevR+a8BpGRi0CjrG0q+U3kXr48Q=";
+  };
+  modsecurityBase = pkgs.runCommand "modsecurity-alucard.conf" { } ''
+    cp ${pkgs.libmodsecurity}/share/modsecurity/modsecurity.conf-recommended "$out"
+    substituteInPlace "$out" \
+      --replace-fail "SecRuleEngine DetectionOnly" "SecRuleEngine On" \
+      --replace-fail "SecRequestBodyLimit 13107200" "SecRequestBodyLimit 67108864" \
+      --replace-fail "SecResponseBodyAccess On" "SecResponseBodyAccess Off" \
+      --replace-fail "SecAuditLog /var/log/modsec_audit.log" "SecAuditLog /var/log/nginx/modsec_audit.log" \
+      --replace-fail "SecUnicodeMapFile unicode.mapping 20127" \
+        "SecUnicodeMapFile ${pkgs.libmodsecurity}/share/modsecurity/unicode.mapping 20127"
+  '';
+  modsecurityRules = pkgs.writeText "modsecurity-rules.conf" ''
+    Include ${modsecurityBase}
+    Include ${coreruleset}/crs-setup.conf.example
+    Include ${coreruleset}/plugins/*-config.conf
+    Include ${coreruleset}/plugins/*-before.conf
+    Include ${coreruleset}/rules/*.conf
+    Include ${coreruleset}/plugins/*-after.conf
+  '';
   crowdsecAdmin = pkgs.writeShellApplication {
     name = "crowdsec-admin";
     runtimeInputs = [ pkgs.systemd ];
@@ -43,6 +69,7 @@ in
     hub.collections = [
       "crowdsecurity/linux"
       "crowdsecurity/nginx"
+      "LePresidente/jellyfin"
     ];
     settings = {
       lapi.credentialsFile = "/var/lib/crowdsec/state/local_api_credentials.yaml";
@@ -72,6 +99,11 @@ in
           source = "file";
           filenames = [ "/var/log/nginx/access.log" ];
           labels.type = "nginx";
+        }
+        {
+          source = "journalctl";
+          journalctl_filter = [ "_SYSTEMD_UNIT=jellyfin.service" ];
+          labels.type = "jellyfin";
         }
       ];
       parsers.s02Enrich = [
@@ -116,6 +148,18 @@ in
   systemd.services.crowdsec-firewall-bouncer.wants = [ "docker.service" ];
 
   users.users.crowdsec.extraGroups = lib.mkAfter [ "nginx" ];
+
+  # OWASP Core Rule Set provides request-level virtual patching while the
+  # firewall bouncer handles host and Docker traffic at layers 3/4.
+  services.nginx = {
+    additionalModules = lib.mkAfter [ pkgs.nginxModules.modsecurity ];
+    appendHttpConfig = ''
+      limit_req_zone $binary_remote_addr zone=public_per_ip:10m rate=30r/s;
+      limit_conn_zone $binary_remote_addr zone=public_connections:10m;
+      modsecurity on;
+      modsecurity_rules_file ${modsecurityRules};
+    '';
+  };
 
   # The firewall-bouncer module invokes upstream cscli, which expects this
   # conventional path. CrowdSec itself uses the identical generated config

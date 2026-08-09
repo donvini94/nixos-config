@@ -129,15 +129,34 @@ their own explicit firewall justification and protocol-specific protection.
 | P0 | Bind Mailcow web ports 880/4433 to loopback | Pending controlled Mailcow maintenance |
 | P0 | Back up and update Mailcow from 2025-07 to current stable | Pending; local modifications must be reconciled |
 | P1 | Install CrowdSec engine and firewall remediation | Complete; real nginx decision verified in the live ipset behind both host and Docker chains |
-| P1 | Add tested nginx AppSec/WAF integration | Pending selection of maintained NixOS-compatible integration |
-| P1 | Add per-service rate and connection limits | Pending workload-specific testing |
-| P1 | Apply consistent security headers and bounded request sizes | Pending application compatibility testing |
-| P1 | Retire dead DNS/vhosts and remove unused firewall ports | Inventory review pending |
+| P1 | Add tested nginx AppSec/WAF integration | OWASP CRS 4.25.1 LTS + ModSecurity prepared; build verified, live acceptance pending switch |
+| P1 | Add per-service rate and connection limits | Prepared at nginx edge; build verified, live acceptance pending switch |
+| P1 | Apply consistent security headers and bounded request sizes | Prepared; upload-heavy Registry/Filebrowser/WebDAV bypass WAF and retain explicit size policy |
+| P1 | Retire dead DNS/vhosts and remove unused firewall ports | Dead root/Git/docs/Coder backends changed to explicit 404; unused TCP 53/873/11335/11445 removed; live acceptance pending |
 | P2 | Define Keycloak/2FA policy for every public application | Pending identity review |
-| P2 | Harden native services and containers | Pending; Keycloak is the weakest native unit |
+| P2 | Harden native services and containers | Keycloak loopback bind and systemd sandbox prepared; remaining application policy review pending |
 | P2 | Add vulnerability scanning and security alerts | Pending |
 | P2 | Implement and test application-aware backups/restores | Pending; required before customer use |
 | P3 | Add GeoIP restrictions to selected web services | Pending explicit country policy; never global mail blocking |
+
+The WAF uses the current OWASP CRS v4 LTS rather than Nixpkgs' older CRS 3.3.4,
+which predates July 2026 security fixes. Response-body inspection is disabled to
+avoid reflected denial-of-service behavior. After switching, verify both normal
+application traffic and a known malicious request before calling the WAF shipped:
+
+```bash
+curl -I https://stream.dumusstbereitsein.de
+curl -i 'https://stream.dumusstbereitsein.de/?probe=/etc/passwd&shell=/bin/sh'
+sudo tail -50 /var/log/nginx/modsec_audit.log
+```
+
+The first request must remain healthy and the probe must return HTTP 403 with a
+corresponding audit entry. Also confirm Keycloak only listens on loopback:
+
+```bash
+ss -ltn '( sport = :38080 )'
+systemd-analyze security keycloak.service
+```
 
 ## Mailcow maintenance boundary
 

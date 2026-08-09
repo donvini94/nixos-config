@@ -8,19 +8,15 @@
       allowedTCPPorts = [
         22
         25
-        53
         80
         110
         143
         443
         465
         587
-        873
         993
         995
         4190
-        11445
-        11335
       ];
       allowedUDPPorts = [
         15637 # Enshrouded
