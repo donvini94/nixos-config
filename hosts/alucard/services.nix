@@ -102,23 +102,6 @@ in
       recommendedProxySettings = true;
       recommendedTlsSettings = true;
       virtualHosts = {
-        # Hermes intentionally accepts only the hostname it was bound to. This
-        # loopback-only hop normalizes the Host header for Tailscale clients.
-        "hermes-tailnet" = {
-          listen = [
-            {
-              addr = "127.0.0.1";
-              port = 29118;
-            }
-          ];
-          locations."/" = {
-            proxyPass = "http://127.0.0.1:9119";
-            proxyWebsockets = true;
-            extraConfig = ''
-              proxy_set_header Host 127.0.0.1:9119;
-            '';
-          };
-        };
         "${domain}" = {
           enableACME = true;
           forceSSL = true;

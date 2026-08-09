@@ -95,6 +95,9 @@ Requesty key is encrypted there and is exposed at runtime only to the port-8080 
 | `requesty/api_key` | Port-8080 ingress only | Set a monthly spend limit; optionally attach a matching Access List; never distribute to clients |
 | `n8n/*` | Alucard n8n and runners | Independent encryption root and runner token |
 | `wirken/*` | Alucard Wirken and ingress attribution | Independent vault passphrase and local-only attribution token |
+| `hermes/dashboard_password` | Hermes browser and Desktop login | Share through a password manager; rotate when demo access changes |
+| `hermes/dashboard_password_hash` | Hermes authentication runtime | Regenerate whenever the demo password changes; plaintext is not exposed to the service |
+| `hermes/dashboard_session_secret` | Hermes login-session signing | Planned rotation signs every Hermes client out |
 | `langfuse/*` | Alucard Langfuse project and dependencies | Independent databases, cryptographic roots, project, and administrator |
 | `grafana/admin_password` | Alucard Grafana bootstrap | Independent administrator password |
 
@@ -102,6 +105,12 @@ Edit it without printing values:
 
 ```console
 sops secrets/alucard-ai.yaml
+```
+
+Retrieve the Hermes demo password only when placing it into a password manager:
+
+```console
+sops --decrypt secrets/alucard-ai.yaml | yq -r '.hermes.dashboard_password'
 ```
 
 Do not copy Dracula's project keys or administrative passwords. Prefer one Alucard workload

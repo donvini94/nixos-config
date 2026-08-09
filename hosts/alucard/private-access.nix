@@ -39,7 +39,7 @@ let
       ) privateTcpServices
     )}
     # HTTPS avoids browser HTTPS-only upgrades breaking Hermes' WebSockets.
-    ${tailscale} serve --yes --bg --https=29119 http://127.0.0.1:29118
+    ${tailscale} serve --yes --bg --https=29119 http://127.0.0.1:9119
   '';
 in
 {

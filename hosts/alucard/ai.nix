@@ -30,10 +30,15 @@ in
         assertion = lib.all (address: address == "127.0.0.1") [
           config.services.remoteOpenAI.bindAddress
           config.services.localN8n.bindAddress
-          config.services.localHermes.dashboard.bindAddress
           config.services.localObservability.bindAddress
         ];
-        message = "Alucard AI services must remain loopback-only; use SSH tunnels or Tailscale Serve";
+        message = "Alucard AI services must remain loopback-only; use Tailscale Serve";
+      }
+      {
+        assertion =
+          config.services.localHermes.dashboard.bindAddress == "0.0.0.0"
+          && config.services.localHermes.dashboard.environmentFile != null;
+        message = "Alucard Hermes must engage its auth gate; systemd still limits peers to loopback";
       }
       {
         assertion =
@@ -80,6 +85,21 @@ in
         owner = "root";
         mode = "0400";
       };
+      "hermes/dashboard_password" = {
+        sopsFile = secretFile;
+        owner = "root";
+        mode = "0400";
+      };
+      "hermes/dashboard_password_hash" = {
+        sopsFile = secretFile;
+        owner = "root";
+        mode = "0400";
+      };
+      "hermes/dashboard_session_secret" = {
+        sopsFile = secretFile;
+        owner = "root";
+        mode = "0400";
+      };
     }
     //
       lib.genAttrs
@@ -105,6 +125,19 @@ in
     sops.templates."n8n-runner.env" = {
       content = ''
         N8N_RUNNERS_AUTH_TOKEN=${config.sops.placeholder."n8n/runner_auth_token"}
+      '';
+      mode = "0400";
+      owner = "root";
+      group = "root";
+    };
+
+    sops.templates."hermes-dashboard.env" = {
+      content = ''
+        HERMES_DASHBOARD_BASIC_AUTH_USERNAME=demo
+        HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH=${
+          config.sops.placeholder."hermes/dashboard_password_hash"
+        }
+        HERMES_DASHBOARD_BASIC_AUTH_SECRET=${config.sops.placeholder."hermes/dashboard_session_secret"}
       '';
       mode = "0400";
       owner = "root";
@@ -170,6 +203,10 @@ in
       model = defaultModel;
       contextLength = models.${defaultModel}.context;
       operators = [ username ];
+      dashboard = {
+        bindAddress = "0.0.0.0";
+        environmentFile = config.sops.templates."hermes-dashboard.env".path;
+      };
     };
 
     services.localWirken = {

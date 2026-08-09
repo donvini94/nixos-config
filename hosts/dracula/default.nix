@@ -7,6 +7,17 @@
   ...
 }:
 
+let
+  hermesDesktop = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.desktop;
+  hermesDesktopLauncher = pkgs.makeDesktopItem {
+    name = "hermes-desktop";
+    desktopName = "Hermes";
+    comment = "Hermes Agent desktop client";
+    exec = "${hermesDesktop}/bin/hermes-desktop";
+    icon = "${hermesDesktop}/share/hermes-desktop/dist/hermes.png";
+    categories = [ "Development" ];
+  };
+in
 {
   imports = [
     ../../modules/desktop.nix
@@ -227,7 +238,11 @@
       "libvirtd"
       "audio"
     ];
-    packages = with pkgs; [ firefox ];
+    packages = [
+      pkgs.firefox
+      hermesDesktop
+      hermesDesktopLauncher
+    ];
   };
 
   system.stateVersion = "23.11";

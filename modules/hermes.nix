@@ -76,7 +76,7 @@ let
     name = "hermes-tui";
     text = ''
       exec ${config.security.wrapperDir}/sudo -H -u hermes \
-        --chdir=${lib.escapeShellArg cfg.workspace} \
+        ${pkgs.coreutils}/bin/env --chdir=${lib.escapeShellArg cfg.workspace} \
         ${lib.getExe hermesPackage} --tui "$@"
     '';
   };
@@ -137,6 +137,11 @@ in
       port = lib.mkOption {
         type = lib.types.port;
         default = 9119;
+      };
+      environmentFile = lib.mkOption {
+        type = lib.types.nullOr lib.types.path;
+        default = null;
+        description = "Optional root-only dashboard authentication environment file.";
       };
     };
 
@@ -368,20 +373,25 @@ in
         pkgs.coreutils
         pkgs.git
       ];
-      serviceConfig = serviceHardening // {
-        Type = "simple";
-        User = "hermes";
-        Group = "hermes";
-        WorkingDirectory = cfg.workspace;
-        ExecStart = "${hermesPackage}/bin/hermes dashboard --host ${cfg.dashboard.bindAddress} --port ${toString cfg.dashboard.port} --no-open";
-        Restart = "on-failure";
-        RestartSec = 3;
-        UMask = "0007";
-        ReadWritePaths = [
-          cfg.stateDirectory
-          cfg.workspace
-        ];
-      };
+      serviceConfig =
+        serviceHardening
+        // {
+          Type = "simple";
+          User = "hermes";
+          Group = "hermes";
+          WorkingDirectory = cfg.workspace;
+          ExecStart = "${hermesPackage}/bin/hermes dashboard --host ${cfg.dashboard.bindAddress} --port ${toString cfg.dashboard.port} --no-open";
+          Restart = "on-failure";
+          RestartSec = 3;
+          UMask = "0007";
+          ReadWritePaths = [
+            cfg.stateDirectory
+            cfg.workspace
+          ];
+        }
+        // lib.optionalAttrs (cfg.dashboard.environmentFile != null) {
+          EnvironmentFile = cfg.dashboard.environmentFile;
+        };
     };
 
     environment.systemPackages = [ hermesTui ];

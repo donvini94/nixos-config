@@ -36,9 +36,12 @@ ssh -t Bereitserver hermes-tui
 
 This runs the same pinned Hermes package and shared session database as the browser UI. It asks
 for operator sudo authentication because the session belongs to the isolated `hermes` account.
-The official desktop app can connect to a remote Hermes backend as well, but that path remains
-disabled until Alucard has a proper dashboard authentication provider; tailnet reachability alone
-is not a substitute for application authentication.
+The official Hermes Desktop package is installed on Dracula. In its **Settings → Gateway → Remote
+gateway** page, use `https://alucard.tailf117a1.ts.net:29119`, sign in as `demo`, and retrieve the
+password from SOPS only long enough to put it in the company password manager. Cofounders and
+customers can install the official macOS, Windows, or Linux build and use the same remote URL.
+Alucard uses Hermes' official authentication gate in addition to Tailscale; clients never receive
+the Requesty credential.
 
 The gateway and dashboard run as the unprivileged `hermes` system user. Their systemd
 sandbox hides `/home`, makes the host filesystem read-only, allows writes only below

@@ -73,6 +73,19 @@ inside its workspace, then inspect the result in **Files**. Alucard's Hermes int
 general web-search/browser tool and cannot modify the host outside its isolated workspace. See
 the [Hermes operator guide](../hermes/README.md) for the exact boundaries.
 
+## Hermes Desktop
+
+Hermes Desktop is the preferred customer-facing client. Install the official application, then
+open **Settings → Gateway → Remote gateway** and enter:
+
+- Remote URL: `https://alucard.tailf117a1.ts.net:29119`
+- Username: `demo`
+- Password: request it from the platform operator through the company password manager
+
+Sign in, save, and reconnect. The desktop client then uses Alucard's models, sessions, memory,
+skills, and isolated workspace. Tailscale must remain connected. Do not install Alucard's model
+credential on the client.
+
 ## API example
 
 The platform administrator can issue a workload-specific credential when an external client
