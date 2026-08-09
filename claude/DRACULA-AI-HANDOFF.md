@@ -11,7 +11,7 @@ or walk into known traps.
 
 ---
 
-## ⚠️ STATUS: Dracula and Alucard stacks active; private-access guardrails ready to switch
+## ⚠️ STATUS: Both stacks active; private access, authenticated Hermes, and CrowdSec verified
 
 When this runs, record corrections at the bottom under **Post-execution corrections**,
 following the `MAC-HANDOFF.md` convention. This file was written by a session that inspected
@@ -1192,10 +1192,12 @@ Several details were wrong or incomplete as written:
   than replacing upstream behavior with a custom worker.
 - `hermes-agent.service` and `hermes-dashboard.service` are attached to `ai-stack.target`
   as user/group `hermes`. State lives at `/var/lib/hermes/.hermes`, the agent repository at
-  `/var/lib/hermes/workspace`, and the dashboard listens only on `127.0.0.1:9119`.
-  systemd reports an exposure score of 2.7 for both long-running services: no capabilities,
-  `NoNewPrivileges`, strict read-only host filesystem, hidden `/home`, loopback-only IP
-  allow-list, namespace restrictions, and writes limited to `/var/lib/hermes`.
+  `/var/lib/hermes/workspace`, and Dracula's dashboard listens only on `127.0.0.1:9119`.
+  Alucard deliberately binds `0.0.0.0:9119` to engage upstream's mandatory authentication
+  gate, while systemd permits only loopback peers and the host firewall keeps the port closed.
+  Tailscale Serve provides the authenticated HTTPS frontend. Both services retain no
+  capabilities, `NoNewPrivileges`, a strict read-only host filesystem, hidden `/home`,
+  namespace restrictions, and writes limited to `/var/lib/hermes`.
 - The workspace initializer created branch `main` and committed the managed `AGENTS.md` and
   `SOUL.md` baseline. A real Hermes tool call subsequently reported `HOME_BLOCKED` for
   `/home/vincenzo/nixos-config/flake.nix` and `WORKSPACE_WRITABLE` for its own repository.
@@ -1308,11 +1310,44 @@ Several details were wrong or incomplete as written:
   the explicit endpoint exposed all 42 running containers. After switching the Compose
   correction, Prometheus reports 40 non-root named container series and both the containerd
   and Docker cAdvisor factories register successfully.
-- Every live Alucard AI API, UI, and exporter listener is loopback-only and no AI port is in
-  the global firewall or public reverse proxy. Host assertions protect the configurable bind
-  addresses and global firewall boundary. Dracula's configuration provides an `ai-admin` SSH profile with
-  non-conflicting local forwards; Tailscale Serve is the documented later option for
-  multi-device private access, while Tailscale Funnel is explicitly prohibited.
+- Every live Alucard AI API, UI, and exporter backend is loopback-only except the
+  systemd-isolated Hermes listener described above, and no AI port is in the global firewall
+  or public reverse proxy. Host assertions protect the configurable bind addresses and global
+  firewall boundary. Dracula's `ai-admin` SSH profile remains the break-glass path. Tailscale
+  Serve is now the active multi-device private access plane for the AI and media-administration
+  stacks; Tailscale Funnel remains explicitly prohibited.
+
+### Private access, demo client, and security checkpoint (active, 2026-08-09)
+
+- Alucard's AI, observability, and ARR administration interfaces are published only to the
+  tailnet through explicit Tailscale Serve mappings. The stable links and local fallback ports
+  are recorded in `docs/AI_DEMO_GUIDE.md` and `docs/ALUCARD_SECURITY.md`. Public probes of the
+  Hermes backend and tailnet frontend ports were closed/filtered. The full
+  `alucard.tailf117a1.ts.net` name is required for the HTTPS certificate and Hermes Host check;
+  the shortened hostname is not an equivalent HTTPS origin.
+- Hermes' official authentication gate uses a SOPS-managed password hash and session-signing
+  secret. Authenticated live acceptance passed for password login, the session API, the full
+  43-provider model picker, the configured-only picker, and a WebSocket `101` upgrade. The
+  configured path exposed only `custom:dracula-local` and selected
+  `deepinfra/deepseek-v4-flash-0731`. The official Hermes Desktop package is installed on
+  Dracula and documented as the customer-facing client; the browser UI and TUI remain useful
+  operator alternatives.
+- OMP was updated to v17.2.12. Nix policy now uses upstream's supported `PI_CONFIG_FILES`
+  overlay while OMP's global settings file remains writable, and `OMP_SKIP_SETUP` suppresses
+  automatic onboarding for the already-configured provider. Plain `omp` calls succeeded on
+  both hosts using their managed defaults, with HTTP 200 ingress records attributed to `omp`:
+  `qwen3.6-27b-local` on Dracula and `deepinfra/deepseek-v4-flash-0731` on Alucard.
+- CrowdSec 1.7.8 consumes sshd journal and nginx access records with community sharing and
+  community blocklist pulls disabled. The firewall bouncer is active in both `INPUT` and
+  Docker's `DOCKER-USER` chain. A real nginx-derived decision was verified in the live
+  `crowdsec-blacklists-0` ipset, proving the detection-to-remediation path rather than only
+  configuration presence. `crowdsec-admin` runs the official `cscli` inside the required
+  systemd DynamicUser state namespace; direct invocation of the NixOS wrapper is incompatible
+  with the bouncer module's private state-directory layout.
+- Current post-switch health showed zero failed systemd units on both hosts. All Alucard
+  tailnet probes for Hermes, ingress, n8n, Langfuse, Grafana, Wirken, Prometheus, and the ARR
+  administration services returned successful application responses, and every Prometheus
+  target was up, including CrowdSec.
 
 ### Measured Phase 1 starting point
 
