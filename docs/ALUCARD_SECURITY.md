@@ -98,6 +98,17 @@ This launcher runs the official `cscli` in CrowdSec's systemd-managed state name
 for sudo authentication. Calling the NixOS-provided `cscli` wrapper directly does not work with
 the firewall-bouncer module's DynamicUser state-directory layout.
 
+The remediation path was verified live on 2026-08-09 using a real nginx-derived decision: the
+address appeared in `crowdsec-blacklists-0`, and both `INPUT` and `DOCKER-USER` jumped to
+`CROWDSEC_CHAIN`. Recheck it without changing firewall state by selecting an active IPv4 decision
+from `crowdsec-admin decisions list`, then running:
+
+```console
+sudo iptables -C INPUT -j CROWDSEC_CHAIN
+sudo iptables -C DOCKER-USER -j CROWDSEC_CHAIN
+sudo ipset test crowdsec-blacklists-0 ADDRESS
+```
+
 ## Public-service inventory
 
 nginx currently defines public HTTPS virtual hosts for Keycloak, GitLab, Docker Registry,
@@ -117,7 +128,7 @@ their own explicit firewall justification and protocol-specific protection.
 | P0 | Remove direct public Jellyfin ports 8096/8920 | Enforced; both ports externally verified closed/filtered |
 | P0 | Bind Mailcow web ports 880/4433 to loopback | Pending controlled Mailcow maintenance |
 | P0 | Back up and update Mailcow from 2025-07 to current stable | Pending; local modifications must be reconciled |
-| P1 | Install CrowdSec engine and firewall remediation | Engine and bouncer active; host and Docker chains verified; controlled live-ban test pending |
+| P1 | Install CrowdSec engine and firewall remediation | Complete; real nginx decision verified in the live ipset behind both host and Docker chains |
 | P1 | Add tested nginx AppSec/WAF integration | Pending selection of maintained NixOS-compatible integration |
 | P1 | Add per-service rate and connection limits | Pending workload-specific testing |
 | P1 | Apply consistent security headers and bounded request sizes | Pending application compatibility testing |
