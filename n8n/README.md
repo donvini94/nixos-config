@@ -4,7 +4,7 @@
 values never belong here; create credentials in the browser UI and keep infrastructure
 secrets in sops.
 
-The helper commands call n8n's official CLI inside the running, digest-pinned container:
+The helper commands call n8n's official CLI inside the running official container:
 
 ```bash
 # Export to a new timestamped directory. From this checkout it uses the

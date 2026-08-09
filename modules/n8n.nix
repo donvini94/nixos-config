@@ -29,14 +29,14 @@ in
 
     image = lib.mkOption {
       type = lib.types.str;
-      default = "docker.n8n.io/n8nio/n8n@sha256:5f7856f4fc7cd935230f7596e39fdb3d5eda0e379c5b40b699b9c0eb35ebd0bf";
-      description = "Digest-pinned official n8n OCI image.";
+      default = "docker.n8n.io/n8nio/n8n:latest";
+      description = "Rolling official n8n OCI image.";
     };
 
     runnerImage = lib.mkOption {
       type = lib.types.str;
-      default = "docker.io/n8nio/runners@sha256:9c9ddc41410b56650605f44c3af6366abb467c33176569be371ccc5f476439fc";
-      description = "Digest-pinned official n8n task-runner OCI image.";
+      default = "docker.io/n8nio/runners:latest";
+      description = "Rolling official n8n task-runner OCI image.";
     };
 
     bindAddress = lib.mkOption {
@@ -116,7 +116,7 @@ in
         n8n = {
           image = cfg.image;
           autoStart = false;
-          pull = "missing";
+          pull = "always";
           ports = [ "${cfg.bindAddress}:${toString cfg.port}:5678" ];
           networks = [ dockerNetwork ];
           volumes = [
@@ -184,7 +184,6 @@ in
             N8N_LOG_LEVEL = "info";
             N8N_LOG_OUTPUT = "console";
           };
-          labels."org.opencontainers.image.version" = "2.32.6";
           extraOptions = containerHardening ++ [
             "--tmpfs=/tmp:rw,nosuid,size=512m"
             "--tmpfs=/home/node/.cache:rw,nosuid,size=128m"
@@ -195,7 +194,7 @@ in
         n8n-runners = {
           image = cfg.runnerImage;
           autoStart = false;
-          pull = "missing";
+          pull = "always";
           dependsOn = [ "n8n" ];
           networks = [ dockerNetwork ];
           environmentFiles = [ cfg.runnerEnvironmentFile ];
@@ -204,7 +203,6 @@ in
             N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT = "15";
             N8N_RUNNERS_TASK_TIMEOUT = "300";
           };
-          labels."org.opencontainers.image.version" = "2.32.6";
           extraOptions = containerHardening ++ [
             "--tmpfs=/tmp:rw,nosuid,size=512m"
           ];

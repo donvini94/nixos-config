@@ -27,7 +27,7 @@ The relevant units are `wirken-init.service`, `wirken-sandbox-image.service`,
 - Gateway state and workspace: `/var/lib/wirken/.wirken`
 - Operator-pinned audit key: `/var/lib/wirken-audit-anchor/audit-signing.pub`
 - Declarative provider: `custom/qwen3.6-27b-local` through `http://127.0.0.1:8080/v1`
-- Exec sandbox: upstream `exec-only`, no network, digest-pinned Debian image
+- Exec sandbox: upstream `exec-only`, no network, rolling official Debian image
 - Bootstrap secrets: `secrets/dracula-ai.yaml`, delivered with systemd credentials
 - Application credentials: Wirken's encrypted vault, added only when a real connector is
   introduced

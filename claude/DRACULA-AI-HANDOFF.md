@@ -91,14 +91,14 @@ Two structural properties worth stating, because they're what make the rest work
 
 ## Decisions (settled — do not relitigate)
 
-**Prefer maintained upstream containers and minimal glue.** Follow the media-stack pattern:
-use an official OCI image and its supported Compose/container configuration when one exists,
-and keep Nix responsible for lifecycle, state mounts, secrets, networking, and health. Pin
-production images by digest and automate reviewed updates; a mutable `latest` tag is not in
-fact controlled or reproducible. Do not create and maintain an unofficial image merely to
-make deployment styles look uniform. If an upstream publishes only a signed static binary,
-package that artifact minimally or choose another product rather than recreating its release
-engineering locally.
+**Prefer maintained upstream containers and minimal glue.** Use an official OCI image and
+its supported Compose/container configuration when one exists. Application containers
+follow upstream's rolling `latest` tag and are refreshed by `container-update.timer`;
+`containers-update` triggers the same operation immediately. Keep Nix responsible for
+lifecycle, state mounts, secrets, networking, health, and the update schedule. Do not create
+and maintain an unofficial image merely to make deployment styles look uniform. If upstream
+publishes only a signed static binary, record the exception or blocker explicitly rather
+than recreating its release engineering locally.
 
 **Full local on dracula.** No remote API for now, no communication with `alucard`. Things
 can move later; they will not move during this build.
@@ -656,7 +656,7 @@ table over the same starting worktrees and Qwen model.
 
 **Goal.** The deterministic-pipeline half of the agents-vs-workflows experiment.
 
-**Build.** Use the official, digest-pinned n8n image plus the matching official external
+**Build.** Use the rolling official n8n image plus the matching official external
 `n8nio/runners` sidecar. n8n 2.32.6 warns that running outside a container is deprecated,
 and its current documentation recommends Docker for most self-hosting and external task
 runners for production. The previous claim that the native NixOS module was categorically
@@ -756,7 +756,7 @@ credential over a private pseudo-terminal. Acceptance tests proved both successf
 and wrong-passphrase failure without exposing the submitted value.
 
 **Live checkpoint and blocker (2026-08-09).** The second activation completed and left the
-gateway, vault bootstrap, digest-pinned Docker exec image, loopback WebChat, and external
+gateway, vault bootstrap, rolling official Docker exec image, loopback WebChat, and external
 audit anchor active. A no-tool WebChat turn returned exactly `WIRKEN_PHASE5_OK`; the
 permanent ingress attributed it to caller `wirken`, model `qwen3.6-27b-local`, HTTP 200,
 1,404 prompt + 42 completion = 1,446 tokens, 2,311 ms TTFT, and 3,554 ms total latency.
@@ -770,11 +770,11 @@ acceptance test, not a configuration issue; do not patch or wrap it locally.
 Upstream publishes signed native binaries only—its release workflow has no Dockerfile,
 container artifact, or image-publish job. Creating an unofficial Wirken image would retain
 the vault/TTY and Docker-socket requirements while adding image maintenance, so it is
-explicitly rejected. Keep the trial available for audit inspection, but do not call it the
-governed operator path or migrate credentials/tools into it. Select a maintained official
-container replacement before continuing this phase; Open WebUI is a candidate for browser
-chat and explicit tool approval, while Langfuse remains the later cross-runtime
-observability/evaluation candidate rather than an approval gateway.
+explicitly rejected. Wirken remains a desired component; keep the current native trial for
+learning and audit inspection, but do not call it the governed operator path or migrate
+credentials/tools into it. A production deployment is gated on an official upstream image
+and a working approval path. Do not introduce Open WebUI as a replacement. Langfuse remains
+the later cross-runtime observability/evaluation candidate rather than an approval gateway.
 
 **Credential decision.** sops remains the machine-bootstrap root for the vault passphrase
 and the local inference-attribution token. Provider and connector credentials added later

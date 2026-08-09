@@ -18,9 +18,15 @@ in
     ./users.nix
     ./syncthing.nix
     ../../modules/packages.nix
+    ../../modules/container-updates.nix
     ../../configuration.nix
     ../../secrets/secrets.nix
   ];
+
+  services.containerUpdates = {
+    enable = true;
+    units = [ "media-stack.service" ];
+  };
 
   # Boot
   boot = {

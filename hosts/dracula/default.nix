@@ -16,6 +16,7 @@
     ../../modules/n8n.nix
     ../../modules/hermes.nix
     ../../modules/wirken.nix
+    ../../modules/container-updates.nix
     ./hardware.nix
     ./services.nix
   ];
@@ -118,6 +119,15 @@
     vaultPassphraseFile = config.sops.secrets."wirken/vault_passphrase".path;
     ingressCredentialFile = config.sops.secrets."wirken/ingress_token".path;
     operators = [ username ];
+  };
+
+  services.containerUpdates = {
+    enable = true;
+    units = [
+      "wirken-sandbox-image.service"
+      "docker-n8n.service"
+      "docker-n8n-runners.service"
+    ];
   };
 
   nix = {

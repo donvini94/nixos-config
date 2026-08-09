@@ -102,18 +102,16 @@ let
 
   prepareSandboxImage = pkgs.writeShellScript "prepare-wirken-sandbox-image" ''
     set -euo pipefail
-    pinned=${lib.escapeShellArg cfg.sandboxImage}
+    source_image=${lib.escapeShellArg cfg.sandboxImage}
     upstream_tag=debian:bookworm-slim
 
-    if ! ${pkgs.docker}/bin/docker image inspect "$pinned" >/dev/null 2>&1; then
-      ${pkgs.docker}/bin/docker pull "$pinned"
-    fi
-    ${pkgs.docker}/bin/docker tag "$pinned" "$upstream_tag"
+    ${pkgs.docker}/bin/docker pull "$source_image"
+    ${pkgs.docker}/bin/docker tag "$source_image" "$upstream_tag"
 
-    pinned_id="$(${pkgs.docker}/bin/docker image inspect --format '{{.Id}}' "$pinned")"
+    source_id="$(${pkgs.docker}/bin/docker image inspect --format '{{.Id}}' "$source_image")"
     tagged_id="$(${pkgs.docker}/bin/docker image inspect --format '{{.Id}}' "$upstream_tag")"
-    if [ "$pinned_id" != "$tagged_id" ]; then
-      echo "Wirken sandbox tag did not resolve to the pinned image" >&2
+    if [ "$source_id" != "$tagged_id" ]; then
+      echo "Wirken sandbox tag did not resolve to the pulled image" >&2
       exit 1
     fi
   '';
@@ -222,8 +220,8 @@ in
 
     sandboxImage = lib.mkOption {
       type = lib.types.str;
-      default = "docker.io/library/debian:bookworm-slim@sha256:362e64223cc0da95422b3b13c045186fc0a81250e765d31c025fbddf257f6143";
-      description = "Digest-pinned amd64 image retagged for Wirken's upstream exec sandbox.";
+      default = "docker.io/library/debian:latest";
+      description = "Rolling official Debian image retagged for Wirken's upstream exec sandbox.";
     };
 
     operators = lib.mkOption {
@@ -257,7 +255,7 @@ in
       }
       {
         assertion = pkgs.stdenv.hostPlatform.system == "x86_64-linux";
-        message = "the pinned Wirken release and sandbox image are x86_64-linux only";
+        message = "the Wirken release package is currently x86_64-linux only";
       }
     ];
 
@@ -277,7 +275,7 @@ in
     };
 
     systemd.services.wirken-sandbox-image = {
-      description = "Prepare Wirken's digest-pinned exec sandbox image";
+      description = "Prepare Wirken's rolling exec sandbox image";
       wantedBy = [ "ai-stack.target" ];
       partOf = [ "ai-stack.target" ];
       after = [ "docker.service" ];
