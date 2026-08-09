@@ -75,6 +75,30 @@
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
       "fieldConfig": { "defaults": { "unit": "currencyUSD" } },
       "targets": [{ "expr": "sum by (caller, model) (increase(ai_ingress_cost_usd_total[5m]))", "legendFormat": "{{caller}} · {{model}}", "refId": "A" }]
+    },
+    {
+      "type": "stat", "title": "Critical image vulnerabilities", "id": 12,
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 28 },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } } },
+      "targets": [{ "expr": "security_container_vulnerabilities{severity=\"critical\"}", "refId": "A" }]
+    },
+    {
+      "type": "stat", "title": "High image vulnerabilities", "id": 13,
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 28 },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }] } } },
+      "targets": [{ "expr": "security_container_vulnerabilities{severity=\"high\"}", "refId": "A" }]
+    },
+    {
+      "type": "stat", "title": "Container scan failures", "id": 14,
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 32 },
+      "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } } },
+      "targets": [{ "expr": "security_container_scan_failures", "refId": "A" }]
+    },
+    {
+      "type": "stat", "title": "Container scan age", "id": 15,
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 32 },
+      "fieldConfig": { "defaults": { "unit": "s", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 172800 }] } } },
+      "targets": [{ "expr": "time() - security_container_scan_timestamp_seconds", "refId": "A" }]
     }
   ],
   "refresh": "30s",
@@ -85,5 +109,5 @@
   "timezone": "browser",
   "title": "AI and machine overview",
   "uid": "local-ai-overview",
-  "version": 2
+  "version": 3
 }

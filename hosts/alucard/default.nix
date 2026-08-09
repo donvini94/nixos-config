@@ -23,6 +23,7 @@ in
     ../../modules/packages.nix
     ../../modules/observability.nix
     ../../modules/container-updates.nix
+    ../../modules/vulnerability-scan.nix
     ../../configuration.nix
     ../../secrets/secrets.nix
   ];
@@ -31,6 +32,8 @@ in
     enable = true;
     units = [ "media-stack.service" ];
   };
+
+  services.containerVulnerabilityScan.enable = true;
 
   # Boot
   boot = {

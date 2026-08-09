@@ -339,6 +339,15 @@ The HTTP endpoint is never published by the firewall or Tailscale Serve. The Uni
 owned by the `signal-cli` group. Signal account state contains impersonation-capable keys and
 must be treated as a secret backup. Sender allowlists are mandatory and agent-specific.
 
+### Container vulnerability visibility
+
+Alucard runs Aqua Trivy's official rolling container daily and after the manual
+`containers-scan` command. It scans distinct images running in both the root Docker daemon and
+Vincenzo's rootless daemon, retains root-only JSON reports, and publishes only aggregate
+counts through node-exporter's textfile collector. Grafana shows critical, high, failure, and
+scan-age panels. This complements update automation: pulling a newer image and proving that
+the deployed image has no known fixed critical issue are separate operations.
+
 Deployment checklist:
 
 1. In Requesty, create an `alucard-demo` project or workload key, set its monthly spend
