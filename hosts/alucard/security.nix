@@ -165,6 +165,29 @@ in
   ];
   systemd.services.crowdsec-firewall-bouncer.wants = [ "docker.service" ];
 
+  # NixOS' registration unit stops when CrowdSec still knows a bouncer whose
+  # local key was lost. Re-register that one exact bouncer with upstream cscli
+  # so rebuilding the machine is self-healing rather than a manual procedure.
+  systemd.services.crowdsec-firewall-bouncer-register.script = lib.mkForce ''
+    cscli=${lib.getExe' config.services.crowdsec.package "cscli"}
+    key=/var/lib/crowdsec-firewall-bouncer-register/api-key.cred
+    registered() {
+      "$cscli" bouncers list --output json |
+        ${lib.getExe pkgs.jq} -e -- 'any(.[]; .name == "crowdsec-firewall-bouncer")' >/dev/null
+    }
+
+    if registered && [ ! -s "$key" ]; then
+      "$cscli" bouncers delete crowdsec-firewall-bouncer
+    fi
+    if ! registered; then
+      rm -f "$key"
+      if ! "$cscli" bouncers add --output raw -- crowdsec-firewall-bouncer >"$key"; then
+        rm -f "$key"
+        exit 1
+      fi
+    fi
+  '';
+
   users.users.crowdsec.extraGroups = lib.mkAfter [ "nginx" ];
 
   # OWASP Core Rule Set provides request-level virtual patching while the
