@@ -139,6 +139,19 @@ in
     };
   };
 
+  # The upstream NixOS module enables DynamicUser but does not declare its
+  # persistent state directory.  On a hardened systemd setup that makes the
+  # /var/lib/crowdsec -> /var/lib/private/crowdsec link inaccessible during
+  # setup and hub updates.
+  systemd.services.crowdsec.serviceConfig = {
+    StateDirectory = "crowdsec";
+    StateDirectoryMode = "0750";
+  };
+  systemd.services.crowdsec-update-hub.serviceConfig = {
+    StateDirectory = "crowdsec";
+    StateDirectoryMode = "0750";
+  };
+
   # The upstream module requires the registration unit but does not order the
   # bouncer after it. Without this edge the first activation races the key file.
   systemd.services.crowdsec-firewall-bouncer.after = [
