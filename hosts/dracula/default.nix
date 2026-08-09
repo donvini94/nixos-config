@@ -16,6 +16,7 @@
     ../../modules/n8n.nix
     ../../modules/hermes.nix
     ../../modules/wirken.nix
+    ../../modules/observability.nix
     ../../modules/container-updates.nix
     ./hardware.nix
     ./services.nix
@@ -86,7 +87,27 @@
       owner = "root";
       mode = "0400";
     };
-  };
+  }
+  //
+    lib.genAttrs
+      [
+        "langfuse/postgres_password"
+        "langfuse/clickhouse_password"
+        "langfuse/redis_auth"
+        "langfuse/minio_root_password"
+        "langfuse/salt"
+        "langfuse/encryption_key"
+        "langfuse/nextauth_secret"
+        "langfuse/project_public_key"
+        "langfuse/project_secret_key"
+        "langfuse/admin_password"
+        "grafana/admin_password"
+      ]
+      (_: {
+        sopsFile = ../../secrets/dracula-ai.yaml;
+        owner = "root";
+        mode = "0400";
+      });
 
   sops.templates."n8n-runner.env" = {
     content = ''
@@ -95,6 +116,40 @@
     mode = "0400";
     owner = "root";
     group = "root";
+  };
+
+  sops.templates."observability.env" = {
+    content = ''
+      POSTGRES_PASSWORD=${config.sops.placeholder."langfuse/postgres_password"}
+      CLICKHOUSE_PASSWORD=${config.sops.placeholder."langfuse/clickhouse_password"}
+      REDIS_AUTH=${config.sops.placeholder."langfuse/redis_auth"}
+      MINIO_ROOT_PASSWORD=${config.sops.placeholder."langfuse/minio_root_password"}
+      LANGFUSE_SALT=${config.sops.placeholder."langfuse/salt"}
+      LANGFUSE_ENCRYPTION_KEY=${config.sops.placeholder."langfuse/encryption_key"}
+      NEXTAUTH_SECRET=${config.sops.placeholder."langfuse/nextauth_secret"}
+      LANGFUSE_PROJECT_PUBLIC_KEY=${config.sops.placeholder."langfuse/project_public_key"}
+      LANGFUSE_PROJECT_SECRET_KEY=${config.sops.placeholder."langfuse/project_secret_key"}
+      LANGFUSE_INIT_USER_EMAIL=vincenzo@localhost
+      LANGFUSE_INIT_USER_NAME=Vincenzo
+      LANGFUSE_INIT_USER_PASSWORD=${config.sops.placeholder."langfuse/admin_password"}
+      GRAFANA_ADMIN_PASSWORD=${config.sops.placeholder."grafana/admin_password"}
+    '';
+    mode = "0400";
+    owner = "root";
+    group = "root";
+  };
+
+  sops.templates."opencode-langfuse.json" = {
+    content = builtins.toJSON {
+      publicKey = config.sops.placeholder."langfuse/project_public_key";
+      secretKey = config.sops.placeholder."langfuse/project_secret_key";
+      baseUrl = "http://127.0.0.1:13000";
+      environment = "dracula";
+      userId = username;
+    };
+    mode = "0400";
+    owner = username;
+    group = "users";
   };
 
   services.localN8n = {
@@ -119,6 +174,14 @@
     vaultPassphraseFile = config.sops.secrets."wirken/vault_passphrase".path;
     ingressCredentialFile = config.sops.secrets."wirken/ingress_token".path;
     operators = [ username ];
+  };
+
+  services.localObservability = {
+    enable = true;
+    environmentFile = config.sops.templates."observability.env".path;
+    gpuMetrics = true;
+    inferencePort = 8080;
+    n8nPort = 5678;
   };
 
   services.containerUpdates = {

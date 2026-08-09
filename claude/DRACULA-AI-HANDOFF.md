@@ -11,7 +11,7 @@ or walk into known traps.
 
 ---
 
-## ⚠️ STATUS: Phase 5 Wirken trial active; upstream WebChat approval path is broken
+## ⚠️ STATUS: Phase 5 Wirken trial active; observability built, awaiting activation
 
 When this runs, record corrections at the bottom under **Post-execution corrections**,
 following the `MAC-HANDOFF.md` convention. This file was written by a session that inspected
@@ -106,8 +106,11 @@ authoritative during that interval; only an existing stopped container or the te
 start deadline is a readiness failure. Media Compose pulls receive a thirty-minute start
 deadline for the same reason.
 
-**Full local on dracula.** No remote API for now, no communication with `alucard`. Things
-can move later; they will not move during this build.
+**Full local on dracula.** Dracula remains the local-model comparison machine. Alucard is
+now the planned business-demo machine: it will inherit the same clients, workers,
+governance, and observability stack while using access-limited Requesty API keys and cloud
+models instead of local inference. Do not copy Dracula's local-GPU assumptions into the
+shared profile, and do not put Requesty credentials in the Nix store.
 
 **Why local, and it is not cost.** The driver is *marginal cost of zero*. Paid-per-request
 inference makes every call a decision, and the stated pattern is that Vincenzo simply won't
@@ -122,7 +125,9 @@ for APIs.
   ingestion. Vincenzo will do this properly later, separately.
 - **Notion / Linear** — do not exist yet. Planned for when the startup runs. Build no
   integrations now, but the tool layer must make adding them a config change (Phase 4).
-- **alucard** — untouched.
+- **alucard's live AI deployment** — prepare reusable modules and documentation now, but do
+  not enable the AI profile until the Requesty keys, model allow-list, and fallback policies
+  are supplied.
 
 **Wirken and Hermes are IN scope** (Phases 4 and 5). An earlier draft of this document cut
 them on YAGNI grounds — "nothing here needs a gateway yet." **That reasoning was wrong for
@@ -779,8 +784,8 @@ the vault/TTY and Docker-socket requirements while adding image maintenance, so 
 explicitly rejected. Wirken remains a desired component; keep the current native trial for
 learning and audit inspection, but do not call it the governed operator path or migrate
 credentials/tools into it. A production deployment is gated on an official upstream image
-and a working approval path. Do not introduce Open WebUI as a replacement. Langfuse remains
-the later cross-runtime observability/evaluation candidate rather than an approval gateway.
+and a working approval path. Do not introduce Open WebUI as a replacement. Langfuse is the
+cross-runtime observability/evaluation UI and remains entirely separate from approvals.
 
 **Credential decision.** sops remains the machine-bootstrap root for the vault passphrase
 and the local inference-attribution token. Provider and connector credentials added later
@@ -1086,8 +1091,9 @@ Several details were wrong or incomplete as written:
 - Langfuse is deliberately **not** the source-of-truth evaluator. Its current self-hosted
   stack adds web and worker containers plus PostgreSQL, ClickHouse, Redis/Valkey, and object
   storage. It provides valuable traces, datasets, annotations, scores, and comparison UI,
-  but does not create clean git worktrees or run repository-specific build oracles. It may
-  be added later as an OpenTelemetry visualization sink; the experiment must remain
+  but does not create clean git worktrees or run repository-specific build oracles. It is
+  now deployed as the trace, visualization, annotation, and experiment sink; evaluation
+  must remain
   reproducible without it. See the official [self-hosting architecture](https://langfuse.com/self-hosting),
   [experiment model](https://langfuse.com/docs/evaluation/core-concepts), and
   [OpenTelemetry endpoint](https://langfuse.com/integrations/native/opentelemetry).
@@ -1221,6 +1227,46 @@ Several details were wrong or incomplete as written:
   complete. Once the real deterministic n8n workflow exists, run the same task through
   Hermes and report tokens, latency, success, operator interventions, and surprising
   actions. Until then, the records above are acceptance evidence only.
+
+### Observability deployment checkpoint (pre-activation, 2026-08-09)
+
+- `modules/observability.nix` and the official-container Compose project under
+  `observability/` add two complementary layers. Langfuse v4 owns LLM/agent traces,
+  annotations, datasets, and experiment views. Prometheus and Grafana own host, Docker,
+  NVIDIA GPU, n8n, and ingress time-series metrics. Langfuse does not replace the committed
+  worktree evaluator or the complete JSONL source record.
+- Langfuse follows its current official low-scale topology and compatibility versions:
+  `langfuse:4`, `langfuse-worker:4`, Postgres 17, ClickHouse 25.12, Redis 7, and
+  Chainguard MinIO. Monitoring uses the official rolling Grafana, Prometheus,
+  node-exporter, cAdvisor, and NVIDIA DCGM exporter images. The shared daily container
+  updater recreates the active Compose project with current images.
+- Every browser and metrics listener is loopback-only. Langfuse is on port 13000, Grafana
+  on 13001, and Prometheus on 19091. Prometheus retention is bounded to 90 days or 20 GB.
+  The provisioned Grafana overview covers CPU, RAM, disk, containers, GPU/VRAM, n8n, AI
+  request/token rate, latency, and TTFT.
+- The stable logging ingress now exports `ai_ingress_*` Prometheus counters and summaries
+  labeled by caller and model while preserving llama-swap's existing metrics. This gives
+  OMP, OpenCode, n8n, Hermes, Wirken, and manual calls the same token/latency trend path.
+- OpenCode enables OpenTelemetry plus Langfuse's official rolling observability plugin and
+  receives the headlessly initialized project keys from SOPS. OMP nested tool spans are
+  intentionally not claimed until the community Pi extension is proven compatible with
+  the OMP fork; n8n has no native Langfuse tracing integration and retains its own metrics
+  and execution history until important workflows are explicitly instrumented.
+- Hermes remains covered by its native token dashboard, ingress metrics, and JSONL. Its
+  bundled `observability/langfuse` plugin requires a pip-installed SDK, while its sealed
+  upstream Nix package rejects the SDK's overlapping HTTP/Pydantic closure. Keep nested
+  Hermes Langfuse tracing disabled until upstream exposes a compatible dependency group;
+  do not bypass the collision guard or create a mutable service environment.
+- The complete Dracula system built successfully before activation. Live acceptance still
+  needs the next NixOS switch: verify all Compose containers, all Prometheus targets, the
+  DCGM GPU path, an OpenCode trace, a Hermes trace, and ingress token graphs.
+- Alucard imports the reusable module but leaves it disabled. Its later business-demo
+  profile will reuse the complete clients/workers/governance/observability surface and
+  route the permanent logged ingress to `https://router.requesty.ai/v1`. Use Requesty's
+  maintained routing, access lists, spending limits, and analytics instead of adding a
+  redundant gateway by default. Enabling it is gated on SOPS-managed Requesty keys, an
+  explicit demo-model allow-list/fallback policy, authenticated HTTPS exposure, and tested
+  trace backup/retention/redaction policy.
 
 ### Measured Phase 1 starting point
 

@@ -3,6 +3,7 @@
 import hmac
 import json
 import os
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -43,6 +44,90 @@ def load_bearer_caller():
 BEARER_TOKEN, BEARER_CALLER = load_bearer_caller()
 
 
+class Metrics:
+    """Small in-process Prometheus collector for the stable AI ingress."""
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.in_flight = 0
+        self.requests = {}
+        self.prompt_tokens = {}
+        self.completion_tokens = {}
+        self.latency = {}
+        self.ttft = {}
+
+    def begin(self):
+        with self.lock:
+            self.in_flight += 1
+
+    def finish(self, caller, model, status, usage, latency_ms, ttft_ms):
+        labels = (caller, model or "unknown")
+        request_labels = labels + (str(status),)
+        with self.lock:
+            self.in_flight -= 1
+            self.requests[request_labels] = self.requests.get(request_labels, 0) + 1
+            self.latency[labels] = self._add_sample(self.latency, labels, latency_ms / 1000)
+            if ttft_ms is not None:
+                self.ttft[labels] = self._add_sample(self.ttft, labels, ttft_ms / 1000)
+            if isinstance(usage, dict):
+                self._add_tokens(self.prompt_tokens, labels, usage.get("prompt_tokens"))
+                self._add_tokens(
+                    self.completion_tokens, labels, usage.get("completion_tokens")
+                )
+
+    @staticmethod
+    def _add_sample(target, labels, value):
+        count, total = target.get(labels, (0, 0.0))
+        return count + 1, total + value
+
+    @staticmethod
+    def _add_tokens(target, labels, value):
+        if isinstance(value, (int, float)):
+            target[labels] = target.get(labels, 0) + value
+
+    @staticmethod
+    def _labels(names, values):
+        def escape(value):
+            return str(value).replace("\\", "\\\\").replace("\n", "\\n").replace('"', '\\"')
+
+        return "{" + ",".join(
+            f'{name}="{escape(value)}"' for name, value in zip(names, values)
+        ) + "}"
+
+    def render(self):
+        lines = [
+            "# HELP ai_ingress_in_flight_requests Current requests through the AI ingress.",
+            "# TYPE ai_ingress_in_flight_requests gauge",
+        ]
+        with self.lock:
+            lines.append(f"ai_ingress_in_flight_requests {self.in_flight}")
+            lines.extend(self._render_counter("ai_ingress_requests", self.requests, ("caller", "model", "status")))
+            lines.extend(self._render_counter("ai_ingress_prompt_tokens", self.prompt_tokens, ("caller", "model")))
+            lines.extend(self._render_counter("ai_ingress_completion_tokens", self.completion_tokens, ("caller", "model")))
+            lines.extend(self._render_summary("ai_ingress_latency_seconds", self.latency))
+            lines.extend(self._render_summary("ai_ingress_ttft_seconds", self.ttft))
+        return "\n".join(lines) + "\n"
+
+    def _render_counter(self, name, values, label_names):
+        lines = [f"# TYPE {name}_total counter"]
+        lines.extend(
+            f"{name}_total{self._labels(label_names, labels)} {value}"
+            for labels, value in sorted(values.items())
+        )
+        return lines
+
+    def _render_summary(self, name, values):
+        lines = [f"# TYPE {name} summary"]
+        for labels, (count, total) in sorted(values.items()):
+            rendered = self._labels(("caller", "model"), labels)
+            lines.append(f"{name}_count{rendered} {count}")
+            lines.append(f"{name}_sum{rendered} {total}")
+        return lines
+
+
+METRICS = Metrics()
+
+
 def resolve_caller(headers):
     explicit = headers.get("X-AI-Caller")
     if explicit:
@@ -71,7 +156,11 @@ class Proxy(BaseHTTPRequestHandler):
         return
 
     def _proxy(self):
+        if self.path == "/metrics" and self.command == "GET":
+            return self._metrics()
+
         started = time.monotonic()
+        METRICS.begin()
         length = int(self.headers.get("Content-Length", "0"))
         request_body = self.rfile.read(length)
         headers = {
@@ -199,7 +288,30 @@ class Proxy(BaseHTTPRequestHandler):
                     "response_content_type": response_headers.get("Content-Type"),
                 }
             )
+            METRICS.finish(
+                resolve_caller(self.headers),
+                request_json.get("model") if isinstance(request_json, dict) else None,
+                status,
+                usage,
+                elapsed_ms,
+                ttft_ms,
+            )
             self.close_connection = True
+
+    def _metrics(self):
+        payload = METRICS.render().encode()
+        try:
+            with urllib.request.urlopen(BACKEND + "/metrics", timeout=5) as upstream:
+                payload += upstream.read()
+        except (OSError, urllib.error.URLError):
+            pass
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
+        self.send_header("Content-Length", str(len(payload)))
+        self.send_header("Connection", "close")
+        self.end_headers()
+        self.wfile.write(payload)
+        self.close_connection = True
 
     do_GET = _proxy
     do_POST = _proxy

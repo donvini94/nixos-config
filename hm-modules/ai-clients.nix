@@ -1,4 +1,5 @@
 {
+  config,
   lib,
   osConfig,
   pkgs,
@@ -137,6 +138,8 @@ in
       enabled_providers = [ provider ];
       share = "disabled";
       autoupdate = false;
+      experimental.openTelemetry = true;
+      plugin = [ "@langfuse/opencode-observability-plugin@latest" ];
       permission = {
         "*" = "ask";
         read = "allow";
@@ -163,5 +166,8 @@ in
         }) modelDefinitions;
       };
     };
+
+    xdg.configFile."opencode/opencode-langfuse.json".source =
+      config.lib.file.mkOutOfStoreSymlink "/run/secrets/rendered/opencode-langfuse.json";
   };
 }

@@ -7,7 +7,8 @@ to ingress measurements by `X-AI-Eval-Run`.
 
 Langfuse is not the evaluator. The JSON task/result formats and JSONL ingress records stay
 the source of truth so an experiment remains reproducible without a dashboard service.
-Langfuse can be added later as an OpenTelemetry visualization and annotation sink.
+The local Langfuse service is the visualization, annotation, dataset, and experiment sink;
+use it to inspect and score traces, while keeping task definitions and oracle results here.
 
 ## Curate real tasks
 
