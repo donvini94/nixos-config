@@ -57,6 +57,23 @@ let
   };
 in
 {
+  # libmodsecurity 3.0.16 with PCRE2 10.47 reproducibly crashes in the JIT
+  # allocator during both ruleset reload and process cleanup. Its own matching
+  # code already falls back to PCRE2_NO_JIT when compilation is unavailable,
+  # so disable only those two eager JIT calls until upstream resolves it.
+  nixpkgs.overlays = [
+    (_final: prev: {
+      libmodsecurity = prev.libmodsecurity.overrideAttrs (old: {
+        postPatch = (old.postPatch or "") + ''
+          substituteInPlace src/utils/regex.cc src/operators/verify_cc.cc \
+            --replace-fail \
+              "m_pcje = pcre2_jit_compile(m_pc, PCRE2_JIT_COMPLETE);" \
+              "m_pcje = PCRE2_ERROR_JIT_BADOPTION;"
+        '';
+      });
+    })
+  ];
+
   environment.systemPackages = [
     crowdsecAdmin
     pkgs.ipset
@@ -200,14 +217,6 @@ in
       modsecurity on;
       modsecurity_rules_file ${modsecurityRules};
     '';
-  };
-
-  # Reloading reproduces a SIGSEGV in libmodsecurity's PCRE2 JIT while the
-  # master parses CRS. Keep the WAF and systemd hardening; turn reload requests
-  # (including ACME renewals) into a clean, one-second process recycle instead.
-  systemd.services.nginx.serviceConfig = {
-    ExecReload = lib.mkForce "${pkgs.coreutils}/bin/kill -TERM $MAINPID";
-    RestartSec = lib.mkForce "1s";
   };
 
   # The firewall-bouncer module invokes upstream cscli, which expects this

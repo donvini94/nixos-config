@@ -184,12 +184,12 @@ ss -ltn '( sport = :38080 )'
 systemd-analyze security keycloak.service
 ```
 
-Repeated nginx reloads segfaulted while libmodsecurity rebuilt the CRS rules in PCRE2 JIT.
-The live coredump identified that exact stack. Reload requests, including ACME renewal hooks,
-therefore perform a clean one-second nginx process recycle while retaining ModSecurity and the
-service sandbox. Verify this compatibility policy after changes with three consecutive
-`systemctl reload nginx` calls and an HTTPS health check; a coredump or failed unit is a release
-blocker.
+Repeated nginx reloads and clean stops segfaulted in libmodsecurity's PCRE2 10.47 JIT allocator.
+Both live coredumps identified the JIT compile/free stacks. Alucard therefore disables the two
+eager JIT calls only in libmodsecurity; its maintained interpreter fallback remains active while
+nginx retains standard reload semantics and the full service sandbox. Verify this compatibility
+policy after changes with three consecutive `systemctl reload nginx` calls, a clean restart, and
+an HTTPS health check; a new coredump or failed unit is a release blocker.
 
 ## Mailcow maintenance boundary
 
