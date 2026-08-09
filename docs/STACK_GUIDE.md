@@ -129,6 +129,10 @@ Run an update immediately on either host with:
 containers-update
 ```
 
+The command waits while images download and services pass their health checks. A first pull
+or a large upstream image can take several minutes; do not interrupt it merely because no
+container is visible yet.
+
 Inspect the schedule and the last update:
 
 ```console

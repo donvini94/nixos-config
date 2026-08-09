@@ -100,6 +100,12 @@ and maintain an unofficial image merely to make deployment styles look uniform. 
 publishes only a signed static binary, record the exception or blocker explicitly rather
 than recreating its release engineering locally.
 
+The n8n readiness probe must tolerate the interval where `docker run --pull=always` is still
+downloading and has not created a container object. The main `docker run` process is
+authoritative during that interval; only an existing stopped container or the ten-minute
+start deadline is a readiness failure. Media Compose pulls receive a thirty-minute start
+deadline for the same reason.
+
 **Full local on dracula.** No remote API for now, no communication with `alucard`. Things
 can move later; they will not move during this build.
 

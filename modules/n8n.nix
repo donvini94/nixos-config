@@ -324,14 +324,17 @@ in
         "n8n-docker-network.service"
       ];
       serviceConfig = {
-        TimeoutStartSec = lib.mkForce "180s";
+        TimeoutStartSec = lib.mkForce "600s";
         TimeoutStopSec = lib.mkForce "40s";
         SuccessExitStatus = [ 143 ];
         ExecStartPost = pkgs.writeShellScript "wait-for-container-n8n" ''
           healthy_samples=0
-          for attempt in $(${pkgs.coreutils}/bin/seq 1 180); do
+          for attempt in $(${pkgs.coreutils}/bin/seq 1 600); do
             container_running="$(${pkgs.docker}/bin/docker inspect --format '{{.State.Running}}' n8n 2>/dev/null || true)"
-            if [ "$container_running" = false ] || { [ -z "$container_running" ] && [ "$attempt" -gt 5 ]; }; then
+            # With --pull=always, Docker can spend substantial time downloading
+            # before it creates the container object. An absent object is not a
+            # failed container; the main docker-run process remains authoritative.
+            if [ "$container_running" = false ]; then
               echo "n8n container exited before becoming healthy" >&2
               exit 1
             fi
@@ -351,7 +354,7 @@ in
             fi
             ${pkgs.coreutils}/bin/sleep 1
           done
-          echo "n8n did not become healthy within 180 seconds" >&2
+          echo "n8n did not become healthy within 600 seconds" >&2
           exit 1
         '';
       };
