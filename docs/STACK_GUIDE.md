@@ -311,7 +311,9 @@ token prices. Re-check IDs, capabilities, prices, and retention before changing 
 
 Dracula's OMP and OpenCode expose the same Requesty registry through
 `http://alucard.tailf117a1.ts.net:28080/v1` over Tailscale while retaining both local GPU
-models and the local dense default. No Requesty credential is installed on Dracula.
+models and the local dense default. No Requesty credential is installed on Dracula. Live
+acceptance on 2026-08-09 confirmed `omp models` and `opencode models` expose the full combined
+catalog; OMP uses its writable `~/.omp/agent` state and no longer repeats initial setup.
 
 Use the initial model through the unchanged ingress:
 

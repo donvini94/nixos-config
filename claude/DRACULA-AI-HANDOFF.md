@@ -1349,25 +1349,34 @@ Several details were wrong or incomplete as written:
   administration services returned successful application responses, and every Prometheus
   target was up, including CrowdSec.
 
-### Security, Requesty choice, and Signal checkpoint (prepared, 2026-08-09)
+### Security, Requesty choice, and Signal checkpoint (active, 2026-08-09)
 
-- Alucard's next activation adds ModSecurity with pinned OWASP CRS 4.25.1 LTS, nginx request
-  and connection limits, bounded request bodies, consistent low-risk headers, explicit 404s
-  for four dead backends, and a loopback-bound/hardened Keycloak unit. The full Alucard
-  system build passed; live WAF and application acceptance remain mandatory after switching.
+- Alucard activated ModSecurity with pinned OWASP CRS 4.25.1 LTS, nginx request and connection
+  limits, bounded request bodies, consistent low-risk headers, explicit 404s for four dead
+  backends, and a loopback-bound/hardened Keycloak unit. From Dracula, the normal Jellyfin path
+  returned HTTP 302, the traversal/shell WAF probe returned HTTP 403, Keycloak returned HTTP
+  302 through public HTTPS, and its raw port 38080 was closed over the tailnet. A hot reload
+  produced one nginx segfault despite a successful syntax test; a clean restart recovered and
+  all acceptance probes passed. Repeated reload/certificate-renewal stability remains open.
 - CrowdSec gains the maintained Jellyfin brute-force collection and reads Jellyfin's systemd
   journal. Existing firewall remediation remains unchanged and already has live evidence.
-- `lib/requesty-models.nix` now contains a 2026-08-09 authenticated-catalog snapshot covering
+- `lib/requesty-models.nix` contains a 2026-08-09 authenticated-catalog snapshot covering
   cheap DeepSeek/Qwen, stronger DeepSeek, Kimi K3, and three current frontier comparisons.
   Alucard enforces the registry. Dracula exposes it to OMP/OpenCode over the private Alucard
   Tailscale ingress while preserving its local models and local default; Dracula receives no
-  Requesty credential. Both host system builds passed; live selections require activation.
+  Requesty credential. Live `/v1/models`, `omp models`, and `opencode models` checks exposed all
+  seven Requesty entries and both Dracula-local entries; OMP 17.2.12 used its writable config
+  path without repeating onboarding.
 - The official signal-cli 0.14.7 native release is packaged for Alucard. Its service remains
   skipped until an operator runs `signal-link` and scans the QR code. One daemon then provides
   Hermes' loopback HTTP transport and Wirken's group-permissioned Unix socket. Sender
   allowlists are not inferred and must be configured after the operator chooses one Signal
   front door or separate accounts/groups; running both agents on the same conversation would
   produce competing replies.
+- CrowdSec state ownership was normalized after the NixOS module's DynamicUser migration left
+  nested state inaccessible. The stale bouncer registration whose key was already absent was
+  deleted and recreated through the upstream unit. CrowdSec, its authenticated firewall
+  bouncer, and nginx are active with zero failed units.
 - Wirken v1.13.0 remains the latest signed binary release; v1.14-v1.16 are tag-only and have
   no release artifacts. Both live gateways and their audit services are active and their
   WebChat roots return HTTP 200. No-tool chat is usable. The known WebChat effectful-approval

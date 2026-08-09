@@ -15,6 +15,8 @@ Tailscale Funnel is prohibited. It would turn a private tailnet service into a p
 - SSH uses keys only; password login, keyboard-interactive login, and root login are disabled.
 - Fail2ban currently protects SSH.
 - nginx terminates ACME TLS and runs with NixOS systemd hardening.
+- nginx applies OWASP CRS 4.25.1 LTS through ModSecurity, per-address request and
+  connection limits, bounded request bodies, and consistent low-risk headers.
 - AI and media-administration backends bind to loopback. Hermes is the deliberate exception:
   it binds a wildcard socket to engage its mandatory authentication gate, while systemd permits
   only loopback peers and the host firewall does not open port 9119.
@@ -23,14 +25,24 @@ Tailscale Funnel is prohibited. It would turn a private tailnet service into a p
   `/run/secrets`.
 - Grafana, Prometheus, node-exporter, and cAdvisor provide machine and container metrics.
 - CrowdSec is configured for local log analysis and firewall remediation in both the host
-  `INPUT` and Docker `DOCKER-USER` chains. Community event sharing is disabled unless an
-  operator deliberately enrolls the machine later.
+  `INPUT` and Docker `DOCKER-USER` chains. Its agent and authenticated firewall bouncer were
+  recovered and verified active on 2026-08-09. Community event sharing is disabled unless
+  an operator deliberately enrolls the machine later.
 
 ## Private Tailscale access
 
 Tailscale is installed declaratively on Dracula and Alucard. It does not advertise routes,
-act as an exit node, trust the entire `tailscale0` interface, open a public firewall port, or
-enable Taildrop. Only the explicit ports below are published with Tailscale Serve TCP proxies.
+act as an exit node, mark `tailscale0` trusted in the NixOS firewall, open a public firewall
+port, or enable Taildrop. The explicit Tailscale Serve mappings below are the supported and
+documented entry points.
+
+Tailscale's default Linux netfilter mode independently accepts traffic arriving on
+`tailscale0`; it runs before the NixOS firewall. Consequently, any application that binds a
+wildcard address can also be reachable directly from an authorized tailnet peer even when it
+is not a Serve mapping. The 2026-08-09 check found Jellyfin's raw port 8096 in this category.
+This is private, not internet exposure, but it can bypass nginx/WAF. Loopback binding remains
+the backend boundary, and restrictive Tailscale grants are mandatory before inviting the
+cofounder or any customer identity.
 The HTTP applications remain bound to `127.0.0.1`, except for the systemd-isolated Hermes
 listener described above. Traffic between devices is encrypted by Tailscale's WireGuard tunnel.
 
@@ -129,13 +141,13 @@ their own explicit firewall justification and protocol-specific protection.
 | P0 | Bind Mailcow web ports 880/4433 to loopback | Pending controlled Mailcow maintenance |
 | P0 | Back up and update Mailcow from 2025-07 to current stable | Pending; local modifications must be reconciled |
 | P1 | Install CrowdSec engine and firewall remediation | Complete; real nginx decision verified in the live ipset behind both host and Docker chains |
-| P1 | Add tested nginx AppSec/WAF integration | OWASP CRS 4.25.1 LTS + ModSecurity prepared; build verified, live acceptance pending switch |
-| P1 | Add per-service rate and connection limits | Prepared at nginx edge; build verified, live acceptance pending switch |
-| P1 | Apply consistent security headers and bounded request sizes | Prepared; upload-heavy Registry/Filebrowser/WebDAV bypass WAF and retain explicit size policy |
-| P1 | Retire dead DNS/vhosts and remove unused firewall ports | Dead root/Git/docs/Coder backends changed to explicit 404; unused TCP 53/873/11335/11445 removed; live acceptance pending |
+| P1 | Add tested nginx AppSec/WAF integration | Active; normal Jellyfin request returned 302 and a traversal/shell probe returned 403 on 2026-08-09 |
+| P1 | Add per-service rate and connection limits | Active at the nginx edge; configuration and normal application path verified |
+| P1 | Apply consistent security headers and bounded request sizes | Active; upload-heavy Registry/Filebrowser/WebDAV bypass WAF and retain explicit size policy |
+| P1 | Retire dead DNS/vhosts and remove unused firewall ports | Dead root/Git/docs/Coder backends return 404; unused TCP 53/873/11335/11445 removed |
 | P2 | Define Keycloak/2FA policy for every public application | Pending identity review |
 | P2 | Harden native services and containers | Keycloak loopback bind and systemd sandbox prepared; remaining application policy review pending |
-| P2 | Add vulnerability scanning and security alerts | Trivy daily scan and Grafana/Prometheus results prepared; external notification routing pending |
+| P2 | Add vulnerability scanning and security alerts | Trivy daily scan and Grafana/Prometheus export active; first on-demand Alucard report and external notification routing pending |
 | P2 | Implement and test application-aware backups/restores | Pending; required before customer use |
 | P3 | Add GeoIP restrictions to selected web services | Pending explicit country policy; never global mail blocking |
 
@@ -163,13 +175,20 @@ curl -i 'https://stream.dumusstbereitsein.de/?probe=/etc/passwd&shell=/bin/sh'
 sudo tail -50 /var/log/nginx/modsec_audit.log
 ```
 
-The first request must remain healthy and the probe must return HTTP 403 with a
-corresponding audit entry. Also confirm Keycloak only listens on loopback:
+This acceptance passed on 2026-08-09: the first request returned its normal HTTP 302 and the
+probe returned HTTP 403. The audit-log entry and Keycloak's local listener still require a
+host-side check because neither is exposed to the tailnet:
 
 ```bash
 ss -ltn '( sport = :38080 )'
 systemd-analyze security keycloak.service
 ```
+
+One nginx master process segfaulted during a configuration reload after its `nginx -t` check
+had passed. A clean restart recovered immediately and the live WAF checks above passed. Treat
+reload stability as an open reliability item: capture `coredumpctl info nginx` if it recurs;
+do not describe the public edge as production-available until repeated reloads and certificate
+renewal have been exercised without a crash.
 
 ## Mailcow maintenance boundary
 

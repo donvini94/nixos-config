@@ -119,8 +119,11 @@ The current curated choices are:
 | Closed frontier comparisons | Gemini 3.1 Pro, Claude Sonnet 5, GPT-5.6 Terra |
 
 The registry and displayed token prices were checked against Requesty's authenticated catalog
-on 2026-08-09. The catalog reported 30-day provider retention for the selected Claude and
-OpenAI routes; do not use those routes for sensitive customer data without an agreed policy.
+on 2026-08-09. Live acceptance then confirmed that Alucard's `/v1/models` exposes exactly these
+seven IDs and that Dracula's OMP 17.2.12 and OpenCode 1.18.13 list all seven alongside both local
+models without copying the Requesty credential. The catalog reported 30-day provider retention
+for the selected Claude and OpenAI routes; do not use those routes for sensitive customer data
+without an agreed policy.
 The selected DeepSeek, Qwen, Kimi, and Gemini routes reported no provider retention.
 
 OMP and OpenCode on Alucard expose these models directly. On Dracula they appear alongside
