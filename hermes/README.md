@@ -71,8 +71,9 @@ settings even though the gateway remains Nix-managed. Nix-defined settings still
 rebuild merges them into `config.yaml`. BotFather manual token entry remains the fallback.
 
 The dashboard's **Restart gateway** action performs a clean gateway shutdown. The NixOS
-system service supervises that lifecycle with `Restart=always`; do not enable a second Hermes
-user service or user lingering.
+system service supervises that lifecycle with `Restart=always` and reclaims ownership with
+Hermes' supported `gateway run --replace` mode if the dashboard briefly spawns a standalone
+replacement. Do not enable a second Hermes user service or user lingering.
 
 After setup, verify an allowed DM, `/model`, an inference record attributed to `hermes`, and
 that an unlisted Telegram account receives no agent response. Keep group joining disabled

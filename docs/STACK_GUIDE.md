@@ -355,6 +355,8 @@ declaratively installed and runs with Nix managed mode, while the dashboard may 
 the shared runtime state; Nix-defined `config.yaml` keys are merged back as authoritative on
 every rebuild. Hermes' dashboard restart ends the gateway cleanly and the NixOS system service
 immediately starts it again. Do not install or enable Hermes' separate user service.
+The system unit starts with Hermes' supported `gateway run --replace` mode, so it remains the
+authoritative gateway if a dashboard restart briefly creates a standalone process.
 
 The personal-account WhatsApp QR bridge is not shipped: Hermes' upstream Nix package omits
 the mutable Node bridge, and upstream calls WhatsApp Business Cloud API the production path.

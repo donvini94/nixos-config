@@ -221,6 +221,13 @@ in
       # Keep the upstream supervisor semantics so systemd brings it back.
       restart = "always";
       restartSec = 3;
+      # Dashboard channel changes invoke Hermes' standalone restart path. Make
+      # the supervised system service authoritative if that path briefly
+      # creates a competing gateway process.
+      extraArgs = [
+        "run"
+        "--replace"
+      ];
       extraPackages = with pkgs; [
         findutils
         jq
@@ -428,6 +435,9 @@ in
         {
           HOME = cfg.stateDirectory;
           HERMES_HOME = hermesHome;
+          # Runtime channel onboarding is intentionally writable, but Hermes'
+          # non-managed default would otherwise chmod the shared state to 0700.
+          HERMES_SKIP_CHMOD = "1";
         }
         // lib.optionalAttrs (cfg.proxyUrl != null) {
           HTTPS_PROXY = cfg.proxyUrl;

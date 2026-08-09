@@ -1381,6 +1381,10 @@ Several details were wrong or incomplete as written:
   cleanly stopped the system gateway while `Restart=on-failure` left it down. The dashboard is
   now allowed to own runtime channel settings, Nix still wins for declared config keys, and the
   system gateway uses upstream-style `Restart=always`. Do not add a second user gateway.
+- A follow-up live check found the upstream dashboard restart can also start a standalone
+  gateway before systemd recovers. The system service now uses Hermes' supported
+  `gateway run --replace` mode to reclaim the lock, and the writable dashboard sets
+  `HERMES_SKIP_CHMOD=1` so it cannot narrow shared state from `2770` to `0700`.
 - CrowdSec state ownership was normalized after the NixOS module's DynamicUser migration left
   nested state inaccessible. The stale bouncer registration whose key was already absent was
   deleted and recreated through the upstream unit. CrowdSec, its authenticated firewall
