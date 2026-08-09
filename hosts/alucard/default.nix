@@ -14,6 +14,7 @@ in
     ./disk-config.nix
     ./networking.nix
     ./private-access.nix
+    ./security.nix
     ./services.nix
     ./media.nix
     ./users.nix

@@ -4,6 +4,10 @@ This is the operator's map of what is installed, where to reach it, and which co
 it. `dracula` is the local AI workstation. `alucard` is the server, media host, and
 Requesty-backed business-demo machine.
 
+For a concise, customer-demo-oriented introduction, start with
+[Alucard AI demo guide](./AI_DEMO_GUIDE.md). Operators should also read
+[Alucard security and exposure guide](./ALUCARD_SECURITY.md).
+
 ## The short version
 
 On `dracula`:

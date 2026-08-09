@@ -15,7 +15,7 @@ let
     "28080" = 8080; # Requesty-backed OpenAI API
     "28790" = 18790; # Wirken
     "29091" = 19091; # Prometheus
-    "29119" = 9119; # Hermes
+    "29119" = 29118; # Hermes through the local Host-header normalizer
 
     # Media administration. These match the media-admin SSH forwards.
     "15656" = 15656; # Kapowarr

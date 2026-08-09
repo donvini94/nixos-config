@@ -1,0 +1,72 @@
+{ lib, ... }:
+
+{
+  services.crowdsec = {
+    enable = true;
+    autoUpdateService = true;
+    openFirewall = false;
+    hub.collections = [
+      "crowdsecurity/linux"
+      "crowdsecurity/nginx"
+    ];
+    settings = {
+      lapi.credentialsFile = "/var/lib/crowdsec/state/local_api_credentials.yaml";
+      general.api.server = {
+        enable = true;
+        # Port 8080 belongs permanently to the AI ingress.
+        listen_uri = "127.0.0.1:18082";
+        # Do not send security events off-host unless CAPI enrollment is an
+        # explicit operator decision.
+        online_client = {
+          sharing = false;
+          pull = {
+            community = false;
+            blocklists = false;
+          };
+        };
+      };
+    };
+    localConfig = {
+      acquisitions = [
+        {
+          source = "journalctl";
+          journalctl_filter = [ "_SYSTEMD_UNIT=sshd.service" ];
+          labels.type = "syslog";
+        }
+        {
+          source = "file";
+          filenames = [ "/var/log/nginx/access.log" ];
+          labels.type = "nginx";
+        }
+      ];
+      parsers.s02Enrich = [
+        {
+          name = "alucard/private-network-whitelist";
+          description = "Never ban loopback, LAN, container, or tailnet source ranges";
+          whitelist = {
+            reason = "private administration network";
+            cidr = [
+              "127.0.0.0/8"
+              "10.0.0.0/8"
+              "100.64.0.0/10"
+              "172.16.0.0/12"
+              "192.168.0.0/16"
+              "::1/128"
+              "fd7a:115c:a1e0::/48"
+            ];
+          };
+        }
+      ];
+    };
+  };
+
+  # The module registers and stores its bouncer key outside the Nix store.
+  services.crowdsec-firewall-bouncer = {
+    enable = true;
+    settings.mode = "iptables";
+  };
+
+  users.users.crowdsec.extraGroups = lib.mkAfter [ "nginx" ];
+
+  services.localObservability.extraScrapeTargets.crowdsec = 6060;
+}

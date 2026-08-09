@@ -20,6 +20,8 @@ Tailscale Funnel is prohibited. It would turn a private tailnet service into a p
 - SOPS keeps encrypted source secrets out of the Nix store and renders runtime values beneath
   `/run/secrets`.
 - Grafana, Prometheus, node-exporter, and cAdvisor provide machine and container metrics.
+- CrowdSec is configured for local log analysis and host-firewall remediation. Community event
+  sharing is disabled unless an operator deliberately enrolls the machine later.
 
 ## Private Tailscale access
 
@@ -43,32 +45,33 @@ sudo systemctl restart tailscale-private-services.service
 tailscale serve status
 ```
 
-From a tailnet device with MagicDNS enabled, use `alucard` as the hostname. Otherwise find its
-address with `tailscale ip -4 alucard`.
+The stable MagicDNS name is `alucard.tailf117a1.ts.net`; the short name `alucard` also works
+when MagicDNS search domains are enabled. The `100.x` address can change and should not be
+bookmarked.
 
 ### AI and observability
 
 | Component | Tailnet URL |
 | --- | --- |
-| n8n | `http://alucard:25678` |
-| Requesty-backed API | `http://alucard:28080/v1` |
-| Hermes | `http://alucard:29119` |
-| Langfuse | `http://alucard:23000` |
-| Grafana | `http://alucard:23001` |
-| Wirken | `http://alucard:28790` |
-| Prometheus | `http://alucard:29091` |
+| n8n | `http://alucard.tailf117a1.ts.net:25678` |
+| Requesty-backed API | `http://alucard.tailf117a1.ts.net:28080/v1` |
+| Hermes | `http://alucard.tailf117a1.ts.net:29119` |
+| Langfuse | `http://alucard.tailf117a1.ts.net:23000` |
+| Grafana | `http://alucard.tailf117a1.ts.net:23001` |
+| Wirken | `http://alucard.tailf117a1.ts.net:28790` |
+| Prometheus | `http://alucard.tailf117a1.ts.net:29091` |
 
 ### Media administration
 
 | Component | Tailnet URL |
 | --- | --- |
-| Kapowarr | `http://alucard:15656` |
-| Sonarr | `http://alucard:18989` |
-| Radarr | `http://alucard:17878` |
-| Prowlarr | `http://alucard:19696` |
-| Bazarr | `http://alucard:16767` |
-| qBittorrent | `http://alucard:18080` |
-| SABnzbd | `http://alucard:19090` |
+| Kapowarr | `http://alucard.tailf117a1.ts.net:15656` |
+| Sonarr | `http://alucard.tailf117a1.ts.net:18989` |
+| Radarr | `http://alucard.tailf117a1.ts.net:17878` |
+| Prowlarr | `http://alucard.tailf117a1.ts.net:19696` |
+| Bazarr | `http://alucard.tailf117a1.ts.net:16767` |
+| qBittorrent | `http://alucard.tailf117a1.ts.net:18080` |
+| SABnzbd | `http://alucard.tailf117a1.ts.net:19090` |
 
 The existing `ssh -N ai-admin` and `ssh -N media-admin` profiles remain available if Tailscale
 is unavailable. Do not expose these ports through nginx, Tailscale Funnel, Docker wildcard
@@ -93,11 +96,11 @@ their own explicit firewall justification and protocol-specific protection.
 
 | Priority | Work | State |
 | --- | --- | --- |
-| P0 | Keep AI and administration private | Enforced; Tailscale enrollment pending |
-| P0 | Remove direct public Jellyfin ports 8096/8920 | Configured; pending switch and external verification |
+| P0 | Keep AI and administration private | Enforced; tailnet endpoints verified from Dracula |
+| P0 | Remove direct public Jellyfin ports 8096/8920 | Enforced; both ports externally verified closed/filtered |
 | P0 | Bind Mailcow web ports 880/4433 to loopback | Pending controlled Mailcow maintenance |
 | P0 | Back up and update Mailcow from 2025-07 to current stable | Pending; local modifications must be reconciled |
-| P1 | Install CrowdSec engine and firewall remediation | Next security change |
+| P1 | Install CrowdSec engine and firewall remediation | Configured; activation and live ban test pending |
 | P1 | Add tested nginx AppSec/WAF integration | Pending selection of maintained NixOS-compatible integration |
 | P1 | Add per-service rate and connection limits | Pending workload-specific testing |
 | P1 | Apply consistent security headers and bounded request sizes | Pending application compatibility testing |

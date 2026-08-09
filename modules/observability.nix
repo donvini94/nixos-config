@@ -25,7 +25,8 @@ let
     ]
     ++ lib.optional cfg.gpuMetrics (scrape "nvidia" cfg.dcgmExporterPort)
     ++ lib.optional (cfg.inferencePort != null) (scrape "ai-ingress" cfg.inferencePort)
-    ++ lib.optional (cfg.n8nPort != null) (scrape "n8n" cfg.n8nPort);
+    ++ lib.optional (cfg.n8nPort != null) (scrape "n8n" cfg.n8nPort)
+    ++ lib.mapAttrsToList scrape cfg.extraScrapeTargets;
   };
   prepare = pkgs.writeShellScript "observability-prepare" ''
     set -euo pipefail
@@ -102,6 +103,12 @@ in
       type = lib.types.nullOr lib.types.port;
       default = null;
       description = "Optional loopback n8n Prometheus metrics port.";
+    };
+
+    extraScrapeTargets = lib.mkOption {
+      type = lib.types.attrsOf lib.types.port;
+      default = { };
+      description = "Additional loopback Prometheus scrape jobs keyed by job name.";
     };
   };
 
