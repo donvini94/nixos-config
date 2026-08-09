@@ -202,6 +202,14 @@ in
     '';
   };
 
+  # Reloading reproduces a SIGSEGV in libmodsecurity's PCRE2 JIT while the
+  # master parses CRS. Keep the WAF and systemd hardening; turn reload requests
+  # (including ACME renewals) into a clean, one-second process recycle instead.
+  systemd.services.nginx.serviceConfig = {
+    ExecReload = lib.mkForce "${pkgs.coreutils}/bin/kill -TERM $MAINPID";
+    RestartSec = lib.mkForce "1s";
+  };
+
   # The firewall-bouncer module invokes upstream cscli, which expects this
   # conventional path. CrowdSec itself uses the identical generated config
   # directly from the Nix store.

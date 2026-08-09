@@ -184,11 +184,12 @@ ss -ltn '( sport = :38080 )'
 systemd-analyze security keycloak.service
 ```
 
-One nginx master process segfaulted during a configuration reload after its `nginx -t` check
-had passed. A clean restart recovered immediately and the live WAF checks above passed. Treat
-reload stability as an open reliability item: capture `coredumpctl info nginx` if it recurs;
-do not describe the public edge as production-available until repeated reloads and certificate
-renewal have been exercised without a crash.
+Repeated nginx reloads segfaulted while libmodsecurity rebuilt the CRS rules in PCRE2 JIT.
+The live coredump identified that exact stack. Reload requests, including ACME renewal hooks,
+therefore perform a clean one-second nginx process recycle while retaining ModSecurity and the
+service sandbox. Verify this compatibility policy after changes with three consecutive
+`systemctl reload nginx` calls and an HTTPS health check; a coredump or failed unit is a release
+blocker.
 
 ## Mailcow maintenance boundary
 
