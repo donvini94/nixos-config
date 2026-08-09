@@ -5,7 +5,34 @@
   ...
 }:
 
+let
+  crowdsecAdmin = pkgs.writeShellApplication {
+    name = "crowdsec-admin";
+    runtimeInputs = [ pkgs.systemd ];
+    text = ''
+      if (( EUID != 0 )); then
+        exec ${config.security.wrapperDir}/sudo "$0" "$@"
+      fi
+
+      exec systemd-run --quiet --wait --pipe --collect \
+        --property=User=${lib.escapeShellArg config.services.crowdsec.user} \
+        --property=Group=${lib.escapeShellArg config.services.crowdsec.group} \
+        --property=DynamicUser=yes \
+        --property=StateDirectory=crowdsec \
+        --property=NoNewPrivileges=yes \
+        --property=PrivateTmp=yes \
+        --property=PrivateUsers=yes \
+        --property=ProtectHome=yes \
+        --property=ProtectSystem=strict \
+        --property=UMask=0077 \
+        ${lib.getExe' config.services.crowdsec.package "cscli"} \
+        -c=/etc/crowdsec/config.yaml "$@"
+    '';
+  };
+in
 {
+  environment.systemPackages = [ crowdsecAdmin ];
+
   services.crowdsec = {
     enable = true;
     autoUpdateService = true;

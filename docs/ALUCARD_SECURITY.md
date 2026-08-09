@@ -84,6 +84,20 @@ Before adding more tailnet members, create a Tailscale operator group, tag Aluca
 and use grants to allow only that group to these ports. Record the final policy and its owner
 here after applying and testing it.
 
+## CrowdSec operations
+
+Use `crowdsec-admin` for interactive CrowdSec administration:
+
+```console
+crowdsec-admin metrics
+crowdsec-admin decisions list
+crowdsec-admin alerts list
+```
+
+This launcher runs the official `cscli` in CrowdSec's systemd-managed state namespace and asks
+for sudo authentication. Calling the NixOS-provided `cscli` wrapper directly does not work with
+the firewall-bouncer module's DynamicUser state-directory layout.
+
 ## Public-service inventory
 
 nginx currently defines public HTTPS virtual hosts for Keycloak, GitLab, Docker Registry,
