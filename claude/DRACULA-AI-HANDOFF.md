@@ -1383,8 +1383,9 @@ Several details were wrong or incomplete as written:
 - Wirken v1.13.0 remains the latest signed binary release; v1.14-v1.16 are tag-only and have
   no release artifacts. Both live gateways and their audit services are active and their
   WebChat roots return HTTP 200. No-tool chat is usable. The known WebChat effectful-approval
-  defect remains upstream; the supported Signal adapter provides a separate approval surface
-  once linked. Do not create an unofficial image or local source patch.
+  defect remains upstream. For the observation week, `wirken-admin ask --message "..."` uses
+  the released interactive stdin approval gate and signed audit chain without a messaging
+  account. Do not create an unofficial image or local source patch.
 - `wirken-admin doctor` passed live on Alucard: provider, vault, adapter registry, MCP signing,
   signed audit chain, Docker runtime, and alarm log were healthy. No channel is configured yet.
   The latest root-daemon Trivy baseline scanned 40 image references and exported 178 critical,

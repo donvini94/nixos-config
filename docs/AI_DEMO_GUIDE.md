@@ -75,6 +75,17 @@ inside its workspace, then inspect the result in **Files**. Alucard's Hermes int
 general web-search/browser tool and cannot modify the host outside its isolated workspace. See
 the [Hermes operator guide](../hermes/README.md) for the exact boundaries.
 
+For a live governed Wirken task, use its upstream terminal approval path rather than effectful
+WebChat:
+
+```console
+wirken-admin ask --message "Create a short implementation plan and save it in the workspace."
+wirken-audit-log --limit 20
+```
+
+Tool approvals appear in the terminal and the decision enters Wirken's signed audit chain.
+WebChat remains suitable only for no-tool conversation until its upstream session bug is fixed.
+
 ## Hermes Desktop
 
 Hermes Desktop is the preferred customer-facing client. Install the official application, then

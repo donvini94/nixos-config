@@ -360,6 +360,11 @@ adapter accepts all private messages, while platform sender identity is only aud
 not an authorization input. Keep Wirken on its private WebChat/CLI surfaces until upstream
 ships a sender authorization boundary or a separately reviewed channel satisfies it.
 
+During the observation week, run governed Wirken tasks with
+`wirken-admin ask --message "..."`. This is upstream's interactive terminal path and attaches
+its stdin approval gate; use `wirken-audit-log --limit 20` afterward to inspect the signed
+events. Effectful WebChat remains excluded because of its upstream approval-session defect.
+
 ### Container vulnerability visibility
 
 Alucard runs Aqua Trivy's official rolling container daily and after the manual

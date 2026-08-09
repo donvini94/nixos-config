@@ -37,6 +37,20 @@ enter argv, the environment, shell history, or the journal. Commands that mutate
 state still require an intentional operator invocation; Nix does not replace Wirken's vault,
 adapter registry, permission database, or audit model.
 
+## Usable governed path for the observation week
+
+Use upstream's interactive `ask` command for real governed tasks:
+
+```console
+wirken-admin ask --message "Create a concise implementation plan for this task: ..."
+```
+
+Unlike the affected WebChat path, `ask` attaches Wirken's stdin approval gate when run from a
+terminal. Tier 2/3 tool requests display an interactive approval prompt, execute only after the
+operator's decision, and enter the signed audit chain. It is deliberately one task per command,
+not a full-screen chat client. Use Hermes Telegram/Desktop for conversational work and Wirken
+`ask` for approval/audit exercises until a safe persistent channel is configured.
+
 ## State and secrets
 
 - Gateway state and workspace: `/var/lib/wirken/.wirken`
@@ -68,8 +82,9 @@ limitation. A real key mismatch still fails and requires an explicit, reviewed r
 
 Wirken is intended to govern tools, approvals, credentials, and audit events for agents
 running inside Wirken, but the confirmed WebChat defect means this deployment has not met
-that claim. It also does not transparently intercept independent Hermes, n8n, OMP, or
-OpenCode processes.
+that claim through WebChat. The interactive `wirken-admin ask` path does have its upstream
+stdin approval gate and is the supported effectful test path. Wirken does not transparently
+intercept independent Hermes, n8n, OMP, or OpenCode processes.
 
 The `wirken` service account belongs to the Docker group so it can create upstream's
 ephemeral exec sandbox. Docker access is root-equivalent for the gateway process, although
