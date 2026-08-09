@@ -217,6 +217,15 @@ git diff -- flake.lock
 sudo nixos-rebuild switch --flake .#dracula   # or .#alucard on the server
 ```
 
+### Moving configuration between machines
+
+The `nixos-config` working directory is shared by Syncthing, but `/.git` is explicitly
+ignored. Synchronizing Git's internal refs and object files can produce a branch ref before
+the corresponding object arrives and corrupt the repository. Commits must move through a
+Git remote, `git bundle`, or another Git transport; Syncthing is only allowed to move
+working-tree files. If Nix reports `object not found`, repair the object database before
+rebuilding—do not reset or reclone over uncommitted files.
+
 ## Media stack on Alucard
 
 The media automation applications run as the `media-stack.service` Compose project. The

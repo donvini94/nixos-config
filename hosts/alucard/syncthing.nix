@@ -128,6 +128,7 @@
         "nixos-config" = {
           id = "nixos-config";
           path = "/home/vincenzo/nixos-config";
+          ignorePatterns = [ "/.git" ];
           devices = [
             "dracula"
             "bereitbook-pro-m4"
