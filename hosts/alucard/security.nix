@@ -31,7 +31,10 @@ let
   };
 in
 {
-  environment.systemPackages = [ crowdsecAdmin ];
+  environment.systemPackages = [
+    crowdsecAdmin
+    pkgs.ipset
+  ];
 
   services.crowdsec = {
     enable = true;
