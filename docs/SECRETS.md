@@ -98,14 +98,16 @@ Requesty key is encrypted there and is exposed at runtime only to the port-8080 
 | `hermes/dashboard_password` | Hermes browser and Desktop login | Share through a password manager; rotate when demo access changes |
 | `hermes/dashboard_password_hash` | Hermes authentication runtime | Regenerate whenever the demo password changes; plaintext is not exposed to the service |
 | `hermes/dashboard_session_secret` | Hermes login-session signing | Planned rotation signs every Hermes client out |
+| `hermes/telegram_bot_token` (pending) | Hermes Telegram adapter | BotFather credential; revoke immediately with `/revoke` if exposed |
+| `hermes/telegram_allowed_users` (pending) | Hermes Telegram adapter | Comma-separated numeric user IDs; never use `*` |
 | `langfuse/*` | Alucard Langfuse project and dependencies | Independent databases, cryptographic roots, project, and administrator |
 | `grafana/admin_password` | Alucard Grafana bootstrap | Independent administrator password |
 
-Signal linking state is not a SOPS scalar. It lives at
-`/var/lib/signal-cli/signal-cli/data`, contains the linked device's cryptographic identity,
-and must be protected like a password. Agent account numbers and sender allowlists will be
-added to SOPS only after the operator chooses whether Hermes, Wirken, or separate Signal
-accounts/groups own the channel.
+The pending Telegram values do not exist in the encrypted file yet, so no Telegram adapter is
+active. Create one Hermes bot with BotFather, learn the operator's numeric Telegram user ID,
+then add both values using `sops secrets/alucard-ai.yaml`. Do not send the token through chat.
+Signal linking state, if ever used, is not a SOPS scalar; its inactive state directory remains
+under `/var/lib/signal-cli`.
 
 Edit it without printing values:
 

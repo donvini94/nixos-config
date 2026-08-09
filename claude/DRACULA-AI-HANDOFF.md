@@ -1349,7 +1349,7 @@ Several details were wrong or incomplete as written:
   administration services returned successful application responses, and every Prometheus
   target was up, including CrowdSec.
 
-### Security, Requesty choice, and Signal checkpoint (active, 2026-08-09)
+### Security, Requesty choice, and messaging checkpoint (active, 2026-08-09)
 
 - Alucard activated ModSecurity with pinned OWASP CRS 4.25.1 LTS, nginx request and connection
   limits, bounded request bodies, consistent low-risk headers, explicit 404s for four dead
@@ -1369,12 +1369,12 @@ Several details were wrong or incomplete as written:
   Requesty credential. Live `/v1/models`, `omp models`, and `opencode models` checks exposed all
   seven Requesty entries and both Dracula-local entries; OMP 17.2.12 used its writable config
   path without repeating onboarding.
-- The official signal-cli 0.14.7 native release is packaged for Alucard. Its service remains
-  skipped until an operator runs `signal-link` and scans the QR code. One daemon then provides
-  Hermes' loopback HTTP transport and Wirken's group-permissioned Unix socket. Sender
-  allowlists are not inferred and must be configured after the operator chooses one Signal
-  front door or separate accounts/groups; running both agents on the same conversation would
-  produce competing replies.
+- Signal was deferred because no dedicated account exists. Telegram is now the selected first
+  mobile channel. Hermes' pinned upstream adapter supports strict numeric allowlists, long
+  polling, topics, files, voice, and `/model`; its BotFather token and operator ID are still
+  pending and must be added through SOPS before activation. Wirken 1.13's Telegram adapter is
+  not enabled because its released documentation says it responds to all private messages and
+  sender identity is audited rather than authorized. One bot must never feed both agents.
 - CrowdSec state ownership was normalized after the NixOS module's DynamicUser migration left
   nested state inaccessible. The stale bouncer registration whose key was already absent was
   deleted and recreated through the upstream unit. CrowdSec, its authenticated firewall
@@ -1386,9 +1386,11 @@ Several details were wrong or incomplete as written:
   once linked. Do not create an unofficial image or local source patch.
 - `wirken-admin doctor` passed live on Alucard: provider, vault, adapter registry, MCP signing,
   signed audit chain, Docker runtime, and alarm log were healthy. No channel is configured yet.
-  The first Trivy run scanned 40 image references and exported 175 critical, 2,265 high, and
-  one failure through node-exporter; all six Prometheus targets are up and textfile scraping
-  reports no error. Per-image vulnerability triage remains a production gate.
+  The latest root-daemon Trivy baseline scanned 40 image references and exported 178 critical,
+  2,309 high, and one archive failure through node-exporter. The scanner now invokes rootless
+  Docker as its owning user and exports immutable image IDs, which includes Onyx and eliminates
+  the multi-tag MinIO failure. A post-switch scan is still required to record the combined
+  baseline. All six Prometheus targets are up; per-image remediation remains a production gate.
 
 ### Measured Phase 1 starting point
 

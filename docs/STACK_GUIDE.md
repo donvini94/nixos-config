@@ -327,26 +327,38 @@ curl http://127.0.0.1:8080/v1/chat/completions \
   -d '{"model":"deepinfra/deepseek-v4-flash-0731","messages":[{"role":"user","content":"Say hello"}]}'
 ```
 
-### Signal transport
+### Messaging transport
 
-Alucard uses the official signal-cli 0.14.7 native release under `signal-cli.service`.
-The unit remains skipped until `/var/lib/signal-cli/signal-cli/data/accounts.json` exists,
-so a rebuild never creates a partially authorized messaging surface. Once linked with
-`signal-link`, one daemon exposes two local transports:
+Telegram is the selected first mobile channel. BotFather supplies a bot identity without a
+dedicated phone number, and Hermes' maintained adapter supports numeric user/chat allowlists,
+long polling, topics, attachments, voice, and `/model`. Long polling is outbound, so no public
+webhook or new inbound firewall port is required. Initial deployment is DM-only, allows only
+the explicitly configured operator IDs, and keeps BotFather group joining disabled.
 
-- `http://127.0.0.1:18083` for Hermes' supported Signal adapter;
-- `/run/signal-cli/signal-cli.sock` for Wirken's supported Signal adapter.
+The token must enter `secrets/alucard-ai.yaml` only through `sops`; never paste it into chat,
+shell arguments, documentation, or Git plaintext. Telegram is not active yet because those
+credentials have not been created. Signal-cli remains installed but inactive and can be
+removed after the Telegram acceptance test if no customer requirement justifies retaining it.
 
-The HTTP endpoint is never published by the firewall or Tailscale Serve. The Unix socket is
-owned by the `signal-cli` group. Signal account state contains impersonation-capable keys and
-must be treated as a secret backup. Sender allowlists are mandatory and agent-specific.
+Operator enrollment:
 
-Wirken's upstream administrative CLI is available through `wirken-admin`; the launcher enters
-the correct service account/state namespace and unlocks the encrypted vault through a systemd
-credential. After linking, `wirken-admin channel add signal` registers the released adapter.
-Use a dedicated Signal group for Wirken and reserve approved DMs for Hermes so the two agents
-never consume the same conversation. See [the Wirken guide](../wirken/README.md) for approval
-registration and the remaining live acceptance test.
+1. In Telegram, open the verified `@BotFather`, run `/newbot`, and create a unique Hermes bot.
+2. In BotFather's bot settings, disable **Allow Groups?** for the initial DM-only deployment;
+   leave group privacy enabled.
+3. Keep the returned token private. Use `@userinfobot` to obtain each intended operator's
+   numeric user ID; a Telegram username is not an authorization identity.
+4. Run `sops secrets/alucard-ai.yaml` and add `hermes.telegram_bot_token` plus the quoted,
+   comma-separated `hermes.telegram_allowed_users`. Close the editor and confirm the file
+   still contains only `ENC[...]` values.
+5. Rebuild only after the declarative consumer has been enabled. Acceptance must prove an
+   allowed DM succeeds, a non-allowed account gets no agent response, `/model` works, the
+   inference call is attributed to Hermes, and no inbound network port was opened.
+
+Wirken's upstream administrative CLI remains available through `wirken-admin`. Do not attach
+the Hermes bot—or another publicly discoverable bot—to Wirken 1.13: its released Telegram
+adapter accepts all private messages, while platform sender identity is only audited and is
+not an authorization input. Keep Wirken on its private WebChat/CLI surfaces until upstream
+ships a sender authorization boundary or a separately reviewed channel satisfies it.
 
 ### Container vulnerability visibility
 
@@ -357,6 +369,10 @@ publishes aggregate and per-image counts through node-exporter's textfile collec
 shows critical, high, per-image, failure, and scan-age panels. The scanner never receives a
 Docker socket. This complements update automation: pulling a newer image and proving that the
 deployed image has no known fixed critical issue are separate operations.
+
+The command prints one final `Trivy: ...` line. Rootless Docker operations run as the owning
+user, while each archive is exported by immutable local image ID. This includes the Onyx stack
+and prevents multi-tag archives from producing false scan failures.
 
 Deployment checklist:
 

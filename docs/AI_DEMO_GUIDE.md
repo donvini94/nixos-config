@@ -138,21 +138,18 @@ opencode run -m alucard-requesty/deepinfra/deepseek-v4-flash-0731 "your task"
 
 Dracula keeps `dracula-local/qwen3.6-27b-local` as its no-cost default.
 
-## Signal agent channel
+## Telegram agent channel
 
-The shared Signal transport is installed but deliberately fails closed until an operator links
-a Signal device and configures sender allowlists. On Alucard, run:
+Telegram is the selected mobile channel because BotFather provides a bot identity without a
+dedicated SIM. Hermes will be the only Telegram front door initially. Its maintained adapter
+supports strict numeric-user allowlists, topic sessions, files, voice messages, and `/model`.
+The bot is not enabled until its token and the operator's numeric user ID are encrypted in
+Alucard's SOPS file and a live allowlist test passes.
 
-```console
-signal-link "Alucard AI"
-signal-accounts
-```
-
-Scan the displayed QR code in **Signal → Settings → Linked devices → +**. Linking only
-establishes the encrypted transport; it does not authorize anyone to drive an agent. Hermes
-and Wirken each require an explicit E.164 sender allowlist. Do not connect both agents to the
-same unpartitioned conversation: both would receive the message and could reply. Use separate
-bot accounts/groups or choose one agent as the Signal front door.
+Do not connect this bot to Wirken. Wirken 1.13 has a native Telegram adapter, but its own
+security documentation says platform sender identities are audited rather than authorized,
+and its Telegram guide says the bot responds to all private messages. That is unsuitable for
+an Internet-discoverable demo bot. Signal remains installed but inactive as a future option.
 
 ## Troubleshooting
 

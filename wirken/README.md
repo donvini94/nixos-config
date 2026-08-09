@@ -77,32 +77,18 @@ the agent's exec container never receives the Docker socket. The human operator 
 already in the Docker group; do not describe this workstation as a boundary against a
 determined same-UID process.
 
-## Signal channel
+## Messaging channel status
 
-After `signal-link` has completed on Alucard and `signal-cli.service` is active, register
-Wirken's maintained adapter with:
+No Wirken messaging channel is configured. Telegram was considered after the Signal account
+requirement proved impractical, but Wirken 1.13's released security model does not authorize
+by platform sender identity: identities are audited, while approvals are scoped to agent and
+action. Its Telegram adapter also responds to all private messages. A discoverable Telegram
+bot would therefore widen access beyond the operator and is not enabled.
 
-```console
-wirken-admin channel add signal
-```
-
-Enter the linked account's E.164 number, socket
-`/run/signal-cli/signal-cli.sock`, and a strict sender allowlist. Prefer a dedicated Signal
-group ID for Wirken while Hermes owns approved DMs; do not allow the same conversation in
-both agents or both can reply. Restart `wirken.service` after changing the channel.
-
-Effectful Signal turns also require an explicit approver and approval conversation:
-
-```console
-wirken-admin approvers add signal E164_OR_ACI --display "Operator"
-wirken-admin approvers set-chat signal GROUP_ID_OR_E164
-sudo systemctl restart wirken.service
-```
-
-The Signal path uses Wirken's own released Unix-socket adapter and channel approval gate. It
-is the supported route for testing governed effectful work while WebChat's approval-session
-bug remains unresolved. It is not considered shipped until an allowlisted inbound turn, an
-approval/denial, inference attribution, and the signed audit chain have all been verified.
+Hermes will own the first Telegram bot because its maintained adapter has explicit numeric
+user and chat allowlists. Wirken stays on its private WebChat and `wirken-admin` surfaces until
+upstream provides sender authorization or a separately reviewed channel is deployed. Do not
+reuse one bot or conversation across both agents.
 
 ## Upgrade procedure
 
