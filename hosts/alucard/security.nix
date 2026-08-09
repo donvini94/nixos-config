@@ -151,6 +151,11 @@ in
     StateDirectory = "crowdsec";
     StateDirectoryMode = "0750";
   };
+  # Normalize nested state left behind by the module's earlier DynamicUser
+  # migration. Preserve existing file modes while repairing owner/group.
+  systemd.tmpfiles.rules = [
+    "Z /var/lib/private/crowdsec - crowdsec crowdsec - -"
+  ];
 
   # The upstream module requires the registration unit but does not order the
   # bouncer after it. Without this edge the first activation races the key file.
