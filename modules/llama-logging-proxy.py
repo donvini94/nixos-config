@@ -13,6 +13,21 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 BACKEND = os.environ["LLAMA_BACKEND"]
 BACKEND_HEALTH_PATH = os.environ.get("LLAMA_BACKEND_HEALTH_PATH", "/health")
 LOG_PATH = os.environ["LLAMA_REQUEST_LOG"]
+
+
+def load_allowed_models():
+    raw = os.environ.get("LLAMA_ALLOWED_MODELS")
+    if not raw:
+        return frozenset()
+    values = json.loads(raw)
+    if not isinstance(values, list) or not all(
+        isinstance(value, str) and value for value in values
+    ):
+        raise RuntimeError("LLAMA_ALLOWED_MODELS must be a JSON array of model IDs")
+    return frozenset(values)
+
+
+ALLOWED_MODELS = load_allowed_models()
 HOP_HEADERS = {
     "connection",
     "keep-alive",
@@ -212,11 +227,20 @@ class Proxy(BaseHTTPRequestHandler):
             return self._metrics()
         if self.path == "/health" and self.command == "GET":
             return self._health()
+        if self.path == "/v1/models" and self.command == "GET" and ALLOWED_MODELS:
+            return self._models()
 
         started = time.monotonic()
         METRICS.begin()
         length = int(self.headers.get("Content-Length", "0"))
         request_body = self.rfile.read(length)
+        try:
+            request_json = json.loads(request_body) if request_body else None
+        except json.JSONDecodeError:
+            request_json = None
+        model = request_json.get("model") if isinstance(request_json, dict) else None
+        if ALLOWED_MODELS and model and model not in ALLOWED_MODELS:
+            return self._reject_model(started, request_json, model)
         headers = upstream_headers(self.headers)
         request = urllib.request.Request(
             BACKEND + self.path,
@@ -280,12 +304,7 @@ class Proxy(BaseHTTPRequestHandler):
                 response_headers = {"Content-Type": "application/json"}
         finally:
             elapsed_ms = round((time.monotonic() - started) * 1000, 3)
-            request_json = None
             response_json = None
-            try:
-                request_json = json.loads(request_body) if request_body else None
-            except json.JSONDecodeError:
-                pass
             try:
                 response_json = json.loads(response_body) if response_body else None
             except json.JSONDecodeError:
@@ -352,6 +371,86 @@ class Proxy(BaseHTTPRequestHandler):
                 ttft_ms,
             )
             self.close_connection = True
+
+    def _reject_model(self, started, request_json, model):
+        status = 403
+        response_json = {
+            "error": {
+                "message": f"model {model!r} is not registered on this ingress",
+                "type": "model_not_allowed",
+            }
+        }
+        payload = json.dumps(response_json, separators=(",", ":")).encode()
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(payload)))
+        self.send_header("Connection", "close")
+        self.end_headers()
+        self.wfile.write(payload)
+        elapsed_ms = round((time.monotonic() - started) * 1000, 3)
+        caller = resolve_caller(self.headers)
+        append_log(
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "caller": caller,
+                "eval_run": self.headers.get("X-AI-Eval-Run"),
+                "method": self.command,
+                "endpoint": self.path,
+                "model": model,
+                "status": status,
+                "latency_ms": elapsed_ms,
+                "ttft_ms": None,
+                "usage": None,
+                "stream_completed": None,
+                "client_disconnected": False,
+                "proxy_error": "model_not_allowed",
+                "request": request_json,
+                "response": response_json,
+                "response_content_type": "application/json",
+                "upstream": {},
+            }
+        )
+        METRICS.finish(caller, model, status, None, elapsed_ms, None)
+        self.close_connection = True
+
+    def _models(self):
+        request = urllib.request.Request(
+            BACKEND + "/v1/models",
+            headers=upstream_headers(self.headers),
+            method="GET",
+        )
+        try:
+            try:
+                upstream = urllib.request.urlopen(request, timeout=30)
+            except urllib.error.HTTPError as error:
+                upstream = error
+            status = upstream.status
+            response_headers = dict(upstream.headers.items())
+            payload = upstream.read()
+            if 200 <= status < 300:
+                document = json.loads(payload)
+                if isinstance(document, dict) and isinstance(
+                    document.get("data"), list
+                ):
+                    document["data"] = [
+                        entry
+                        for entry in document["data"]
+                        if isinstance(entry, dict) and entry.get("id") in ALLOWED_MODELS
+                    ]
+                    payload = json.dumps(document, separators=(",", ":")).encode()
+        except (OSError, urllib.error.URLError, json.JSONDecodeError) as error:
+            status = 502
+            response_headers = {"Content-Type": "application/json"}
+            payload = json.dumps({"error": {"message": str(error)}}).encode()
+        self.send_response(status)
+        self.send_header(
+            "Content-Type", response_headers.get("Content-Type", "application/json")
+        )
+        self.send_header("Content-Length", str(len(payload)))
+        self.send_header("Connection", "close")
+        self.end_headers()
+        self.wfile.write(payload)
+        self.close_connection = True
 
     def _metrics(self):
         payload = METRICS.render().encode()

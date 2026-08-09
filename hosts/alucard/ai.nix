@@ -6,11 +6,14 @@
 }:
 
 let
-  # Enable only after replacing requesty/api_key in secrets/alucard-ai.yaml and
-  # registering the exact access-listed Requesty model or policy IDs below.
-  enableAI = false;
-  defaultModel = "";
-  models = { };
+  enableAI = true;
+  defaultModel = "deepinfra/deepseek-v4-flash-0731";
+  models.${defaultModel} = {
+    name = "DeepSeek V4 Flash 0731 (DeepInfra via Requesty)";
+    context = 131072;
+    output = 32768;
+    reasoning = true;
+  };
   secretFile = ../../secrets/alucard-ai.yaml;
 in
 {

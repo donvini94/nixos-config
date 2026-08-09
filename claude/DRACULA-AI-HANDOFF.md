@@ -11,7 +11,7 @@ or walk into known traps.
 
 ---
 
-## ⚠️ STATUS: Phase 5 Wirken trial and observability active; Alucard demo profile pending
+## ⚠️ STATUS: Dracula stack active; Alucard Requesty demo profile activating
 
 When this runs, record corrections at the bottom under **Post-execution corrections**,
 following the `MAC-HANDOFF.md` convention. This file was written by a session that inspected
@@ -125,9 +125,9 @@ for APIs.
   ingestion. Vincenzo will do this properly later, separately.
 - **Notion / Linear** — do not exist yet. Planned for when the startup runs. Build no
   integrations now, but the tool layer must make adding them a config change (Phase 4).
-- **alucard's live AI deployment** — prepare reusable modules and documentation now, but do
-  not enable the AI profile until the Requesty keys, model allow-list, and fallback policies
-  are supplied.
+- **Customer-facing exposure** — Alucard's AI profile is now enabled as a loopback-only
+  business demo. Authenticated public TLS, customer identities, retention/redaction policy,
+  and tested restore remain separate production-readiness work.
 
 **Wirken and Hermes are IN scope** (Phases 4 and 5). An earlier draft of this document cut
 them on YAGNI grounds — "nothing here needs a gateway yet." **That reasoning was wrong for
@@ -1279,26 +1279,28 @@ Several details were wrong or incomplete as written:
   class, backup boundary, and the future Alucard/customer separation rule without storing
   values. Cryptographic roots and first-boot database/application credentials are not
   rotated by merely editing SOPS.
-- Alucard imports the reusable module but leaves it disabled. Its later business-demo
-  profile will reuse the complete clients/workers/governance/observability surface and
-  route the permanent logged ingress to `https://router.requesty.ai/v1`. Use Requesty's
+- Alucard imports and enables the reusable business-demo profile. It reuses the complete
+  clients/workers/governance/observability surface and routes the permanent logged ingress
+  to `https://router.requesty.ai/v1`. Use Requesty's
   maintained routing, access lists, spending limits, and analytics instead of adding a
-  redundant gateway by default. Enabling it is gated on SOPS-managed Requesty keys, an
-  explicit demo-model allow-list/fallback policy, authenticated HTTPS exposure, and tested
-  trace backup/retention/redaction policy.
+  redundant gateway by default. The first locally registered route is
+  `deepinfra/deepseek-v4-flash-0731`; authenticated HTTPS exposure and tested trace
+  backup/retention/redaction policy remain gates for customer-facing use.
 - Syncthing previously copied `.git` between Dracula and Alucard and left Alucard's branch
   ref pointing at an object that had not arrived. Commit `0455d96` excludes `/.git` both in
   `.stignore` and in Alucard's declarative Syncthing folder. Alucard was repaired without
   replacing its working tree by importing a complete Git bundle, preserving its matching
   edits in a temporary stash, and fast-forwarding to `0455d96`; the exact flake build that
   originally failed now succeeds. Future commits must move through Git, not Syncthing.
-- The Alucard business-demo scaffold now builds behind an explicit disabled gate in
-  `hosts/alucard/ai.nix`. It reuses n8n, Hermes, Wirken, Langfuse/Grafana, OMP/OpenCode, and
+- The Alucard business-demo profile is enabled in `hosts/alucard/ai.nix`. It reuses n8n,
+  Hermes, Wirken, Langfuse/Grafana, OMP/OpenCode, and
   the permanent port-8080 ingress but injects a root-only Requesty workload key upstream.
   Requesty cost and `x-requesty-*` routing metadata are preserved; Prometheus exposes
   `ai_ingress_cost_usd_total`. Machine-specific non-Requesty secrets are generated in the
-  separate encrypted `secrets/alucard-ai.yaml`. Activation still requires the restricted
-  Requesty key and exact canonical model or policy registry from the operator.
+  separate encrypted `secrets/alucard-ai.yaml`. The ingress requires each configured model
+  to exist in the authenticated catalog, exposes only the local registry from `/v1/models`,
+  and rejects unregistered calls before Requesty. The upstream key may remain catalog-wide;
+  a matching Requesty Access List is optional defense in depth.
 
 ### Measured Phase 1 starting point
 

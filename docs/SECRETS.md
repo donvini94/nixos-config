@@ -87,12 +87,12 @@ maintenance window, then recreate and verify every consumer.
 ## Alucard and customer machines
 
 Alucard uses the separate encrypted `secrets/alucard-ai.yaml`. Its n8n, Wirken, Langfuse,
-and Grafana values have been generated independently from Dracula. The Requesty value is an
-encrypted placeholder until the operator supplies a restricted workload key.
+and Grafana values have been generated independently from Dracula. The operator-supplied
+Requesty key is encrypted there and is exposed at runtime only to the port-8080 ingress.
 
 | SOPS key group | Consumer | Rule |
 | --- | --- | --- |
-| `requesty/api_key` | Port-8080 ingress only | Attach an Access List and monthly spend limit; never distribute to clients |
+| `requesty/api_key` | Port-8080 ingress only | Set a monthly spend limit; optionally attach a matching Access List; never distribute to clients |
 | `n8n/*` | Alucard n8n and runners | Independent encryption root and runner token |
 | `wirken/*` | Alucard Wirken and ingress attribution | Independent vault passphrase and local-only attribution token |
 | `langfuse/*` | Alucard Langfuse project and dependencies | Independent databases, cryptographic roots, project, and administrator |
@@ -105,7 +105,7 @@ sops secrets/alucard-ai.yaml
 ```
 
 Do not copy Dracula's project keys or administrative passwords. Prefer one Alucard workload
-key with an attached Requesty Access List and spending limit; create additional keys only
+key with a spending limit and optional matching Requesty Access List; create additional keys only
 when a real workload or customer isolation boundary requires separate revocation and cost
 ownership. Label keys so Requesty's records can be reconciled with Langfuse and ingress
 callers. Customer machines need their own age recipient, credentials, retention policy,

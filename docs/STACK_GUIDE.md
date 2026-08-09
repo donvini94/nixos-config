@@ -1,7 +1,8 @@
 # Dracula and Alucard stack guide
 
 This is the operator's map of what is installed, where to reach it, and which command owns
-it. `dracula` is the local AI workstation. `alucard` is the server and media host.
+it. `dracula` is the local AI workstation. `alucard` is the server, media host, and
+Requesty-backed business-demo machine.
 
 ## The short version
 
@@ -260,8 +261,7 @@ Compose images and recreates the active media stack.
 
 ## Business-demo stack on Alucard
 
-The reusable profile is defined in `hosts/alucard/ai.nix` but intentionally disabled until
-the Requesty key and exact model registry are supplied. It builds the same operator
+The reusable profile is enabled in `hosts/alucard/ai.nix`. It builds the same operator
 experience—OMP, OpenCode, n8n, Hermes, Wirken, Langfuse, Grafana, and the stable logged
 ingress—while inference goes to Requesty's OpenAI-compatible router instead of a local GPU.
 Alucard's minimal Home Manager profile installs only the two coding harnesses, not Dracula's
@@ -269,30 +269,53 @@ desktop configuration.
 
 Requesty is already the maintained routing product, so the default plan does not add another
 gateway merely to proxy it. Alucard will use `https://router.requesty.ai/v1`, SOPS-managed
-Requesty credentials with model access lists and spending limits, and explicit
-   `provider/model` or `policy/name` IDs. The key is loaded into the loopback ingress with a
+Requesty credentials, spending limits, and explicit `provider/model` or `policy/name` IDs.
+The key is loaded into the loopback ingress with a
 systemd credential and injected upstream; OMP, OpenCode, n8n, Hermes, and Wirken never
-receive the Requesty key. Attach one Alucard workload key to a named access list unless a
-real isolation requirement justifies more keys.
+receive the Requesty key. The local Nix registry is the client-visible allow-list even when
+the Requesty key can access the full catalog: unregistered model calls receive HTTP 403
+before reaching Requesty, and `/v1/models` exposes only registered IDs. A matching Requesty
+[Access List](https://docs.requesty.ai/features/access-lists) is optional defense in depth;
+separate keys remain the boundary for revocation, customer isolation, and cost ownership.
 Requesty's cost and provider-routing analytics complement Langfuse's agent traces and the
 local Grafana machine/container view. Requesty's response cost and `x-requesty-*` provider,
 cache, latency, and request-ID metadata are also retained in the sensitive ingress JSONL;
 cost is exported as `ai_ingress_cost_usd_total` for the Grafana dashboard.
 
-Before enabling the profile:
+The initial registry contains only `deepinfra/deepseek-v4-flash-0731`, selected from the
+authenticated live [`GET /v1/models`](https://docs.requesty.ai/api-reference/endpoint/models-list)
+catalog. Requesty currently advertises a 1,048,576-token provider window; clients are
+deliberately capped at 131,072 context and 32,768 output until real workload data justifies
+larger limits. Add cheaper Qwen, Kimi, or DeepSeek routes and selected frontier routes to the
+same registry only after confirming their current canonical IDs in that authenticated
+catalog. OMP's `smol`/`tiny` roles can then use the cheap model while `slow`/`advisor` use a
+frontier model; with one model registered, all roles intentionally use the initial default.
 
-1. In Requesty, create an `alucard-demo` project or workload key, attach a named Access List,
-   set its monthly spend limit, and optionally create reviewed fallback policies.
+Use the initial model through the unchanged ingress:
+
+```console
+omp --model alucard-requesty/deepinfra/deepseek-v4-flash-0731
+opencode run -m alucard-requesty/deepinfra/deepseek-v4-flash-0731 "your task"
+
+curl http://127.0.0.1:8080/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -H 'X-AI-Caller: manual' \
+  -d '{"model":"deepinfra/deepseek-v4-flash-0731","messages":[{"role":"user","content":"Say hello"}]}'
+```
+
+Deployment checklist:
+
+1. In Requesty, create an `alucard-demo` project or workload key, set its monthly spend
+   limit, and optionally attach a matching Access List or create reviewed fallback policies.
 2. Run `sops secrets/alucard-ai.yaml` on Dracula or Alucard and replace only
    `requesty.api_key`. The other machine-specific service secrets are already generated.
-3. Put the exact allowed model/policy IDs, display names, context limits, and output limits
-   in the registry at the top of `hosts/alucard/ai.nix`; select a default and set
-   `enableAI = true`.
+3. Put the allowed model/policy IDs, display names, context limits, and output limits in the
+   registry at the top of `hosts/alucard/ai.nix`, then select a default.
 4. Build, switch, and verify `/v1/models` through port `8080` before sending a paid prompt.
 
-Startup authenticates to Requesty's model-list endpoint and requires its returned Access
-List to match the Nix registry exactly. A placeholder key, missing model, or overly broad
-key therefore fails closed before the ingress begins accepting traffic.
+Startup authenticates to Requesty's model-list endpoint and requires every locally
+registered model to exist in the key's returned catalog. A placeholder key or missing model
+fails closed before the ingress accepts traffic; a broader key is narrowed locally.
 
 The browser listeners remain loopback-only. Use one SSH session during initial operation:
 

@@ -30,7 +30,8 @@ let
 
     response="$(${pkgs.coreutils}/bin/mktemp)"
     actual="$(${pkgs.coreutils}/bin/mktemp)"
-    trap '${pkgs.coreutils}/bin/rm -f "$response" "$actual"' EXIT
+    missing="$(${pkgs.coreutils}/bin/mktemp)"
+    trap '${pkgs.coreutils}/bin/rm -f "$response" "$actual" "$missing"' EXIT
     {
       ${pkgs.coreutils}/bin/printf 'header = "Authorization: Bearer '
       ${pkgs.coreutils}/bin/tr -d '\r\n' < "$credential"
@@ -39,8 +40,10 @@ let
       --output "$response" ${lib.escapeShellArg "${cfg.backendUrl}${cfg.backendHealthPath}"}
     ${pkgs.jq}/bin/jq --exit-status --raw-output '.data[].id' "$response" \
       | ${pkgs.coreutils}/bin/sort --unique > "$actual"
-    if ! ${pkgs.diffutils}/bin/diff --unified ${expectedModels} "$actual"; then
-      echo "Requesty Access List and services.remoteOpenAI.models must match exactly" >&2
+    ${pkgs.coreutils}/bin/comm -23 ${expectedModels} "$actual" > "$missing"
+    if [ -s "$missing" ]; then
+      echo "Configured models missing from the authenticated Requesty catalog:" >&2
+      ${pkgs.coreutils}/bin/cat "$missing" >&2
       exit 1
     fi
   '';
@@ -180,6 +183,7 @@ in
         LLAMA_PROXY_HOST = cfg.bindAddress;
         LLAMA_PROXY_PORT = toString cfg.port;
         LLAMA_REQUEST_LOG = cfg.requestLog;
+        LLAMA_ALLOWED_MODELS = builtins.toJSON (builtins.attrNames cfg.models);
         LLAMA_UPSTREAM_BEARER_CREDENTIAL = "upstream-bearer-token";
       }
       // lib.optionalAttrs (cfg.bearerCredentialFile != null) {
