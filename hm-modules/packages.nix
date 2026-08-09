@@ -101,6 +101,7 @@
 
     # Communication
     discord
+    telegram-desktop
     thunderbird
     slack
     signal-desktop
