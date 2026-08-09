@@ -29,6 +29,13 @@
     useDHCP = lib.mkDefault true;
   };
 
+  services.tailscale = {
+    enable = true;
+    disableTaildrop = true;
+    openFirewall = false;
+    useRoutingFeatures = "none";
+  };
+
   nixpkgs.config.cudaSupport = true;
 
   services.localLlama = {

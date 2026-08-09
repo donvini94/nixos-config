@@ -9,6 +9,20 @@ let
   domain2 = "istbereit.de";
 in
 {
+  assertions = [
+    {
+      assertion =
+        lib.intersectLists [
+          4533
+          5000
+          8083
+          8096
+          8920
+        ] config.networking.firewall.allowedTCPPorts == [ ];
+      message = "Alucard web backends must remain behind nginx instead of being globally firewalled";
+    }
+  ];
+
   # ACME / Let's Encrypt
   security.acme = {
     acceptTerms = true;
@@ -37,13 +51,13 @@ in
 
     jellyfin = {
       enable = true;
-      openFirewall = true;
+      openFirewall = false;
       dataDir = "/home/jellyfin/";
     };
 
     navidrome = {
       enable = true;
-      openFirewall = true;
+      openFirewall = false;
       settings.MusicFolder = "/mnt/music";
     };
 
@@ -51,7 +65,7 @@ in
       enable = true;
       listen.ip = "127.0.0.1";
       listen.port = 8083;
-      openFirewall = true;
+      openFirewall = false;
       dataDir = "calibre-web";
       options = {
         enableBookUploading = true;
@@ -75,7 +89,7 @@ in
 
     dockerRegistry = {
       enable = true;
-      openFirewall = true;
+      openFirewall = false;
     };
 
     # Nginx reverse proxy

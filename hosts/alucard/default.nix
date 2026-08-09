@@ -13,6 +13,7 @@ in
     (modulesPath + "/profiles/qemu-guest.nix")
     ./disk-config.nix
     ./networking.nix
+    ./private-access.nix
     ./services.nix
     ./media.nix
     ./users.nix

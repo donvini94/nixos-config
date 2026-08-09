@@ -1,0 +1,135 @@
+# Alucard security and exposure guide
+
+Alucard has two deliberately separate access planes:
+
+- Public services enter through nginx on ports 80 and 443, or through an explicitly required
+  mail, synchronization, or game protocol.
+- Administration, AI interfaces, metrics, and media automation use Tailscale. SSH forwarding
+  remains the break-glass fallback.
+
+Tailscale Funnel is prohibited. It would turn a private tailnet service into a public service.
+
+## Current controls
+
+- The NixOS firewall is enabled.
+- SSH uses keys only; password login, keyboard-interactive login, and root login are disabled.
+- Fail2ban currently protects SSH.
+- nginx terminates ACME TLS and runs with NixOS systemd hardening.
+- AI and media-administration backends bind to loopback.
+- Nix assertions reject globally opened AI and web-backend ports.
+- SOPS keeps encrypted source secrets out of the Nix store and renders runtime values beneath
+  `/run/secrets`.
+- Grafana, Prometheus, node-exporter, and cAdvisor provide machine and container metrics.
+
+## Private Tailscale access
+
+Tailscale is installed declaratively on Dracula and Alucard. It does not advertise routes,
+act as an exit node, trust the entire `tailscale0` interface, open a public firewall port, or
+enable Taildrop. Only the explicit ports below are published with Tailscale Serve TCP proxies.
+The HTTP applications remain bound to `127.0.0.1`; traffic between devices is encrypted by
+Tailscale's WireGuard tunnel.
+
+Enroll each machine once:
+
+```console
+sudo tailscale up
+```
+
+Open the login URL printed by that command. After Alucard is enrolled, apply its declarative
+Serve mappings:
+
+```console
+sudo systemctl restart tailscale-private-services.service
+tailscale serve status
+```
+
+From a tailnet device with MagicDNS enabled, use `alucard` as the hostname. Otherwise find its
+address with `tailscale ip -4 alucard`.
+
+### AI and observability
+
+| Component | Tailnet URL |
+| --- | --- |
+| n8n | `http://alucard:25678` |
+| Requesty-backed API | `http://alucard:28080/v1` |
+| Hermes | `http://alucard:29119` |
+| Langfuse | `http://alucard:23000` |
+| Grafana | `http://alucard:23001` |
+| Wirken | `http://alucard:28790` |
+| Prometheus | `http://alucard:29091` |
+
+### Media administration
+
+| Component | Tailnet URL |
+| --- | --- |
+| Kapowarr | `http://alucard:15656` |
+| Sonarr | `http://alucard:18989` |
+| Radarr | `http://alucard:17878` |
+| Prowlarr | `http://alucard:19696` |
+| Bazarr | `http://alucard:16767` |
+| qBittorrent | `http://alucard:18080` |
+| SABnzbd | `http://alucard:19090` |
+
+The existing `ssh -N ai-admin` and `ssh -N media-admin` profiles remain available if Tailscale
+is unavailable. Do not expose these ports through nginx, Tailscale Funnel, Docker wildcard
+bindings, or the global firewall.
+
+Before adding more tailnet members, create a Tailscale operator group, tag Alucard as a server,
+and use grants to allow only that group to these ports. Record the final policy and its owner
+here after applying and testing it.
+
+## Public-service inventory
+
+nginx currently defines public HTTPS virtual hosts for Keycloak, GitLab, Docker Registry,
+Jellyfin, chat, Navidrome, Paperless, file management, budgeting, Calibre, Mailcow, Coder,
+Komga, Seerr, WebDAV, and static sites. Some configured backends are currently absent and
+return HTTP 502; unused virtual hosts must be retired instead of remaining as dead public
+entry points.
+
+Mail protocols, SSH, Syncthing, and selected game ports do not pass through nginx. They need
+their own explicit firewall justification and protocol-specific protection.
+
+## Hardening work register
+
+| Priority | Work | State |
+| --- | --- | --- |
+| P0 | Keep AI and administration private | Enforced; Tailscale enrollment pending |
+| P0 | Remove direct public Jellyfin ports 8096/8920 | Configured; pending switch and external verification |
+| P0 | Bind Mailcow web ports 880/4433 to loopback | Pending controlled Mailcow maintenance |
+| P0 | Back up and update Mailcow from 2025-07 to current stable | Pending; local modifications must be reconciled |
+| P1 | Install CrowdSec engine and firewall remediation | Next security change |
+| P1 | Add tested nginx AppSec/WAF integration | Pending selection of maintained NixOS-compatible integration |
+| P1 | Add per-service rate and connection limits | Pending workload-specific testing |
+| P1 | Apply consistent security headers and bounded request sizes | Pending application compatibility testing |
+| P1 | Retire dead DNS/vhosts and remove unused firewall ports | Inventory review pending |
+| P2 | Define Keycloak/2FA policy for every public application | Pending identity review |
+| P2 | Harden native services and containers | Pending; Keycloak is the weakest native unit |
+| P2 | Add vulnerability scanning and security alerts | Pending |
+| P2 | Implement and test application-aware backups/restores | Pending; required before customer use |
+| P3 | Add GeoIP restrictions to selected web services | Pending explicit country policy; never global mail blocking |
+
+## Mailcow maintenance boundary
+
+Mailcow lives in `/opt/mailcow-dockerized` outside the NixOS repository. Its own supported
+`update.sh` must manage application upgrades because Mailcow updates include configuration and
+database migrations. Do not add it to the generic container pull timer.
+
+Before updating:
+
+1. Produce and verify a Mailcow backup.
+2. Preserve a patch of every locally modified tracked file.
+3. Classify each local change as obsolete, still required, or secret material that belongs in
+   `mailcow.conf`/supported override files.
+4. Bind `HTTP_BIND` and `HTTPS_BIND` to `127.0.0.1` as documented by Mailcow.
+5. Run the official update checker, review release notes across skipped releases, then use the
+   supported updater during a maintenance window.
+6. Verify SMTP submission, inbound and outbound delivery, IMAP, SOGo, TLS, DNS records,
+   backups, and the nginx frontend before closing the window.
+
+References:
+
+- [Tailscale Serve](https://tailscale.com/docs/features/tailscale-serve)
+- [Tailscale grants](https://tailscale.com/kb/1337/policy-syntax)
+- [CrowdSec nginx and AppSec](https://docs.crowdsec.net/u/bouncers/nginx/)
+- [Mailcow reverse proxy](https://docs.mailcow.email/post_installation/reverse-proxy/r_p/)
+- [Mailcow updates](https://docs.mailcow.email/maintenance/update/)

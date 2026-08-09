@@ -350,13 +350,11 @@ The alternate local ports avoid collisions with Dracula's own stack. Stop the tu
 Ctrl-C. From a different computer without the `ai-admin` SSH profile, use equivalent `-L`
 arguments or copy that profile; do not publish these ports in nginx or the host firewall.
 
-SSH remains the default because it is already operated for the media stack and adds no new
-identity or network control plane. If access from several laptops or phones becomes routine,
-the preferred next step is Tailscale Serve: keep every backend on localhost, proxy selected
-UIs privately into the tailnet, and restrict them with Tailscale grants. Serve is tailnet-only
-and honors access controls; **do not enable Tailscale Funnel**, which is the public-internet
-feature. See the official [Tailscale Serve guide](https://tailscale.com/docs/features/tailscale-serve)
-and [grant policy reference](https://tailscale.com/kb/1337/policy-syntax).
+SSH remains the break-glass fallback. Tailscale is the multi-device private access plane for
+both AI and media-administration services; enrollment steps, every tailnet port, the exposure
+inventory, and the hardening work register are maintained in
+[Alucard security and exposure guide](./ALUCARD_SECURITY.md). Keep every backend on localhost
+and **never enable Tailscale Funnel**, which is the public-internet feature.
 
 Authenticated HTTPS and tested backup/restore, retention, deletion, and redaction policies
 are mandatory before presenting the interfaces as a customer service. Dracula remains the
