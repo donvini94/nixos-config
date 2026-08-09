@@ -37,6 +37,11 @@ let
     set passphrase [string trimright [read $handle] "\r\n"]
     close $handle
 
+    # Read-only commands may exit without touching the encrypted vault. Show
+    # their output immediately instead of waiting for a passphrase prompt.
+    if {$mode eq "interactive"} {
+      log_user 1
+    }
     spawn -noecho {*}$command
     expect {
       -re {Vault passphrase.*:} {
@@ -57,7 +62,6 @@ let
             }
           }
         } elseif {$mode eq "interactive"} {
-          log_user 1
           set timeout -1
           interact
         } else {

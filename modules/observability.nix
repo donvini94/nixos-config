@@ -30,7 +30,7 @@ let
   };
   prepare = pkgs.writeShellScript "observability-prepare" ''
     set -euo pipefail
-    ${pkgs.coreutils}/bin/install -d -m 0750 ${stateDirectory}/textfile
+    ${pkgs.coreutils}/bin/install -d -m 0755 ${stateDirectory}/textfile
     ${pkgs.coreutils}/bin/cp -R ${../observability}/. ${stateDirectory}/
     ${pkgs.coreutils}/bin/cp ${prometheusConfig} ${stateDirectory}/prometheus.yml
   '';
@@ -124,7 +124,9 @@ in
 
     systemd.tmpfiles.rules = [
       "d ${stateDirectory} 0750 root root -"
-      "d ${stateDirectory}/textfile 0750 root root -"
+      # Official node-exporter runs unprivileged. This directory contains only
+      # deliberately exported aggregate metrics; raw reports remain root-only.
+      "d ${stateDirectory}/textfile 0755 root root -"
     ];
 
     systemd.services.observability-stack = {
