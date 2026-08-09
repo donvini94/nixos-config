@@ -22,7 +22,7 @@ application. The stable server name is `alucard.tailf117a1.ts.net`.
 
 | Component | What it demonstrates | Link |
 | --- | --- | --- |
-| Hermes | A conversational agent that can use tools and complete multi-step work | [Open Hermes Sessions](http://alucard.tailf117a1.ts.net:29119/sessions) |
+| Hermes | A conversational agent that can use tools and complete multi-step work | [Open Hermes Sessions](https://alucard.tailf117a1.ts.net:29119/sessions) |
 | Wirken | Experimental governed-agent UI and signed audit-chain inspection; effectful browser tools are not yet usable | [Open Wirken](http://alucard.tailf117a1.ts.net:28790) |
 | n8n | Visual business automation and AI workflows | [Open n8n](http://alucard.tailf117a1.ts.net:25678) |
 | Langfuse | Traces of model and agent activity: prompts, responses, latency, tokens, and evaluation | [Open Langfuse](http://alucard.tailf117a1.ts.net:23000) |

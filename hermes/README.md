@@ -8,7 +8,7 @@ After activation:
 
 - Dracula dashboard and browser chat: <http://127.0.0.1:9119/sessions>
 - Alucard tailnet dashboard and browser chat:
-  <http://alucard.tailf117a1.ts.net:29119/sessions>
+  <https://alucard.tailf117a1.ts.net:29119/sessions>
 - State and session history: `/var/lib/hermes/.hermes`
 - Agent workspace: `/var/lib/hermes/workspace`
 - Inference: each host's permanent logger at `127.0.0.1:8080`, attributed as `hermes`
@@ -27,6 +27,18 @@ Alucard uses the hosted Requesty model configured for the business demo; Dracula
 model registry. The UI itself is otherwise the same. Hermes has no general browser or web-search
 tool in this deployment, so demonstrate file, terminal, planning, memory, and session workflows
 instead of promising live internet research.
+
+For the full terminal interface, run `hermes-tui` on Dracula. On Alucard, attach over SSH:
+
+```console
+ssh -t Bereitserver hermes-tui
+```
+
+This runs the same pinned Hermes package and shared session database as the browser UI. It asks
+for operator sudo authentication because the session belongs to the isolated `hermes` account.
+The official desktop app can connect to a remote Hermes backend as well, but that path remains
+disabled until Alucard has a proper dashboard authentication provider; tailnet reachability alone
+is not a substitute for application authentication.
 
 The gateway and dashboard run as the unprivileged `hermes` system user. Their systemd
 sandbox hides `/home`, makes the host filesystem read-only, allows writes only below

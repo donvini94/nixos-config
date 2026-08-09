@@ -7,7 +7,7 @@
 
 let
   tailscale = lib.getExe config.services.tailscale.package;
-  privateServices = {
+  privateTcpServices = {
     # AI stack. These match Dracula's ai-admin forwarding ports.
     "23000" = 13000; # Langfuse
     "23001" = 13001; # Grafana
@@ -15,8 +15,6 @@ let
     "28080" = 8080; # Requesty-backed OpenAI API
     "28790" = 18790; # Wirken
     "29091" = 19091; # Prometheus
-    "29119" = 29118; # Hermes through the local Host-header normalizer
-
     # Media administration. These match the media-admin SSH forwards.
     "15656" = 15656; # Kapowarr
     "16767" = 16767; # Bazarr
@@ -38,8 +36,10 @@ let
       lib.mapAttrsToList (
         listenPort: targetPort:
         "${tailscale} serve --yes --bg --tcp=${listenPort} tcp://127.0.0.1:${toString targetPort}"
-      ) privateServices
+      ) privateTcpServices
     )}
+    # HTTPS avoids browser HTTPS-only upgrades breaking Hermes' WebSockets.
+    ${tailscale} serve --yes --bg --https=29119 http://127.0.0.1:29118
   '';
 in
 {
@@ -50,8 +50,9 @@ in
     useRoutingFeatures = "none";
   };
 
-  # Raw HTTP is carried inside Tailscale's encrypted WireGuard tunnel. The
-  # backends stay on loopback, and no tailnet interface is globally trusted.
+  # Backends stay on loopback, and no tailnet interface is globally trusted.
+  # Hermes additionally gets a tailnet-valid HTTPS endpoint because its chat
+  # and event streams use browser WebSockets.
   systemd.services.tailscale-private-services = {
     description = "Publish explicit Alucard administration ports inside the tailnet";
     after = [ "tailscaled.service" ];

@@ -71,6 +71,12 @@
     settings.mode = "iptables";
   };
 
+  # The upstream module requires the registration unit but does not order the
+  # bouncer after it. Without this edge the first activation races the key file.
+  systemd.services.crowdsec-firewall-bouncer.after = [
+    "crowdsec-firewall-bouncer-register.service"
+  ];
+
   users.users.crowdsec.extraGroups = lib.mkAfter [ "nginx" ];
 
   # The firewall-bouncer module invokes upstream cscli, which expects this

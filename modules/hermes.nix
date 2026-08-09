@@ -59,6 +59,27 @@ let
       ${pkgs.git}/bin/git -C "$workspace" commit --allow-empty --message "chore: initialize Hermes sandbox"
     fi
   '';
+  modelMetadataRefresh = pkgs.writeShellScript "hermes-model-metadata-refresh" ''
+    set -euo pipefail
+    target=${lib.escapeShellArg "${hermesHome}/models_dev_cache.json"}
+    temporary="$target.new"
+    trap '${pkgs.coreutils}/bin/rm -f "$temporary"' EXIT
+    ${pkgs.curl}/bin/curl \
+      --fail --silent --show-error --location --max-time 30 \
+      https://models.dev/api.json --output "$temporary"
+    ${lib.getExe pkgs.jq} -e 'type == "object" and length > 0' "$temporary" >/dev/null
+    ${pkgs.coreutils}/bin/chmod 0600 "$temporary"
+    ${pkgs.coreutils}/bin/mv "$temporary" "$target"
+    trap - EXIT
+  '';
+  hermesTui = pkgs.writeShellApplication {
+    name = "hermes-tui";
+    text = ''
+      exec ${config.security.wrapperDir}/sudo -H -u hermes \
+        --chdir=${lib.escapeShellArg cfg.workspace} \
+        ${lib.getExe hermesPackage} --tui "$@"
+    '';
+  };
 in
 {
   imports = [ inputs.hermes-agent.nixosModules.default ];
@@ -266,6 +287,48 @@ in
       };
     };
 
+    # Hermes' picker uses models.dev metadata. Fetch it in a narrow service so
+    # the dashboard and the child agent can retain loopback-only network access.
+    systemd.services.hermes-model-metadata = {
+      description = "Refresh Hermes model metadata without granting agent egress";
+      wantedBy = [ "ai-stack.target" ];
+      before = [ "hermes-dashboard.service" ];
+      after = [ "network-online.target" ];
+      wants = [ "network-online.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        User = "hermes";
+        Group = "hermes";
+        ExecStart = modelMetadataRefresh;
+        NoNewPrivileges = true;
+        CapabilityBoundingSet = "";
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        PrivateTmp = true;
+        PrivateDevices = true;
+        ProtectKernelTunables = true;
+        ProtectKernelModules = true;
+        ProtectControlGroups = true;
+        RestrictAddressFamilies = [
+          "AF_UNIX"
+          "AF_INET"
+          "AF_INET6"
+        ];
+        ReadWritePaths = [ hermesHome ];
+        UMask = "0077";
+      };
+    };
+
+    systemd.timers.hermes-model-metadata = {
+      description = "Refresh Hermes model metadata daily";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = "daily";
+        RandomizedDelaySec = "30m";
+        Persistent = true;
+      };
+    };
+
     systemd.services.hermes-agent = {
       wantedBy = lib.mkForce [ "ai-stack.target" ];
       partOf = [ "ai-stack.target" ];
@@ -320,5 +383,7 @@ in
         ];
       };
     };
+
+    environment.systemPackages = [ hermesTui ];
   };
 }

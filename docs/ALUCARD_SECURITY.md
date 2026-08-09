@@ -55,7 +55,7 @@ bookmarked.
 | --- | --- |
 | n8n | `http://alucard.tailf117a1.ts.net:25678` |
 | Requesty-backed API | `http://alucard.tailf117a1.ts.net:28080/v1` |
-| Hermes | `http://alucard.tailf117a1.ts.net:29119` |
+| Hermes | `https://alucard.tailf117a1.ts.net:29119` |
 | Langfuse | `http://alucard.tailf117a1.ts.net:23000` |
 | Grafana | `http://alucard.tailf117a1.ts.net:23001` |
 | Wirken | `http://alucard.tailf117a1.ts.net:28790` |
