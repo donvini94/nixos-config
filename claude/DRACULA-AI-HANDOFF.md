@@ -11,7 +11,7 @@ or walk into known traps.
 
 ---
 
-## ✅ STATUS: Phase 4 Hermes infrastructure active; agent/workflow experiment pending
+## ⚠️ STATUS: Phase 5 Wirken trial active; upstream WebChat approval path is broken
 
 When this runs, record corrections at the bottom under **Post-execution corrections**,
 following the `MAC-HANDOFF.md` convention. This file was written by a session that inspected
@@ -83,13 +83,22 @@ Two structural properties worth stating, because they're what make the rest work
 - **Everything speaks OpenAI-compatible through one address.** Clients are configured once,
   ever. Swapping models, adding a remote provider, or inserting a proxy are all config
   changes behind the ingress. This is what makes model comparison cheap.
-- **Wirken sits above the workers, not beside them.** It is the operator's control surface
-  and the audit boundary. That's why it comes late — it needs something to govern — and
-  why it isn't optional at the end.
+- **There is no universal agent wrapper.** Governance only exists where the selected runtime
+  actually mediates a tool or model call. Independent workers remain bypasses until they
+  use that boundary; observability must therefore cover every runtime separately.
 
 ---
 
 ## Decisions (settled — do not relitigate)
+
+**Prefer maintained upstream containers and minimal glue.** Follow the media-stack pattern:
+use an official OCI image and its supported Compose/container configuration when one exists,
+and keep Nix responsible for lifecycle, state mounts, secrets, networking, and health. Pin
+production images by digest and automate reviewed updates; a mutable `latest` tag is not in
+fact controlled or reproducible. Do not create and maintain an unofficial image merely to
+make deployment styles look uniform. If an upstream publishes only a signed static binary,
+package that artifact minimally or choose another product rather than recreating its release
+engineering locally.
 
 **Full local on dracula.** No remote API for now, no communication with `alucard`. Things
 can move later; they will not move during this build.
@@ -745,6 +754,27 @@ The upstream headless age-vault CLI requires a TTY and ignores its documented pa
 environment variable in this release, so a no-transcript Expect bridge feeds the systemd
 credential over a private pseudo-terminal. Acceptance tests proved both successful unlock
 and wrong-passphrase failure without exposing the submitted value.
+
+**Live checkpoint and blocker (2026-08-09).** The second activation completed and left the
+gateway, vault bootstrap, digest-pinned Docker exec image, loopback WebChat, and external
+audit anchor active. A no-tool WebChat turn returned exactly `WIRKEN_PHASE5_OK`; the
+permanent ingress attributed it to caller `wirken`, model `qwen3.6-27b-local`, HTTP 200,
+1,404 prompt + 42 completion = 1,446 tokens, 2,311 ms TTFT, and 3,554 ms total latency.
+The first effectful test exposed an upstream defect: `AgentFactory` constructs the live
+agent with the canonical session ID as its `agent_id`, while `SseApprovalGate` assumes the
+field is the base agent ID and appends `/webchat/webchat-default` again. It cannot find the
+registered SSE sender, logs `no live SSE stream`, and fails closed with an approval timeout.
+The newer v1.16 tag-only source contains the same code. This is a failed governance
+acceptance test, not a configuration issue; do not patch or wrap it locally.
+
+Upstream publishes signed native binaries only—its release workflow has no Dockerfile,
+container artifact, or image-publish job. Creating an unofficial Wirken image would retain
+the vault/TTY and Docker-socket requirements while adding image maintenance, so it is
+explicitly rejected. Keep the trial available for audit inspection, but do not call it the
+governed operator path or migrate credentials/tools into it. Select a maintained official
+container replacement before continuing this phase; Open WebUI is a candidate for browser
+chat and explicit tool approval, while Langfuse remains the later cross-runtime
+observability/evaluation candidate rather than an approval gateway.
 
 **Credential decision.** sops remains the machine-bootstrap root for the vault passphrase
 and the local inference-attribution token. Provider and connector credentials added later

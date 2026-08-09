@@ -27,96 +27,41 @@ let
   # The v1.13 release's age-file fallback deliberately reads its passphrase
   # from a TTY. Feed the systemd credential over a private pseudo-terminal;
   # the secret never appears in the store, argv, environment, or journal.
-  credentialCheckWithVault = pkgs.writeText "wirken-credential-check.exp" ''
+  vaultPty = pkgs.writeText "wirken-vault-pty.exp" ''
     log_user 0
     set timeout 30
+    set mode [lindex $argv 0]
+    set command [lrange $argv 1 end]
     set credential_dir $env(CREDENTIALS_DIRECTORY)
     set handle [open [file join $credential_dir vault-passphrase] r]
     set passphrase [string trimright [read $handle] "\r\n"]
     close $handle
 
-    spawn -noecho ${cfg.package}/bin/wirken credentials list
+    spawn -noecho {*}$command
     expect {
       -re {Vault passphrase.*:} {
         send -- "$passphrase\r"
-        set timeout -1
-        exp_continue
-      }
-      timeout {
-        puts stderr "timed out waiting for Wirken's vault prompt"
-        exit 1
-      }
-      eof {
+        if {$mode eq "gateway"} {
+          expect {
+            -re {WebChat:} {
+              log_user 1
+              set timeout -1
+              expect eof
+            }
+            timeout {
+              puts stderr "Wirken did not finish gateway initialization"
+              exit 1
+            }
+            eof {
+              puts stderr "Wirken exited during gateway initialization"
+            }
+          }
+        } else {
+          set timeout -1
+          expect eof
+        }
         catch wait result
-        set status [lindex $result 3]
-        if {$status == 0} {
-          puts "Wirken encrypted vault check: ok"
-        }
-        exit $status
-      }
-    }
-  '';
-
-  credentialAddWithVault = pkgs.writeText "wirken-credential-add.exp" ''
-    log_user 0
-    set timeout 30
-    set credential_dir $env(CREDENTIALS_DIRECTORY)
-    set handle [open [file join $credential_dir vault-passphrase] r]
-    set passphrase [string trimright [read $handle] "\r\n"]
-    close $handle
-
-    spawn -noecho ${cfg.package}/bin/wirken credentials add custom-api-key --channel inference --value-file [file join $credential_dir ingress-token]
-    expect {
-      -re {Vault passphrase.*:} {
-        send -- "$passphrase\r"
-        set timeout -1
-        exp_continue
-      }
-      timeout {
-        puts stderr "timed out waiting for Wirken's vault prompt"
-        exit 1
-      }
-      eof {
-        catch wait result
-        set status [lindex $result 3]
-        if {$status == 0} {
-          puts "Wirken ingress credential bootstrap: ok"
-        }
-        exit $status
-      }
-    }
-  '';
-
-  gatewayWithVault = pkgs.writeText "wirken-run.exp" ''
-    log_user 0
-    set timeout 30
-    set credential_dir $env(CREDENTIALS_DIRECTORY)
-    set handle [open [file join $credential_dir vault-passphrase] r]
-    set passphrase [string trimright [read $handle] "\r\n"]
-    close $handle
-
-    spawn -noecho ${cfg.package}/bin/wirken run --port ${toString cfg.port}
-    expect {
-      -re {Vault passphrase.*:} {
-        send -- "$passphrase\r"
-        expect {
-          -re {WebChat:} {
-            log_user 1
-            set timeout -1
-            expect eof
-            catch wait result
-            exit [lindex $result 3]
-          }
-          timeout {
-            puts stderr "Wirken did not finish gateway initialization"
-            exit 1
-          }
-          eof {
-            puts stderr "Wirken exited during vault unlock or gateway initialization"
-            catch wait result
-            exit [lindex $result 3]
-          }
-        }
+        exit [lindex $result 3]
       }
       timeout {
         puts stderr "timed out waiting for Wirken's vault prompt"
@@ -139,12 +84,17 @@ let
     ${pkgs.coreutils}/bin/install -m 0600 ${providerConfig} "$data/provider.json"
     ${pkgs.coreutils}/bin/install -m 0600 ${sandboxConfig} "$data/sandbox.json"
 
-    ${pkgs.expect}/bin/expect ${credentialCheckWithVault}
+    ${pkgs.expect}/bin/expect ${vaultPty} quiet \
+      ${cfg.package}/bin/wirken credentials list
+    echo "Wirken encrypted vault check: ok"
 
     token_hash="$(${pkgs.coreutils}/bin/sha256sum "$token" | ${pkgs.coreutils}/bin/cut -d ' ' -f 1)"
     current_hash="$(${pkgs.coreutils}/bin/cat "$marker" 2>/dev/null || true)"
     if [ "$token_hash" != "$current_hash" ]; then
-      ${pkgs.expect}/bin/expect ${credentialAddWithVault}
+      ${pkgs.expect}/bin/expect ${vaultPty} quiet \
+        ${cfg.package}/bin/wirken credentials add custom-api-key \
+        --channel inference --value-file "$token"
+      echo "Wirken ingress credential bootstrap: ok"
       ${pkgs.coreutils}/bin/printf '%s\n' "$token_hash" > "$marker"
       ${pkgs.coreutils}/bin/chmod 0600 "$marker"
     fi
@@ -403,7 +353,15 @@ in
         StateDirectoryMode = "0700";
         WorkingDirectory = dataDirectory;
         LoadCredential = "vault-passphrase:${cfg.vaultPassphraseFile}";
-        ExecStart = "${pkgs.expect}/bin/expect ${gatewayWithVault}";
+        ExecStart = lib.escapeShellArgs [
+          "${pkgs.expect}/bin/expect"
+          vaultPty
+          "gateway"
+          "${cfg.package}/bin/wirken"
+          "run"
+          "--port"
+          (toString cfg.port)
+        ];
         Restart = "on-failure";
         RestartSec = 3;
         UMask = "0077";
@@ -436,6 +394,7 @@ in
     systemd.services.wirken-audit-verify = {
       description = "Verify Wirken audit chains against the operator-pinned key";
       after = [ "wirken-audit-anchor.service" ];
+      unitConfig.ConditionPathExists = [ auditAnchor ];
       serviceConfig = {
         Type = "oneshot";
         ExecStart = lib.escapeShellArgs [
@@ -455,10 +414,6 @@ in
           cfg.stateDirectory
           auditAnchorDirectory
         ];
-        # Wirken v1.13 warns whenever the supplied key equals its local
-        # public key, even when that key came from an out-of-band file.
-        # Hide the co-resident copy so provenance is the root-owned anchor.
-        InaccessiblePaths = [ "${dataDirectory}/audit/audit-signing.pub" ];
         PrivateTmp = true;
         PrivateDevices = true;
       };
@@ -470,19 +425,14 @@ in
       timerConfig = {
         OnBootSec = "15min";
         OnUnitActiveSec = "6h";
-        Persistent = true;
         Unit = "wirken-audit-verify.service";
       };
     };
 
     environment.systemPackages = [
       (pkgs.writeShellScriptBin "wirken-audit-verify" ''
-        exec ${pkgs.sudo}/bin/sudo ${pkgs.systemd}/bin/systemd-run \
-          --collect --pipe --quiet --wait --service-type=exec \
-          --property=${lib.escapeShellArg "InaccessiblePaths=${dataDirectory}/audit/audit-signing.pub"} \
-          --property=ProtectSystem=strict \
-          --property=${lib.escapeShellArg "ReadOnlyPaths=${cfg.stateDirectory} ${auditAnchorDirectory}"} \
-          --setenv=${lib.escapeShellArg "HOME=${cfg.stateDirectory}"} \
+        exec ${pkgs.sudo}/bin/sudo ${pkgs.coreutils}/bin/env \
+          HOME=${lib.escapeShellArg cfg.stateDirectory} \
           ${cfg.package}/bin/wirken audit verify --require-signed \
           --anchor ${lib.escapeShellArg auditAnchor} "$@"
       '')
