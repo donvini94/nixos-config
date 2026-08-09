@@ -1,6 +1,7 @@
 """Loopback reverse proxy that records complete OpenAI requests and responses as JSONL."""
 
 import json
+import hmac
 import os
 import time
 import urllib.error
@@ -22,6 +23,39 @@ HOP_HEADERS = {
     "host",
     "content-length",
 }
+
+
+def load_bearer_caller():
+    credential_name = os.environ.get("LLAMA_BEARER_TOKEN_CREDENTIAL")
+    credential_directory = os.environ.get("CREDENTIALS_DIRECTORY")
+    caller = os.environ.get("LLAMA_BEARER_CALLER", "wirken")
+    if not credential_name or not credential_directory:
+        return None, None
+    with open(
+        os.path.join(credential_directory, credential_name), encoding="utf-8"
+    ) as handle:
+        token = handle.read().rstrip("\n")
+    if not token:
+        raise RuntimeError("configured bearer attribution credential is empty")
+    return token, caller
+
+
+BEARER_TOKEN, BEARER_CALLER = load_bearer_caller()
+
+
+def resolve_caller(headers):
+    explicit = headers.get("X-AI-Caller")
+    if explicit:
+        return explicit
+    authorization = headers.get("Authorization", "")
+    prefix = "Bearer "
+    if (
+        BEARER_TOKEN
+        and authorization.startswith(prefix)
+        and hmac.compare_digest(authorization[len(prefix) :], BEARER_TOKEN)
+    ):
+        return BEARER_CALLER
+    return "unattributed"
 
 
 def append_log(record):
@@ -142,7 +176,7 @@ class Proxy(BaseHTTPRequestHandler):
             append_log(
                 {
                     "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "caller": self.headers.get("X-AI-Caller", "unattributed"),
+                    "caller": resolve_caller(self.headers),
                     "eval_run": self.headers.get("X-AI-Eval-Run"),
                     "method": self.command,
                     "endpoint": self.path,

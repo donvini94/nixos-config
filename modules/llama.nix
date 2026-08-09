@@ -230,6 +230,16 @@ in
       type = lib.types.str;
       default = "/var/lib/llama/logs/requests.jsonl";
     };
+    bearerCredentialFile = lib.mkOption {
+      type = lib.types.nullOr lib.types.path;
+      default = null;
+      description = "Optional bearer token used only to attribute clients that cannot set X-AI-Caller.";
+    };
+    bearerCredentialCaller = lib.mkOption {
+      type = lib.types.str;
+      default = "wirken";
+      description = "Caller recorded when bearerCredentialFile matches.";
+    };
     logRetention = lib.mkOption {
       type = lib.types.ints.positive;
       default = 14;
@@ -325,6 +335,10 @@ in
         LLAMA_PROXY_HOST = cfg.bindAddress;
         LLAMA_PROXY_PORT = toString cfg.port;
         LLAMA_REQUEST_LOG = cfg.requestLog;
+      }
+      // lib.optionalAttrs (cfg.bearerCredentialFile != null) {
+        LLAMA_BEARER_TOKEN_CREDENTIAL = "caller-bearer-token";
+        LLAMA_BEARER_CALLER = cfg.bearerCredentialCaller;
       };
       serviceConfig = {
         User = "llama";
@@ -336,6 +350,9 @@ in
         Restart = "on-failure";
         RestartSec = "2s";
         UMask = "0027";
+      }
+      // lib.optionalAttrs (cfg.bearerCredentialFile != null) {
+        LoadCredential = "caller-bearer-token:${cfg.bearerCredentialFile}";
       };
     };
 

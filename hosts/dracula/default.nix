@@ -15,6 +15,7 @@
     ../../modules/llama.nix
     ../../modules/n8n.nix
     ../../modules/hermes.nix
+    ../../modules/wirken.nix
     ./hardware.nix
     ./services.nix
   ];
@@ -59,6 +60,8 @@
     backendPort = 18080;
     modelStartPort = 18100;
     operators = [ username ];
+    bearerCredentialFile = config.sops.secrets."wirken/ingress_token".path;
+    bearerCredentialCaller = "wirken";
   };
 
   sops.secrets = {
@@ -70,6 +73,16 @@
     "n8n/runner_auth_token" = {
       sopsFile = ../../secrets/dracula-ai.yaml;
       owner = username;
+      mode = "0400";
+    };
+    "wirken/vault_passphrase" = {
+      sopsFile = ../../secrets/dracula-ai.yaml;
+      owner = "root";
+      mode = "0400";
+    };
+    "wirken/ingress_token" = {
+      sopsFile = ../../secrets/dracula-ai.yaml;
+      owner = "root";
       mode = "0400";
     };
   };
@@ -96,6 +109,14 @@
     enable = true;
     model = "qwen3.6-27b-local";
     contextLength = 65536;
+    operators = [ username ];
+  };
+
+  services.localWirken = {
+    enable = true;
+    model = "qwen3.6-27b-local";
+    vaultPassphraseFile = config.sops.secrets."wirken/vault_passphrase".path;
+    ingressCredentialFile = config.sops.secrets."wirken/ingress_token".path;
     operators = [ username ];
   };
 
