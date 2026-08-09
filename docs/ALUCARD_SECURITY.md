@@ -103,7 +103,7 @@ their own explicit firewall justification and protocol-specific protection.
 | P0 | Remove direct public Jellyfin ports 8096/8920 | Enforced; both ports externally verified closed/filtered |
 | P0 | Bind Mailcow web ports 880/4433 to loopback | Pending controlled Mailcow maintenance |
 | P0 | Back up and update Mailcow from 2025-07 to current stable | Pending; local modifications must be reconciled |
-| P1 | Install CrowdSec engine and firewall remediation | Host chain verified; Docker chain and live ban test pending activation |
+| P1 | Install CrowdSec engine and firewall remediation | Engine and bouncer active; host and Docker chains verified; controlled live-ban test pending |
 | P1 | Add tested nginx AppSec/WAF integration | Pending selection of maintained NixOS-compatible integration |
 | P1 | Add per-service rate and connection limits | Pending workload-specific testing |
 | P1 | Apply consistent security headers and bounded request sizes | Pending application compatibility testing |
