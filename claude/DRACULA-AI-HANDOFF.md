@@ -11,7 +11,7 @@ or walk into known traps.
 
 ---
 
-## ⚠️ STATUS: Dracula stack active; Alucard Requesty demo profile activating
+## ⚠️ STATUS: Dracula and Alucard stacks active; Alucard cAdvisor correction pending switch
 
 When this runs, record corrections at the bottom under **Post-execution corrections**,
 following the `MAC-HANDOFF.md` convention. This file was written by a session that inspected
@@ -1301,6 +1301,12 @@ Several details were wrong or incomplete as written:
   to exist in the authenticated catalog, exposes only the local registry from `/v1/models`,
   and rejects unregistered calls before Requesty. The upstream key may remain catalog-wide;
   a matching Requesty Access List is optional defense in depth.
+- Alucard's live acceptance passed for the Requesty ingress, OMP, OpenCode, n8n, Hermes,
+  Wirken, Langfuse, Grafana, and all five Prometheus scrape targets. A green cAdvisor target
+  initially exposed only the root cgroup because Docker 29's embedded containerd socket is
+  `/run/docker/containerd/containerd.sock`, not cAdvisor's default. A disposable probe with
+  the explicit endpoint exposed all 42 running containers; the Compose correction must be
+  switched and re-verified before declaring container metrics complete.
 
 ### Measured Phase 1 starting point
 

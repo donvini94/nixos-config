@@ -120,6 +120,12 @@ tokens. Langfuse v4 is observations-first, so API consumers should use
 OpenCode plugin did not populate `providedModelName` in this smoke trace, so the ingress
 model label remains the reliable model dimension until that integration improves.
 
+Alucard's acceptance verified the five non-GPU targets—ingress, containers, n8n, node, and
+Prometheus—and a real Requesty-backed OpenCode trace. Docker 29 keeps its embedded
+containerd socket at `/run/docker/containerd/containerd.sock`; the cAdvisor container is
+explicitly pointed there. Without that argument the scrape target is deceptively green but
+contains only the host root cgroup, so verify `count(container_last_seen) > 1` after changes.
+
 Coverage is deliberately honest. OMP and n8n already appear in ingress token/latency
 metrics because all model calls pass port `8080`; their complete prompts and responses are
 also in the JSONL log. OMP does not yet have nested tool-span tracing because the available
