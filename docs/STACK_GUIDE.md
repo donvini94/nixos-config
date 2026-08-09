@@ -328,9 +328,9 @@ registered model to exist in the key's returned catalog. A placeholder key or mi
 fails closed before the ingress accepts traffic; a broader key is narrowed locally.
 
 The AI browser and API listeners are deliberately loopback-only and their ports are not
-opened in Alucard's global firewall or public reverse proxy. The host configuration contains
-evaluation assertions which fail if a future change makes the configurable listeners
-non-loopback or adds an AI port to the global firewall.
+opened in Alucard's global firewall or public reverse proxy. Hermes alone binds a wildcard
+socket so its authentication gate is active, but systemd accepts only loopback peers. Host
+assertions reject any other non-loopback AI listener or any AI port in the global firewall.
 
 From Dracula, start the declarative private tunnel:
 

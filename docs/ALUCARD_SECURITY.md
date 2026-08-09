@@ -15,21 +15,24 @@ Tailscale Funnel is prohibited. It would turn a private tailnet service into a p
 - SSH uses keys only; password login, keyboard-interactive login, and root login are disabled.
 - Fail2ban currently protects SSH.
 - nginx terminates ACME TLS and runs with NixOS systemd hardening.
-- AI and media-administration backends bind to loopback.
+- AI and media-administration backends bind to loopback. Hermes is the deliberate exception:
+  it binds a wildcard socket to engage its mandatory authentication gate, while systemd permits
+  only loopback peers and the host firewall does not open port 9119.
 - Nix assertions reject globally opened AI and web-backend ports.
 - SOPS keeps encrypted source secrets out of the Nix store and renders runtime values beneath
   `/run/secrets`.
 - Grafana, Prometheus, node-exporter, and cAdvisor provide machine and container metrics.
-- CrowdSec is configured for local log analysis and host-firewall remediation. Community event
-  sharing is disabled unless an operator deliberately enrolls the machine later.
+- CrowdSec is configured for local log analysis and firewall remediation in both the host
+  `INPUT` and Docker `DOCKER-USER` chains. Community event sharing is disabled unless an
+  operator deliberately enrolls the machine later.
 
 ## Private Tailscale access
 
 Tailscale is installed declaratively on Dracula and Alucard. It does not advertise routes,
 act as an exit node, trust the entire `tailscale0` interface, open a public firewall port, or
 enable Taildrop. Only the explicit ports below are published with Tailscale Serve TCP proxies.
-The HTTP applications remain bound to `127.0.0.1`; traffic between devices is encrypted by
-Tailscale's WireGuard tunnel.
+The HTTP applications remain bound to `127.0.0.1`, except for the systemd-isolated Hermes
+listener described above. Traffic between devices is encrypted by Tailscale's WireGuard tunnel.
 
 Enroll each machine once:
 
@@ -100,7 +103,7 @@ their own explicit firewall justification and protocol-specific protection.
 | P0 | Remove direct public Jellyfin ports 8096/8920 | Enforced; both ports externally verified closed/filtered |
 | P0 | Bind Mailcow web ports 880/4433 to loopback | Pending controlled Mailcow maintenance |
 | P0 | Back up and update Mailcow from 2025-07 to current stable | Pending; local modifications must be reconciled |
-| P1 | Install CrowdSec engine and firewall remediation | Configured; activation and live ban test pending |
+| P1 | Install CrowdSec engine and firewall remediation | Host chain verified; Docker chain and live ban test pending activation |
 | P1 | Add tested nginx AppSec/WAF integration | Pending selection of maintained NixOS-compatible integration |
 | P1 | Add per-service rate and connection limits | Pending workload-specific testing |
 | P1 | Apply consistent security headers and bounded request sizes | Pending application compatibility testing |
@@ -134,5 +137,6 @@ References:
 - [Tailscale Serve](https://tailscale.com/docs/features/tailscale-serve)
 - [Tailscale grants](https://tailscale.com/kb/1337/policy-syntax)
 - [CrowdSec nginx and AppSec](https://docs.crowdsec.net/u/bouncers/nginx/)
+- [CrowdSec firewall bouncer](https://docs.crowdsec.net/u/bouncers/firewall/)
 - [Mailcow reverse proxy](https://docs.mailcow.email/post_installation/reverse-proxy/r_p/)
 - [Mailcow updates](https://docs.mailcow.email/maintenance/update/)

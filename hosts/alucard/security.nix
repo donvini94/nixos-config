@@ -68,14 +68,22 @@
   # The module registers and stores its bouncer key outside the Nix store.
   services.crowdsec-firewall-bouncer = {
     enable = true;
-    settings.mode = "iptables";
+    settings = {
+      mode = "iptables";
+      iptables_chains = [
+        "INPUT"
+        "DOCKER-USER"
+      ];
+    };
   };
 
   # The upstream module requires the registration unit but does not order the
   # bouncer after it. Without this edge the first activation races the key file.
   systemd.services.crowdsec-firewall-bouncer.after = [
     "crowdsec-firewall-bouncer-register.service"
+    "docker.service"
   ];
+  systemd.services.crowdsec-firewall-bouncer.wants = [ "docker.service" ];
 
   users.users.crowdsec.extraGroups = lib.mkAfter [ "nginx" ];
 

@@ -61,15 +61,43 @@ let
   '';
   modelMetadataRefresh = pkgs.writeShellScript "hermes-model-metadata-refresh" ''
     set -euo pipefail
-    target=${lib.escapeShellArg "${hermesHome}/models_dev_cache.json"}
-    temporary="$target.new"
-    trap '${pkgs.coreutils}/bin/rm -f "$temporary"' EXIT
+    models_target=${lib.escapeShellArg "${hermesHome}/models_dev_cache.json"}
+    catalog_target=${lib.escapeShellArg "${hermesHome}/cache/model_catalog.json"}
+    models_temporary="$models_target.new"
+    catalog_temporary="$catalog_target.new"
+    trap '${pkgs.coreutils}/bin/rm -f "$models_temporary" "$catalog_temporary"' EXIT
+
+    ${pkgs.coreutils}/bin/mkdir -p "$(${pkgs.coreutils}/bin/dirname "$catalog_target")"
     ${pkgs.curl}/bin/curl \
       --fail --silent --show-error --location --max-time 30 \
-      https://models.dev/api.json --output "$temporary"
-    ${lib.getExe pkgs.jq} -e 'type == "object" and length > 0' "$temporary" >/dev/null
-    ${pkgs.coreutils}/bin/chmod 0600 "$temporary"
-    ${pkgs.coreutils}/bin/mv "$temporary" "$target"
+      https://models.dev/api.json --output "$models_temporary"
+    ${lib.getExe pkgs.jq} -e 'type == "object" and length > 0' "$models_temporary" >/dev/null
+    ${pkgs.coreutils}/bin/chmod 0600 "$models_temporary"
+    ${pkgs.coreutils}/bin/mv "$models_temporary" "$models_target"
+
+    catalog_valid() {
+      ${lib.getExe pkgs.jq} -e '
+        (.version | type == "number" and . >= 1 and . <= 1)
+        and (.providers | type == "object")
+        and all(.providers[]; .models | type == "array")
+      ' "$catalog_temporary" >/dev/null
+    }
+
+    if ! ${pkgs.curl}/bin/curl \
+      --fail --silent --show-error --location --max-time 8 \
+      https://hermes-agent.nousresearch.com/docs/api/model-catalog.json \
+      --output "$catalog_temporary" || ! catalog_valid; then
+      if ! ${pkgs.curl}/bin/curl \
+        --fail --silent --show-error --location --max-time 8 \
+        https://raw.githubusercontent.com/NousResearch/hermes-agent/main/website/static/api/model-catalog.json \
+        --output "$catalog_temporary" || ! catalog_valid; then
+        ${pkgs.coreutils}/bin/cp \
+          ${inputs.hermes-agent}/website/static/api/model-catalog.json \
+          "$catalog_temporary"
+      fi
+    fi
+    ${pkgs.coreutils}/bin/chmod 0600 "$catalog_temporary"
+    ${pkgs.coreutils}/bin/mv "$catalog_temporary" "$catalog_target"
     trap - EXIT
   '';
   hermesTui = pkgs.writeShellApplication {
@@ -292,8 +320,9 @@ in
       };
     };
 
-    # Hermes' picker uses models.dev metadata. Fetch it in a narrow service so
-    # the dashboard and the child agent can retain loopback-only network access.
+    # Hermes' picker uses models.dev plus its own curated catalog. Fetch both in
+    # a narrow service so the dashboard and child agent retain loopback-only
+    # network access. The pinned upstream catalog is the offline fallback.
     systemd.services.hermes-model-metadata = {
       description = "Refresh Hermes model metadata without granting agent egress";
       wantedBy = [ "ai-stack.target" ];
@@ -362,6 +391,7 @@ in
         "hermes-agent.service"
       ];
       requires = [ "hermes-workspace-init.service" ];
+      restartTriggers = [ modelMetadataRefresh ];
       environment = {
         HOME = cfg.stateDirectory;
         HERMES_HOME = hermesHome;
