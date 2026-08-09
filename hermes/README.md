@@ -66,7 +66,13 @@ Alucard uses Hermes' official `messaging` package variant. In the dashboard, ope
 **Channels → Telegram → Create with QR**, scan the code in Telegram, confirm bot creation,
 and retain the numeric owner ID offered by the workflow. The upstream dashboard stores the
 bot token and strict numeric allowlist in `/var/lib/hermes/.hermes/.env`; rebuilds preserve
-that runtime-owned file. BotFather manual token entry remains the fallback.
+that runtime-owned file. The dashboard is deliberately allowed to manage runtime channel
+settings even though the gateway remains Nix-managed. Nix-defined settings still win when a
+rebuild merges them into `config.yaml`. BotFather manual token entry remains the fallback.
+
+The dashboard's **Restart gateway** action performs a clean gateway shutdown. The NixOS
+system service supervises that lifecycle with `Restart=always`; do not enable a second Hermes
+user service or user lingering.
 
 After setup, verify an allowed DM, `/model`, an inference record attributed to `hermes`, and
 that an unlisted Telegram account receives no agent response. Keep group joining disabled

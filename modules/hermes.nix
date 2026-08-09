@@ -217,7 +217,9 @@ in
       stateDir = cfg.stateDirectory;
       workingDirectory = cfg.workspace;
       addToSystemPackages = false;
-      restart = "on-failure";
+      # Hermes' dashboard restarts the gateway by sending it a clean SIGTERM.
+      # Keep the upstream supervisor semantics so systemd brings it back.
+      restart = "always";
       restartSec = 3;
       extraPackages = with pkgs; [
         findutils
@@ -322,6 +324,16 @@ in
       };
     };
 
+    # The upstream NixOS module marks the whole state directory immutable to
+    # Hermes. That also blocks the supported dashboard channel onboarding flow
+    # from saving runtime credentials and enable flags. The gateway itself
+    # retains HERMES_MANAGED=true; only operator-facing clients may change
+    # runtime settings, while Nix-defined config keys continue to win on every
+    # rebuild through the upstream merge activation.
+    system.activationScripts.hermes-runtime-settings = lib.stringAfter [ "hermes-agent-setup" ] ''
+      rm -f ${hermesHome}/.managed
+    '';
+
     # Hermes' picker uses models.dev plus its own curated catalog. Fetch both in
     # a narrow service so the dashboard and child agent retain loopback-only
     # network access. The pinned upstream catalog is the offline fallback.
@@ -416,7 +428,6 @@ in
         {
           HOME = cfg.stateDirectory;
           HERMES_HOME = hermesHome;
-          HERMES_MANAGED = "true";
         }
         // lib.optionalAttrs (cfg.proxyUrl != null) {
           HTTPS_PROXY = cfg.proxyUrl;

@@ -1376,6 +1376,11 @@ Several details were wrong or incomplete as written:
   live pairing and denied-user acceptance remain. Wirken 1.13's Telegram adapter is
   not enabled because its released documentation says it responds to all private messages and
   sender identity is audited rather than authorized. One bot must never feed both agents.
+- Hermes Telegram onboarding initially failed for two NixOS-integration reasons: the custom
+  dashboard inherited managed mode and rejected its own runtime writes, and its restart action
+  cleanly stopped the system gateway while `Restart=on-failure` left it down. The dashboard is
+  now allowed to own runtime channel settings, Nix still wins for declared config keys, and the
+  system gateway uses upstream-style `Restart=always`. Do not add a second user gateway.
 - CrowdSec state ownership was normalized after the NixOS module's DynamicUser migration left
   nested state inaccessible. The stale bouncer registration whose key was already absent was
   deleted and recreated through the upstream unit. CrowdSec, its authenticated firewall

@@ -350,6 +350,12 @@ group. Nix deliberately does not regenerate that file, so QR-created credentials
 rebuilds. Revoke a compromised bot with BotFather `/revoke`; manual BotFather token entry in
 the same dashboard is the fallback when the managed setup service is unavailable.
 
+The dashboard owns mutable channel credentials and enable flags. The gateway remains
+declaratively installed and runs with Nix managed mode, while the dashboard may update only
+the shared runtime state; Nix-defined `config.yaml` keys are merged back as authoritative on
+every rebuild. Hermes' dashboard restart ends the gateway cleanly and the NixOS system service
+immediately starts it again. Do not install or enable Hermes' separate user service.
+
 The personal-account WhatsApp QR bridge is not shipped: Hermes' upstream Nix package omits
 the mutable Node bridge, and upstream calls WhatsApp Business Cloud API the production path.
 It is deferred until a business number and Meta application exist rather than locally patched.

@@ -106,6 +106,8 @@ Hermes' supported QR onboarding stores `TELEGRAM_BOT_TOKEN` and `TELEGRAM_ALLOWE
 `0640` for the isolated `hermes` group, and rebuilds preserve it. Include it in the encrypted
 Hermes state backup. If the token is exposed, revoke it through BotFather `/revoke`, reconnect
 through the dashboard, and verify the previous token fails. Never use `*` as an allowlist.
+The Hermes dashboard, rather than Nix/SOPS, is the writer for these two runtime values; the
+gateway remains Nix-managed. A rebuild merges declarative settings without replacing `.env`.
 Signal linking state, if ever used, is similarly application state rather than a SOPS scalar;
 its inactive directory remains under `/var/lib/signal-cli`.
 
