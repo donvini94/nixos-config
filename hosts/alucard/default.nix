@@ -3,6 +3,7 @@
   lib,
   pkgs,
   modulesPath,
+  username,
   ...
 }:
 let
@@ -33,7 +34,10 @@ in
     units = [ "media-stack.service" ];
   };
 
-  services.containerVulnerabilityScan.enable = true;
+  services.containerVulnerabilityScan = {
+    enable = true;
+    rootlessDockerUser = username;
+  };
 
   # Boot
   boot = {
