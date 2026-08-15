@@ -97,8 +97,7 @@ in
       offsite.enable = true;
     };
 
-    # Mailcow's ACME client cannot own :80 while host nginx is the public
-    # reverse proxy, so deploy nginx's renewed certificate to its mail services.
+    # mailcow's own ACME cannot work behind this nginx, so hand it our cert.
     mailcowTls = {
       enable = true;
       domain = "mail.${domain2}";
