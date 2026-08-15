@@ -22,6 +22,7 @@ in
     ./syncthing.nix
     ./ai.nix
     ../../modules/packages.nix
+    ../../modules/mailcow-tls.nix
     ../../modules/observability.nix
     ../../modules/container-updates.nix
     ../../modules/vulnerability-scan.nix

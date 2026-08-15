@@ -101,6 +101,13 @@ in
       passwordFile = config.sops.secrets."paperless/password".path;
     };
 
+    # Mailcow's ACME client cannot own :80 while host nginx is the public
+    # reverse proxy, so deploy nginx's renewed certificate to its mail services.
+    mailcowTls = {
+      enable = true;
+      domain = "mail.${domain2}";
+    };
+
     dockerRegistry = {
       enable = true;
       openFirewall = false;
