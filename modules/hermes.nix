@@ -108,6 +108,28 @@ let
           --message "chore: initialize Hermes sandbox"
     fi
   '';
+  verifyApi = pkgs.writeShellScript "hermes-container-verify-api" ''
+    set -euo pipefail
+    auth_config="$RUNTIME_DIRECTORY/api-auth.conf"
+    trap '${pkgs.coreutils}/bin/rm -f "$auth_config"' EXIT
+    umask 077
+    ${pkgs.coreutils}/bin/printf 'header = "Authorization: Bearer %s"\n' \
+      "$API_SERVER_KEY" > "$auth_config"
+    for _ in $(${pkgs.coreutils}/bin/seq 1 120); do
+      if ${pkgs.curl}/bin/curl --config "$auth_config" --fail --silent \
+        --max-time 2 http://127.0.0.1:${toString cfg.apiServer.port}/v1/models \
+        >/dev/null; then
+        ${pkgs.docker}/bin/docker exec \
+          --user "$(${pkgs.coreutils}/bin/id -u hermes):$(${pkgs.coreutils}/bin/id -g hermes)" \
+          hermes-agent sh -c \
+          'probe=/org/.hermes-write-probe; : > "$probe"; rm "$probe"'
+        exit 0
+      fi
+      ${pkgs.coreutils}/bin/sleep 1
+    done
+    echo "Hermes API did not become ready within 120 seconds" >&2
+    exit 1
+  '';
   dockerHermes = pkgs.writeShellApplication {
     name = "hermes-admin";
     runtimeInputs = [ pkgs.docker ];
@@ -282,6 +304,11 @@ in
         ExecStartPre = [ prepare ];
         ExecStart = "${pkgs.docker}/bin/docker compose up -d --pull always --remove-orphans --wait";
         ExecStop = "${pkgs.docker}/bin/docker compose down";
+      }
+      // lib.optionalAttrs cfg.apiServer.enable {
+        RuntimeDirectory = "hermes-agent-verify";
+        RuntimeDirectoryMode = "0700";
+        ExecStartPost = verifyApi;
       }
       // lib.optionalAttrs (cfg.dashboard.environmentFile != null) {
         EnvironmentFile = cfg.dashboard.environmentFile;

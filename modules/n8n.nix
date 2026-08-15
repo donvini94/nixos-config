@@ -383,6 +383,8 @@ in
                   echo "n8n SQLite journal mode is '$journal_mode', expected 'wal'" >&2
                   exit 1
                 fi
+                ${pkgs.docker}/bin/docker exec n8n sh -c \
+                  'probe=/org/.n8n-write-probe; : > "$probe"; rm "$probe"'
                 exit 0
               fi
             else
