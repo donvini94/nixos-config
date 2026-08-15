@@ -17,11 +17,14 @@ Tailscale Funnel is prohibited. It would turn a private tailnet service into a p
 - nginx terminates ACME TLS and runs with NixOS systemd hardening.
 - nginx applies OWASP CRS 4.25.1 LTS through ModSecurity, per-address request and
   connection limits, bounded request bodies, and consistent low-risk headers.
-  The authenticated Jellyfin playback heartbeat `POST /Sessions/Playing` is the sole
+  The authenticated Jellyfin playback endpoint family `POST /Sessions/Playing*` is the sole
   location-level WAF exception: CRS 4.25.1 falsely blocks Swiftfin's payload before
-  Jellyfin can authorize it; Jellyfin itself retains authorization for that endpoint.
-- AI and media-administration backends bind to loopback. Hermes' dashboard and authenticated
-  automation API bind to `127.0.0.1`; only the dashboard is mapped through Tailscale Serve.
+  Jellyfin can authorize it; Jellyfin itself retains authorization for those endpoints.
+- AI and media-administration backends bind to loopback. Jellyfin and Mailcow web backends
+  also bind to `127.0.0.1`: they remain available to friends and family through their public
+  nginx HTTPS hosts, while raw backend ports cannot bypass nginx. Mail protocols remain direct.
+  Hermes' dashboard and authenticated automation API bind to `127.0.0.1`; only the dashboard is
+  mapped through Tailscale Serve.
   n8n reaches the API through a socket restricted to its private Docker bridge.
 - Nix assertions reject globally opened AI and web-backend ports.
 - SOPS keeps encrypted source secrets out of the Nix store and renders runtime values beneath
@@ -163,8 +166,8 @@ their own explicit firewall justification and protocol-specific protection.
 | --- | --- | --- |
 | P0 | Keep AI and administration private | Enforced; tailnet endpoints verified from Dracula |
 | P0 | Remove direct public Jellyfin ports 8096/8920 | Enforced; both ports externally verified closed/filtered |
-| P0 | Bind Mailcow web ports 880/4433 to loopback and hand its mail services nginx's ACME certificate | Declaratively prepared; requires controlled Mailcow maintenance and verification |
-| P0 | Back up and update Mailcow from 2025-07 to current stable | Runbook prepared; requires a maintenance window and operator access on Alucard |
+| P0 | Bind Jellyfin 8096 and Mailcow web ports 880/4433 to loopback; retain public nginx access and the host ACME certificate | Enforced and checked locally on 2026-08-15 |
+| P0 | Back up and update Mailcow from 2025-07 to current stable | Complete; operator confirmed web login and mailbox retrieval on 2026-08-15 |
 | P1 | Install CrowdSec engine and firewall remediation | Complete; real nginx decision verified in the live ipset behind both host and Docker chains |
 | P1 | Add tested nginx AppSec/WAF integration | Active; normal Jellyfin request returned 302 and a traversal/shell probe returned 403 on 2026-08-09 |
 | P1 | Add per-service rate and connection limits | Active at the nginx edge; configuration and normal application path verified |
