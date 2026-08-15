@@ -78,14 +78,29 @@ local ingress and ask before changing files or executing commands. Use both on r
 their different prompts and tool loops are part of the comparison.
 
 OMP receives the Nix-managed model and safety policy through its supported `PI_CONFIG_FILES`
-overlay. Its own `~/.omp/agent/config.yml` remains a normal writable file for settings that OMP
-persists. Automatic onboarding is skipped because the provider is already configured; run
-`omp setup` explicitly only when you intend to revisit upstream's setup flow. Useful diagnostics:
+overlay. The overlay scopes the picker to the custom local/Requesty profiles plus authenticated
+built-in `anthropic/*` and `openai-codex/*` models. Those patterns track OMP's bundled catalog;
+they do not freeze or hardcode an upstream model list. Its `~/.omp/agent/config.yml` and
+`agent.db` remain writable. The latter holds OMP's provider credentials and is never managed by
+Nix, so rebuilds preserve OAuth/API-key state. Automatic onboarding is skipped because the custom
+providers are already configured; run `omp setup` explicitly only when intending to revisit
+upstream's setup flow.
+
+OpenCode's `enabled_providers` is an allow-list. The managed configuration enables the two custom
+profiles and built-in `anthropic` and `openai`, without declaring or overwriting either provider.
+Its auth state remains application-owned at `~/.local/share/opencode/auth.json`; Nix never writes
+that file. OpenAI's `/connect` supports ChatGPT Plus/Pro OAuth. OpenCode's Anthropic provider
+requires an Anthropic API key; a Claude consumer subscription/OAuth session is not an API
+credential. Use `/connect` only when that provider needs initial login or a renewed key.
+
+Useful diagnostics:
 
 ```console
 omp --version
 omp config path
 omp models
+opencode --version
+opencode models
 ```
 
 ### n8n
