@@ -234,45 +234,50 @@ docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'
 
 ## Container updates
 
-Application containers declared in this repository use upstream rolling tags. Where an
-official Compose file pins a supported major for a stateful dependency, such as Langfuse's
-Postgres, Redis, and ClickHouse versions, this repository follows that compatibility-tested
-major instead of independently jumping to an incompatible `latest` image.
-`container-update.timer` checks daily at 04:00 with up to 30 minutes of random delay. A
-missed run does not fire during the next NixOS activation. It recreates only stacks that are
-already active; a deliberately stopped stack stays stopped and pulls its current image when
-it is next started.
+Container versions are changed through reviewed Git, not by a timer pulling a mutable tag.
+`renovate.json` uses Renovate's Docker Compose, Nix/flake, and GitHub Actions managers plus a
+small regex manager for Nix-held OCI defaults. It asks Renovate to preserve readable tags while
+adding an immutable digest (`image:tag@sha256:…`) and to update that digest if the tag moves.
+It groups the Langfuse web/worker pair and n8n/task-runner pair; unrelated applications stay in
+separate PRs. It opens at most two PRs per hour and five concurrently, during the Berlin
+weekday 22:00–24:00 window. Automerge is disabled.
 
-Run an update immediately on either host with:
+`container-update.timer` is disabled by default. After merging a digest PR, rebuild the intended
+host, then restart only its already-active application units:
 
 ```console
 containers-update
 ```
 
-The command waits while images download and services pass their health checks. A first pull
-or a large upstream image can take several minutes; do not interrupt it merely because no
-container is visible yet.
+The command waits while pinned images download and services pass their health checks. A stopped
+stack remains stopped. Git revert plus rebuild restores the previous digest; do not run
+`containers-update` against an unreviewed or unpinned image change.
 
-Inspect the schedule and the last update:
+### Enable Renovate
 
-```console
-systemctl list-timers container-update.timer
-journalctl -u container-update.service
-```
+Install the maintained [Renovate GitHub App](https://github.com/apps/renovate) for this private
+repository, granting repository contents and pull-request access only. It needs no host
+credential, Docker socket, or runtime-container access. Review the onboarding dependency
+dashboard and require the repository's Nix build workflow in branch protection before merging
+any Renovate PR. If the GitHub App is unavailable for the organization, run the maintained
+Renovate container externally with a least-privilege GitHub App token; never add that token to
+Nix, SOPS plaintext, or this repository.
 
-This policy favors fast access to upstream releases over reproducible image versions. State
-is stored on host-mounted volumes, but a breaking upstream migration is still possible. Back
-up application state before intentionally forcing an update during important work.
-
-NixOS and native CLI packages are separate from application-container updates. Update their
-locked inputs explicitly so the Git diff remains reviewable:
+Run locally without credentials only for configuration checks:
 
 ```console
-cd /home/vincenzo/nixos-config
-nix flake update
-git diff -- flake.lock
-sudo nixos-rebuild switch --flake .#dracula   # or .#alucard on the server
+renovate-config-validator renovate.json
+LOG_LEVEL=debug renovate --dry-run=full donvini94/nixos-config
 ```
+
+The dry run requires read access to the private repository and must report Compose images,
+Hermes/n8n/Trivy/Wirken Nix image defaults, `flake.lock`, GitHub Actions, and the annotated
+llama-swap release. The llama-swap manager intentionally changes only its release version:
+regenerate its fixed-output Nix hash in the same PR before its required build can pass. Model
+pins and SOPS-encrypted files are deliberately outside Renovate's regex scope.
+
+Renovate proposes updates. Trivy/scanners identify vulnerabilities. Nix builds, smoke tests,
+and human review decide whether an update is safe. These are complementary controls.
 
 ### Moving configuration between machines
 

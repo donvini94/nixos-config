@@ -6,6 +6,7 @@
 
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "llama-swap";
+  # renovate: datasource=github-releases depName=mostlygeek/llama-swap
   version = "247";
 
   src = fetchurl {

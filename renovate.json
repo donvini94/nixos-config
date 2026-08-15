@@ -1,0 +1,73 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "docker:pinDigests",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "automerge": false,
+  "platformAutomerge": false,
+  "dependencyDashboard": true,
+  "timezone": "Europe/Berlin",
+  "schedule": [
+    "* 22-23 * * 1-5"
+  ],
+  "prHourlyLimit": 2,
+  "prConcurrentLimit": 5,
+  "enabledManagers": [
+    "docker-compose",
+    "github-actions",
+    "nix",
+    "custom.regex"
+  ],
+  "nix": {
+    "enabled": true
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^modules/(hermes|n8n|vulnerability-scan|wirken)\\.nix$/"
+      ],
+      "matchStrings": [
+        "(?:default|trivyImage)\\s*=\\s*\\\"(?<depName>(?:[\\w.-]+/)+[\\w.-]+):(?<currentValue>[\\w.-]+)(?:@(?<currentDigest>sha256:[a-f0-9]{64}))?\\\""
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^packages/llama-swap\\.nix$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=github-releases depName=(?<depName>[^\\s]+)\\s+version = \\\"(?<currentValue>[^\\\"]+)\\\";"
+      ],
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "loose"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Keep the coupled Langfuse application pair in one reviewable PR.",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "docker.io/langfuse/langfuse",
+        "docker.io/langfuse/langfuse-worker"
+      ],
+      "groupName": "Langfuse application"
+    },
+    {
+      "description": "Update n8n and its task runners together.",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "docker.n8n.io/n8nio/n8n",
+        "docker.io/n8nio/runners"
+      ],
+      "groupName": "n8n and task runners"
+    }
+  ]
+}
