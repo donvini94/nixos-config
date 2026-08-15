@@ -52,9 +52,17 @@ let
   defaultProfile = if isDracula then localProfile else requestyProfile;
   modelSelector = profile: model: "${profile.provider}/${model}";
   defaultModelSelector = modelSelector defaultProfile defaultProfile.defaultModel;
-  enabledModels = lib.concatMap (
-    profile: map (modelSelector profile) (builtins.attrNames profile.models)
-  ) profiles;
+  enabledModels =
+    lib.concatMap (profile: map (modelSelector profile) (builtins.attrNames profile.models)) profiles
+    ++ authenticatedOmpProviderScopes;
+  authenticatedOmpProviderScopes = [
+    "anthropic/*"
+    "openai-codex/*"
+  ];
+  authenticatedOpenCodeProviders = [
+    "anthropic"
+    "openai"
+  ];
   ompProviders = lib.listToAttrs (
     map (profile: {
       name = profile.provider;
@@ -208,7 +216,8 @@ in
       "$schema" = "https://opencode.ai/config.json";
       model = defaultModelSelector;
       small_model = defaultModelSelector;
-      enabled_providers = map (profile: profile.provider) profiles;
+      enabled_providers =
+        map (profile: profile.provider) profiles ++ authenticatedOpenCodeProviders;
       share = "disabled";
       autoupdate = false;
       experimental.openTelemetry = true;

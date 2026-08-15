@@ -1463,3 +1463,20 @@ Several details were wrong or incomplete as written:
   system prompts. The token/latency difference is useful proof that the harness itself is
   now observable, not evidence that OMP has won. Complete the week of real work, then run
   paired clean-worktree tasks before drawing that conclusion.
+
+### Client-provider visibility correction (2026-08-15)
+
+- OMP 17.2.12's `enabledModels` is a selection scope, not a provider declaration. Generating it
+  only from the custom profiles hid already-authenticated bundled Anthropic and OpenAI Codex
+  models from the interactive picker even though `omp models` could discover them. The managed
+  overlay now retains the custom profiles and adds only `anthropic/*` and `openai-codex/*`;
+  upstream's bundled catalog supplies the concrete model IDs, so this does not pin a stale list
+  or expose unrelated providers. OMP authentication remains in the writable
+  `~/.omp/agent/agent.db`, outside Nix-managed configuration and the Nix store.
+- OpenCode 1.18.13 treats `enabled_providers` as an allow-list. The generated configuration now
+  permits custom local/Requesty profiles plus the built-in `anthropic` and `openai` providers,
+  without declaring either built-in provider or writing auth state. Its application-owned OAuth/API
+  state is `~/.local/share/opencode/auth.json`, which activation must preserve. OpenAI supports
+  ChatGPT Plus/Pro OAuth through `/connect`; OpenCode's Anthropic provider supports an API key,
+  not a Claude consumer-account OAuth subscription. Do not bridge or copy OMP credentials into
+  OpenCode; authenticate each client through its supported flow.
