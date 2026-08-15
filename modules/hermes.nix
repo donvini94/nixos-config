@@ -166,14 +166,16 @@ let
     text = ''
       tty=()
       if [ -t 0 ] && [ -t 1 ]; then tty=(-t); fi
-      exec docker exec -i "''${tty[@]}" --workdir /workspace hermes-agent hermes "$@"
+      exec docker --host unix:///run/docker.sock exec -i "''${tty[@]}" \
+        --workdir /workspace hermes-agent hermes "$@"
     '';
   };
   dockerHermesTui = pkgs.writeShellApplication {
     name = "hermes-tui";
     runtimeInputs = [ pkgs.docker ];
     text = ''
-      exec docker exec -it --workdir /workspace hermes-agent hermes --tui "$@"
+      exec docker --host unix:///run/docker.sock exec -it \
+        --workdir /workspace hermes-agent hermes --tui "$@"
     '';
   };
 in
