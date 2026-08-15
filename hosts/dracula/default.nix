@@ -60,10 +60,10 @@ in
         file = "Dirk-Qwen3.8-27B-UD-Q5_K_XL.gguf";
         sha256 = "9ea3ab209250fa74f1dd04a7d3ba60f9d346a5752c5c357d48e71df648586898";
         displayName = "Dirk Qwen3.8 27B UD-Q5_K_XL (dense)";
-        description = "Dense Qwen3.8 default; text-only serving; one 49,152-token agent slot.";
-        # The Q5 weights are 18.83 GiB. Qwen3.8's 16 attention layers need 64 KiB/token
-        # for an F16 KV cache, so 49,152 tokens use 3 GiB and retain runtime headroom on 24 GiB.
-        contextSize = 49152;
+        description = "Dense Qwen3.8 default; text-only serving; one 32,768-token agent slot.";
+        # The Q5 weights are 18.83 GiB. At the real 2.6 GiB desktop load, the
+        # 3 GiB KV allocation for 49,152 tokens OOMed; 32,768 tokens reserve 2 GiB.
+        contextSize = 32768;
         parallelSlots = 1;
         gpuLayers = 999;
       };
@@ -212,7 +212,7 @@ in
     model = "dirk-qwen3.8-27b-local";
     providerName = "dracula-local";
     legacyProviderNames = [ "stack-ingress" ];
-    contextLength = 49152;
+    contextLength = 32768;
     operators = [ username ];
     orgDirectory = "/home/${username}/org";
     apiServer.enable = true;
