@@ -156,11 +156,11 @@ in
           # is exempt.
           extraConfig = "modsecurity off;";
           locations."^~ /Sessions/Playing" = {
-            proxyPass = "http://localhost:8096";
+            proxyPass = "http://127.0.0.1:8096";
             extraConfig = "modsecurity off;";
           };
           locations."/" = {
-            proxyPass = "http://localhost:8096";
+            proxyPass = "http://127.0.0.1:8096";
             extraConfig = "modsecurity on;";
           };
         };
