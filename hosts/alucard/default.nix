@@ -82,6 +82,8 @@ in
     filebot
     cifs-utils
     docker-compose
+    # Required by Mailcow's official update.sh migration path.
+    jq
     keycloak
     ffmpeg
     yt-dlp
