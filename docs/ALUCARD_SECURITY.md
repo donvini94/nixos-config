@@ -143,8 +143,8 @@ their own explicit firewall justification and protocol-specific protection.
 | --- | --- | --- |
 | P0 | Keep AI and administration private | Enforced; tailnet endpoints verified from Dracula |
 | P0 | Remove direct public Jellyfin ports 8096/8920 | Enforced; both ports externally verified closed/filtered |
-| P0 | Bind Mailcow web ports 880/4433 to loopback | Pending controlled Mailcow maintenance |
-| P0 | Back up and update Mailcow from 2025-07 to current stable | Pending; local modifications must be reconciled |
+| P0 | Bind Mailcow web ports 880/4433 to loopback and hand its mail services nginx's ACME certificate | Declaratively prepared; requires controlled Mailcow maintenance and verification |
+| P0 | Back up and update Mailcow from 2025-07 to current stable | Runbook prepared; requires a maintenance window and operator access on Alucard |
 | P1 | Install CrowdSec engine and firewall remediation | Complete; real nginx decision verified in the live ipset behind both host and Docker chains |
 | P1 | Add tested nginx AppSec/WAF integration | Active; normal Jellyfin request returned 302 and a traversal/shell probe returned 403 on 2026-08-09 |
 | P1 | Add per-service rate and connection limits | Active at the nginx edge; configuration and normal application path verified |
@@ -204,21 +204,47 @@ an HTTPS health check; a new coredump or failed unit is a release blocker.
 
 ## Mailcow maintenance boundary
 
-Mailcow lives in `/opt/mailcow-dockerized` outside the NixOS repository. Its own supported
-`update.sh` must manage application upgrades because Mailcow updates include configuration and
-database migrations. Do not add it to the generic container pull timer.
+Mailcow lives in `/opt/mailcow-dockerized` outside the NixOS repository. Its supported
+`update.sh` manages its application, image, configuration, and database migrations. Do not add
+it to the generic container pull timer. The NixOS `mailcow-tls` unit deliberately has a narrower
+role: after host ACME renewal it replaces only Mailcow's `cert.pem`/`key.pem` and restarts
+Postfix, Dovecot, and Mailcow nginx. It does not run application upgrades.
 
-Before updating:
+Perform the following on Alucard in a scheduled maintenance window; do not run
+`update.sh --force`, `--ours`, or `--nightly` for this production installation.
 
-1. Produce and verify a Mailcow backup.
-2. Preserve a patch of every locally modified tracked file.
-3. Classify each local change as obsolete, still required, or secret material that belongs in
-   `mailcow.conf`/supported override files.
-4. Bind `HTTP_BIND` and `HTTPS_BIND` to `127.0.0.1` as documented by Mailcow.
-5. Run the official update checker, review release notes across skipped releases, then use the
-   supported updater during a maintenance window.
-6. Verify SMTP submission, inbound and outbound delivery, IMAP, SOGo, TLS, DNS records,
-   backups, and the nginx frontend before closing the window.
+1. Record the current Mailcow commit, status, active image IDs, bindings, and `mailcow.conf`
+   settings **without copying secret values**. Save an external, access-controlled copy of
+   `mailcow.conf` and a patch for every modified tracked file.
+2. Back up and verify Mailcow's database and state before stopping anything. Use the upstream
+   helper in place:
+
+   ```console
+   cd /opt/mailcow-dockerized
+   MAILCOW_BACKUP_LOCATION=/approved/backup/path \
+     ./helper-scripts/backup_and_restore.sh backup all
+   ```
+
+   Verify the completed backup is readable from the intended recovery location; retain its
+   output and the pre-update commit outside this Git repository.
+3. Read the release notes for every skipped stable release, then run `./update.sh --check`.
+   Reconcile reported local modifications: upstream code wins for obsolete copies; required
+   local behavior belongs in `mailcow.conf` or documented upstream override points.
+4. Keep Mailcow's web listener private behind host nginx by setting supported `mailcow.conf`
+   bindings (`HTTP_BIND=127.0.0.1`, `HTTPS_BIND=127.0.0.1`) and its configured ports. Set
+   `SKIP_LETS_ENCRYPT=y`: host nginx owns HTTP-01 and the `mailcow-tls` unit supplies the
+   renewed certificate to IMAP/SMTP services. Apply `mailcow.conf` changes with
+   `docker compose up -d`.
+5. Run the supported stable updater interactively: `./update.sh --stable`. Review every prompt
+   and merge conflict; do not accept a configuration change merely to finish the update.
+6. Check `docker compose ps`, Mailcow logs, host `systemctl --failed`, nginx frontend, SMTP
+   submission, inbound and outbound delivery, IMAP, SOGo, TLS chain/hostname, DKIM/SPF/DMARC,
+   queues, and a backup restore drill before closing the window.
+
+Rollback uses the pre-update commit and the upstream sequence: `docker compose down`, check out
+the recorded commit, `docker compose pull`, then `docker compose up -d`. Restore the verified
+backup only when application/database recovery requires it; rolling back code alone does not
+reverse every data migration.
 
 References:
 
