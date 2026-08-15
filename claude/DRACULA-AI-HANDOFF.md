@@ -1376,7 +1376,10 @@ Several details were wrong or incomplete as written:
   persists the token and numeric owner allowlist in Hermes' protected application state.
   Pairing and the allowed-DM path passed live on 2026-08-15: the exact `TELEGRAM_OK` test
   created a Telegram-sourced session and two `hermes`-attributed Requesty calls returned HTTP
-  200 from `deepinfra/deepseek-v4-flash-0731`. `/model` and denied-user acceptance remain.
+  200 from `deepinfra/deepseek-v4-flash-0731`. `/model` also returned its chooser; only
+  denied-user acceptance remains. Its initial `custom:dracula-local` display was a stale name
+  in persistent Hermes configuration, not a Dracula route. Activation now safely renames that
+  provider to `custom:alucard-requesty` while preserving the model catalog.
   Wirken's Telegram adapter is
   not enabled because its released documentation says it responds to all private messages and
   sender identity is audited rather than authorized. One bot must never feed both agents.

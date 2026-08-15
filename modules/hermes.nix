@@ -9,60 +9,62 @@ let
   cfg = config.services.localHermes;
   hermesHome = "${cfg.stateDirectory}/.hermes";
   composeDirectory = "${cfg.stateDirectory}/compose";
-  initialConfig = pkgs.writeText "hermes-config.json" (builtins.toJSON {
-    database.journal_mode = "wal";
-    providers."stack-ingress" = {
-      api = cfg.ingressUrl;
-      default_model = cfg.model;
-      transport = "chat_completions";
-      discover_models = true;
-      extra_headers.X-AI-Caller = "hermes";
-      models."${cfg.model}".context_length = cfg.contextLength;
-    };
-    model = {
-      default = cfg.model;
-      provider = "custom:stack-ingress";
-      base_url = cfg.ingressUrl;
-      context_length = cfg.contextLength;
-      default_headers.X-AI-Caller = "hermes";
-    };
-    terminal = {
-      backend = "local";
-      cwd = "/workspace";
-      home_mode = "profile";
-      timeout = 300;
-    };
-    platform_toolsets.cli = [
-      "terminal"
-      "file"
-      "skills"
-      "todo"
-      "memory"
-      "session_search"
-      "cronjob"
-    ];
-    agent.disabled_toolsets = [
-      "web"
-      "browser"
-      "vision"
-      "image_gen"
-      "tts"
-    ];
-    approvals = {
-      mode = "manual";
-      timeout = 300;
-      cron_mode = "deny";
-      mcp_reload_confirm = true;
-      destructive_slash_confirm = true;
-      deny = [
-        "git push*"
-        "*curl*|*sh*"
-        "*wget*|*sh*"
+  initialConfig = pkgs.writeText "hermes-config.json" (
+    builtins.toJSON {
+      database.journal_mode = "wal";
+      providers."${cfg.providerName}" = {
+        api = cfg.ingressUrl;
+        default_model = cfg.model;
+        transport = "chat_completions";
+        discover_models = true;
+        extra_headers.X-AI-Caller = "hermes";
+        models."${cfg.model}".context_length = cfg.contextLength;
+      };
+      model = {
+        default = cfg.model;
+        provider = "custom:${cfg.providerName}";
+        base_url = cfg.ingressUrl;
+        context_length = cfg.contextLength;
+        default_headers.X-AI-Caller = "hermes";
+      };
+      terminal = {
+        backend = "local";
+        cwd = "/workspace";
+        home_mode = "profile";
+        timeout = 300;
+      };
+      platform_toolsets.cli = [
+        "terminal"
+        "file"
+        "skills"
+        "todo"
+        "memory"
+        "session_search"
+        "cronjob"
       ];
-    };
-    onboarding.profile_build = "off";
-    dashboard.show_token_analytics = true;
-  });
+      agent.disabled_toolsets = [
+        "web"
+        "browser"
+        "vision"
+        "image_gen"
+        "tts"
+      ];
+      approvals = {
+        mode = "manual";
+        timeout = 300;
+        cron_mode = "deny";
+        mcp_reload_confirm = true;
+        destructive_slash_confirm = true;
+        deny = [
+          "git push*"
+          "*curl*|*sh*"
+          "*wget*|*sh*"
+        ];
+      };
+      onboarding.profile_build = "off";
+      dashboard.show_token_analytics = true;
+    }
+  );
   prepare = pkgs.writeShellScript "hermes-container-prepare" ''
     set -euo pipefail
     ${pkgs.coreutils}/bin/install -d -m 2770 -o hermes -g hermes \
@@ -112,6 +114,26 @@ let
       ${pkgs.coreutils}/bin/install -o hermes -g hermes -m 0640 \
         ${initialConfig} ${hermesHome}/config.yaml
     fi
+    config_file=${hermesHome}/config.yaml
+    current_provider="$(${lib.getExe pkgs.yq-go} -r '.model.provider // ""' "$config_file")"
+    ${lib.concatMapStringsSep "\n" (
+      legacyName:
+      let
+        expression = ''
+          .providers."${cfg.providerName}" = .providers."${legacyName}" |
+          del(.providers."${legacyName}") |
+          .model.provider = "custom:${cfg.providerName}"
+        '';
+      in
+      ''
+        if [ "$current_provider" = ${lib.escapeShellArg "custom:${legacyName}"} ]; then
+          ${lib.getExe pkgs.yq-go} --inplace ${lib.escapeShellArg expression} "$config_file"
+          ${pkgs.coreutils}/bin/chown hermes:hermes "$config_file"
+          ${pkgs.coreutils}/bin/chmod 0640 "$config_file"
+          current_provider=${lib.escapeShellArg "custom:${cfg.providerName}"}
+        fi
+      ''
+    ) cfg.legacyProviderNames}
     ${pkgs.coreutils}/bin/install -o hermes -g hermes -m 0640 \
       ${../hermes/workspace/AGENTS.md} ${cfg.workspace}/AGENTS.md
     ${pkgs.coreutils}/bin/install -o hermes -g hermes -m 0640 \
@@ -190,6 +212,16 @@ in
     model = lib.mkOption {
       type = lib.types.str;
       default = "qwen3.6-27b-local";
+    };
+    providerName = lib.mkOption {
+      type = lib.types.strMatching "[A-Za-z0-9][A-Za-z0-9._-]*";
+      default = "stack-ingress";
+      description = "Human-readable name for Hermes' local inference provider.";
+    };
+    legacyProviderNames = lib.mkOption {
+      type = lib.types.listOf (lib.types.strMatching "[A-Za-z0-9][A-Za-z0-9._-]*");
+      default = [ ];
+      description = "Previous managed provider names renamed in persistent Hermes configuration.";
     };
     contextLength = lib.mkOption {
       type = lib.types.ints.positive;

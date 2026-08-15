@@ -208,6 +208,8 @@ in
   services.localHermes = {
     enable = true;
     model = "qwen3.6-27b-local";
+    providerName = "dracula-local";
+    legacyProviderNames = [ "stack-ingress" ];
     contextLength = 65536;
     operators = [ username ];
     orgDirectory = "/home/${username}/org";

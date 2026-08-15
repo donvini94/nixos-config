@@ -222,6 +222,11 @@ in
     services.localHermes = {
       enable = true;
       model = defaultModel;
+      providerName = "alucard-requesty";
+      legacyProviderNames = [
+        "dracula-local"
+        "stack-ingress"
+      ];
       contextLength = models.${defaultModel}.context;
       proxyUrl = hermesProxyUrl;
       operators = [ username ];

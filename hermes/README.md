@@ -97,9 +97,9 @@ install a second host or user gateway.
 
 The allowed-DM path passed live on Alucard on 2026-08-15: `Reply with exactly TELEGRAM_OK`
 created a Telegram-sourced session, returned the requested response, and produced successful
-ingress records attributed to `hermes`. `/model` and the no-response check from an unlisted
-account remain open. Keep group joining disabled until a specific group ID and sender policy
-are reviewed.
+ingress records attributed to `hermes`. `/model` also returned its provider/model chooser.
+Only the no-response check from an unlisted account remains open. Keep group joining disabled
+until a specific group ID and sender policy are reviewed.
 
 The official image includes the personal-account WhatsApp bridge. It remains deferred for
 customer use: evaluate WhatsApp Business Cloud when a real business number and Meta app exist.

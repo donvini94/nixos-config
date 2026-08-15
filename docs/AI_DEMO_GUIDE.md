@@ -157,8 +157,8 @@ Dracula keeps `dracula-local/qwen3.6-27b-local` as its no-cost default.
 Telegram is the selected mobile channel because it provides a bot identity without a dedicated
 SIM. Hermes is the only Telegram front door initially. In Hermes **Channels**, use **Telegram →
 Create with QR**; the managed setup returns the owner ID for a strict numeric allowlist. The
-allowed-DM path and Hermes-attributed inference passed live on 2026-08-15. The bot is not fully
-accepted until an unlisted account receives no response and `/model` also passes.
+allowed-DM path, `/model`, and Hermes-attributed inference passed live on 2026-08-15. The bot is
+not fully accepted until an unlisted account receives no response.
 
 Do not connect this bot to Wirken. Wirken 1.17 has a native Telegram adapter, but its own
 security documentation says platform sender identities are audited rather than authorized,
