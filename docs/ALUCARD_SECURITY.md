@@ -78,7 +78,7 @@ bookmarked.
 | Hermes | `https://alucard.tailf117a1.ts.net:29119` |
 | Langfuse | `http://alucard.tailf117a1.ts.net:23000` |
 | Grafana | `http://alucard.tailf117a1.ts.net:23001` |
-| Wirken | `http://alucard.tailf117a1.ts.net:28790` |
+| Wirken | `https://alucard.tailf117a1.ts.net:28790` |
 | Prometheus | `http://alucard.tailf117a1.ts.net:29091` |
 
 ### Media administration

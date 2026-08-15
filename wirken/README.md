@@ -3,7 +3,7 @@
 Wirken is an experimental governed-agent path in both AI stacks. Open its upstream WebChat
 on Dracula at <http://127.0.0.1:18790>, on Alucard itself at
 <http://127.0.0.1:18790>, or over the tailnet at
-<http://alucard.tailf117a1.ts.net:28790> after `ai-stack-start`.
+<https://alucard.tailf117a1.ts.net:28790> after `ai-stack-start`.
 
 Do not use WebChat for effectful work. Signed release v1.17.0 still has the confirmed
 session-ID mismatch in its WebChat approval gate: effectful tool calls fail closed because

@@ -7,13 +7,13 @@
 
 let
   tailscale = lib.getExe config.services.tailscale.package;
+  tailnetHost = "alucard.tailf117a1.ts.net";
   privateTcpServices = {
     # AI stack. These match Dracula's ai-admin forwarding ports.
     "23000" = 13000; # Langfuse
     "23001" = 13001; # Grafana
     "25678" = 5678; # n8n
     "28080" = 8080; # Requesty-backed OpenAI API
-    "28790" = 18790; # Wirken
     "29091" = 19091; # Prometheus
     # Media administration. These match the media-admin SSH forwards.
     "15656" = 15656; # Kapowarr
@@ -38,8 +38,11 @@ let
         "${tailscale} serve --yes --bg --tcp=${listenPort} tcp://127.0.0.1:${toString targetPort}"
       ) privateTcpServices
     )}
-    # HTTPS avoids browser HTTPS-only upgrades breaking Hermes' WebSockets.
-    ${tailscale} serve --yes --bg --https=29119 http://127.0.0.1:9119
+    # These upstream UIs intentionally accept only their bound loopback Host
+    # and Origin. nginx validates the exact tailnet origin before translating
+    # it; Tailscale remains the only listener exposed outside loopback.
+    ${tailscale} serve --yes --bg --https=28790 http://127.0.0.1:19790
+    ${tailscale} serve --yes --bg --https=29119 http://127.0.0.1:19119
   '';
 in
 {
@@ -50,13 +53,86 @@ in
     useRoutingFeatures = "none";
   };
 
+  services.nginx = {
+    appendHttpConfig = lib.mkAfter ''
+      map $http_origin $hermes_tailnet_origin {
+        default invalid;
+        "" "";
+        "https://${tailnetHost}:29119" "http://127.0.0.1:9119";
+      }
+      map $http_origin $wirken_tailnet_origin {
+        default invalid;
+        "" "";
+        "https://${tailnetHost}:28790" "http://127.0.0.1:18790";
+      }
+    '';
+    virtualHosts = {
+      hermes-tailnet-proxy = {
+        serverName = tailnetHost;
+        listen = [
+          {
+            addr = "127.0.0.1";
+            port = 19119;
+          }
+        ];
+        extraConfig = "modsecurity off;";
+        locations."/" = {
+          proxyPass = "http://127.0.0.1:9119";
+          proxyWebsockets = true;
+          recommendedProxySettings = false;
+          extraConfig = ''
+            if ($hermes_tailnet_origin = invalid) { return 403; }
+            proxy_set_header Host 127.0.0.1:9119;
+            proxy_set_header Origin $hermes_tailnet_origin;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Host $http_host;
+            proxy_set_header X-Forwarded-Proto https;
+            proxy_read_timeout 3600s;
+            proxy_send_timeout 3600s;
+          '';
+        };
+      };
+      wirken-tailnet-proxy = {
+        serverName = tailnetHost;
+        listen = [
+          {
+            addr = "127.0.0.1";
+            port = 19790;
+          }
+        ];
+        extraConfig = "modsecurity off;";
+        locations."/" = {
+          proxyPass = "http://127.0.0.1:18790";
+          recommendedProxySettings = false;
+          extraConfig = ''
+            if ($wirken_tailnet_origin = invalid) { return 403; }
+            proxy_set_header Host 127.0.0.1:18790;
+            proxy_set_header Origin $wirken_tailnet_origin;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Host $http_host;
+            proxy_set_header X-Forwarded-Proto https;
+            proxy_buffering off;
+            proxy_cache off;
+            proxy_read_timeout 3600s;
+          '';
+        };
+      };
+    };
+  };
+
   # Backends stay on loopback, and no tailnet interface is globally trusted.
   # Hermes additionally gets a tailnet-valid HTTPS endpoint because its chat
   # and event streams use browser WebSockets.
   systemd.services.tailscale-private-services = {
     description = "Publish explicit Alucard administration ports inside the tailnet";
-    after = [ "tailscaled.service" ];
-    wants = [ "tailscaled.service" ];
+    after = [
+      "nginx.service"
+      "tailscaled.service"
+    ];
+    wants = [
+      "nginx.service"
+      "tailscaled.service"
+    ];
     wantedBy = [ "multi-user.target" ];
     serviceConfig = {
       Type = "oneshot";
