@@ -1,13 +1,15 @@
 # Wirken on Dracula and Alucard
 
 Wirken is an experimental governed-agent path in both AI stacks. Open its upstream WebChat
-on Dracula at <http://127.0.0.1:18790> or on Alucard at <http://127.0.0.1:28790> after
-`ai-stack-start`.
+on Dracula at <http://127.0.0.1:18790>, on Alucard itself at
+<http://127.0.0.1:18790>, or over the tailnet at
+<http://alucard.tailf117a1.ts.net:28790> after `ai-stack-start`.
 
 Do not use WebChat for effectful work. Signed release v1.17.0 still has the confirmed
 session-ID mismatch in its WebChat approval gate: effectful tool calls fail closed because
-the approval request cannot reach the browser. Use the interactive CLI path below for
-governed tool calls.
+the approval request cannot reach the browser. The interactive CLI path below has a working
+approval prompt, but an upstream signing gap means it is an evaluation path rather than a
+production governance claim.
 
 ## Lifecycle and health
 
@@ -38,7 +40,7 @@ enter argv, the environment, shell history, or the journal. Commands that mutate
 state still require an intentional operator invocation; Nix does not replace Wirken's vault,
 adapter registry, permission database, or audit model.
 
-## Usable governed path for the observation week
+## Interactive approval experiment
 
 Use upstream's interactive `ask` command for real governed tasks:
 
@@ -47,16 +49,18 @@ wirken-admin ask --message "Create a concise implementation plan for this task: 
 ```
 
 Unlike the affected WebChat path, `ask` attaches Wirken's stdin approval gate when run from a
-terminal. Tier 2/3 tool requests display an interactive approval prompt, execute only after the
-operator's decision, and enter the signed audit chain. It is deliberately one task per command,
-not a full-screen chat client. Use Hermes Telegram/Desktop for conversational work and Wirken
-`ask` for approval/audit exercises until a safe persistent channel is configured.
+terminal. Tier 2/3 tool requests display an interactive approval prompt and execute only after
+the operator's decision. However, v1.17 opens the CLI audit writer without the gateway signing
+key. Its events are hash-chained but do not themselves emit signed chain heads. Use this path to
+evaluate approval ergonomics, not as evidence of a fully signed production workflow. It is one
+task per command, not a full-screen chat client; use Hermes Telegram/Desktop for conversation.
 
 ## State and secrets
 
 - Gateway state and workspace: `/var/lib/wirken/.wirken`
 - Operator-pinned audit key: `/var/lib/wirken-audit-anchor/audit-signing.pub`
-- Declarative provider: `custom/qwen3.6-27b-local` through `http://127.0.0.1:8080/v1`
+- Declarative provider through `http://127.0.0.1:8080/v1`: local Qwen on Dracula and
+  Requesty-routed DeepSeek on Alucard
 - Exec sandbox: upstream `exec-only`, no network, rolling official Debian image
 - Bootstrap secrets: `secrets/dracula-ai.yaml`, delivered with systemd credentials
 - Application credentials: Wirken's encrypted vault, added only when a real connector is
@@ -74,7 +78,9 @@ wirken-audit-verify
 wirken-audit-log --limit 50
 ```
 
-The verifier receives the root-owned anchor explicitly. Wirken incorrectly warns
+The verifier receives the root-owned anchor explicitly. `--require-signed` rejects any session
+that has never received a signed chain head; this can expose transition-era or CLI-only sessions
+without implying a broken hash chain. Wirken incorrectly warns
 that any supplied key equal to its local public key is co-resident, even when the supplied
 file is outside the gateway data directory; the warning is an upstream provenance-detection
 limitation. A real key mismatch still fails and requires an explicit, reviewed rotation.
@@ -82,10 +88,10 @@ limitation. A real key mismatch still fails and requires an explicit, reviewed r
 ## Security boundary
 
 Wirken is intended to govern tools, approvals, credentials, and audit events for agents
-running inside Wirken, but the confirmed WebChat defect means this deployment has not met
-that claim through WebChat. The interactive `wirken-admin ask` path does have its upstream
-stdin approval gate and is the supported effectful test path. Wirken does not transparently
-intercept independent Hermes, n8n, OMP, or OpenCode processes.
+running inside Wirken. The confirmed WebChat approval defect and CLI signing gap mean this
+deployment has not yet met that end-to-end claim. `wirken-admin ask` is the supported
+effectful approval experiment, but not a fully signed production path. Wirken does not
+transparently intercept independent Hermes, n8n, OMP, or OpenCode processes.
 
 The `wirken` service account belongs to the Docker group so it can create upstream's
 ephemeral exec sandbox. Docker access is root-equivalent for the gateway process, although

@@ -778,6 +778,12 @@ registered SSE sender, logs `no live SSE stream`, and fails closed with an appro
 The signed v1.17.0 source still contains the same code. This is a failed governance
 acceptance test, not a configuration issue; do not patch or wrap it locally.
 
+Source review on 2026-08-15 also confirmed that both `ask` construction paths open the audit
+database with `SqliteSessionLog::open`, not `open_with_signer`. The terminal approval gate works,
+but CLI events are only hash-chained and do not emit signed chain heads. This explains Alucard's
+strict verifier finding a valid five-event `default` chain with no head. Do not weaken
+`--require-signed`, claim those CLI events are signed, or ship a private fork to conceal the gap.
+
 Upstream publishes signed native binaries only—its release workflow has no Dockerfile,
 container artifact, or image-publish job. Creating an unofficial Wirken image would retain
 the vault/TTY and Docker-socket requirements while adding image maintenance, so it is
@@ -1390,12 +1396,14 @@ Several details were wrong or incomplete as written:
   deleted and recreated through the upstream unit. CrowdSec, its authenticated firewall
   bouncer, and nginx are active with zero failed units.
 - Wirken v1.17.0 is the current signed binary release. Its binary checksum and signed release
-  manifest were verified before the Nix hash was updated. Both gateways and their audit
-  services are active, and their WebChat roots return HTTP 200. No-tool chat is usable. The
-  known WebChat effectful-approval
-  defect remains upstream. For the observation week, `wirken-admin ask --message "..."` uses
-  the released interactive stdin approval gate and signed audit chain without a messaging
-  account. Do not create an unofficial image or local source patch.
+  manifest were verified before the Nix hash was updated. Both gateways and audit timers are
+  active, and their WebChat roots return HTTP 200. Dracula's anchored verification passes;
+  Alucard's last strict run correctly reports the historical CLI-only `default` session with no
+  signed head. No-tool chat is usable. The
+  known WebChat effectful-approval defect remains upstream. For the observation week,
+  `wirken-admin ask --message "..."` can exercise the released interactive stdin approval gate,
+  but its events are hash-chained without signed chain heads. Do not create an unofficial image,
+  weaken strict verification, or maintain a local source patch.
 - `wirken-admin doctor` passed live on Alucard: provider, vault, adapter registry, MCP signing,
   signed audit chain, Docker runtime, and alarm log were healthy. No channel is configured yet.
   The latest root-daemon Trivy baseline scanned 40 image references and exported 178 critical,

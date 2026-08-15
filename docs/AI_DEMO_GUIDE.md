@@ -61,8 +61,8 @@ their integration endpoint.
 2. Open **Grafana** and connect that interaction to traffic, token use, cost, and system health.
 3. For a trace-level demonstration, run an existing instrumented **OpenCode** example and open
    its trace in **Langfuse**. Do not claim that every client already provides nested traces.
-4. Open **Wirken** when the discussion turns to governed execution, approvals, audit evidence,
-   or separating model access from credentials and tools.
+4. Open **Wirken** when the discussion turns to the governance experiment, approval UX, audit
+   evidence, and the currently documented upstream gaps. Do not present it as production-ready.
 5. Explain that a customer's applications can use the same `/v1` API contract while routing
    simple tasks to inexpensive open models and difficult tasks to stronger frontier models.
 
@@ -76,7 +76,7 @@ Alucard's Hermes intentionally has no general web-search/browser tool and cannot
 outside its isolated workspace and the explicitly shared Org tree. See
 the [Hermes operator guide](../hermes/README.md) for the exact boundaries.
 
-For a live governed Wirken task, use its upstream terminal approval path rather than effectful
+For a live Wirken approval experiment, use its upstream terminal path rather than effectful
 WebChat:
 
 ```console
@@ -84,8 +84,10 @@ wirken-admin ask --message "Create a short implementation plan and save it in th
 wirken-audit-log --limit 20
 ```
 
-Tool approvals appear in the terminal and the decision enters Wirken's signed audit chain.
-WebChat remains suitable only for no-tool conversation until its upstream session bug is fixed.
+Tool approvals appear in the terminal. The decision is hash-chained, but Wirken v1.17's CLI
+writer does not itself emit signed chain heads. WebChat remains suitable only for no-tool
+conversation until its upstream session bug is fixed. These are explicit evaluation findings,
+not production governance claims.
 
 ## Hermes Desktop
 
