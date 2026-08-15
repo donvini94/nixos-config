@@ -24,7 +24,7 @@ let
     network = false;
   };
 
-  # The v1.13 release's age-file fallback deliberately reads its passphrase
+  # The upstream age-file fallback deliberately reads its passphrase
   # from a TTY. Feed the systemd credential over a private pseudo-terminal;
   # the secret never appears in the store, argv, environment, or journal.
   vaultPty = pkgs.writeText "wirken-vault-pty.exp" ''

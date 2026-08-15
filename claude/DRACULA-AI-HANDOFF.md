@@ -752,8 +752,8 @@ agent path and measures it; it must not claim that the other paths are governed 
 are actually migrated to an upstream-supported Wirken runtime or connector. Do not build a
 fake universal wrapper to satisfy the old diagram.
 
-**Implementation checkpoint (pre-activation, 2026-08-09).** The module pins the latest
-published signed release, Wirken v1.13.0, rather than the newer tag-only commits. The
+**Implementation checkpoint (updated 2026-08-15).** The module pins the latest
+published signed release, Wirken v1.17.0. The
 official x86_64 musl binary's Ed25519 release signature and signed SHA-256 manifest were
 verified before its Nix hash was recorded. The declarative service seeds the custom local
 provider and fail-closed `exec-only` sandbox, bootstraps an ingress credential into the
@@ -775,7 +775,7 @@ The first effectful test exposed an upstream defect: `AgentFactory` constructs t
 agent with the canonical session ID as its `agent_id`, while `SseApprovalGate` assumes the
 field is the base agent ID and appends `/webchat/webchat-default` again. It cannot find the
 registered SSE sender, logs `no live SSE stream`, and fails closed with an approval timeout.
-The newer v1.16 tag-only source contains the same code. This is a failed governance
+The signed v1.17.0 source still contains the same code. This is a failed governance
 acceptance test, not a configuration issue; do not patch or wrap it locally.
 
 Upstream publishes signed native binaries only—its release workflow has no Dockerfile,
@@ -1368,7 +1368,7 @@ Several details were wrong or incomplete as written:
   mobile channel. Hermes now uses the upstream `messaging` Nix variant and a domain-filtered
   loopback proxy for only Telegram API plus Nous managed onboarding. Its dashboard QR flow
   persists the token and numeric owner allowlist in Hermes' protected application state;
-  live pairing and denied-user acceptance remain. Wirken 1.13's Telegram adapter is
+  live pairing and denied-user acceptance remain. Wirken's Telegram adapter is
   not enabled because its released documentation says it responds to all private messages and
   sender identity is audited rather than authorized. One bot must never feed both agents.
 - Hermes Telegram onboarding initially failed for two NixOS-integration reasons: the custom
@@ -1389,9 +1389,10 @@ Several details were wrong or incomplete as written:
   nested state inaccessible. The stale bouncer registration whose key was already absent was
   deleted and recreated through the upstream unit. CrowdSec, its authenticated firewall
   bouncer, and nginx are active with zero failed units.
-- Wirken v1.13.0 remains the latest signed binary release; v1.14-v1.16 are tag-only and have
-  no release artifacts. Both live gateways and their audit services are active and their
-  WebChat roots return HTTP 200. No-tool chat is usable. The known WebChat effectful-approval
+- Wirken v1.17.0 is the current signed binary release. Its binary checksum and signed release
+  manifest were verified before the Nix hash was updated. Both gateways and their audit
+  services are active, and their WebChat roots return HTTP 200. No-tool chat is usable. The
+  known WebChat effectful-approval
   defect remains upstream. For the observation week, `wirken-admin ask --message "..."` uses
   the released interactive stdin approval gate and signed audit chain without a messaging
   account. Do not create an unofficial image or local source patch.

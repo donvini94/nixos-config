@@ -112,7 +112,7 @@ to that tree. The workflows themselves remain separately reviewed/exported artif
 
 ### Wirken
 
-Wirken is wanted in the final stack, but its present deployment is a native, signed v1.13
+Wirken is wanted in the final stack, but its present deployment is the native, signed v1.17
 binary because upstream publishes no official container. Normal WebChat inference works.
 Effectful WebChat tools do not: an upstream session-ID defect prevents the approval prompt
 from reaching the browser, so the request times out and fails closed. Do not give this trial
@@ -368,7 +368,7 @@ The official image contains the personal-account WhatsApp bridge, but customer u
 deferred in favor of WhatsApp Business Cloud when a business number and Meta application exist.
 
 Wirken's upstream administrative CLI remains available through `wirken-admin`. Do not attach
-the Hermes bot—or another publicly discoverable bot—to Wirken 1.13: its released Telegram
+the Hermes bot—or another publicly discoverable bot—to Wirken: its released Telegram
 adapter accepts all private messages, while platform sender identity is only audited and is
 not an authorization input. Keep Wirken on its private WebChat/CLI surfaces until upstream
 ships a sender authorization boundary or a separately reviewed channel satisfies it.

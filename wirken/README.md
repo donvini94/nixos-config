@@ -1,12 +1,13 @@
-# Wirken on dracula
+# Wirken on Dracula and Alucard
 
-Wirken is an experimental browser/chat agent path in the local AI stack. Open its upstream
-WebChat at <http://127.0.0.1:18790> after `ai-stack-start`.
+Wirken is an experimental governed-agent path in both AI stacks. Open its upstream WebChat
+on Dracula at <http://127.0.0.1:18790> or on Alucard at <http://127.0.0.1:28790> after
+`ai-stack-start`.
 
-Do not use it for effectful work. Release v1.13.0 has a confirmed session-ID mismatch in
-its WebChat approval gate: effectful tool calls fail closed because the approval request
-cannot reach the browser. The newer tag-only v1.16 source has the same defect. This trial
-remains installed for audit inspection while a maintained replacement is selected.
+Do not use WebChat for effectful work. Signed release v1.17.0 still has the confirmed
+session-ID mismatch in its WebChat approval gate: effectful tool calls fail closed because
+the approval request cannot reach the browser. Use the interactive CLI path below for
+governed tool calls.
 
 ## Lifecycle and health
 
@@ -73,7 +74,7 @@ wirken-audit-verify
 wirken-audit-log --limit 50
 ```
 
-The verifier receives the root-owned anchor explicitly. Wirken v1.13 incorrectly warns
+The verifier receives the root-owned anchor explicitly. Wirken incorrectly warns
 that any supplied key equal to its local public key is co-resident, even when the supplied
 file is outside the gateway data directory; the warning is an upstream provenance-detection
 limitation. A real key mismatch still fails and requires an explicit, reviewed rotation.
@@ -95,7 +96,7 @@ determined same-UID process.
 ## Messaging channel status
 
 No Wirken messaging channel is configured. Telegram was considered after the Signal account
-requirement proved impractical, but Wirken 1.13's released security model does not authorize
+requirement proved impractical, but Wirken's released security model does not authorize
 by platform sender identity: identities are audited, while approvals are scoped to agent and
 action. Its Telegram adapter also responds to all private messages. A discoverable Telegram
 bot would therefore widen access beyond the operator and is not enabled.

@@ -6,11 +6,11 @@
 
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "wirken";
-  version = "1.13.0";
+  version = "1.17.0";
 
   src = fetchurl {
     url = "https://github.com/gebruder/wirken/releases/download/v${finalAttrs.version}/wirken-x86_64-unknown-linux-musl";
-    hash = "sha256-PyXR4jn8Uk+bPimkwTjij1ecDA+ngek6RlUvtWm2QUE=";
+    hash = "sha256-AJrLPzUzARMWaCa8TiS+TwG/uxi/mpdewQgh8VlXKfI=";
   };
 
   dontUnpack = true;
