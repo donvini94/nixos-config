@@ -1416,6 +1416,10 @@ Several details were wrong or incomplete as written:
   binds `127.0.0.1:8642`; a socket proxy exposes it only on n8n's private Docker bridge, and
   each host has an independent SOPS-managed `hermes/api_server_key`. No public or tailnet
   listener was added. Exact workflows remain separate reviewable/exported artifacts.
+- Hermes gives its persistent `/opt/data/.env` precedence over process environment. The first
+  API acceptance probe exposed that an older application-owned key shadowed the new SOPS key.
+  Activation now atomically reconciles only `API_SERVER_KEY` into `.env`, preserves messaging
+  credentials, and keeps the key out of Docker's inspectable container environment.
 
 ### Measured Phase 1 starting point
 

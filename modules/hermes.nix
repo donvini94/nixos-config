@@ -78,6 +78,36 @@ let
     ${pkgs.coreutils}/bin/chmod 2770 ${hermesHome} ${cfg.workspace}
     ${pkgs.coreutils}/bin/rm -f ${hermesHome}/.managed
 
+    # Hermes loads application credentials from its persistent .env before
+    # process-level values. Reconcile only our automation key and preserve
+    # dashboard-owned channel credentials in the same file.
+    if [ -n "''${API_SERVER_KEY:-}" ]; then
+      dotenv=${hermesHome}/.env
+      dotenv_new=${hermesHome}/.env.api-key-new
+      key_written=0
+      ${pkgs.coreutils}/bin/rm -f "$dotenv_new"
+      if [ -f "$dotenv" ]; then
+        while IFS= read -r line || [ -n "$line" ]; do
+          case "$line" in
+            API_SERVER_KEY=*)
+              ${pkgs.coreutils}/bin/printf 'API_SERVER_KEY=%s\n' "$API_SERVER_KEY"
+              key_written=1
+              ;;
+            *) ${pkgs.coreutils}/bin/printf '%s\n' "$line" ;;
+          esac
+        done < "$dotenv" > "$dotenv_new"
+      else
+        : > "$dotenv_new"
+      fi
+      if [ "$key_written" -eq 0 ]; then
+        ${pkgs.coreutils}/bin/printf 'API_SERVER_KEY=%s\n' \
+          "$API_SERVER_KEY" >> "$dotenv_new"
+      fi
+      ${pkgs.coreutils}/bin/chown hermes:hermes "$dotenv_new"
+      ${pkgs.coreutils}/bin/chmod 0640 "$dotenv_new"
+      ${pkgs.coreutils}/bin/mv -f "$dotenv_new" "$dotenv"
+    fi
+
     if [ ! -s ${hermesHome}/config.yaml ]; then
       ${pkgs.coreutils}/bin/install -o hermes -g hermes -m 0640 \
         ${initialConfig} ${hermesHome}/config.yaml

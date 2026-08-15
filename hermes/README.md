@@ -75,6 +75,9 @@ Hermes and n8n can collaborate without either container gaining general host acc
   public firewall.
 - The Hermes API requires the SOPS-managed `hermes/api_server_key`. Store it in an n8n
   Header Auth credential as `Authorization: Bearer <key>`; never put it in workflow JSON.
+  Activation reconciles only this key into Hermes' persistent `.env`; Telegram and other
+  dashboard-owned credentials in that file are preserved. The key is not stored in Docker's
+  inspectable container environment.
 
 No workflows are installed automatically. Their webhook paths, allowed actions, and payload
 schemas remain reviewable workflow artifacts. Notion, Linear, and other systems should be
