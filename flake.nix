@@ -9,6 +9,7 @@
       "https://nix-community.cachix.org"
       "https://nixpkgs-wayland.cachix.org"
       "https://cache.nixos-cuda.org"
+      "https://hermes-agent.cachix.org"
     ];
     trusted-public-keys = [
       "helix.cachix.org-1:ejp9KQpR1FBI2onstMQ34yogDm4OgU2ru6lIwPvuCVs="
@@ -17,6 +18,7 @@
       "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
       "cache.nixos-cuda.org:74DUi4Ye579gUqzH4ziL9IyiJBlDpMRn9MBN8oNan9M="
       "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
+      "hermes-agent.cachix.org-1:jN3pjR50Mxi4SESKC/FIMNM6/LCosvPk2VUwzVvebzU="
     ];
   };
 
@@ -27,6 +29,8 @@
     sops-nix.url = "github:Mic92/sops-nix";
     disko.url = "github:nix-community/disko";
     hosts.url = "github:StevenBlack/hosts";
+
+    hermes-agent.url = "github:NousResearch/hermes-agent/v2026.8.3";
 
     # Pinned to the last .conf-primary release: 0.55 deprecated hyprlang in favour
     # of Lua config, and home-manager still only emits hyprland.conf. Unpin (drop
@@ -73,7 +77,9 @@
       # "Reversed (or previously applied)" and the build fails. Drop the patch list
       # until nixpkgs drops it. Tracked in memory/highlight_overlay_temp.md.
       highlightFixOverlay = _final: prev: {
-        highlight = prev.highlight.overrideAttrs (_old: { patches = [ ]; });
+        highlight = prev.highlight.overrideAttrs (_old: {
+          patches = [ ];
+        });
       };
 
       overlays = [
@@ -81,42 +87,61 @@
         highlightFixOverlay
       ];
 
-      mkDesktopHost = hostname: nixpkgs.lib.nixosSystem {
-        inherit system;
-        specialArgs = { inherit inputs username; };
-        modules = [
-          # Local configuration
-          ./configuration.nix
-          ./hosts/${hostname}
+      mkDesktopHost =
+        hostname:
+        nixpkgs.lib.nixosSystem {
+          inherit system;
+          specialArgs = { inherit inputs username; };
+          modules = [
+            # Local configuration
+            ./configuration.nix
+            ./hosts/${hostname}
 
-          # Flake modules
-          hyprland.nixosModules.default
-          sops-nix.nixosModules.sops
-          lsfg-vk-flake.nixosModules.default
-          hosts.nixosModule
-          home-manager.nixosModules.home-manager
+            # Flake modules
+            hyprland.nixosModules.default
+            sops-nix.nixosModules.sops
+            lsfg-vk-flake.nixosModules.default
+            hosts.nixosModule
+            home-manager.nixosModules.home-manager
 
-          # Desktop wiring
-          {
-            nixpkgs.overlays = overlays;
-            home-manager = {
-              extraSpecialArgs = { inherit username mail fullName inputs; };
-              backupFileExtension = "hm-backup";
-              sharedModules = [ { nixpkgs.overlays = [ highlightFixOverlay ]; } ];
-              users.${username} = import ./home.nix;
-            };
-          }
-        ];
-      };
+            # Desktop wiring
+            {
+              nixpkgs.overlays = overlays;
+              home-manager = {
+                extraSpecialArgs = {
+                  inherit
+                    username
+                    mail
+                    fullName
+                    inputs
+                    ;
+                };
+                backupFileExtension = "hm-backup";
+                sharedModules = [ { nixpkgs.overlays = [ highlightFixOverlay ]; } ];
+                users.${username} = import ./home.nix;
+              };
+            }
+          ];
+        };
 
-      mkServerHost = hostname: nixpkgs.lib.nixosSystem {
-        inherit system;
-        specialArgs = { inherit inputs; };
-        modules = [
-          ./configuration.nix
-          ./hosts/${hostname}
-        ];
-      };
+      mkServerHost =
+        hostname:
+        nixpkgs.lib.nixosSystem {
+          inherit system;
+          specialArgs = { inherit inputs username; };
+          modules = [
+            ./configuration.nix
+            ./hosts/${hostname}
+            home-manager.nixosModules.home-manager
+            {
+              home-manager = {
+                extraSpecialArgs = { inherit username; };
+                backupFileExtension = "hm-backup";
+                users.${username} = import ./hosts/${hostname}/home.nix;
+              };
+            }
+          ];
+        };
     in
     {
       nixosConfigurations = {

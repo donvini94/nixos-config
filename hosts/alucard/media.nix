@@ -42,6 +42,7 @@
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
+      TimeoutStartSec = "30min";
       WorkingDirectory = "/var/lib/media-stack";
       EnvironmentFile = config.sops.templates."mullvad.env".path;
       ExecStartPre = [

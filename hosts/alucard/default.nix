@@ -3,6 +3,7 @@
   lib,
   pkgs,
   modulesPath,
+  username,
   ...
 }:
 let
@@ -13,14 +14,30 @@ in
     (modulesPath + "/profiles/qemu-guest.nix")
     ./disk-config.nix
     ./networking.nix
+    ./private-access.nix
+    ./security.nix
     ./services.nix
     ./media.nix
     ./users.nix
     ./syncthing.nix
+    ./ai.nix
     ../../modules/packages.nix
+    ../../modules/observability.nix
+    ../../modules/container-updates.nix
+    ../../modules/vulnerability-scan.nix
     ../../configuration.nix
     ../../secrets/secrets.nix
   ];
+
+  services.containerUpdates = {
+    enable = true;
+    units = [ "media-stack.service" ];
+  };
+
+  services.containerVulnerabilityScan = {
+    enable = true;
+    rootlessDockerUser = username;
+  };
 
   # Boot
   boot = {

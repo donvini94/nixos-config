@@ -7,8 +7,35 @@
 let
   domain = "dumusstbereitsein.de";
   domain2 = "istbereit.de";
+  harden = lib.mapAttrs (
+    _: host:
+    host
+    // {
+      extraConfig = (host.extraConfig or "") + ''
+        limit_req zone=public_per_ip burst=120 nodelay;
+        limit_conn public_connections 50;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), geolocation=(), microphone=()" always;
+      '';
+    }
+  );
 in
 {
+  assertions = [
+    {
+      assertion =
+        lib.intersectLists [
+          4533
+          5000
+          8083
+          8096
+          8920
+        ] config.networking.firewall.allowedTCPPorts == [ ];
+      message = "Alucard web backends must remain behind nginx instead of being globally firewalled";
+    }
+  ];
+
   # ACME / Let's Encrypt
   security.acme = {
     acceptTerms = true;
@@ -28,6 +55,7 @@ in
       settings = {
         hostname = "auth.${domain}";
         http-port = 38080;
+        http-host = "127.0.0.1";
         http-enabled = true;
         proxy-headers = "xforwarded";
         hostname-strict-https = false;
@@ -37,13 +65,13 @@ in
 
     jellyfin = {
       enable = true;
-      openFirewall = true;
+      openFirewall = false;
       dataDir = "/home/jellyfin/";
     };
 
     navidrome = {
       enable = true;
-      openFirewall = true;
+      openFirewall = false;
       settings.MusicFolder = "/mnt/music";
     };
 
@@ -51,7 +79,7 @@ in
       enable = true;
       listen.ip = "127.0.0.1";
       listen.port = 8083;
-      openFirewall = true;
+      openFirewall = false;
       dataDir = "calibre-web";
       options = {
         enableBookUploading = true;
@@ -75,23 +103,24 @@ in
 
     dockerRegistry = {
       enable = true;
-      openFirewall = true;
+      openFirewall = false;
     };
 
     # Nginx reverse proxy
     nginx = {
       enable = true;
       additionalModules = [ pkgs.nginxModules.dav ];
-      clientMaxBodySize = "0";
+      clientMaxBodySize = "64m";
+      serverTokens = false;
       recommendedGzipSettings = true;
       recommendedOptimisation = true;
       recommendedProxySettings = true;
       recommendedTlsSettings = true;
-      virtualHosts = {
+      virtualHosts = harden {
         "${domain}" = {
           enableACME = true;
           forceSSL = true;
-          locations."/".proxyPass = "http://127.0.0.1:4000";
+          locations."/".return = "404";
         };
         "auth.${domain}" = {
           enableACME = true;
@@ -104,11 +133,15 @@ in
         "git.${domain}" = {
           enableACME = true;
           forceSSL = true;
-          locations."/".proxyPass = "http://unix:/run/gitlab/gitlab-workhorse.socket";
+          locations."/".return = "404";
         };
         "registry.${domain}" = {
           enableACME = true;
           forceSSL = true;
+          extraConfig = ''
+            modsecurity off;
+            client_max_body_size 0;
+          '';
           locations."/".proxyPass = "http://localhost:5000";
           basicAuthFile = ../../secrets/htpasswd;
         };
@@ -130,7 +163,7 @@ in
         "docs.${domain}" = {
           enableACME = true;
           forceSSL = true;
-          locations."/".proxyPass = "http://127.0.0.1:3000";
+          locations."/".return = "404";
         };
         "paperless.${domain}" = {
           enableACME = true;
@@ -140,6 +173,10 @@ in
         "files.${domain}" = {
           enableACME = true;
           forceSSL = true;
+          extraConfig = ''
+            modsecurity off;
+            client_max_body_size 10g;
+          '';
           locations."/".proxyPass = "http://127.0.0.1:53842";
         };
         "budget.${domain2}" = {
@@ -150,6 +187,7 @@ in
         "read.${domain2}" = {
           enableACME = true;
           forceSSL = true;
+          extraConfig = "client_max_body_size 2g;";
           locations."/".proxyPass = "http://127.0.0.1:8083";
         };
         "mail.${domain2}" = {
@@ -160,10 +198,7 @@ in
         "coder.${domain2}" = {
           enableACME = true;
           forceSSL = true;
-          locations."/" = {
-            proxyPass = "http://127.0.0.1:1337";
-            proxyWebsockets = true;
-          };
+          locations."/".return = "404";
         };
         "comics.${domain2}" = {
           enableACME = true;
@@ -184,6 +219,7 @@ in
         "webdav.${domain2}" = {
           enableACME = true;
           forceSSL = true;
+          extraConfig = "modsecurity off;";
           basicAuthFile = ../../secrets/htpasswd;
           locations."/" = {
             root = config.services.paperless.consumptionDir;
@@ -250,6 +286,25 @@ in
   systemd.services.nginx.serviceConfig = {
     ReadWritePaths = [ (config.services.paperless.dataDir + "/consume") ];
     UMask = lib.mkForce "0022";
+  };
+
+  systemd.services.keycloak.serviceConfig = {
+    CapabilityBoundingSet = "";
+    PrivateDevices = true;
+    ProtectClock = true;
+    ProtectControlGroups = true;
+    ProtectHostname = true;
+    ProtectKernelLogs = true;
+    ProtectKernelModules = true;
+    ProtectKernelTunables = true;
+    RestrictAddressFamilies = [
+      "AF_UNIX"
+      "AF_INET"
+      "AF_INET6"
+    ];
+    LockPersonality = true;
+    ProtectProc = "invisible";
+    ProcSubset = "pid";
   };
 
   # Paperless depends on mount

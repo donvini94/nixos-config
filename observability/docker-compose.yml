@@ -1,0 +1,229 @@
+name: observability
+
+x-langfuse-environment: &langfuse-environment
+  NEXTAUTH_URL: http://127.0.0.1:${LANGFUSE_PORT:-13000}
+  DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/postgres
+  SALT: ${LANGFUSE_SALT}
+  ENCRYPTION_KEY: ${LANGFUSE_ENCRYPTION_KEY}
+  TELEMETRY_ENABLED: "false"
+  CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse:9000
+  CLICKHOUSE_URL: http://clickhouse:8123
+  CLICKHOUSE_USER: clickhouse
+  CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+  CLICKHOUSE_CLUSTER_ENABLED: "false"
+  LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+  LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
+  LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: minio
+  LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+  LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://minio:9000
+  LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+  LANGFUSE_S3_EVENT_UPLOAD_PREFIX: events/
+  LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: langfuse
+  LANGFUSE_S3_MEDIA_UPLOAD_REGION: auto
+  LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: minio
+  LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+  LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: http://minio:9000
+  LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: "true"
+  LANGFUSE_S3_MEDIA_UPLOAD_PREFIX: media/
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_AUTH: ${REDIS_AUTH}
+  REDIS_TLS_ENABLED: "false"
+
+x-langfuse-dependencies: &langfuse-dependencies
+  postgres:
+    condition: service_healthy
+  minio:
+    condition: service_healthy
+  redis:
+    condition: service_healthy
+  clickhouse:
+    condition: service_healthy
+
+services:
+  langfuse-worker:
+    image: docker.io/langfuse/langfuse-worker:4
+    restart: always
+    depends_on: *langfuse-dependencies
+    environment: *langfuse-environment
+
+  langfuse-web:
+    image: docker.io/langfuse/langfuse:4
+    restart: always
+    depends_on: *langfuse-dependencies
+    ports:
+      - ${OBSERVABILITY_BIND_ADDRESS:-127.0.0.1}:${LANGFUSE_PORT:-13000}:3000
+    environment:
+      <<: *langfuse-environment
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: http://127.0.0.1:${MINIO_PORT:-19000}
+      LANGFUSE_INIT_ORG_ID: local-ai
+      LANGFUSE_INIT_ORG_NAME: Local AI
+      LANGFUSE_INIT_PROJECT_ID: local-ai-stack
+      LANGFUSE_INIT_PROJECT_NAME: Local AI Stack
+      LANGFUSE_INIT_PROJECT_RETENTION: "90"
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: ${LANGFUSE_PROJECT_PUBLIC_KEY}
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: ${LANGFUSE_PROJECT_SECRET_KEY}
+      LANGFUSE_INIT_USER_EMAIL: ${LANGFUSE_INIT_USER_EMAIL}
+      LANGFUSE_INIT_USER_NAME: ${LANGFUSE_INIT_USER_NAME}
+      LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_INIT_USER_PASSWORD}
+
+  clickhouse:
+    image: docker.io/clickhouse/clickhouse-server:25.12
+    restart: always
+    user: "101:101"
+    environment:
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+    volumes:
+      - langfuse_clickhouse_data:/var/lib/clickhouse
+      - langfuse_clickhouse_logs:/var/log/clickhouse-server
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 1s
+
+  minio:
+    image: cgr.dev/chainguard/minio
+    restart: always
+    entrypoint: sh
+    command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" --console-address ":9001" /data'
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - ${OBSERVABILITY_BIND_ADDRESS:-127.0.0.1}:${MINIO_PORT:-19000}:9000
+    volumes:
+      - langfuse_minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 1s
+      timeout: 5s
+      retries: 5
+      start_period: 1s
+
+  redis:
+    image: docker.io/redis:7
+    restart: always
+    command: --requirepass ${REDIS_AUTH} --maxmemory-policy noeviction
+    volumes:
+      - langfuse_redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $$REDIS_AUTH ping"]
+      interval: 3s
+      timeout: 10s
+      retries: 10
+    environment:
+      REDIS_AUTH: ${REDIS_AUTH}
+
+  postgres:
+    image: docker.io/postgres:17
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+      TZ: UTC
+      PGTZ: UTC
+    volumes:
+      - langfuse_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  prometheus:
+    image: docker.io/prom/prometheus:latest
+    restart: always
+    network_mode: host
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=90d
+      - --storage.tsdb.retention.size=20GB
+      - --web.listen-address=${OBSERVABILITY_BIND_ADDRESS:-127.0.0.1}:${PROMETHEUS_PORT:-19091}
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+
+  grafana:
+    image: docker.io/grafana/grafana:latest
+    restart: always
+    network_mode: host
+    depends_on:
+      - prometheus
+    environment:
+      GF_SERVER_HTTP_ADDR: ${OBSERVABILITY_BIND_ADDRESS:-127.0.0.1}
+      GF_SERVER_HTTP_PORT: ${GRAFANA_PORT:-13001}
+      PROMETHEUS_PORT: ${PROMETHEUS_PORT:-19091}
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    restart: always
+    network_mode: host
+    pid: host
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/host/root
+      - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|var/lib/containers/storage/.+)($$|/)
+      - --collector.textfile.directory=/textfile
+      - --web.listen-address=${OBSERVABILITY_BIND_ADDRESS:-127.0.0.1}:${NODE_EXPORTER_PORT:-19100}
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host/root:ro,rslave
+      - /var/lib/observability-stack/textfile:/textfile:ro
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    restart: always
+    privileged: true
+    devices:
+      - /dev/kmsg
+    ports:
+      - ${OBSERVABILITY_BIND_ADDRESS:-127.0.0.1}:${CADVISOR_PORT:-18081}:8080
+    command:
+      - --docker_only=true
+      - --store_container_labels=false
+      - --containerd=/run/docker/containerd/containerd.sock
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+
+  dcgm-exporter:
+    image: nvcr.io/nvidia/k8s/dcgm-exporter:latest
+    profiles: [gpu]
+    restart: always
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - nvidia.com/gpu=all
+    ports:
+      - ${OBSERVABILITY_BIND_ADDRESS:-127.0.0.1}:${DCGM_EXPORTER_PORT:-19400}:9400
+
+volumes:
+  langfuse_postgres_data:
+  langfuse_clickhouse_data:
+  langfuse_clickhouse_logs:
+  langfuse_minio_data:
+  langfuse_redis_data:
+  prometheus_data:
+  grafana_data:

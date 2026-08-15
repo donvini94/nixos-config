@@ -3,24 +3,28 @@
   networking = {
     hostName = "alucard";
     useDHCP = lib.mkDefault true;
+    # Tailscale's MagicDNS resolver still needs stable upstream resolvers for
+    # public names.  DHCP-only DNS left tailscaled forwarding to an empty
+    # upstream set after activation, so public lookups returned SERVFAIL until
+    # the machine was rebooted.
+    nameservers = [
+      "1.1.1.1"
+      "9.9.9.9"
+    ];
     firewall = {
       enable = true;
       allowedTCPPorts = [
         22
         25
-        53
         80
         110
         143
         443
         465
         587
-        873
         993
         995
         4190
-        11445
-        11335
       ];
       allowedUDPPorts = [
         15637 # Enshrouded
@@ -44,6 +48,15 @@
   };
 
   services = {
+    # resolved gives Tailscale a supported split-DNS manager: MagicDNS handles
+    # the tailnet domain while ordinary names retain explicit fallbacks.
+    resolved = {
+      enable = true;
+      settings.Resolve.FallbackDNS = [
+        "1.1.1.1"
+        "9.9.9.9"
+      ];
+    };
     openssh = {
       enable = true;
       settings = {

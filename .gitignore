@@ -1,5 +1,14 @@
 .DS_Store
 .idea
+/result
+__pycache__/
 *.log
+# Local AI state may contain prompts, responses, mail, and client material.
+*.jsonl
+var/lib/llama/
+llama-data/
+eval/.runs/
+eval/drafts/
+n8n/exports/
 tmp/
 .stfolder

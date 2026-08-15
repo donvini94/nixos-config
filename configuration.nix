@@ -1,4 +1,9 @@
-{ pkgs, ... }:
+{
+  config,
+  pkgs,
+  username,
+  ...
+}:
 
 {
   environment.shells = with pkgs; [
@@ -17,6 +22,24 @@
   };
 
   nixpkgs.config.allowUnfree = true;
+
+  # Allow the operator's coding agent to activate only this host's declared
+  # flake configuration without waiting for an interactive sudo password. A
+  # NixOS switch from a user-writable checkout is inherently root-equivalent;
+  # the exact command/host restriction prevents using this rule for unrelated
+  # sudo commands, but it is not a privilege boundary against repository code.
+  security.sudo.extraRules = [
+    {
+      users = [ username ];
+      runAs = "root";
+      commands = [
+        {
+          command = "/run/current-system/sw/bin/nixos-rebuild switch --flake /home/${username}/nixos-config\\#${config.networking.hostName}";
+          options = [ "NOPASSWD" ];
+        }
+      ];
+    }
+  ];
 
   nix = {
     settings = {

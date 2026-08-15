@@ -1,0 +1,148 @@
+{
+  "active": true,
+  "connections": {
+    "Build response": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Return response",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Call local model",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Call local model": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Verify Python runner",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Verify Python runner": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build response",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "id": "draculaProvisioningSmoke",
+  "name": "Dracula / Provisioning smoke",
+  "nodes": [
+    {
+      "id": "2967c171-e1b5-4f87-9387-6a8c57fa638d",
+      "name": "Webhook",
+      "parameters": {
+        "httpMethod": "POST",
+        "options": {},
+        "path": "dracula/provisioning-smoke",
+        "responseMode": "responseNode"
+      },
+      "position": [
+        0,
+        0
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "webhookId": "243705b9-6678-40e7-8338-d486638d7458"
+    },
+    {
+      "id": "3ac79a5b-f7fb-4386-a056-8811532b82bb",
+      "name": "Call local model",
+      "parameters": {
+        "contentType": "json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-AI-Caller",
+              "value": "n8n:dracula-provisioning-smoke"
+            }
+          ]
+        },
+        "jsonBody": "={{ { model: 'qwen3.6-27b-local', messages: [{ role: 'user', content: 'Reply with exactly N8N_INGRESS_OK and nothing else.' }], temperature: 0, max_tokens: 32 } }}",
+        "method": "POST",
+        "options": {
+          "timeout": 180000
+        },
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://host.docker.internal:8080/v1/chat/completions"
+      },
+      "position": [
+        240,
+        0
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4
+    },
+    {
+      "id": "7ee9cc24-728d-4ba5-bfd9-083d23f686f7",
+      "name": "Verify Python runner",
+      "parameters": {
+        "language": "pythonNative",
+        "mode": "runOnceForAllItems",
+        "pythonCode": "for item in _items:\n    item['json']['python_runner'] = 'ok'\nreturn _items"
+      },
+      "position": [
+        480,
+        0
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "79aecf2e-18a4-463e-a186-22982415b820",
+      "name": "Build response",
+      "parameters": {
+        "jsCode": "const response = $input.first().json; return [{ json: { status: 'ok', javascript_runner: 'ok', python_runner: response.python_runner, model: response.model, content: response.choices?.[0]?.message?.content, usage: response.usage } }];"
+      },
+      "position": [
+        720,
+        0
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "f96f1113-af18-416a-9a23-67ccb47dd977",
+      "name": "Return response",
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "position": [
+        960,
+        0
+      ],
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [],
+  "versionId": "f284208f-f5e8-4de9-b145-d867838d6c73"
+}

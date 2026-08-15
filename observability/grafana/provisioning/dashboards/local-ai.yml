@@ -1,0 +1,10 @@
+apiVersion: 1
+
+providers:
+  - name: Local AI stack
+    folder: Local AI
+    type: file
+    disableDeletion: true
+    editable: false
+    options:
+      path: /var/lib/grafana/dashboards
