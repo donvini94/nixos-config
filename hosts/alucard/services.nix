@@ -150,15 +150,18 @@ in
         "stream.${domain}" = {
           enableACME = true;
           forceSSL = true;
-          # Swiftfin's authenticated playback heartbeat scores 5 in CRS 4.25.1
-          # and otherwise turns a legitimate 403 retry loop into a CrowdSec ban.
-          # Jellyfin still authenticates this exact endpoint; keep WAF enabled
-          # for every other media route.
+          # The connector evaluates a global/server WAF before an exact location
+          # can disable it. Disable it at this vhost, then re-enable it for the
+          # catch-all route so only this authenticated heartbeat is exempt.
+          extraConfig = "modsecurity off;";
           locations."= /Sessions/Playing" = {
             proxyPass = "http://localhost:8096";
             extraConfig = "modsecurity off;";
           };
-          locations."/".proxyPass = "http://localhost:8096";
+          locations."/" = {
+            proxyPass = "http://localhost:8096";
+            extraConfig = "modsecurity on;";
+          };
         };
         "chat.${domain}" = {
           enableACME = true;
