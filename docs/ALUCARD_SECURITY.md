@@ -115,6 +115,23 @@ This launcher runs the official `cscli` in CrowdSec's systemd-managed state name
 for sudo authentication. Calling the NixOS-provided `cscli` wrapper directly does not work with
 the firewall-bouncer module's DynamicUser state-directory layout.
 
+If a legitimate source is unable to reach every public service while an independent network
+still can, inspect the exact decision and its triggering requests before changing policy:
+
+```console
+crowdsec-admin decisions list -i CLIENT_IPV4 --color no
+crowdsec-admin alerts inspect ALERT_ID --details --color no
+```
+
+Delete only a confirmed false-positive decision, then restart the bouncer to apply it
+immediately. Do not disable CrowdSec, flush firewall rules, or persistently whitelist a
+residential address without finding the triggering request pattern:
+
+```console
+crowdsec-admin decisions delete -i CLIENT_IPV4
+systemctl restart crowdsec-firewall-bouncer.service
+```
+
 The remediation path was verified live on 2026-08-09 using a real nginx-derived decision: the
 address appeared in `crowdsec-blacklists-0`, and both `INPUT` and `DOCKER-USER` jumped to
 `CROWDSEC_CHAIN`. Recheck it without changing firewall state by selecting an active IPv4 decision
