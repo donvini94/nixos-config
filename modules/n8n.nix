@@ -385,6 +385,14 @@ in
                 fi
                 ${pkgs.docker}/bin/docker exec n8n sh -c \
                   'probe=/org/.n8n-write-probe; : > "$probe"; rm "$probe"'
+                ${lib.optionalString (cfg.hermesApiPort != null) ''
+                  hermes_status="$(${pkgs.docker}/bin/docker exec n8n node -e \
+                    'fetch("http://host.docker.internal:${toString cfg.hermesApiPort}/v1/models").then(r => process.stdout.write(String(r.status))).catch(() => process.exit(2))')"
+                  if [ "$hermes_status" != 401 ]; then
+                    echo "n8n-to-Hermes private route returned HTTP $hermes_status, expected authenticated rejection 401" >&2
+                    exit 1
+                  fi
+                ''}
                 exit 0
               fi
             else
