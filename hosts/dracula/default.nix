@@ -57,12 +57,12 @@ in
       "dirk-qwen3.8-27b-local" = {
         repo = "peculiar-ragdoll/Dirk-Qwen3.8-27B-GGUF";
         revision = "027902e9811019480b8b074aed93fa6084f782a9";
-        file = "Dirk-Qwen3.8-27B-UD-Q5_K_XL.gguf";
-        sha256 = "9ea3ab209250fa74f1dd04a7d3ba60f9d346a5752c5c357d48e71df648586898";
-        displayName = "Dirk Qwen3.8 27B UD-Q5_K_XL (dense)";
-        description = "Dense Qwen3.8 default; text-only serving; one 32,768-token agent slot.";
-        # At the measured 2.6 GiB desktop load, 49,152 tokens OOMed allocating a
-        # 3 GiB KV cache. The validated 32,768-token cap reserves 2 GiB.
+        file = "Dirk-Qwen3.8-27B-UD-Q4_K_XL.gguf";
+        sha256 = "405359214aa8bd77b1af70121bc2d7878f3395b73dea16ae362ce71fa56b248e";
+        displayName = "Dirk Qwen3.8 27B UD-Q4_K_XL (dense)";
+        description = "Dense Qwen3.8 default; Q4 weights; text-only serving; one 32,768-token agent slot.";
+        # Q4 releases 2.14 GiB of weight memory versus Q5. Retain the validated
+        # 32,768-token / 2 GiB KV-cache cap until this artifact is live-measured.
         contextSize = 32768;
         parallelSlots = 1;
         gpuLayers = 999;

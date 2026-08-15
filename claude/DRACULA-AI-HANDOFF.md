@@ -1057,7 +1057,7 @@ Several details were wrong or incomplete as written:
 
 ### Pinned Phase 2 model registry
 
-- Dense default: `dirk-qwen3.8-27b-local`,
+- Former dense default: `dirk-qwen3.8-27b-local`,
   `peculiar-ragdoll/Dirk-Qwen3.8-27B-GGUF` revision
   `027902e9811019480b8b074aed93fa6084f782a9`,
   `Dirk-Qwen3.8-27B-UD-Q5_K_XL.gguf`, SHA-256
@@ -1485,7 +1485,7 @@ Several details were wrong or incomplete as written:
   not a Claude consumer-account OAuth subscription. Do not bridge or copy OMP credentials into
   OpenCode; authenticate each client through its supported flow.
 
-### Dirk Qwen3.8 dense-default change (live-verified, 2026-08-15)
+### Former Dirk Qwen3.8 Q5 dense-default change (historical, 2026-08-15)
 
 - The dense Qwen3.6 registry entry is replaced by
   `dirk-qwen3.8-27b-local`. It pins
@@ -1516,3 +1516,18 @@ Several details were wrong or incomplete as written:
   both OMP and OpenCode explicitly selected Dirk successfully. Switching to
   `qwen3.6-35b-a3b` and back also succeeded. Inspect the caller-attributed ingress JSONL and
   repeat the Hermes/Wirken smokes before treating longer agent workloads as proven.
+
+### Dirk Q4 default transition (live-verified, 2026-08-15)
+
+- `dirk-qwen3.8-27b-local` now pins the same immutable repository revision
+  `027902e9811019480b8b074aed93fa6084f782a9` to
+  `Dirk-Qwen3.8-27B-UD-Q4_K_XL.gguf` (17,923,404,864 bytes, SHA-256
+  `405359214aa8bd77b1af70121bc2d7878f3395b73dea16ae362ce71fa56b248e`).
+  Q4 is 2.14 GiB smaller than the former Q5 artifact.
+- The downloader SHA-256 check passed. The one-slot, 32,768-token cap retained its 2 GiB
+  F16 KV-cache budget. With Dracula's desktop active, Q4 used 20,895 MiB of the RTX 3090's
+  24,576 MiB and left 3,229 MiB free; `llama-server` itself held 18,798 MiB. Do not raise
+  context or concurrency without another live measurement.
+- A direct caller-attributed ingress completion and an explicit OMP selection both returned
+  `4`. Swapping to `qwen3.6-35b-a3b` and back to Q4 returned HTTP 200; no failed unit remained.
+  OpenCode verification remains intentionally deferred at the user's direction.

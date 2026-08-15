@@ -68,10 +68,10 @@ curl http://127.0.0.1:8080/v1/chat/completions \
 
 Available model IDs are `dirk-qwen3.8-27b-local` and `qwen3.6-35b-a3b`. Only one is resident
 at a time. Dirk is the text-only default: its optional `mmproj-F16.gguf` vision projector is not
-downloaded or loaded. The pinned Q5 model is 18.83 GiB; its validated 32,768-token context
-reserves 2 GiB for Qwen3.8's F16 KV cache. It used 20,786 MiB on the RTX 3090 and left
-709 MiB free with Dracula's desktop active. The former 49,152-token cap OOMed while allocating
-its 3 GiB KV cache.
+downloaded or loaded. The pinned Q4 model is 16.69 GiB, releasing 2.14 GiB of model-weight
+VRAM compared with the former Q5 artifact. Its one-slot, 32,768-token context retains the
+2 GiB Qwen3.8 F16 KV-cache budget. Live Q4 measurement with Dracula's desktop active used
+20,895 MiB and left 3,229 MiB free; preserve this headroom until a larger context is measured.
 
 ## What each AI component is for
 
