@@ -1373,8 +1373,11 @@ Several details were wrong or incomplete as written:
 - Signal was deferred because no dedicated account exists. Telegram is now the selected first
   mobile channel. Hermes now uses the upstream `messaging` Nix variant and a domain-filtered
   loopback proxy for only Telegram API plus Nous managed onboarding. Its dashboard QR flow
-  persists the token and numeric owner allowlist in Hermes' protected application state;
-  live pairing and denied-user acceptance remain. Wirken's Telegram adapter is
+  persists the token and numeric owner allowlist in Hermes' protected application state.
+  Pairing and the allowed-DM path passed live on 2026-08-15: the exact `TELEGRAM_OK` test
+  created a Telegram-sourced session and two `hermes`-attributed Requesty calls returned HTTP
+  200 from `deepinfra/deepseek-v4-flash-0731`. `/model` and denied-user acceptance remain.
+  Wirken's Telegram adapter is
   not enabled because its released documentation says it responds to all private messages and
   sender identity is audited rather than authorized. One bot must never feed both agents.
 - Hermes Telegram onboarding initially failed for two NixOS-integration reasons: the custom
@@ -1391,6 +1394,11 @@ Several details were wrong or incomplete as written:
   supervisor and existing state mounted at `/opt/data`. Nix only prepares state, injects
   dashboard secrets, and owns Compose lifecycle/update integration. This is the portable
   customer deployment baseline; do not restore the native NixOS Hermes service.
+- Hermes and Wirken initially rejected their Tailscale browser host/origin. Alucard now uses
+  loopback-only nginx compatibility proxies behind Tailscale Serve. They validate each exact
+  HTTPS tailnet origin before translating to the upstream-required loopback origin. Live checks
+  returned HTTP 200 for both UIs and 403 for foreign origins; unauthenticated Hermes config and
+  session APIs still return 401.
 - CrowdSec state ownership was normalized after the NixOS module's DynamicUser migration left
   nested state inaccessible. The stale bouncer registration whose key was already absent was
   deleted and recreated through the upstream unit. CrowdSec, its authenticated firewall

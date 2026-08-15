@@ -95,9 +95,11 @@ the initial seed; Nix does not replace them. BotFather manual token entry remain
 The dashboard's **Restart gateway** action is handled by the image's s6 supervisor. Do not
 install a second host or user gateway.
 
-After setup, verify an allowed DM, `/model`, an inference record attributed to `hermes`, and
-that an unlisted Telegram account receives no agent response. Keep group joining disabled
-until a specific group ID and sender policy are reviewed.
+The allowed-DM path passed live on Alucard on 2026-08-15: `Reply with exactly TELEGRAM_OK`
+created a Telegram-sourced session, returned the requested response, and produced successful
+ingress records attributed to `hermes`. `/model` and the no-response check from an unlisted
+account remain open. Keep group joining disabled until a specific group ID and sender policy
+are reviewed.
 
 The official image includes the personal-account WhatsApp bridge. It remains deferred for
 customer use: evaluate WhatsApp Business Cloud when a real business number and Meta app exist.

@@ -350,8 +350,9 @@ Operator enrollment:
 2. Scan the displayed code in Telegram and confirm the managed bot creation. The owner ID
    returned by Telegram seeds Hermes' strict numeric allowlist.
 3. Keep BotFather group joining disabled for the initial DM-only deployment.
-4. Acceptance must prove an allowed DM succeeds, a non-allowed account gets no agent response,
-   `/model` works, inference is attributed to Hermes, and no inbound port was opened.
+4. The allowed DM and attributed-inference checks passed live on 2026-08-15. Acceptance still
+   needs `/model` and proof that a non-allowed account gets no agent response. No inbound
+   public port was opened.
 
 The upstream dashboard writes the generated bot token and allowlist to the isolated service
 state at `/var/lib/hermes/.hermes/.env`, mode `0640`, readable only by the `hermes` service
