@@ -38,7 +38,7 @@ is not replayable and must not enter the comparison.
 ```bash
 ai-eval run eval/tasks/TASK.json \
   --harness omp \
-  --model qwen3.6-27b-local \
+  --model dirk-qwen3.8-27b-local \
   --auto-approve \
   --experiment phase2-pilot
 ```
@@ -52,7 +52,7 @@ and repositories. Without that flag, normal harness approval policy remains acti
 ```bash
 ai-eval matrix eval/tasks/*.json \
   --harness omp --harness opencode \
-  --model qwen3.6-27b-local --model qwen3.6-35b-a3b \
+  --model dirk-qwen3.8-27b-local --model qwen3.6-35b-a3b \
   --seed 20260808 \
   --auto-approve \
   --experiment phase2-2x2

@@ -224,7 +224,7 @@ in
 
     model = lib.mkOption {
       type = lib.types.str;
-      default = "qwen3.6-27b-local";
+      default = "dirk-qwen3.8-27b-local";
     };
 
     ingressUrl = lib.mkOption {
