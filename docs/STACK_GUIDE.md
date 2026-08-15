@@ -203,6 +203,7 @@ Useful service checks:
 ```console
 systemctl --no-pager status ai-stack.target
 systemctl --no-pager status docker-n8n.service hermes-agent.service wirken.service
+docker ps --filter name=hermes-agent
 docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'
 ```
 
@@ -329,11 +330,11 @@ curl http://127.0.0.1:8080/v1/chat/completions \
 
 ### Messaging transport
 
-Telegram is the selected first mobile channel. Hermes' official `messaging` Nix variant
+Telegram is the selected first mobile channel. Hermes' official container
 supports numeric user/chat allowlists, long polling, topics, attachments, voice, and `/model`.
 Long polling is outbound, so no public webhook or new inbound firewall port is required.
-Hermes still cannot reach the general Internet: a hardened proxy on loopback port `18084`
-allows only Telegram's API and Nous's managed-bot onboarding service.
+Hermes is configured to use the domain-filtered proxy on loopback port `18084` for Telegram
+and Nous's managed-bot onboarding service. General web/browser toolsets remain disabled.
 
 Operator enrollment:
 
@@ -350,17 +351,13 @@ group. Nix deliberately does not regenerate that file, so QR-created credentials
 rebuilds. Revoke a compromised bot with BotFather `/revoke`; manual BotFather token entry in
 the same dashboard is the fallback when the managed setup service is unavailable.
 
-The dashboard owns mutable channel credentials and enable flags. The gateway remains
-declaratively installed and runs with Nix managed mode, while the dashboard may update only
-the shared runtime state; Nix-defined `config.yaml` keys are merged back as authoritative on
-every rebuild. Hermes' dashboard restart ends the gateway cleanly and the NixOS system service
-immediately starts it again. Do not install or enable Hermes' separate user service.
-The system unit starts with Hermes' supported `gateway run --replace` mode, so it remains the
-authoritative gateway if a dashboard restart briefly creates a standalone process.
+The dashboard owns mutable channel credentials, enable flags, and `config.yaml` after its
+initial seed. The official container keeps gateway and dashboard in one PID namespace under
+its s6 supervisor, so dashboard restarts use the lifecycle Hermes supports. Do not install a
+second host or user gateway.
 
-The personal-account WhatsApp QR bridge is not shipped: Hermes' upstream Nix package omits
-the mutable Node bridge, and upstream calls WhatsApp Business Cloud API the production path.
-It is deferred until a business number and Meta application exist rather than locally patched.
+The official image contains the personal-account WhatsApp bridge, but customer use remains
+deferred in favor of WhatsApp Business Cloud when a business number and Meta application exist.
 
 Wirken's upstream administrative CLI remains available through `wirken-admin`. Do not attach
 the Hermes bot—or another publicly discoverable bot—to Wirken 1.13: its released Telegram

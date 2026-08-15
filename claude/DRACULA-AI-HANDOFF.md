@@ -1185,19 +1185,14 @@ Several details were wrong or incomplete as written:
 
 ### Phase 4 Hermes deployment checkpoint
 
-- Hermes uses the official Nous Research Nix flake pinned to tag `v2026.8.3`, commit
-  `3c27eb6234bf91b8ceee9e9071591b31e9b148cb`; the packaged CLI reports Hermes Agent
-  `0.20.0 (2026.8.3)`. The upstream NixOS module owns its persistent profile and gateway;
-  `modules/hermes.nix` adds the local provider, lifecycle wiring, and confinement rather
-  than replacing upstream behavior with a custom worker.
-- `hermes-agent.service` and `hermes-dashboard.service` are attached to `ai-stack.target`
-  as user/group `hermes`. State lives at `/var/lib/hermes/.hermes`, the agent repository at
-  `/var/lib/hermes/workspace`, and Dracula's dashboard listens only on `127.0.0.1:9119`.
-  Alucard deliberately binds `0.0.0.0:9119` to engage upstream's mandatory authentication
-  gate, while systemd permits only loopback peers and the host firewall keeps the port closed.
-  Tailscale Serve provides the authenticated HTTPS frontend. Both services retain no
-  capabilities, `NoNewPrivileges`, a strict read-only host filesystem, hidden `/home`,
-  namespace restrictions, and writes limited to `/var/lib/hermes`.
+- Hermes uses the official rolling `nousresearch/hermes-agent:latest` container. Its gateway
+  and dashboard share one container and the upstream s6 supervisor, matching the tier-one
+  deployment instead of adapting Hermes' user-service lifecycle to NixOS system units.
+- `hermes-agent.service` is a thin Compose owner attached to `ai-stack.target`. State remains
+  at `/var/lib/hermes/.hermes` and mounts at the official `/opt/data` boundary; the workspace
+  remains `/var/lib/hermes/workspace` and mounts at `/workspace`. The dashboard binds only to
+  host loopback on port 9119, with Alucard exposed privately through authenticated Tailscale
+  Serve. The container gets neither the Docker socket nor arbitrary host filesystem mounts.
 - The workspace initializer created branch `main` and committed the managed `AGENTS.md` and
   `SOUL.md` baseline. A real Hermes tool call subsequently reported `HOME_BLOCKED` for
   `/home/vincenzo/nixos-config/flake.nix` and `WORKSPACE_WRITABLE` for its own repository.
@@ -1385,6 +1380,11 @@ Several details were wrong or incomplete as written:
   gateway before systemd recovers. The system service now uses Hermes' supported
   `gateway run --replace` mode to reclaim the lock, and the writable dashboard sets
   `HERMES_SKIP_CHMOD=1` so it cannot narrow shared state from `2770` to `0700`.
+- Native Hermes was superseded immediately afterward: the official rolling Docker image is
+  now the deployment source of truth, with gateway and dashboard sharing its supported s6
+  supervisor and existing state mounted at `/opt/data`. Nix only prepares state, injects
+  dashboard secrets, and owns Compose lifecycle/update integration. This is the portable
+  customer deployment baseline; do not restore the native NixOS Hermes service.
 - CrowdSec state ownership was normalized after the NixOS module's DynamicUser migration left
   nested state inaccessible. The stale bouncer registration whose key was already absent was
   deleted and recreated through the upstream unit. CrowdSec, its authenticated firewall

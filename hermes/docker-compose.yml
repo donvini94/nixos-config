@@ -1,0 +1,31 @@
+services:
+  hermes:
+    image: ${HERMES_IMAGE:-docker.io/nousresearch/hermes-agent:latest}
+    pull_policy: always
+    container_name: hermes-agent
+    restart: unless-stopped
+    network_mode: host
+    command: ["gateway", "run"]
+    environment:
+      HERMES_UID: ${HERMES_UID:-10000}
+      HERMES_GID: ${HERMES_GID:-10000}
+      HERMES_DASHBOARD: ${HERMES_DASHBOARD_ENABLED:-1}
+      HERMES_DASHBOARD_HOST: ${HERMES_DASHBOARD_HOST:-127.0.0.1}
+      HERMES_DASHBOARD_PORT: ${HERMES_DASHBOARD_PORT:-9119}
+      HERMES_DASHBOARD_TUI: "1"
+      HERMES_DASHBOARD_BASIC_AUTH_USERNAME: ${HERMES_DASHBOARD_BASIC_AUTH_USERNAME:-}
+      HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH: ${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH:-}
+      HERMES_DASHBOARD_BASIC_AUTH_SECRET: ${HERMES_DASHBOARD_BASIC_AUTH_SECRET:-}
+      HERMES_WRITE_SAFE_ROOT: /workspace:/opt/data
+      HTTPS_PROXY: ${HERMES_PROXY_URL:-}
+      https_proxy: ${HERMES_PROXY_URL:-}
+      TELEGRAM_PROXY: ${HERMES_PROXY_URL:-}
+      NO_PROXY: 127.0.0.1,localhost
+      no_proxy: 127.0.0.1,localhost
+    volumes:
+      - ${HERMES_STATE}:/opt/data
+      - ${HERMES_WORKSPACE}:/workspace
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 512
+    mem_limit: 8g

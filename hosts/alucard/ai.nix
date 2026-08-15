@@ -39,7 +39,7 @@ in
       }
       {
         assertion =
-          config.services.localHermes.dashboard.bindAddress == "0.0.0.0"
+          config.services.localHermes.dashboard.bindAddress == "127.0.0.1"
           && config.services.localHermes.dashboard.environmentFile != null;
         message = "Alucard Hermes must engage its auth gate; systemd still limits peers to loopback";
       }
@@ -144,7 +144,7 @@ in
         }
         HERMES_DASHBOARD_BASIC_AUTH_SECRET=${config.sops.placeholder."hermes/dashboard_session_secret"}
       '';
-      restartUnits = [ "hermes-dashboard.service" ];
+      restartUnits = [ "hermes-agent.service" ];
       mode = "0400";
       owner = "root";
       group = "root";
@@ -152,7 +152,7 @@ in
 
     # Restart when the environment template's shape changes. Secret-value
     # changes are handled separately by the template's restartUnits hook.
-    systemd.services.hermes-dashboard.restartTriggers = [
+    systemd.services.hermes-agent.restartTriggers = [
       config.sops.templates."hermes-dashboard.env".file
     ];
 
@@ -215,11 +215,10 @@ in
       enable = true;
       model = defaultModel;
       contextLength = models.${defaultModel}.context;
-      extraDependencyGroups = [ "messaging" ];
       proxyUrl = hermesProxyUrl;
       operators = [ username ];
       dashboard = {
-        bindAddress = "0.0.0.0";
+        bindAddress = "127.0.0.1";
         environmentFile = config.sops.templates."hermes-dashboard.env".path;
       };
     };
