@@ -87,18 +87,20 @@ in
       };
     };
 
-    paperless = {
+    # Paperless itself lives in modules/paperless.nix — taxonomy, mail rules,
+    # provisioning, and backup travel with it. Only the vhost stays here.
+    paperlessStack = {
       enable = true;
-      address = "127.0.0.1";
+      domain = "paperless.${domain}";
       port = 58080;
-      consumptionDirIsPublic = true;
-      settings = {
-        PAPERLESS_OCR_LANGUAGE = "deu+eng";
-        PAPERLESS_URL = "https://paperless.${domain}";
-        PAPERLESS_ALLOWED_HOSTS = "paperless.${domain}";
-        PAPERLESS_CSRF_TRUSTED_ORIGINS = "https://paperless.${domain}";
-      };
-      passwordFile = config.sops.secrets."paperless/password".path;
+      # Nightly document_exporter at 02:30, pushed to the Hetzner box at 03:30.
+      offsite.enable = true;
+    };
+
+    # mailcow's own ACME cannot work behind this nginx, so hand it our cert.
+    mailcowTls = {
+      enable = true;
+      domain = "mail.${domain2}";
     };
 
     dockerRegistry = {

@@ -1,0 +1,825 @@
+# Paperless-ngx taxonomy — PUBLIC half.
+#
+# This file is committed in the clear. It must contain NO personally identifying
+# information: no names, no addresses, no account numbers, no company names.
+# Correspondents and mail credentials live in secrets/paperless.yaml (sops).
+#
+# Applied by paperless/provision.py. Everything is referenced by name; the
+# provisioner resolves names to API ids. Enums are symbolic — see the ENUMS
+# table in provision.py for the mapping to Paperless' integer codes.
+#
+# Matching philosophy: the rules below favour PRECISION over recall. A rule that
+# fires on a third of your documents is worse than no rule, because you then
+# have to un-tag by hand. Regexes list only terms that *define* a document,
+# never terms that merely appear in one (e.g. "IBAN" is on every invoice and so
+# is useless as a Finanzen signal). Recall comes later: once a label has enough
+# manually-confirmed examples, switch it to `matching_algorithm: auto` and let
+# the classifier generalise.
+#
+# NOTE: the Auto classifier ignores documents that still carry an inbox tag.
+# If you never empty the Posteingang view, Auto matching will never work.
+
+# --------------------------------------------------------------------------
+# Tags
+# --------------------------------------------------------------------------
+# Parents are pure grouping: matching_algorithm `none` so they are never
+# auto-assigned. Paperless allows nesting to depth 5; this tree uses 2.
+
+tags:
+  # -- top level ------------------------------------------------------------
+  - name: Inbox
+    color: "#d62728"
+    is_inbox_tag: true
+    matching_algorithm: none
+
+  - name: Steuer
+    color: "#ff7f0e"
+    matching_algorithm: regex
+    match: '(?i)\b(steuererkl(ä|ae)rung|steuerbescheid|einkommensteuer|lohnsteuerbescheinigung|spendenquittung|elster|werbungskosten|einnahmen-(ü|ue)berschussrechnung)\b'
+
+  # -- Bereich: which area of life ------------------------------------------
+  - name: Bereich
+    color: "#6c757d"
+    matching_algorithm: none
+
+  - name: Finanzen
+    parent: Bereich
+    color: "#2ca02c"
+    matching_algorithm: regex
+    match: '(?i)\b(kontoauszug|kontostand|depotauszug|wertpapierabrechnung|kreditkartenabrechnung|darlehensvertrag|zinsbescheinigung|jahressteuerbescheinigung|umsatzaufstellung)\b'
+
+  - name: Versicherung
+    parent: Bereich
+    color: "#1f77b4"
+    matching_algorithm: regex
+    match: '(?i)\b(versicherungsschein|versicherungsnummer|versicherungsbeitrag|beitragsrechnung|schadensmeldung|schadennummer|versicherungsbedingungen|haftpflicht|hausratversicherung|kfz-versicherung|berufsunf(ä|ae)higkeit)\b'
+
+  - name: Gesundheit
+    parent: Bereich
+    color: "#e377c2"
+    matching_algorithm: regex
+    match: '(?i)\b(arztbrief|arztrechnung|laborbefund|befundbericht|diagnose|zahnarzt|(ü|ue)berweisungsschein|heilmittelverordnung|icd-10|krankschreibung|arbeitsunf(ä|ae)higkeit|praxisgeb|facharzt|klinikum)\b'
+
+  - name: Wohnen
+    parent: Bereich
+    color: "#8c564b"
+    matching_algorithm: regex
+    match: '(?i)\b(mietvertrag|nebenkostenabrechnung|betriebskostenabrechnung|mietkaution|wohnungsgeberbest(ä|ae)tigung|hausverwaltung|grundsteuer|wohngeld|mietzins|heizkostenabrechnung)\b'
+
+  # `kfz`, `fahrzeug` and `amtliches kennzeichen` are here so that a document
+  # can be BOTH Mobilität and Versicherung — a Kfz-Versicherungsrechnung is
+  # genuinely about a car and about insurance, and each tag matches
+  # independently. Without them only Versicherung would fire.
+  - name: Mobilität
+    parent: Bereich
+    color: "#17becf"
+    matching_algorithm: regex
+    match: '(?i)(\b(fahrzeugschein|zulassungsbescheinigung|hauptuntersuchung|abgasuntersuchung|f(ü|ue)hrerschein|werkstattrechnung|bahncard|leasingvertrag|fahrzeugbrief|fahrzeug|amtliches kennzeichen)\b|\bkfz\b|\bkfz-)'
+
+  - name: Arbeit
+    parent: Bereich
+    color: "#9467bd"
+    matching_algorithm: regex
+    match: '(?i)(\b(arbeitsvertrag|lohnabrechnung|gehaltsabrechnung|entgeltabrechnung|arbeitszeugnis|sozialversicherungsausweis|arbeitsbescheinigung|urlaubsantrag|bruttoarbeitslohn|lohnsteuerbescheinigung|sv-nummer)\b|brutto/netto-bez)'
+
+  - name: Behörde
+    parent: Bereich
+    color: "#bcbd22"
+    matching_algorithm: regex
+    match: '(?i)\b(finanzamt|bundeszentralamt|bundesagentur f(ü|ue)r arbeit|jobcenter|einwohnermeldeamt|ordnungsamt|standesamt|widerspruchsbescheid|verwaltungsakt|rechtsbehelfsbelehrung)\b'
+
+  - name: Bildung
+    parent: Bereich
+    color: "#aec7e8"
+    matching_algorithm: regex
+    match: '(?i)\b(immatrikulation|studienbescheinigung|semesterbeitrag|baf(ö|oe)g|abschlusszeugnis|teilnahmebescheinigung|fortbildung|zertifikat)\b'
+
+  - name: Familie
+    parent: Bereich
+    color: "#ffbb78"
+    matching_algorithm: regex
+    match: '(?i)\b(geburtsurkunde|heiratsurkunde|kindergeld|elterngeld|sorgerecht|unterhalt|familienkasse|mutterschutz)\b'
+
+  - name: Abos
+    parent: Bereich
+    color: "#98df8a"
+    matching_algorithm: regex
+    match: '(?i)\b(abonnement|mitgliedschaft|vertragsverl(ä|ae)ngerung|mindestlaufzeit|monatsbeitrag|jahresbeitrag|k(ü|ue)ndigungsbest(ä|ae)tigung)\b'
+
+  # Added after the first corpus inventory: ~25 documents were hardware and
+  # furniture purchases (Amazon, Galaxus, Jacob, BenQ, tedox, Flexispot) with
+  # no domain that fit them. Receipts matter for warranty periods, which is
+  # why this pairs with Aufbewahrung rather than being folded into Finanzen.
+  - name: Einkauf
+    parent: Bereich
+    color: "#f7b6d2"
+    matching_algorithm: regex
+    match: '(?i)\b(bestellnummer|bestell-nr|auftragsnummer|lieferschein|versandbest(ä|ae)tigung|widerrufsbelehrung|garantiebedingungen|kaufbeleg)\b'
+
+  - name: Recht
+    parent: Bereich
+    color: "#c5b0d5"
+    matching_algorithm: regex
+    match: '(?i)\b(rechtsanwalt|rechtsanw(ä|ae)ltin|kanzlei|mahnbescheid|vollstreckungsbescheid|klageschrift|gerichtsurteil|vergleichsvorschlag|abmahnung)\b'
+
+  # -- Kontext: private vs business -----------------------------------------
+  # Deliberately generic names. The patterns that identify *your* business live
+  # in secrets/paperless.yaml under `tag_overrides`, so no company name leaks.
+  - name: Kontext
+    color: "#6c757d"
+    matching_algorithm: none
+
+  - name: Privat
+    parent: Kontext
+    color: "#6a51a3"
+    matching_algorithm: none
+
+  - name: Geschäftlich
+    parent: Kontext
+    color: "#cc4c02"
+    matching_algorithm: none
+
+  # -- Person: who the document is ABOUT ------------------------------------
+  # Distinct from the correspondent, which is who the document is FROM. A
+  # letter from a health insurer about your child has the insurer as
+  # correspondent and the child as Person.
+  #
+  # Only the generic parent lives here. The actual people are defined in
+  # secrets/paperless.yaml under `tags:` — their names are exactly the kind of
+  # PII this repo must not publish.
+  - name: Person
+    color: "#6c757d"
+    matching_algorithm: none
+
+  # -- Status: workflow state, always set by hand ---------------------------
+  # Never give these a match rule. Upstream is explicit that labels like "TODO"
+  # cannot be auto-assigned: there is no correlation with the document text.
+  - name: Status
+    color: "#6c757d"
+    matching_algorithm: none
+
+  - name: Aktion
+    parent: Status
+    color: "#d62728"
+    matching_algorithm: none
+
+  - name: Frist
+    parent: Status
+    color: "#ff7f0e"
+    matching_algorithm: none
+
+  # The scan has no legal force — never destroy the paper.
+  - name: Original
+    parent: Status
+    color: "#b10026"
+    matching_algorithm: none
+
+  - name: Unklar
+    parent: Status
+    color: "#fdae6b"
+    matching_algorithm: none
+
+  # Boilerplate that arrives attached to a real document: AGB, Widerrufs-
+  # belehrung, Datenschutzhinweise, Produktinformationsblätter. Worth keeping
+  # out of the way, not worth reading. No match rule — it is assigned by
+  # filename_rules below, so tag pruning never touches it.
+  - name: Beiwerk
+    parent: Status
+    color: "#969696"
+    matching_algorithm: none
+
+  # A PDF that needs a password consumes successfully and then sits there with
+  # empty content: no correspondent, no document type, and invisible to every
+  # full-text search. It fails silently, which is worse than failing loudly, so
+  # the provisioner tags it (see `unreadable_tag`) and the "Unlesbar" view makes
+  # the pile visible. These are usually insurance and accounting documents —
+  # keepers — so the fix is to decrypt and re-upload, never to filter at ingest.
+  - name: Unlesbar
+    parent: Status
+    color: "#7a0177"
+    matching_algorithm: none
+
+  # -- Aufbewahrung: retention ----------------------------------------------
+  # §147 AO: 10 years for business records. §14b UStG: 2 years for a private
+  # recipient of construction-related services. Permanent for Urkunden,
+  # Zeugnisse, Rentenunterlagen. Drives the annual "what can I shred" review.
+  - name: Aufbewahrung
+    color: "#6c757d"
+    matching_algorithm: none
+
+  - name: 2 Jahre
+    parent: Aufbewahrung
+    color: "#c7e9c0"
+    matching_algorithm: none
+
+  - name: 6 Jahre
+    parent: Aufbewahrung
+    color: "#a1d99b"
+    matching_algorithm: none
+
+  - name: 10 Jahre
+    parent: Aufbewahrung
+    color: "#74c476"
+    matching_algorithm: none
+
+  - name: Dauerhaft
+    parent: Aufbewahrung
+    color: "#238b45"
+    matching_algorithm: none
+
+  # -- Quelle: how it got in, always set by workflow ------------------------
+  - name: Quelle
+    color: "#6c757d"
+    matching_algorithm: none
+
+  - name: Mail Gmail
+    parent: Quelle
+    color: "#9ecae1"
+    matching_algorithm: none
+
+  - name: Mail iCloud
+    parent: Quelle
+    color: "#c6dbef"
+    matching_algorithm: none
+
+  - name: Mail Mailcow
+    parent: Quelle
+    color: "#6baed6"
+    matching_algorithm: none
+
+  - name: WebDAV
+    parent: Quelle
+    color: "#bdd7e7"
+    matching_algorithm: none
+
+  - name: Scan
+    parent: Quelle
+    color: "#deebf7"
+    matching_algorithm: none
+
+  # Everything pulled in by the retroactive archive sweep carries this. It is
+  # the undo handle: filter on it and the whole batch can be bulk-deleted
+  # without touching anything you filed deliberately.
+  - name: Mail-Archiv
+    parent: Quelle
+    color: "#08519c"
+    matching_algorithm: none
+
+# --------------------------------------------------------------------------
+# Document types — the genre of the document, exactly one per document
+# --------------------------------------------------------------------------
+# Ordered roughly most-specific first: document_retagger --use-first keeps the
+# first match, so "Mahnung" must be tried before the generic "Rechnung".
+
+document_types:
+  - name: Lohnabrechnung
+    matching_algorithm: regex
+    match: '(\b(lohnabrechnung|gehaltsabrechnung|entgeltabrechnung|verdienstabrechnung)\b|brutto/netto-bez(ü|ue)ge|netto-?verdienst)'
+
+  - name: Steuerbescheid
+    matching_algorithm: regex
+    match: '\b(steuerbescheid|einkommensteuerbescheid|festsetzung der einkommensteuer)\b'
+
+  - name: Steuererklärung
+    matching_algorithm: regex
+    match: '\b(einkommensteuererkl(ä|ae)rung|steuererkl(ä|ae)rung|hauptvordruck|einnahmen-(ü|ue)berschussrechnung|anlage vorsorgeaufwand)\b'
+
+  - name: Urkunde
+    matching_algorithm: regex
+    match: '\b(geburtsurkunde|heiratsurkunde|eheurkunde|sterbeurkunde|urkunde|beglaubigte abschrift|notariell)\b'
+
+  - name: Zeugnis
+    matching_algorithm: regex
+    match: '(\b\w*zeugnis\b|\bnotenspiegel\b|\btranscript of records\b|\bacademic transcript\b|hochschulreife)'
+
+  - name: Versicherungspolice
+    matching_algorithm: regex
+    match: '\b(versicherungsschein|policennummer|versicherungspolice|allgemeine bedingungen f(ü|ue)r die)\b'
+
+  - name: Kontoauszug
+    matching_algorithm: regex
+    match: '\b(kontoauszug|auszug nr|kontostand|depotauszug)\b'
+
+  - name: Befund
+    matching_algorithm: regex
+    match: '\b(befund|befundbericht|laborbericht|arztbrief|polygraphisch)\b'
+
+  - name: Rezept
+    matching_algorithm: regex
+    match: '\b(rezept|verordnung|arzneimittel|apothekenpflichtig)\b'
+
+  - name: Ticket
+    matching_algorithm: regex
+    match: '\b(e-?ticket|boarding pass|bordkarte|fahrkarte|bahnticket|buchungsbest(ä|ae)tigung|booking confirmation|reservierungsbest(ä|ae)tigung|ticket number|buchungsnummer)\b'
+
+  - name: Mahnung
+    matching_algorithm: regex
+    match: '(\b(zahlungserinnerung|mahngeb(ü|ue)hr|verzugszinsen|mahnstufe|letzte mahnung)\b|\b[12]\. mahnung\b|\bmahnung nr)'
+
+  - name: Gutschrift
+    matching_algorithm: regex
+    match: '(\b(gutschriftsnummer|stornorechnung|storno-rechnung)\b|\bgutschrift nr)'
+
+  - name: Lohnsteuerbescheinigung
+    matching_algorithm: regex
+    match: '\b(lohnsteuerbescheinigung)\b'
+
+  - name: Quittung
+    matching_algorithm: regex
+    match: '\b(quittung|kassenbon|kundenbeleg|einzelbeleg|barzahlung erhalten|receipt|payment received)\b'
+
+  - name: Lieferschein
+    matching_algorithm: regex
+    match: '\b(lieferschein|versandbest(ä|ae)tigung|packing slip)\b'
+
+  - name: Angebot
+    matching_algorithm: regex
+    match: '\b(angebot|kostenvoranschlag|angebotsnummer|unverbindliches angebot)\b'
+
+  - name: Auftragsbestätigung
+    matching_algorithm: regex
+    match: '\b(auftragsbest(ä|ae)tigung|bestellbest(ä|ae)tigung|order confirmation)\b'
+
+  - name: Rechnung
+    matching_algorithm: regex
+    match: '(\brechnungs(nummer|betrag|datum)\b|\b\w*(?<!be)(?<!ab)rechnung\b|\binvoice\b)'
+
+  - name: Kündigung
+    matching_algorithm: regex
+    match: '\b(k(ü|ue)ndigung|k(ü|ue)ndigungsbest(ä|ae)tigung|hiermit k(ü|ue)ndige ich|vertragsende)\b'
+
+  - name: Jahresabrechnung
+    matching_algorithm: regex
+    match: '(\b(jahres|verbrauchs|neben|nebenkosten|betriebskosten|heizkosten|strom|gas|wasser)abrechnung\b|\bjahresrechnung\b|\babrechnungszeitraum\b)'
+
+  - name: Vertrag
+    matching_algorithm: regex
+    match: '(\b\w*vertrag\b|\bvertrags(nummer|beginn|laufzeit)\b|\ballgemeine gesch(ä|ae)ftsbedingungen\b)'
+
+  - name: Garantie
+    matching_algorithm: regex
+    match: '\b(garantie|gew(ä|ae)hrleistung|garantiebedingungen|garantiezeit|garantieaktivierung)\b'
+
+  - name: Bescheid
+    matching_algorithm: regex
+    match: '(\b\w*bescheid\b|\bgenehmigung\b)'
+
+  - name: Antrag
+    matching_algorithm: regex
+    match: '\b(antrag|antragsformular|hiermit beantrage ich|antragsnummer|letter of intent|letter of motivation|application form|hereby apply)\b'
+
+  - name: Bescheinigung
+    matching_algorithm: regex
+    match: '(\b\w*bescheinigung\b|\bnachweis (ü|ue)ber\b|\bbest(ä|ae)tigung (ü|ue)ber\b|\bletter of acceptance\b|\bsemesterquittung\b)'
+
+  - name: Mitteilung
+    matching_algorithm: regex
+    match: '\b(mitteilung|anschreiben|information(en)? zur)\b'
+
+# --------------------------------------------------------------------------
+# Custom fields
+# --------------------------------------------------------------------------
+
+custom_fields:
+  - name: Betrag
+    data_type: monetary
+    extra_data:
+      default_currency: EUR
+
+  - name: Fällig am
+    data_type: date
+
+  - name: Vertragsnummer
+    data_type: string
+
+  - name: Kündigungsfrist
+    data_type: string
+
+  - name: Rechnungsnummer
+    data_type: string
+
+# --------------------------------------------------------------------------
+# Storage paths — on-disk layout
+# --------------------------------------------------------------------------
+# These override PAPERLESS_FILENAME_FORMAT per document. Jinja2 is supported.
+# Assigning a storage path only moves NEW or re-saved documents; run
+# `paperless-manage document_renamer` once to move the existing ones.
+
+storage_paths:
+  - name: Standard
+    path: "{{ created_year }}/{{ correspondent }}/{{ created }}_{{ document_type }}_{{ title }}"
+    matching_algorithm: none
+
+  - name: Steuerunterlagen
+    path: "Steuer/{{ created_year }}/{{ correspondent }}/{{ created }}_{{ document_type }}_{{ title }}"
+    matching_algorithm: none
+
+# --------------------------------------------------------------------------
+# Mail rules
+# --------------------------------------------------------------------------
+# `account` refers to a mail account `id` defined in secrets/paperless.yaml.
+# A rule whose account is not present in the private file is SKIPPED, so this
+# file stays valid before you have configured all three mailboxes.
+#
+# Design: Paperless never touches INBOX. You file documents into a `Paperless`
+# folder server-side (Gmail filter / iCloud rule / Sieve), Paperless drains it
+# and moves each processed message to `Paperless/Erledigt`.
+#
+# `move` is the only re-run-safe action. `mark read` loses any mail you happen
+# to open on your phone first; `delete` is unrecoverable if consumption then
+# fails.
+#
+# `assign_correspondent_from: nothing` is deliberate and counter-intuitive:
+# `from_email` / `from_name` mint a brand new correspondent per sender address,
+# which defeats the curated correspondent list and the matching engine.
+#
+# NOTE: IMAP folder separators differ per server (`.` vs `/` vs `|`). If a rule
+# errors, Paperless logs every folder it can see — read the log and copy the
+# exact spelling rather than guessing.
+
+mail_rules:
+  - name: Gmail — Paperless-Ordner
+    account: gmail
+    order: 10
+    folder: "Paperless"
+    maximum_age: 0
+    consumption_scope: everything
+    attachment_type: attachments_only
+    action: move
+    action_parameter: "Paperless/Erledigt"
+    assign_title_from: subject
+    assign_correspondent_from: nothing
+    assign_tags: ["Mail Gmail"]
+
+  # Manual override: nothing is filed here routinely (see the INBOX rule
+  # below), but dragging a mail into this folder force-imports it regardless of
+  # age or the PDF-only filter.
+  - name: iCloud — Paperless-Ordner
+    account: icloud
+    order: 20
+    folder: "Paperless"
+    maximum_age: 0
+    consumption_scope: everything
+    attachment_type: attachments_only
+    action: move
+    action_parameter: "Paperless/Erledigt"
+    assign_title_from: subject
+    assign_correspondent_from: nothing
+    assign_tags: ["Mail iCloud"]
+
+  - name: Mailcow — Paperless-Ordner
+    account: mailcow
+    order: 30
+    folder: "Paperless"
+    maximum_age: 0
+    consumption_scope: everything
+    attachment_type: attachments_only
+    action: move
+    action_parameter: "Paperless/Erledigt"
+    assign_title_from: subject
+    assign_correspondent_from: nothing
+    assign_tags: ["Mail Mailcow", "Geschäftlich"]
+
+  # ------------------------------------------------------------------------
+  # Retroactive archive sweep — one-time backfill of what is already in your
+  # mailboxes. Deliberately conservative.
+  #
+  # NO SUBJECT KEYWORD FILTER, on purpose: `filter_subject` is a single
+  # substring, so a whitelist means one rule per word — and the interesting set
+  # is open-ended (invoices, but also tickets, confirmations, applications)
+  # across two languages. A German word list over an English mailbox would
+  # silently miss most of it. "Has a PDF attachment" is already a strong
+  # filter, and the taxonomy then classifies on full content, which is far
+  # better signal than a subject line.
+  #
+  # ACTIONS ARE NON-DESTRUCTIVE — never `move` or `delete` on an archive. Both
+  # also make the sweep resumable, since Paperless skips mail already carrying
+  # the flag/keyword.
+  #   Gmail  -> `tag` adds the IMAP keyword as a Gmail LABEL. Undo = delete the
+  #             label, which unlabels every message at once.
+  #   iCloud -> `flag` (stars), because iCloud does not reliably accept custom
+  #             IMAP keywords. `mark_read` would be useless: Paperless skips
+  #             mail that is already read, and an archive is entirely read.
+  #
+  # ENABLED 2026-08-14, once an app password finally worked. Same two-phase
+  # shape as the iCloud rule below, but starting at 365 days rather than 0:
+  # `[Gmail]/All Mail` is every message Gmail holds, and the iCloud sweep showed
+  # that an unbounded maximum_age makes every single run re-fetch the whole
+  # mailbox. Take a year first, review, then decide about the rest.
+  #
+  # PHASE 2 (after review): drop maximum_age to 30 and remove "Mail-Archiv"
+  # from assign_tags, leaving "Mail Gmail" as the ongoing marker.
+  #
+  # Both tags are assigned deliberately: "Mail-Archiv" ∩ "Mail Gmail" isolates
+  # exactly this batch, so it can be bulk-deleted without touching the iCloud
+  # import. The Quelle workflows key on the folder-based rules, not on this one,
+  # so nothing else would stamp the source.
+  #
+  # The all-mail folder is "[Google Mail]/All Mail", NOT the "[Gmail]/All Mail"
+  # every tutorial prints: this account was created under Google's googlemail
+  # branding and the IMAP namespace kept it. Paperless logs "Located folder: X"
+  # for every folder it can see just before it fails, which is how to find the
+  # right spelling for any account.
+  #
+  # That folder includes Sent Mail (though not Spam or Trash), so PDFs you sent
+  # will come in too. That is the price of covering archived mail, and the
+  # Mail-Archiv tag is the undo handle.
+  - name: Archiv-Sweep Gmail
+    enabled: true
+    account: gmail
+    order: 50
+    folder: "[Google Mail]/All Mail"
+    maximum_age: 365
+    consumption_scope: attachments_only
+    attachment_type: attachments_only
+    filter_attachment_filename_include: "*.pdf"
+    exclude_filename_rule: Beiwerk
+    action: tag
+    action_parameter: "paperless-imported"
+    assign_title_from: filename
+    assign_correspondent_from: nothing
+    assign_tags: ["Mail-Archiv", "Mail Gmail"]
+
+  # iCloud: everything lives in INBOX and is never filed or deleted, so INBOX
+  # *is* the archive. This one rule therefore serves two phases:
+  #
+  #   PHASE 1 (2026-08-13 23:14–23:21): maximum_age 0 + tag Mail-Archiv —
+  #     backfilled the whole history in one pass, 153 documents.
+  #   PHASE 2 (now, since 2026-08-14): maximum_age 30 + tag "Mail iCloud" —
+  #     ongoing flow, distinguishable from the bulk import and independently
+  #     reversible.
+  #
+  # The switch is not cosmetic. At maximum_age 0 every run re-fetched the entire
+  # INBOX to discover it had already processed all of it: 300 s of IMAP traffic
+  # every 10 minutes, indefinitely, for zero new documents. Paperless skips by
+  # (rule, uid, folder) *after* fetching, so only maximum_age bounds the work.
+  #
+  # Deliberately ONE rule rather than two on the same folder: Paperless tracks
+  # processed UIDs per rule, so two rules watching INBOX would both fetch every
+  # message, and only the content checksum would stop the duplicate.
+  #
+  # `flag` stars the source mail. It is the only re-runnable choice here —
+  # `mark_read` would both destroy the unread state and skip everything already
+  # read, which in a mailbox you actually read means importing nothing.
+  - name: Archiv-Sweep iCloud
+    account: icloud
+    order: 51
+    folder: "INBOX"
+    maximum_age: 30
+    consumption_scope: attachments_only
+    attachment_type: attachments_only
+    filter_attachment_filename_include: "*.pdf"
+    exclude_filename_rule: Beiwerk
+    action: flag
+    assign_title_from: filename
+    assign_correspondent_from: nothing
+    assign_tags: ["Mail iCloud"]
+
+# --------------------------------------------------------------------------
+# Workflows
+# --------------------------------------------------------------------------
+# `filter_mailrule` refers to a mail rule by name. Workflows whose mail rule was
+# skipped (missing account) are skipped too.
+
+workflows:
+  # NOTE: there is deliberately no "assign the Inbox tag" workflow. The `Inbox`
+  # tag carries `is_inbox_tag: true`, and Paperless natively applies every
+  # inbox tag to all newly consumed documents. A workflow doing the same thing
+  # would be redundant — and could not be created anyway, see below.
+  #
+  # A `consumption_started` trigger MUST carry at least one of filter_filename,
+  # filter_path, or filter_mailrule; Paperless rejects an unfiltered one with
+  # "File name, path or mail rule filter are required". Hence the "*" glob
+  # here: it is a catch-all that still satisfies the validator. The constraint
+  # applies only to consumption triggers — document_added and scheduled
+  # triggers may be unfiltered.
+  - name: "Quelle: Ablage-Ordner"
+    order: 2
+    triggers:
+      - type: consumption_started
+        sources: [consume_folder]
+        filter_filename: "*"
+    actions:
+      - type: assignment
+        assign_tags: ["WebDAV"]
+
+  - name: "Quelle: Gmail"
+    order: 10
+    triggers:
+      - type: consumption_started
+        sources: [mail_fetch]
+        filter_mailrule: Gmail — Paperless-Ordner
+    actions:
+      - type: assignment
+        assign_tags: ["Mail Gmail", "Privat"]
+
+  - name: "Quelle: iCloud"
+    order: 11
+    triggers:
+      - type: consumption_started
+        sources: [mail_fetch]
+        filter_mailrule: iCloud — Paperless-Ordner
+    actions:
+      - type: assignment
+        assign_tags: ["Mail iCloud", "Privat"]
+
+  - name: "Quelle: Mailcow"
+    order: 12
+    triggers:
+      - type: consumption_started
+        sources: [mail_fetch]
+        filter_mailrule: Mailcow — Paperless-Ordner
+    actions:
+      - type: assignment
+        assign_tags: ["Mail Mailcow", "Geschäftlich"]
+
+  # Anything still sitting in the inbox after two weeks did not classify
+  # cleanly. Flagging it keeps the Posteingang view honest — and an emptied
+  # inbox is what lets the Auto classifier train at all.
+  - name: Nachzügler markieren
+    order: 90
+    triggers:
+      - type: scheduled
+        schedule_date_field: added
+        schedule_offset_days: 14
+        schedule_is_recurring: true
+        schedule_recurring_interval_days: 7
+        filter_has_tags: ["Inbox"]
+    actions:
+      - type: assignment
+        assign_tags: ["Unklar"]
+
+# --------------------------------------------------------------------------
+# Saved views
+# --------------------------------------------------------------------------
+# `{{year}}` is substituted with the current year at provision time, so the
+# tax view follows the calendar. That means the first reconcile each January
+# legitimately reports a change.
+
+saved_views:
+  # dashboard: true puts it on the landing page. Both flags are written to the
+  # admin user's ui_settings, not the saved view -- under API v10 the saved
+  # view itself has no visibility fields and silently ignores them.
+  - name: Posteingang
+    sort_field: created
+    sort_reverse: true
+    dashboard: true
+    filter_rules:
+      - rule: has_tag
+        value: Inbox
+
+  - name: Zu erledigen
+    sort_field: created
+    sort_reverse: true
+    dashboard: true
+    filter_rules:
+      - rule: has_tags_in
+        value: ["Aktion", "Frist"]
+
+  - name: Steuer — laufendes Jahr
+    sort_field: created
+    sort_reverse: true
+    filter_rules:
+      - rule: has_tag
+        value: Steuer
+      - rule: created_from
+        value: "{{year}}-01-01"
+      - rule: created_to
+        value: "{{year}}-12-31"
+
+  - name: Ohne Korrespondent
+    sort_field: created
+    sort_reverse: true
+    filter_rules:
+      - rule: correspondent_is
+        value: null
+
+  - name: Nicht klassifiziert
+    sort_field: created
+    sort_reverse: true
+    filter_rules:
+      - rule: document_type_is
+        value: null
+
+  - name: Unklar
+    sort_field: added
+    sort_reverse: true
+    filter_rules:
+      - rule: has_tag
+        value: Unklar
+
+  # Password-protected PDFs land here. They need a human with the password:
+  # decrypt, then re-upload over WebDAV so the text actually gets indexed.
+  - name: Unlesbar
+    sort_field: added
+    sort_reverse: true
+    filter_rules:
+      - rule: has_tag
+        value: Unlesbar
+
+# --------------------------------------------------------------------------
+# Unreadable documents
+# --------------------------------------------------------------------------
+# Tag applied by `--classify` to any document whose extracted text is empty.
+# Set to null to disable the check.
+
+unreadable_tag: Unlesbar
+
+# --------------------------------------------------------------------------
+# Filename rules
+# --------------------------------------------------------------------------
+# Paperless' own matcher only ever sees document CONTENT. That makes the
+# boilerplate attached to real mail invisible to it: an "AGB.pdf" sent
+# alongside a genuine order confirmation reads, in content terms, exactly like
+# a contract. The only reliable signal is the filename, so `--classify`
+# applies these globs against original_file_name.
+#
+# Case-insensitive fnmatch. These only ADD a tag — nothing is deleted here.
+
+filename_rules:
+  - tag: Beiwerk
+    # Subset actually sent to Paperless as filter_attachment_filename_exclude.
+    # That column is capped at 256 characters, so this is the highest-coverage
+    # packing that fits: it blocks 32 of the 33 boilerplate filenames the full
+    # list catches. The remainder are still tagged Beiwerk after import.
+    ingest_patterns:
+      - "*agb*"
+      - "*bedingungen*"
+      - "*widerruf*"
+      - "*eula*"
+      - "av.pdf"
+      - "*dsgvo*"
+      - "*ihre e-mail von*"
+      - "*tarif- u*"
+      - "*gtc-online*"
+      - "*datenschutz*"
+      - "ihr_anliegen_*"
+      - "*refund-policy*"
+      - "*verkaufsschild*"
+      - "*erstinformation*"
+      - "*migrations guide*"
+      - "*produktinformation*"
+
+    # NOTE: a glob of 32 '?' used to live in both lists, meant to catch
+    # hash-named PDFs. fnmatch '?' matches ANY character, so it actually
+    # matched every 32-character filename — including
+    # "Brutto-Netto-Abrechnung Mai 2022.pdf", a payslip. At ingest that would
+    # have silently discarded the mail. The documents it was aimed at are now
+    # caught by content instead, which is both precise and reversible.
+    patterns:
+      - "*agb*"
+      - "*widerruf*"
+      - "*datenschutz*"
+      - "*informationspflicht*"
+      - "*dsgvo*"
+      - "*belehrung*"
+      - "*merkblatt*"
+      - "*eula*"
+      - "*produktinformation*"
+      - "*verkaufsschild*"
+      - "*newsletter*"
+      - "*versicherungsbedingungen*"
+      - "*nutzungsbedingungen*"
+      - "*_bedingungen*"
+      - "*geschäftsbedingungen*"
+      - "*geschaeftsbedingungen*"
+      - "*refund-policy*"
+      - "*erstinformation*"
+      - "*gtc-online*"
+      - "*ihre e-mail von*"
+      - "*weitere unterlagen*"
+      - "*tarif- u*"
+      - "*gebührenordnung*"
+      - "av.pdf"
+      - "ihr_anliegen_*"
+      - "*migrations guide*"
+      - "*preisliste*"
+      - "*entgeltinformation*"
+      - "*einwilligung*"
+
+    # Junk that arrives under a perfectly innocent filename, where the only
+    # signal is the text. "Can Immobilien.pdf" is an unsolicited estate-agent
+    # flyer; nothing about the name says so. Regexes over the OCR text,
+    # case-insensitive, ORed with the globs above.
+    #
+    # Every pattern here was checked against the whole corpus before being
+    # added. German business boilerplate produces brutal false positives, so a
+    # phrase that "obviously" means junk usually also appears in the footer of
+    # something you need. Verify hit-by-hit; do not reason from the phrase.
+    content_patterns:
+      # Estate-agent / referral-bonus advertising.
+      - 'pr(ä|ae)mie für\s+ihre empfehlung'
+      - 'kennen sie jemanden,? der'
+      # Utility meter-reading requests. Transient asks, not records: once the
+      # reading is submitted the PDF has no value. The Abrechnung that follows
+      # does have value and reads quite differently, so it is not caught here.
+      - 'benötigen ihren\s*zählerstand'
+      - 'zählerstandsmitteilung'
+      # T&C amendment notices, which arrive as their own attachment.
+      - 'im folgenden [„"]ergänzung'
+      - 'änderung(en)? (unserer|der) (agb|allgemeinen geschäftsbedingungen)'
+      # Blank Brazilian DANFE form templates: all field labels, no values, and
+      # they say so themselves. Three arrived with identical content.
+      - 'documento sem valor fiscal'
+      # The nota-fiscal portal's error page, saved as a PDF and mailed on.
+      - 'não foi possível obter a nota fiscal'
