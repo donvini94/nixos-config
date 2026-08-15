@@ -106,8 +106,8 @@ Hermes' supported QR onboarding stores `TELEGRAM_BOT_TOKEN` and `TELEGRAM_ALLOWE
 `0640` for the isolated `hermes` group, and rebuilds preserve it. Include it in the encrypted
 Hermes state backup. If the token is exposed, revoke it through BotFather `/revoke`, reconnect
 through the dashboard, and verify the previous token fails. Never use `*` as an allowlist.
-The Hermes dashboard, rather than Nix/SOPS, is the writer for these two runtime values; the
-gateway remains Nix-managed. A rebuild merges declarative settings without replacing `.env`.
+The Hermes dashboard, rather than Nix/SOPS, writes these runtime values inside the persistent
+`/opt/data` mount. Pulling or recreating the official container does not replace `.env`.
 Signal linking state, if ever used, is similarly application state rather than a SOPS scalar;
 its inactive directory remains under `/var/lib/signal-cli`.
 
@@ -129,3 +129,43 @@ when a real workload or customer isolation boundary requires separate revocation
 ownership. Label keys so Requesty's records can be reconciled with Langfuse and ingress
 callers. Customer machines need their own age recipient, credentials, retention policy,
 and documented revocation owner.
+
+## Alucard document management (Paperless-ngx)
+
+Paperless is not part of the AI stack and does not use `secrets/alucard-ai.yaml`. Its scalars
+live in the default `secrets/dmbs.yaml`; its taxonomy PII lives in a dedicated
+`secrets/paperless.yaml`.
+
+| SOPS key | File | Consumer | Rotation class |
+| --- | --- | --- | --- |
+| `paperless/password` | `dmbs.yaml` | Paperless `admin` superuser; also how `paperless-provision` obtains an API token | Change in Paperless, then update SOPS |
+| `paperless/restic_password` | `dmbs.yaml` | `paperless-offsite-backup.service` | **Backup-encryption root — rotating it orphans every existing snapshot** |
+| *(whole file)* | `paperless.yaml` | `paperless-provision.service` | Correspondent names, IMAP hosts, app passwords |
+
+`secrets/paperless.yaml` is consumed as a whole document (`key = ""`), so it is mounted at
+`/run/secrets/paperless-private` owned by the `paperless` user, mode `0400`. The restic
+password is deliberately kept out of that file: the service user must not hold the key to
+its own backups.
+
+Two structural rules for `secrets/paperless.yaml`:
+
+- **Records, not maps.** sops encrypts YAML values but leaves keys in plaintext, so a map
+  keyed by correspondent would publish those names in a public repo. Use a list of records;
+  see `paperless/private.example.yaml`.
+- **Passwords are IMAP app passwords, not account passwords.** Gmail removed "less secure
+  app access" in March 2025 and iCloud never allowed the Apple ID password in third-party
+  clients. Revoke at the provider (Google account → App passwords, appleid.apple.com), not
+  in Paperless.
+
+Edit without printing values:
+
+```console
+sops secrets/paperless.yaml
+```
+
+After changing a mail password, push it explicitly — the API returns passwords as asterisks,
+so the reconciler cannot detect the change on its own:
+
+```console
+sudo paperless-provision --sync-passwords
+```

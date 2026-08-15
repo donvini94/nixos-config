@@ -1,0 +1,117 @@
+# Paperless-ngx taxonomy — PRIVATE half. TEMPLATE.
+#
+# This is the documented example. The real thing lives at secrets/paperless.yaml
+# and is sops-encrypted; edit it with:
+#
+#     sops secrets/paperless.yaml
+#
+# Do NOT copy this file to secrets/ in plaintext and do not commit real values
+# here.
+#
+# ---------------------------------------------------------------------------
+# Why lists and not maps
+# ---------------------------------------------------------------------------
+# sops encrypts YAML *values* and leaves *keys* in plaintext. A map keyed by
+# correspondent...
+#
+#     correspondents:
+#       aok-bayern:        # <-- this key is readable in the public repo
+#         match: ...
+#
+# ...would publish exactly the information this file exists to protect. Using a
+# list of records means the only plaintext keys are generic field names
+# (`name`, `match`, `tags`), which reveal nothing.
+
+# ---------------------------------------------------------------------------
+# Correspondents — who the other party is
+# ---------------------------------------------------------------------------
+# `tags` is not a Paperless field. The provisioner turns it into one workflow
+# per tag ("Auto-Zuordnung: Versicherung") triggered on document_added and
+# filtered by correspondent, because the correspondent is not yet known at
+# consumption time. Tag names must exist in paperless/taxonomy.yaml.
+#
+# matching_algorithm: none | any | all | literal | regex | fuzzy | auto
+#   literal — the safest default for a company name: matches the exact string
+#   any     — matches if ANY word appears; quote multi-word phrases or
+#             "Stadtwerke München" will also match every document saying
+#             "München"
+#   auto    — the ML classifier; needs training data, so switch to it later
+
+correspondents:
+  - name: "Beispiel Versicherung AG"
+    match: "Beispiel Versicherung"
+    matching_algorithm: literal
+    tags: ["Versicherung", "Privat"]
+
+  - name: "Beispiel Bank"
+    match: '(?i)\b(beispiel bank|beispielbank)\b'
+    matching_algorithm: regex
+    tags: ["Finanzen", "Privat"]
+
+  - name: "Dr. med. Beispiel"
+    match: "Praxis Dr. Beispiel"
+    matching_algorithm: literal
+    tags: ["Gesundheit", "Privat"]
+
+# ---------------------------------------------------------------------------
+# Mail accounts
+# ---------------------------------------------------------------------------
+# `id` is the symbolic name paperless/taxonomy.yaml refers to in `mail_rules`.
+# A mail rule whose account id is missing here is skipped, so you can configure
+# one mailbox at a time.
+#
+# All three use plain IMAP (`account_type: imap`). Gmail and Outlook OAuth
+# accounts require an interactive browser callback and cannot be created
+# through the API at all.
+#
+# imap_security: none | ssl | starttls
+
+mail_accounts:
+  # Gmail / Google Workspace.
+  # Needs an APP PASSWORD (16 chars, no spaces) from
+  # https://myaccount.google.com/apppasswords — requires 2-Step Verification.
+  # "Less secure app access" was removed in March 2025; a normal account
+  # password will always fail.
+  - id: gmail
+    name: "Gmail"
+    imap_server: "imap.gmail.com"
+    imap_port: 993
+    imap_security: ssl
+    username: "you@gmail.com"
+    password: "xxxxxxxxxxxxxxxx"
+
+  # iCloud Mail.
+  # Needs an APP-SPECIFIC PASSWORD from https://appleid.apple.com.
+  # The username is usually the local part only ("johnappleseed"), not the full
+  # address — try the full address only if that fails.
+  - id: icloud
+    name: "iCloud"
+    imap_server: "imap.mail.me.com"
+    imap_port: 993
+    imap_security: ssl
+    username: "yourname"
+    password: "xxxx-xxxx-xxxx-xxxx"
+
+  # Self-hosted mailcow on this same machine.
+  # Use the public hostname, NOT 127.0.0.1: the certificate is issued for the
+  # hostname and a loopback connection fails TLS verification.
+  - id: mailcow
+    name: "Mailcow"
+    imap_server: "mail.istbereit.de"
+    imap_port: 993
+    imap_security: ssl
+    username: "you@istbereit.de"
+    password: "..."
+
+# ---------------------------------------------------------------------------
+# Tag overrides
+# ---------------------------------------------------------------------------
+# Replace fields of a tag defined in the public taxonomy. This exists so the
+# pattern that identifies your business — company name, VAT id, customer
+# numbers — can drive the `Geschäftlich` tag without naming the company in a
+# public file.
+
+tag_overrides:
+  - name: "Geschäftlich"
+    matching_algorithm: regex
+    match: '(?i)\b(examplecorp gmbh|ust-idnr\.? de[0-9]{9})\b'
