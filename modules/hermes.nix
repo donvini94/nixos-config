@@ -67,6 +67,12 @@ let
     set -euo pipefail
     ${pkgs.coreutils}/bin/install -d -m 2770 -o hermes -g hermes \
       ${cfg.stateDirectory} ${hermesHome} ${cfg.workspace}
+    ${pkgs.coreutils}/bin/install -d -m 2770 \
+      -o ${builtins.head cfg.operators} -g users ${cfg.orgDirectory}
+    # Both containers use host-aligned numeric UIDs. ACLs grant Hermes access
+    # without making the Org tree world-writable and are inherited by new files.
+    ${pkgs.acl}/bin/setfacl -R -m \
+      u:hermes:rwX,d:u:hermes:rwx ${cfg.orgDirectory}
     ${pkgs.coreutils}/bin/install -d -m 0750 -o root -g root ${composeDirectory}
     ${pkgs.coreutils}/bin/chown hermes:hermes ${hermesHome} ${cfg.workspace}
     ${pkgs.coreutils}/bin/chmod 2770 ${hermesHome} ${cfg.workspace}
@@ -151,8 +157,26 @@ in
       type = lib.types.str;
       default = "${cfg.stateDirectory}/workspace";
     };
+    orgDirectory = lib.mkOption {
+      type = lib.types.str;
+      default = "/var/lib/ai-org";
+      description = "Shared Org tree exposed read-write at /org.";
+    };
+    apiServer = {
+      enable = lib.mkEnableOption "the authenticated Hermes agent API for private automation";
+      bindAddress = lib.mkOption {
+        type = lib.types.str;
+        default = "127.0.0.1";
+      };
+      port = lib.mkOption {
+        type = lib.types.port;
+        default = 8642;
+      };
+    };
     dashboard = {
-      enable = lib.mkEnableOption "Hermes dashboard in the gateway container" // { default = true; };
+      enable = lib.mkEnableOption "Hermes dashboard in the gateway container" // {
+        default = true;
+      };
       bindAddress = lib.mkOption {
         type = lib.types.str;
         default = "127.0.0.1";
@@ -186,22 +210,39 @@ in
         assertion = cfg.operators != [ ];
         message = "services.localHermes.operators must not be empty";
       }
+      {
+        assertion = lib.hasPrefix "/" cfg.orgDirectory;
+        message = "services.localHermes.orgDirectory must be an absolute path";
+      }
+      {
+        assertion = !cfg.apiServer.enable || cfg.apiServer.bindAddress == "127.0.0.1";
+        message = "Hermes automation API must remain loopback-only; n8n uses its private bridge proxy";
+      }
+      {
+        assertion = !cfg.apiServer.enable || cfg.dashboard.environmentFile != null;
+        message = "Hermes API requires an EnvironmentFile containing API_SERVER_KEY";
+      }
     ];
 
     virtualisation.docker.enable = true;
     users.groups.hermes = { };
-    users.users = lib.genAttrs cfg.operators (_: { extraGroups = [ "hermes" ]; }) // {
-      hermes = {
-        isSystemUser = true;
-        group = "hermes";
-        home = cfg.stateDirectory;
+    users.users =
+      lib.genAttrs cfg.operators (_: {
+        extraGroups = [ "hermes" ];
+      })
+      // {
+        hermes = {
+          isSystemUser = true;
+          group = "hermes";
+          home = cfg.stateDirectory;
+        };
       };
-    };
 
     systemd.tmpfiles.rules = [
       "d ${cfg.stateDirectory} 2770 hermes hermes - -"
       "d ${hermesHome} 2770 hermes hermes - -"
       "d ${cfg.workspace} 2770 hermes hermes - -"
+      "d ${cfg.orgDirectory} 2770 ${builtins.head cfg.operators} users - -"
       "d ${composeDirectory} 0750 root root - -"
     ];
 
@@ -212,7 +253,8 @@ in
       after = [
         "docker.service"
         "local-llama-logger.service"
-      ] ++ lib.optional (cfg.proxyUrl != null) "tinyproxy.service";
+      ]
+      ++ lib.optional (cfg.proxyUrl != null) "tinyproxy.service";
       requires = [
         "docker.service"
         "local-llama-logger.service"
@@ -222,9 +264,13 @@ in
         HERMES_IMAGE = cfg.image;
         HERMES_STATE = hermesHome;
         HERMES_WORKSPACE = cfg.workspace;
+        HERMES_ORG = cfg.orgDirectory;
         HERMES_DASHBOARD_ENABLED = if cfg.dashboard.enable then "1" else "0";
         HERMES_DASHBOARD_HOST = cfg.dashboard.bindAddress;
         HERMES_DASHBOARD_PORT = toString cfg.dashboard.port;
+        HERMES_API_SERVER_ENABLED = if cfg.apiServer.enable then "true" else "false";
+        HERMES_API_SERVER_HOST = cfg.apiServer.bindAddress;
+        HERMES_API_SERVER_PORT = toString cfg.apiServer.port;
         HERMES_PROXY_URL = if cfg.proxyUrl == null then "" else cfg.proxyUrl;
       };
       serviceConfig = {
@@ -236,7 +282,8 @@ in
         ExecStartPre = [ prepare ];
         ExecStart = "${pkgs.docker}/bin/docker compose up -d --pull always --remove-orphans --wait";
         ExecStop = "${pkgs.docker}/bin/docker compose down";
-      } // lib.optionalAttrs (cfg.dashboard.environmentFile != null) {
+      }
+      // lib.optionalAttrs (cfg.dashboard.environmentFile != null) {
         EnvironmentFile = cfg.dashboard.environmentFile;
       };
     };

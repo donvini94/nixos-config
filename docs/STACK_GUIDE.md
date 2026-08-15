@@ -93,14 +93,22 @@ omp models
 n8n is for visible, repeatable workflows: scheduled jobs, mail processing, webhooks, and
 multi-step business automation. Build and test workflows in its browser UI. Use
 `n8n-workflows-export` to create a reviewable export and `n8n-workflows-import` to load the
-repository's reviewed workflows. See [the n8n guide](../n8n/README.md).
+repository's reviewed workflows. File nodes are restricted to the shared `/org` mount.
+See [the n8n guide](../n8n/README.md).
 
 ### Hermes
 
 Hermes is the persistent agent path. Its state is under `/var/lib/hermes/.hermes` and its
 workspace is `/var/lib/hermes/workspace`. It has a deliberately restricted host view and
-manual approval for commands that Hermes classifies as dangerous. See
+manual approval for commands that Hermes classifies as dangerous. Its one additional host
+surface is the shared Org tree, mounted at `/org`. See
 [the Hermes guide](../hermes/README.md).
+
+Hermes and n8n have private integration in both directions. Hermes calls only reviewed n8n
+production webhooks on host loopback. n8n calls Hermes' authenticated API through the private
+`n8n-local0` bridge at `http://host.docker.internal:8642/v1`; that port is not exposed to
+users or the tailnet. Both can update `/org`, with ACLs for Hermes and n8n file access confined
+to that tree. The workflows themselves remain separately reviewed/exported artifacts.
 
 ### Wirken
 
@@ -399,9 +407,16 @@ registered model to exist in the key's returned catalog. A placeholder key or mi
 fails closed before the ingress accepts traffic; a broader key is narrowed locally.
 
 The AI browser and API listeners are deliberately loopback-only and their ports are not
-opened in Alucard's global firewall or public reverse proxy. Hermes alone binds a wildcard
-socket so its authentication gate is active, but systemd accepts only loopback peers. Host
-assertions reject any other non-loopback AI listener or any AI port in the global firewall.
+opened in Alucard's global firewall or public reverse proxy. The Hermes dashboard and agent
+API both bind loopback; only the dashboard is published through authenticated Tailscale
+Serve. Host assertions reject any other non-loopback AI listener or any AI port in the
+global firewall.
+
+Alucard uses `systemd-resolved` with explicit public fallback resolvers so accepting
+Tailscale MagicDNS cannot leave public DNS without an upstream. If raw IP connectivity works
+but names return `SERVFAIL`, temporarily run `sudo tailscale set --accept-dns=false`, switch
+the current configuration, then re-enable it and verify both `github.com` and another tailnet
+host resolve.
 
 From Dracula, start the declarative private tunnel:
 

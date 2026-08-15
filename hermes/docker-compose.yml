@@ -16,7 +16,11 @@ services:
       HERMES_DASHBOARD_BASIC_AUTH_USERNAME: ${HERMES_DASHBOARD_BASIC_AUTH_USERNAME:-}
       HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH: ${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH:-}
       HERMES_DASHBOARD_BASIC_AUTH_SECRET: ${HERMES_DASHBOARD_BASIC_AUTH_SECRET:-}
-      HERMES_WRITE_SAFE_ROOT: /workspace:/opt/data
+      API_SERVER_ENABLED: ${HERMES_API_SERVER_ENABLED:-false}
+      API_SERVER_HOST: ${HERMES_API_SERVER_HOST:-127.0.0.1}
+      API_SERVER_PORT: ${HERMES_API_SERVER_PORT:-8642}
+      API_SERVER_KEY: ${API_SERVER_KEY:-}
+      HERMES_WRITE_SAFE_ROOT: /workspace:/opt/data:/org
       HTTPS_PROXY: ${HERMES_PROXY_URL:-}
       https_proxy: ${HERMES_PROXY_URL:-}
       TELEGRAM_PROXY: ${HERMES_PROXY_URL:-}
@@ -25,6 +29,7 @@ services:
     volumes:
       - ${HERMES_STATE}:/opt/data
       - ${HERMES_WORKSPACE}:/workspace
+      - ${HERMES_ORG}:/org
     security_opt:
       - no-new-privileges:true
     pids_limit: 512

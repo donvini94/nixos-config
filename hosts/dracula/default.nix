@@ -113,6 +113,11 @@ in
       owner = "root";
       mode = "0400";
     };
+    "hermes/api_server_key" = {
+      sopsFile = ../../secrets/dracula-ai.yaml;
+      owner = "root";
+      mode = "0400";
+    };
   }
   //
     lib.genAttrs
@@ -140,6 +145,16 @@ in
       N8N_RUNNERS_AUTH_TOKEN=${config.sops.placeholder."n8n/runner_auth_token"}
     '';
     restartUnits = [ "docker-n8n-runners.service" ];
+    mode = "0400";
+    owner = "root";
+    group = "root";
+  };
+
+  sops.templates."hermes.env" = {
+    content = ''
+      API_SERVER_KEY=${config.sops.placeholder."hermes/api_server_key"}
+    '';
+    restartUnits = [ "hermes-agent.service" ];
     mode = "0400";
     owner = "root";
     group = "root";
@@ -186,7 +201,8 @@ in
     runnerAuthTokenFile = config.sops.secrets."n8n/runner_auth_token".path;
     runnerEnvironmentFile = config.sops.templates."n8n-runner.env".path;
     operators = [ username ];
-    orgInbox = "/home/${username}/org/ai-inbox";
+    orgDirectory = "/home/${username}/org";
+    hermesApiPort = 8642;
   };
 
   services.localHermes = {
@@ -194,6 +210,9 @@ in
     model = "qwen3.6-27b-local";
     contextLength = 65536;
     operators = [ username ];
+    orgDirectory = "/home/${username}/org";
+    apiServer.enable = true;
+    dashboard.environmentFile = config.sops.templates."hermes.env".path;
   };
 
   services.localWirken = {

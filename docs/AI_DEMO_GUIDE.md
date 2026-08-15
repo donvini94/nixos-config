@@ -70,9 +70,10 @@ Do not improvise claims about benchmark superiority, guaranteed savings, complia
 residency, or production availability. Those require an agreed model evaluation, retention
 policy, backup/restore evidence, and customer-specific architecture.
 
-For the first Hermes demonstration, create a session and ask it to write a short Markdown plan
-inside its workspace, then inspect the result in **Files**. Alucard's Hermes intentionally has no
-general web-search/browser tool and cannot modify the host outside its isolated workspace. See
+For the first Hermes demonstration, create a session and ask it to update a harmless test file
+under `/org/ai-inbox`, then inspect the result and optionally hand it to an n8n workflow.
+Alucard's Hermes intentionally has no general web-search/browser tool and cannot modify the host
+outside its isolated workspace and the explicitly shared Org tree. See
 the [Hermes operator guide](../hermes/README.md) for the exact boundaries.
 
 For a live governed Wirken task, use its upstream terminal approval path rather than effectful

@@ -11,6 +11,7 @@ After activation:
   <https://alucard.tailf117a1.ts.net:29119/sessions>
 - State and session history: `/var/lib/hermes/.hermes`
 - Agent workspace: `/var/lib/hermes/workspace`
+- Shared Org tree: host `/home/vincenzo/org`, container `/org`
 - Inference: each host's permanent logger at `127.0.0.1:8080`, attributed as `hermes`
 
 ## Browser quick start
@@ -54,10 +55,30 @@ sops --decrypt secrets/alucard-ai.yaml | yq -r '.hermes.dashboard_password'
 
 Hermes runs from the official `nousresearch/hermes-agent:latest` image. Gateway and dashboard
 share one container and its upstream s6 supervisor, while `/var/lib/hermes/.hermes` is mounted
-at the official persistent `/opt/data` boundary. The container receives no Docker socket and
-only the isolated workspace is mounted from the host. The dashboard binds to host loopback;
+at the official persistent `/opt/data` boundary. The container receives no Docker socket;
+only its isolated workspace and the explicitly shared Org tree are mounted from the host.
+The dashboard binds to host loopback;
 Alucard reaches it through authenticated Tailscale Serve. Telegram uses the domain-filtered
 proxy at `127.0.0.1:18084`.
+
+## n8n and Org integration
+
+Hermes and n8n can collaborate without either container gaining general host access:
+
+- Both mount `/home/vincenzo/org` read-write as `/org`. Host ACLs grant the isolated Hermes
+  UID access, while n8n keeps file nodes restricted to `/org`.
+- Hermes may call reviewed production webhooks at
+  `http://127.0.0.1:5678/webhook/<path>`. No n8n administration token is given to Hermes.
+- n8n may call Hermes' OpenAI-compatible API at
+  `http://host.docker.internal:8642/v1`. A systemd socket proxies only n8n's private Docker
+  bridge to Hermes' loopback listener; port `8642` is not exposed on the LAN, tailnet, or
+  public firewall.
+- The Hermes API requires the SOPS-managed `hermes/api_server_key`. Store it in an n8n
+  Header Auth credential as `Authorization: Bearer <key>`; never put it in workflow JSON.
+
+No workflows are installed automatically. Their webhook paths, allowed actions, and payload
+schemas remain reviewable workflow artifacts. Notion, Linear, and other systems should be
+added through their maintained n8n nodes or reviewed MCP servers, with separate credentials.
 
 ## Telegram quick setup
 
@@ -95,7 +116,5 @@ Hermes' dashboard token analytics are enabled for operational insight, but upstr
 them a local lower-bound estimate: auxiliary calls, retries, fallbacks, and cache writes
 can be absent. The ingress JSONL remains the authoritative complete request/token record.
 
-No MCP server is enabled initially because there is no external integration in scope.
-Hermes' upstream MCP client is packaged and the NixOS module exposes declarative
-`services.hermes-agent.mcpServers`; add established MCP servers there when a real tool is
-introduced instead of building a custom adapter.
+No MCP server is enabled initially. Use maintained n8n nodes or reviewed MCP servers when a
+real external system is introduced instead of building a custom adapter.

@@ -31,3 +31,14 @@ is not an evaluation task and its results must not enter model-quality compariso
 Business workflows, including mail ingestion, are deliberately separate from this
 infrastructure definition. Build and review them in their own session, then export their
 credential-free JSON here.
+
+## Shared Org tree and Hermes
+
+File nodes are restricted to `/org`, backed by `/home/vincenzo/org` on the host. Use focused
+subdirectories such as `/org/ai-inbox` for workflow handoffs. Hermes mounts the same tree and
+may call explicitly reviewed production webhooks on `http://127.0.0.1:5678/webhook/...`.
+
+n8n reaches Hermes at `http://host.docker.internal:8642/v1`. Create an n8n Header Auth
+credential with `Authorization: Bearer <hermes/api_server_key>`; retrieve the value from SOPS
+only while entering the credential and never embed it in workflow JSON. The route exists only
+on n8n's private bridge and is not a user-facing or tailnet port.

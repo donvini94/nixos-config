@@ -48,6 +48,7 @@ in
           lib.intersectLists [
             5678
             8080
+            8642
             9119
             13000
             13001
@@ -104,6 +105,11 @@ in
         owner = "root";
         mode = "0400";
       };
+      "hermes/api_server_key" = {
+        sopsFile = secretFile;
+        owner = "root";
+        mode = "0400";
+      };
     }
     //
       lib.genAttrs
@@ -143,6 +149,7 @@ in
           config.sops.placeholder."hermes/dashboard_password_hash"
         }
         HERMES_DASHBOARD_BASIC_AUTH_SECRET=${config.sops.placeholder."hermes/dashboard_session_secret"}
+        API_SERVER_KEY=${config.sops.placeholder."hermes/api_server_key"}
       '';
       restartUnits = [ "hermes-agent.service" ];
       mode = "0400";
@@ -208,7 +215,8 @@ in
       runnerAuthTokenFile = config.sops.secrets."n8n/runner_auth_token".path;
       runnerEnvironmentFile = config.sops.templates."n8n-runner.env".path;
       operators = [ username ];
-      orgInbox = "/home/${username}/org/ai-inbox";
+      orgDirectory = "/home/${username}/org";
+      hermesApiPort = 8642;
     };
 
     services.localHermes = {
@@ -217,15 +225,17 @@ in
       contextLength = models.${defaultModel}.context;
       proxyUrl = hermesProxyUrl;
       operators = [ username ];
+      orgDirectory = "/home/${username}/org";
+      apiServer.enable = true;
       dashboard = {
         bindAddress = "127.0.0.1";
         environmentFile = config.sops.templates."hermes-dashboard.env".path;
       };
     };
 
-    # Hermes retains its direct-network deny. Telegram and the upstream QR
-    # onboarding service are the only HTTPS destinations reachable through
-    # this loopback, domain-filtered proxy.
+    # Supported Hermes messaging adapters use this domain-filtered proxy.
+    # Agent policy separately limits tool-driven network calls to approved
+    # localhost n8n webhooks.
     services.tinyproxy = {
       enable = true;
       settings = {

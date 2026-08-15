@@ -8,7 +8,6 @@
 let
   cfg = config.services.localN8n;
   n8nUrl = "http://${cfg.bindAddress}:${toString cfg.port}";
-  orgWriterGroup = "n8n-org-writers";
   stateDirectory = "/var/lib/n8n-container";
   nativeStateDirectory = "/var/lib/private/n8n/.n8n";
   dockerNetwork = "n8n-local";
@@ -73,10 +72,16 @@ in
       description = "Users allowed to access n8n-created org inbox entries.";
     };
 
-    orgInbox = lib.mkOption {
+    orgDirectory = lib.mkOption {
       type = lib.types.str;
-      default = "/var/lib/n8n/org-inbox";
-      description = "Restricted output directory exposed to file-writing workflow nodes.";
+      default = "/var/lib/ai-org";
+      description = "Shared Org tree exposed read-write at /org.";
+    };
+
+    hermesApiPort = lib.mkOption {
+      type = lib.types.nullOr lib.types.port;
+      default = null;
+      description = "Hermes loopback API port to proxy into n8n's private Docker bridge.";
     };
 
     executionRetentionHours = lib.mkOption {
@@ -101,8 +106,8 @@ in
         message = "services.localN8n.runnerEnvironmentFile must be configured";
       }
       {
-        assertion = lib.hasPrefix "/" cfg.orgInbox;
-        message = "services.localN8n.orgInbox must be an absolute path";
+        assertion = lib.hasPrefix "/" cfg.orgDirectory;
+        message = "services.localN8n.orgDirectory must be an absolute path";
       }
       {
         assertion = cfg.operators != [ ];
@@ -123,7 +128,7 @@ in
             "${stateDirectory}:/home/node/.n8n"
             "${cfg.encryptionKeyFile}:/run/secrets/n8n_encryption_key:ro"
             "${cfg.runnerAuthTokenFile}:/run/secrets/n8n_runner_auth_token:ro"
-            "${cfg.orgInbox}:/org-inbox"
+            "${cfg.orgDirectory}:/org"
           ];
           environment = {
             N8N_LISTEN_ADDRESS = "0.0.0.0";
@@ -170,7 +175,7 @@ in
             N8N_RUNNERS_TASK_TIMEOUT = "300";
 
             N8N_BLOCK_ENV_ACCESS_IN_NODE = "true";
-            N8N_RESTRICT_FILE_ACCESS_TO = "/org-inbox";
+            N8N_RESTRICT_FILE_ACCESS_TO = "/org";
             N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS = "true";
             N8N_GIT_NODE_DISABLE_BARE_REPOS = "true";
             N8N_UNVERIFIED_PACKAGES_ENABLED = "false";
@@ -210,16 +215,14 @@ in
       };
     };
 
-    users.groups.${orgWriterGroup} = { };
-    users.users = lib.genAttrs cfg.operators (_: {
-      extraGroups = [ orgWriterGroup ];
-    });
-
-    networking.firewall.interfaces.${dockerBridge}.allowedTCPPorts = [ 8080 ];
+    networking.firewall.interfaces.${dockerBridge}.allowedTCPPorts = [
+      8080
+    ]
+    ++ lib.optional (cfg.hermesApiPort != null) cfg.hermesApiPort;
 
     systemd.tmpfiles.rules = [
       "d ${stateDirectory} 0750 1000 1000 -"
-      "d ${cfg.orgInbox} 2770 ${builtins.head cfg.operators} ${orgWriterGroup} -"
+      "d ${cfg.orgDirectory} 2770 ${builtins.head cfg.operators} users -"
     ];
 
     systemd.services.n8n-state-migrate = {
@@ -298,6 +301,39 @@ in
       requires = [ "local-llama-logger.service" ];
       serviceConfig = {
         ExecStart = "${pkgs.systemd}/lib/systemd/systemd-socket-proxyd 127.0.0.1:8080";
+        DynamicUser = true;
+        NoNewPrivileges = true;
+        PrivateDevices = true;
+        PrivateTmp = true;
+        ProtectSystem = "strict";
+        ProtectHome = true;
+        RestrictAddressFamilies = [
+          "AF_UNIX"
+          "AF_INET"
+          "AF_INET6"
+        ];
+      };
+    };
+
+    # Hermes itself only listens on host loopback. This socket gives n8n a
+    # route to that authenticated API without publishing it on a host NIC.
+    systemd.sockets.n8n-hermes-api = lib.mkIf (cfg.hermesApiPort != null) {
+      description = "Container-only socket for the Hermes agent API";
+      wantedBy = [ "ai-stack.target" ];
+      partOf = [ "ai-stack.target" ];
+      after = [ "n8n-docker-network.service" ];
+      requires = [ "n8n-docker-network.service" ];
+      unitConfig.DefaultDependencies = false;
+      listenStreams = [ "${dockerGateway}:${toString cfg.hermesApiPort}" ];
+    };
+
+    systemd.services.n8n-hermes-api = lib.mkIf (cfg.hermesApiPort != null) {
+      description = "Proxy n8n container traffic to the Hermes agent API";
+      partOf = [ "ai-stack.target" ];
+      after = [ "hermes-agent.service" ];
+      requires = [ "hermes-agent.service" ];
+      serviceConfig = {
+        ExecStart = "${pkgs.systemd}/lib/systemd/systemd-socket-proxyd 127.0.0.1:${toString cfg.hermesApiPort}";
         DynamicUser = true;
         NoNewPrivileges = true;
         PrivateDevices = true;

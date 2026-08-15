@@ -1403,6 +1403,20 @@ Several details were wrong or incomplete as written:
   the multi-tag MinIO failure. A post-switch scan is still required to record the combined
   baseline. All six Prometheus targets are up; per-image remediation remains a production gate.
 
+### DNS and agent-integration checkpoint (active, 2026-08-15)
+
+- Alucard's intermittent post-activation outage was isolated to DNS, not routing or firewalling:
+  public IP traffic worked while Tailscale's resolver logged `no upstream resolvers set` and
+  returned `SERVFAIL`. Alucard now enables `systemd-resolved` with explicit Cloudflare and
+  Quad9 fallbacks so MagicDNS has a supported split-DNS manager and stable public upstreams.
+- Hermes and n8n now share `/home/vincenzo/org` as `/org`, with host ACLs granting Hermes
+  access and n8n file nodes confined to that mount. Hermes policy permits only reviewed n8n
+  production webhooks on localhost, not general network or host access.
+- n8n can trigger Hermes through the official authenticated OpenAI-compatible API. Hermes
+  binds `127.0.0.1:8642`; a socket proxy exposes it only on n8n's private Docker bridge, and
+  each host has an independent SOPS-managed `hermes/api_server_key`. No public or tailnet
+  listener was added. Exact workflows remain separate reviewable/exported artifacts.
+
 ### Measured Phase 1 starting point
 
 - OMP: `17.2.11`; opencode: `1.18.13`.

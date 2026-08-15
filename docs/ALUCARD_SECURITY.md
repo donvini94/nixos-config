@@ -17,9 +17,9 @@ Tailscale Funnel is prohibited. It would turn a private tailnet service into a p
 - nginx terminates ACME TLS and runs with NixOS systemd hardening.
 - nginx applies OWASP CRS 4.25.1 LTS through ModSecurity, per-address request and
   connection limits, bounded request bodies, and consistent low-risk headers.
-- AI and media-administration backends bind to loopback. Hermes is the deliberate exception:
-  it binds a wildcard socket to engage its mandatory authentication gate, while systemd permits
-  only loopback peers and the host firewall does not open port 9119.
+- AI and media-administration backends bind to loopback. Hermes' dashboard and authenticated
+  automation API bind to `127.0.0.1`; only the dashboard is mapped through Tailscale Serve.
+  n8n reaches the API through a socket restricted to its private Docker bridge.
 - Nix assertions reject globally opened AI and web-backend ports.
 - SOPS keeps encrypted source secrets out of the Nix store and renders runtime values beneath
   `/run/secrets`.
@@ -43,8 +43,13 @@ is not a Serve mapping. The 2026-08-09 check found Jellyfin's raw port 8096 in t
 This is private, not internet exposure, but it can bypass nginx/WAF. Loopback binding remains
 the backend boundary, and restrictive Tailscale grants are mandatory before inviting the
 cofounder or any customer identity.
-The HTTP applications remain bound to `127.0.0.1`, except for the systemd-isolated Hermes
-listener described above. Traffic between devices is encrypted by Tailscale's WireGuard tunnel.
+The HTTP applications remain bound to `127.0.0.1`. Traffic between devices is encrypted by
+Tailscale's WireGuard tunnel.
+
+Alucard uses `systemd-resolved` plus explicit Cloudflare and Quad9 fallback resolvers. This
+prevents Tailscale's MagicDNS takeover from losing all public upstream DNS after activation.
+Raw-IP connectivity with hostname `SERVFAIL` is a resolver fault, not evidence that CrowdSec
+or the NixOS firewall blocked outbound traffic.
 
 Enroll each machine once:
 
