@@ -190,7 +190,7 @@ services:
       - /var/lib/observability-stack/textfile:/textfile:ro
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
+    image: ghcr.io/google/cadvisor:v0.60.5@sha256:763aecf1c32c2be8a1a75f9abfc2fc461005c9dbbaa39cb356b354aac1296dbe
     restart: always
     privileged: true
     devices:
