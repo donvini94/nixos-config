@@ -1069,8 +1069,9 @@ Several details were wrong or incomplete as written:
 - The retained MoE has 40 layers, 256 experts with 8 selected per token, and 262,144 native
   context.
 - Dirk has 64 main layers with a 16-layer full-attention cadence plus one MTP layer. Its
-  49,152-token single-slot cap reserves 3 GiB for F16 KV cache on the 24 GiB RTX 3090.
-  The old generic Hermes 64,000-context assertion was removed: it constrained all models
+  32,768-token single-slot cap reserves 2 GiB for F16 KV cache on the 24 GiB RTX 3090:
+  the former 49,152-token / 3 GiB allocation OOMed under the measured 2.6 GiB desktop load.
+  The old generic Hermes 64,000-context assertion was removed because it constrained all models
   without reflecting their actual VRAM budgets.
 - llama-swap: official `v247` Linux amd64 archive, SHA-256
   `4001a068dc1dd154513919a31cc009d4f544426d2040bd02fbf33d90240c17df`.
@@ -1505,14 +1506,15 @@ Several details were wrong or incomplete as written:
 - This is deliberately text-only. The repository's separate optional
   `mmproj-F16.gguf` is neither registered nor downloaded, so no vision projector consumes
   VRAM. The existing `qwen3.6-35b-a3b` MoE registry entry remains selectable.
-- The initial context cap is 49,152 tokens with one slot. Qwen3.8 has 16 attention layers,
-  4 KV heads, 256-dimensional heads, and an F16 cache: $16 \times 4 \times 256 \times
-  2 \times 2 = 65{,}536$ bytes/token, or 3 GiB at this cap. Together with 18.83 GiB Q5
-  weights this leaves approximately 2.17 GiB of RTX 3090 VRAM for llama.cpp runtime buffers
-  and the desktop. This is an evidence-based starting cap, not a falsely claimed live maximum.
-- After activation, first prove the downloader's SHA-256 check, then run a direct
+- The initial 49,152-token cap failed live: its 3 GiB F16 KV allocation OOMed with 2.6 GiB
+  already occupied by Dracula's desktop. The current 32,768-token, one-slot cap requires
+  2 GiB ($16 \times 4 \times 256 \times 2 \times 2 \times 32{,}768$ bytes) and is the
+  next candidate to validate. It leaves roughly 1.1 GiB beyond model weights and the observed
+  desktop allocation for llama.cpp runtime buffers.
+- The downloader has verified the pinned artifact: loading the model reached llama.cpp context
+  creation before the former KV allocation failed. Validate the 32,768-token cap with a direct
   `dirk-qwen3.8-27b-local` completion through port 8080, inspect `/v1/models` and the
-  caller-attributed ingress JSONL, and run OMP, OpenCode, Hermes, and Wirken smokes. Record
+  caller-attributed ingress JSONL, then run OMP, OpenCode, Hermes, and Wirken smokes. Record
   `nvidia-smi` memory, `llama-server` context, TTFT, generation speed, and stability; reduce
-  the cap only if those measurements show runtime pressure. Then swap to
-  `qwen3.6-35b-a3b` and back and confirm no failed unit remains.
+  the cap again if those measurements show runtime pressure. Then swap to `qwen3.6-35b-a3b`
+  and back and confirm no failed unit remains.
