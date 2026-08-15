@@ -15,12 +15,12 @@ let
     endpoint = "http://127.0.0.1:8080/v1";
     provider = "dracula-local";
     providerName = "Dracula local llama.cpp";
-    defaultModel = "qwen3.6-27b-local";
+    defaultModel = "dirk-qwen3.8-27b-local";
     disableStrictTools = true;
     models = {
-      "qwen3.6-27b-local" = {
-        name = "Qwen3.6 27B Q4_K_M (Dracula local)";
-        context = 32768;
+      "dirk-qwen3.8-27b-local" = {
+        name = "Dirk Qwen3.8 27B UD-Q5_K_XL (Dracula local)";
+        context = 49152;
         output = 8192;
         reasoning = false;
       };

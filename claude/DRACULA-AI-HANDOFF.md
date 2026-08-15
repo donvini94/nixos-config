@@ -1057,18 +1057,21 @@ Several details were wrong or incomplete as written:
 
 ### Pinned Phase 2 model registry
 
-- Dense default: `qwen3.6-27b-local`, `unsloth/Qwen3.6-27B-GGUF` revision
-  `82d411acf4a06cfb8d9b073a5211bf410bfc29bf`, `Qwen3.6-27B-Q4_K_M.gguf`, SHA-256
-  `5ed60d0af4650a854b1755bd392f9aef4872643dc25a254bc68043fa638392a0`.
+- Dense default: `dirk-qwen3.8-27b-local`,
+  `peculiar-ragdoll/Dirk-Qwen3.8-27B-GGUF` revision
+  `027902e9811019480b8b074aed93fa6084f782a9`,
+  `Dirk-Qwen3.8-27B-UD-Q5_K_XL.gguf`, SHA-256
+  `9ea3ab209250fa74f1dd04a7d3ba60f9d346a5752c5c357d48e71df648586898`.
 - MoE candidate: `qwen3.6-35b-a3b`, `unsloth/Qwen3.6-35B-A3B-GGUF` revision
   `a483e9e6cbd595906af30beda3187c2663a1118c`,
   `Qwen3.6-35B-A3B-UD-Q3_K_M.gguf`, 16,600,710,112 bytes, SHA-256
   `1b715841683f960bd9a49f008181bd910ee169b78d4cf465b6fde7f4d929ff99`.
-- Official architecture metadata: 40 layers, 256 experts with 8 selected per token, and
-  262,144 native context. Phase 2 initially capped both models to two 32,768-token slots.
-  Phase 4 now uses one 65,536-token slot because Hermes rejects advertised contexts below
-  64,000 tokens; total context/KV budget remains 65,536 and paired evaluator tasks may still
-  impose a 32,768-token task budget.
+- The retained MoE has 40 layers, 256 experts with 8 selected per token, and 262,144 native
+  context.
+- Dirk has 64 main layers with a 16-layer full-attention cadence plus one MTP layer. Its
+  49,152-token single-slot cap reserves 3 GiB for F16 KV cache on the 24 GiB RTX 3090.
+  The old generic Hermes 64,000-context assertion was removed: it constrained all models
+  without reflecting their actual VRAM budgets.
 - llama-swap: official `v247` Linux amd64 archive, SHA-256
   `4001a068dc1dd154513919a31cc009d4f544426d2040bd02fbf33d90240c17df`.
 
@@ -1463,3 +1466,37 @@ Several details were wrong or incomplete as written:
   system prompts. The token/latency difference is useful proof that the harness itself is
   now observable, not evidence that OMP has won. Complete the week of real work, then run
   paired clean-worktree tasks before drawing that conclusion.
+
+
+### Dirk Qwen3.8 dense-default change (configured, awaiting activation, 2026-08-15)
+
+- The dense Qwen3.6 registry entry is replaced by
+  `dirk-qwen3.8-27b-local`. It pins
+  `peculiar-ragdoll/Dirk-Qwen3.8-27B-GGUF` revision
+  `027902e9811019480b8b074aed93fa6084f782a9`,
+  `Dirk-Qwen3.8-27B-UD-Q5_K_XL.gguf` (20,218,188,864 bytes,
+  SHA-256 `9ea3ab209250fa74f1dd04a7d3ba60f9d346a5752c5c357d48e71df648586898`).
+  The model card declares Apache-2.0, Qwen3.8-27B / Qwen3.5 hybrid architecture, and
+  llama.cpp compatibility. Nixpkgs' llama.cpp `b10273` recognizes both `qwen35` and MTP
+  tensors.
+- Directly parsed GGUF v3 metadata confirms `general.architecture=qwen35`,
+  `qwen35.context_length=262144`, 24 Q / 4 KV heads of 256 dimensions,
+  `full_attention_interval=4`, one MTP prediction layer, and the embedded
+  `qwen3.8-froggeric-v22` chat template. The primary tensor encoding is Q5_K (275 tensors);
+  dynamic quantization also uses Q6_K, Q4_K, Q8_0, and F32 tensors. The upstream
+  `general.file_type=14` label does not match the filename, so it must not be used to identify
+  the quantization; the pinned SHA-256 and tensor map are authoritative.
+- This is deliberately text-only. The repository's separate optional
+  `mmproj-F16.gguf` is neither registered nor downloaded, so no vision projector consumes
+  VRAM. The existing `qwen3.6-35b-a3b` MoE registry entry remains selectable.
+- The initial context cap is 49,152 tokens with one slot. Qwen3.8 has 16 attention layers,
+  4 KV heads, 256-dimensional heads, and an F16 cache: $16 \times 4 \times 256 \times
+  2 \times 2 = 65{,}536$ bytes/token, or 3 GiB at this cap. Together with 18.83 GiB Q5
+  weights this leaves approximately 2.17 GiB of RTX 3090 VRAM for llama.cpp runtime buffers
+  and the desktop. This is an evidence-based starting cap, not a falsely claimed live maximum.
+- After activation, first prove the downloader's SHA-256 check, then run a direct
+  `dirk-qwen3.8-27b-local` completion through port 8080, inspect `/v1/models` and the
+  caller-attributed ingress JSONL, and run OMP, OpenCode, Hermes, and Wirken smokes. Record
+  `nvidia-smi` memory, `llama-server` context, TTFT, generation speed, and stability; reduce
+  the cap only if those measurements show runtime pressure. Then swap to
+  `qwen3.6-35b-a3b` and back and confirm no failed unit remains.

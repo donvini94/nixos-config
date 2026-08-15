@@ -150,7 +150,7 @@ omp --model alucard-requesty/sference/kimi-k3
 opencode run -m alucard-requesty/deepinfra/deepseek-v4-flash-0731 "your task"
 ```
 
-Dracula keeps `dracula-local/qwen3.6-27b-local` as its no-cost default.
+Dracula keeps `dracula-local/dirk-qwen3.8-27b-local` as its no-cost text-only default.
 
 ## Telegram agent channel
 

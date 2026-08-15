@@ -211,7 +211,7 @@ in
     };
     model = lib.mkOption {
       type = lib.types.str;
-      default = "qwen3.6-27b-local";
+      default = "dirk-qwen3.8-27b-local";
     };
     providerName = lib.mkOption {
       type = lib.types.strMatching "[A-Za-z0-9][A-Za-z0-9._-]*";
@@ -284,10 +284,6 @@ in
 
   config = lib.mkIf cfg.enable {
     assertions = [
-      {
-        assertion = cfg.contextLength >= 64000;
-        message = "services.localHermes.contextLength must be at least 64,000";
-      }
       {
         assertion = cfg.dashboard.bindAddress == "127.0.0.1";
         message = "Hermes must remain loopback-only; use Tailscale Serve";
