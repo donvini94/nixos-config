@@ -157,7 +157,7 @@ SIM. Hermes is the only Telegram front door initially. In Hermes **Channels**, u
 Create with QR**; the managed setup returns the owner ID for a strict numeric allowlist. The
 bot is not considered ready until the allowed/denied-account and `/model` checks pass.
 
-Do not connect this bot to Wirken. Wirken 1.13 has a native Telegram adapter, but its own
+Do not connect this bot to Wirken. Wirken 1.17 has a native Telegram adapter, but its own
 security documentation says platform sender identities are audited rather than authorized,
 and its Telegram guide says the bot responds to all private messages. That is unsuitable for
 an Internet-discoverable demo bot. Signal remains installed but inactive as a future option.
