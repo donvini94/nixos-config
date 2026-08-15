@@ -17,6 +17,9 @@ Tailscale Funnel is prohibited. It would turn a private tailnet service into a p
 - nginx terminates ACME TLS and runs with NixOS systemd hardening.
 - nginx applies OWASP CRS 4.25.1 LTS through ModSecurity, per-address request and
   connection limits, bounded request bodies, and consistent low-risk headers.
+  The authenticated Jellyfin playback heartbeat `POST /Sessions/Playing` is the sole
+  location-level WAF exception: CRS 4.25.1 falsely blocks Swiftfin's payload before
+  Jellyfin can authorize it; Jellyfin itself retains authorization for that endpoint.
 - AI and media-administration backends bind to loopback. Hermes' dashboard and authenticated
   automation API bind to `127.0.0.1`; only the dashboard is mapped through Tailscale Serve.
   n8n reaches the API through a socket restricted to its private Docker bridge.
