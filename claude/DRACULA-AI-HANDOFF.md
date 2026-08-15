@@ -1069,8 +1069,8 @@ Several details were wrong or incomplete as written:
 - The retained MoE has 40 layers, 256 experts with 8 selected per token, and 262,144 native
   context.
 - Dirk has 64 main layers with a 16-layer full-attention cadence plus one MTP layer. Its
-  32,768-token single-slot cap reserves 2 GiB for F16 KV cache on the 24 GiB RTX 3090:
-  the former 49,152-token / 3 GiB allocation OOMed under the measured 2.6 GiB desktop load.
+  validated 32,768-token single-slot cap reserves 2 GiB for F16 KV cache on the 24 GiB RTX
+  3090. At the measured 2.6 GiB desktop load, the former 49,152-token / 3 GiB allocation OOMed.
   The old generic Hermes 64,000-context assertion was removed because it constrained all models
   without reflecting their actual VRAM budgets.
 - llama-swap: official `v247` Linux amd64 archive, SHA-256
@@ -1485,7 +1485,7 @@ Several details were wrong or incomplete as written:
   not a Claude consumer-account OAuth subscription. Do not bridge or copy OMP credentials into
   OpenCode; authenticate each client through its supported flow.
 
-### Dirk Qwen3.8 dense-default change (configured, awaiting activation, 2026-08-15)
+### Dirk Qwen3.8 dense-default change (live-verified, 2026-08-15)
 
 - The dense Qwen3.6 registry entry is replaced by
   `dirk-qwen3.8-27b-local`. It pins
@@ -1507,14 +1507,12 @@ Several details were wrong or incomplete as written:
   `mmproj-F16.gguf` is neither registered nor downloaded, so no vision projector consumes
   VRAM. The existing `qwen3.6-35b-a3b` MoE registry entry remains selectable.
 - The initial 49,152-token cap failed live: its 3 GiB F16 KV allocation OOMed with 2.6 GiB
-  already occupied by Dracula's desktop. The current 32,768-token, one-slot cap requires
-  2 GiB ($16 \times 4 \times 256 \times 2 \times 2 \times 32{,}768$ bytes) and is the
-  next candidate to validate. It leaves roughly 1.1 GiB beyond model weights and the observed
-  desktop allocation for llama.cpp runtime buffers.
-- The downloader has verified the pinned artifact: loading the model reached llama.cpp context
-  creation before the former KV allocation failed. Validate the 32,768-token cap with a direct
-  `dirk-qwen3.8-27b-local` completion through port 8080, inspect `/v1/models` and the
-  caller-attributed ingress JSONL, then run OMP, OpenCode, Hermes, and Wirken smokes. Record
-  `nvidia-smi` memory, `llama-server` context, TTFT, generation speed, and stability; reduce
-  the cap again if those measurements show runtime pressure. Then swap to `qwen3.6-35b-a3b`
-  and back and confirm no failed unit remains.
+  already occupied by Dracula's desktop. The validated 32,768-token, one-slot cap requires
+  2 GiB ($16 \times 4 \times 256 \times 2 \times 2 \times 32{,}768$ bytes). Its loaded
+  `llama-server` used 20,786 MiB and left 709 MiB GPU memory free. This is the largest
+  validated cap; preserve one slot and reduce it if concurrent desktop load makes it unstable.
+- The downloader verified the pinned artifact. A direct ingress completion completed with
+  `b10273-a6aa6f5` (179 prompt tokens in 480 ms; 16 generated tokens at 29.18 tokens/s);
+  both OMP and OpenCode explicitly selected Dirk successfully. Switching to
+  `qwen3.6-35b-a3b` and back also succeeded. Inspect the caller-attributed ingress JSONL and
+  repeat the Hermes/Wirken smokes before treating longer agent workloads as proven.

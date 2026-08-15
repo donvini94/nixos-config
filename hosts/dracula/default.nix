@@ -61,8 +61,8 @@ in
         sha256 = "9ea3ab209250fa74f1dd04a7d3ba60f9d346a5752c5c357d48e71df648586898";
         displayName = "Dirk Qwen3.8 27B UD-Q5_K_XL (dense)";
         description = "Dense Qwen3.8 default; text-only serving; one 32,768-token agent slot.";
-        # The Q5 weights are 18.83 GiB. At the real 2.6 GiB desktop load, the
-        # 3 GiB KV allocation for 49,152 tokens OOMed; 32,768 tokens reserve 2 GiB.
+        # At the measured 2.6 GiB desktop load, 49,152 tokens OOMed allocating a
+        # 3 GiB KV cache. The validated 32,768-token cap reserves 2 GiB.
         contextSize = 32768;
         parallelSlots = 1;
         gpuLayers = 999;
