@@ -19,7 +19,7 @@ let
     disableStrictTools = true;
     models = {
       "dirk-qwen3.8-27b-local" = {
-        name = "Dirk Qwen3.8 27B UD-Q5_K_XL (Dracula local)";
+        name = "Dirk Qwen3.8 27B UD-Q4_K_XL (Dracula local)";
         context = 32768;
         output = 8192;
         reasoning = false;
