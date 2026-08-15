@@ -210,6 +210,9 @@ it to the generic container pull timer. The NixOS `mailcow-tls` unit deliberatel
 role: after host ACME renewal it replaces only Mailcow's `cert.pem`/`key.pem` and restarts
 Postfix, Dovecot, and Mailcow nginx. It does not run application upgrades.
 
+The Alucard profile installs `jq`, which the current official `update.sh` requires before it
+will begin a migration.
+
 Perform the following on Alucard in a scheduled maintenance window; do not run
 `update.sh --force`, `--ours`, or `--nightly` for this production installation.
 
