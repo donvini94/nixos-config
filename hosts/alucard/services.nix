@@ -150,11 +150,12 @@ in
         "stream.${domain}" = {
           enableACME = true;
           forceSSL = true;
-          # The connector evaluates a global/server WAF before an exact location
+          # The connector evaluates a global/server WAF before a nested location
           # can disable it. Disable it at this vhost, then re-enable it for the
-          # catch-all route so only this authenticated heartbeat is exempt.
+          # catch-all route so only the authenticated playback endpoint family
+          # is exempt.
           extraConfig = "modsecurity off;";
-          locations."= /Sessions/Playing" = {
+          locations."^~ /Sessions/Playing" = {
             proxyPass = "http://localhost:8096";
             extraConfig = "modsecurity off;";
           };
