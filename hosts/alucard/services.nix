@@ -235,11 +235,6 @@ in
           forceSSL = true;
           locations."/".proxyPass = "http://127.0.0.1:880";
         };
-        "coder.${domain2}" = {
-          enableACME = true;
-          forceSSL = true;
-          locations."/".return = "404";
-        };
         "comics.${domain2}" = {
           enableACME = true;
           forceSSL = true;
