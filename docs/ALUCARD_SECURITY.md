@@ -176,8 +176,25 @@ their own explicit firewall justification and protocol-specific protection.
 | P2 | Define Keycloak/2FA policy for every public application | Pending identity review |
 | P2 | Harden native services and containers | Keycloak loopback bind and systemd sandbox prepared; remaining application policy review pending |
 | P2 | Add vulnerability scanning and security alerts | 41-image post-Mailcow scan and Prometheus/Grafana export verified; cAdvisor upgraded; fixed findings and upstream-owned residuals are triaged below |
-| P2 | Implement and test application-aware backups/restores | Paperless backup now requires its CIFS mount; privileged live backup and restore test remain pending. Media and Mailcow application backups remain pending. |
+| P2 | Implement and test application-aware backups/restores | Paperless CIFS/Restic backup and clean decrypt-and-restore verification passed on 2026-08-16. Media and Mailcow application backups remain pending. |
 | P3 | Add GeoIP restrictions to selected web services | Pending explicit country policy; never global mail blocking |
+
+### Paperless off-site recovery verification
+
+`paperless-offsite-backup.service` creates the repository parent only after the
+Hetzner CIFS automount is active, then snapshots Paperless' exporter output and
+its Django signing key. `paperless-offsite-restore-verify.service` restores the
+latest snapshot into a temporary directory beneath `/var/lib/paperless`, verifies
+both paths, and removes that directory without touching live Paperless data or the
+repository. Run it on demand after changing the backup configuration:
+
+```bash
+sudo env TERM=dumb SYSTEMD_PAGER=cat \
+  systemctl start paperless-offsite-restore-verify.service
+sudo env TERM=dumb SYSTEMD_PAGER=cat \
+  systemctl show paperless-offsite-restore-verify.service \
+  -p Result -p ExecMainStatus --no-pager
+```
 
 Signal's loopback HTTP bridge is intentionally not included in Tailscale Serve. Its Unix socket
 is group-scoped, and its linked-device state is mode 0700. Sender allowlists remain mandatory:
