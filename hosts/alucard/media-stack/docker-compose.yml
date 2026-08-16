@@ -17,7 +17,15 @@ services:
       - WIREGUARD_PRIVATE_KEY=${MULLVAD_PRIVATE_KEY}
       - WIREGUARD_ADDRESSES=${MULLVAD_ADDRESSES}
       - WIREGUARD_ENDPOINT_PORT=51820
-      - WIREGUARD_PUBLIC_KEY=/iivwlyqWqxQ0BVWmJRhcXIFdJeo0WbHQ/hZwuXaN3g=
+      # No WIREGUARD_PUBLIC_KEY here on purpose. That option pins ONE server's
+      # key, but gluetun rotates endpoints within SERVER_COUNTRIES, so a pin
+      # makes every other server fail — and silently, because WireGuard does
+      # not answer a handshake encrypted to the wrong peer key: you see tun0
+      # transmitting with zero bytes received. Mullvad rotates server keys, so
+      # a pin also rots on its own. For a supported provider gluetun takes the
+      # correct per-server key from its own server list; only VPN_SERVICE_
+      # PROVIDER=custom needs the key spelled out.
+      - UPDATER_PERIOD=24h
 
       # DNS and firewall
       - SERVER_COUNTRIES=Switzerland,Netherlands  # Closest to your location
