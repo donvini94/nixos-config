@@ -176,7 +176,7 @@ their own explicit firewall justification and protocol-specific protection.
 | P2 | Define Keycloak/2FA policy for every public application | Pending identity review |
 | P2 | Harden native services and containers | Keycloak loopback bind and systemd sandbox prepared; remaining application policy review pending |
 | P2 | Add vulnerability scanning and security alerts | 41-image post-Mailcow scan and Prometheus/Grafana export verified; cAdvisor upgraded; fixed findings and upstream-owned residuals are triaged below |
-| P2 | Implement and test application-aware backups/restores | Pending; required before customer use |
+| P2 | Implement and test application-aware backups/restores | Paperless backup now requires its CIFS mount; privileged live backup and restore test remain pending. Media and Mailcow application backups remain pending. |
 | P3 | Add GeoIP restrictions to selected web services | Pending explicit country policy; never global mail blocking |
 
 Signal's loopback HTTP bridge is intentionally not included in Tailscale Serve. Its Unix socket
@@ -218,6 +218,20 @@ root-only reports and each image is exported as a Prometheus time series.
 | Komga 1.26.3 | Critical: `CVE-2023-24538`, `CVE-2023-24540`, `CVE-2024-24790`, `CVE-2025-68121` (`stdlib` v1.17.8) | Public comics UI through nginx; application authentication and TLS remain required. Docker Hub `latest` resolves to the same official 1.26.3 digest, so retagging cannot remediate it. | Next Komga release or 2026-08-23 |
 | Private services | Kapowarr: `CVE-2026-33845`, `CVE-2026-42010`, `CVE-2026-31789`, `CVE-2025-68121`; Hermes: `CVE-2026-59873`; internal Redis/Postgres/MariaDB/Ofelia findings are recorded per package in the scan reports | These services are limited to loopback or private Docker networks; Hermes and AI interfaces are not public. Keep Docker-published ports closed and retain their existing service authentication. | Upstream release or 2026-08-30 |
 | Host packages | The 2026-08-05 Nixpkgs lock is retained. A 2026-08-13 update builds Alucard but fails Dracula because upstream `ananicy-cpp` 1.2.0 does not build with the newer C++ toolchain. No local package patch is permitted. | `ananicy-cpp` is an existing desktop process-priority daemon, not a security control. The operator chose to retain it rather than change desktop scheduling behavior. | A Nixpkgs update that builds out of the box, or 2026-08-30 |
+
+### Runtime privilege review
+
+All 41 rootful containers were reviewed on 2026-08-16. cAdvisor is privileged because the
+upstream collector requires host namespaces and `/dev/kmsg`; it remains loopback-only. Mailcow's
+official `netfilter` container is privileged, and its `ofelia` scheduler and `dockerapi` have the
+Docker socket; those are root-equivalent boundaries confined to the supported Mailcow stack.
+Gluetun has only `CAP_NET_ADMIN`, required for its VPN kill switch. No other resident container
+has extra capabilities or the Docker socket.
+
+Every reviewed rootful container currently has a writable root filesystem. This is not silently
+"hardened" with a blanket `read_only` flag: it would break stateful upstream images and obscure
+their required writable paths. New or upgraded compose services must instead document and test a
+per-container read-only-root plan before it is enabled.
 
 The WAF uses the current OWASP CRS v4 LTS rather than Nixpkgs' older CRS 3.3.4,
 which predates July 2026 security fixes. Response-body inspection is disabled to
