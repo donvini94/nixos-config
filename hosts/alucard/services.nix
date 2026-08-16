@@ -153,9 +153,28 @@ in
         "auth.${domain}" = {
           enableACME = true;
           forceSSL = true;
+          # CRS blocks the admin REST API's writes: a `PUT
+          # /admin/realms/{realm}/clients/{id}` carrying a full client
+          # representation returned nginx's own HTML 403, which is why the
+          # admin console reported "Client could not be updated:" with no
+          # message — it had no JSON error to render. Verified on 2026-08-16
+          # against the Onyx client; the same call to 127.0.0.1:38080 answered
+          # 204. Exempt only that API, which already demands a bearer token
+          # with realm-management rights, and keep the WAF on the login,
+          # token, and account endpoints that face the internet unauthenticated.
+          # As on the Jellyfin vhost, the connector evaluates the server-level
+          # WAF before a nested location can turn it off, so it is disabled
+          # here and re-enabled on the catch-all route.
+          extraConfig = "modsecurity off;";
+          locations."^~ /admin/realms/" = {
+            proxyPass = "http://127.0.0.1:38080";
+            proxyWebsockets = true;
+            extraConfig = "modsecurity off;";
+          };
           locations."/" = {
             proxyPass = "http://127.0.0.1:38080/";
             proxyWebsockets = true;
+            extraConfig = "modsecurity on;";
           };
         };
         "git.${domain}" = {
