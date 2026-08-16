@@ -87,6 +87,33 @@ let
         --keep-monthly ${toString cfg.offsite.keepMonthly}
     '';
   };
+
+  # An on-demand decrypt-and-restore verification. It proves the retained
+  # snapshot contains both the exporter output and the Django signing key
+  # without touching the live Paperless data directory.
+  offsiteRestoreVerifyScript = pkgs.writeShellApplication {
+    name = "paperless-offsite-restore-verify";
+    runtimeInputs = [
+      pkgs.restic
+      pkgs.coreutils
+    ];
+    text = ''
+      set -euo pipefail
+      RESTIC_PASSWORD_FILE="$CREDENTIALS_DIRECTORY/restic-password"
+      export RESTIC_PASSWORD_FILE
+      export RESTIC_REPOSITORY=${lib.escapeShellArg cfg.offsite.repository}
+
+      target=$(mktemp -d --tmpdir=${lib.escapeShellArg paperless.dataDir} .restic-restore-verify.XXXXXXXX)
+      cleanup() {
+        rm -rf "$target"
+      }
+      trap cleanup EXIT
+
+      restic restore latest --target "$target"
+      test -d "$target${paperless.exporter.directory}"
+      test -f "$target${paperless.dataDir}/nixos-paperless-secret-key.env"
+    '';
+  };
 in
 {
   options.services.paperlessStack = {
@@ -338,6 +365,22 @@ in
         ];
         ExecStart = lib.getExe offsiteScript;
         # The CIFS mount is an automount; give it room to come up.
+        TimeoutStartSec = "2h";
+      };
+    };
+
+    systemd.services.paperless-offsite-restore-verify = lib.mkIf cfg.offsite.enable {
+      description = "Verify a Paperless off-site backup can be restored";
+      after = [ "paperless-offsite-backup.service" ];
+      conflicts = [ "paperless-offsite-backup.service" ];
+      unitConfig.RequiresMountsFor = "/mnt/hetzner";
+      serviceConfig = {
+        Type = "oneshot";
+        User = "root";
+        LoadCredential = [
+          "restic-password:${config.sops.secrets.${cfg.offsite.passwordSecret}.path}"
+        ];
+        ExecStart = lib.getExe offsiteRestoreVerifyScript;
         TimeoutStartSec = "2h";
       };
     };
