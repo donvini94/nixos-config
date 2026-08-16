@@ -47,18 +47,21 @@ let
       export RESTIC_PASSWORD_FILE
       export RESTIC_REPOSITORY="$repo"
 
-      # Preflight. The Hetzner box is a CIFS mount with uid/gid remapping, and
-      # an unwritable destination otherwise fails deep inside restic with a
-      # much less obvious error.
-      parent=$(dirname "$repo")
-      if [ ! -d "$parent" ]; then
-        echo "offsite parent directory $parent does not exist (is the CIFS mount up?)" >&2
-        exit 1
-      fi
-      if [ ! -w "$parent" ]; then
-        echo "offsite parent directory $parent is not writable by $(id -un)" >&2
-        exit 1
-      fi
+      # Local repositories need their parent created only after the automount
+      # is active. Remote restic URLs have no local directory to prepare.
+      case "$repo" in
+        /*)
+          parent=$(dirname "$repo")
+          if ! mkdir -p "$parent"; then
+            echo "could not create offsite parent directory $parent" >&2
+            exit 1
+          fi
+          if [ ! -w "$parent" ]; then
+            echo "offsite parent directory $parent is not writable by $(id -un)" >&2
+            exit 1
+          fi
+          ;;
+      esac
 
       if ! restic cat config >/dev/null 2>&1; then
         echo "initialising restic repository at $repo"
@@ -82,6 +85,33 @@ let
         --keep-daily ${toString cfg.offsite.keepDaily} \
         --keep-weekly ${toString cfg.offsite.keepWeekly} \
         --keep-monthly ${toString cfg.offsite.keepMonthly}
+    '';
+  };
+
+  # An on-demand decrypt-and-restore verification. It proves the retained
+  # snapshot contains both the exporter output and the Django signing key
+  # without touching the live Paperless data directory.
+  offsiteRestoreVerifyScript = pkgs.writeShellApplication {
+    name = "paperless-offsite-restore-verify";
+    runtimeInputs = [
+      pkgs.restic
+      pkgs.coreutils
+    ];
+    text = ''
+      set -euo pipefail
+      RESTIC_PASSWORD_FILE="$CREDENTIALS_DIRECTORY/restic-password"
+      export RESTIC_PASSWORD_FILE
+      export RESTIC_REPOSITORY=${lib.escapeShellArg cfg.offsite.repository}
+
+      target=$(mktemp -d --tmpdir=${lib.escapeShellArg paperless.dataDir} .restic-restore-verify.XXXXXXXX)
+      cleanup() {
+        rm -rf "$target"
+      }
+      trap cleanup EXIT
+
+      restic restore latest --target "$target"
+      test -d "$target${paperless.exporter.directory}"
+      test -f "$target${paperless.dataDir}/nixos-paperless-secret-key.env"
     '';
   };
 in
@@ -326,6 +356,7 @@ in
     systemd.services.paperless-offsite-backup = lib.mkIf cfg.offsite.enable {
       description = "Push the Paperless export off-site with restic";
       after = [ "paperless-exporter.service" ];
+      unitConfig.RequiresMountsFor = "/mnt/hetzner";
       serviceConfig = {
         Type = "oneshot";
         User = "root";
@@ -334,6 +365,22 @@ in
         ];
         ExecStart = lib.getExe offsiteScript;
         # The CIFS mount is an automount; give it room to come up.
+        TimeoutStartSec = "2h";
+      };
+    };
+
+    systemd.services.paperless-offsite-restore-verify = lib.mkIf cfg.offsite.enable {
+      description = "Verify a Paperless off-site backup can be restored";
+      after = [ "paperless-offsite-backup.service" ];
+      conflicts = [ "paperless-offsite-backup.service" ];
+      unitConfig.RequiresMountsFor = "/mnt/hetzner";
+      serviceConfig = {
+        Type = "oneshot";
+        User = "root";
+        LoadCredential = [
+          "restic-password:${config.sops.secrets.${cfg.offsite.passwordSecret}.path}"
+        ];
+        ExecStart = lib.getExe offsiteRestoreVerifyScript;
         TimeoutStartSec = "2h";
       };
     };

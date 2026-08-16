@@ -20,6 +20,32 @@ let
       '';
     }
   );
+  jellyfinNetworkPolicy = pkgs.writeShellApplication {
+    name = "jellyfin-network-policy";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.xmlstarlet
+    ];
+    text = ''
+      set -euo pipefail
+
+      config_file=/home/jellyfin/config/network.xml
+      test -f "$config_file"
+
+      current_addresses="$(xml sel -t -v 'count(/NetworkConfiguration/LocalNetworkAddresses/string[text() = "127.0.0.1"])' "$config_file")"
+      current_ipv6="$(xml sel -t -v '/NetworkConfiguration/EnableIPv6' "$config_file")"
+      if [ "$current_addresses" = 1 ] && [ "$current_ipv6" = false ]; then
+        exit 0
+      fi
+
+      xml ed -P -L \
+        -d '/NetworkConfiguration/LocalNetworkAddresses/*' \
+        -s '/NetworkConfiguration/LocalNetworkAddresses' -t elem -n string -v 127.0.0.1 \
+        -u '/NetworkConfiguration/EnableIPv6' -v false \
+        "$config_file"
+      chown jellyfin:jellyfin "$config_file"
+    '';
+  };
 in
 {
   assertions = [
@@ -258,6 +284,20 @@ in
         };
       };
     };
+  };
+
+  systemd.services.jellyfin-network-policy = {
+    description = "Bind Jellyfin to IPv4 loopback behind nginx";
+    before = [ "jellyfin.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = lib.getExe jellyfinNetworkPolicy;
+    };
+  };
+
+  systemd.services.jellyfin = {
+    requires = [ "jellyfin-network-policy.service" ];
+    after = [ "jellyfin-network-policy.service" ];
   };
 
   # Keycloak realm export (manual activation only)

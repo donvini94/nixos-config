@@ -5,40 +5,61 @@
   ...
 }:
 
-# Give mailcow's Dovecot/Postfix the host's Let's Encrypt certificate.
-#
-# WHY THIS EXISTS: mailcow ships its own ACME client, but it can only complete
-# an HTTP-01 challenge if it owns port 80. On this host nginx owns 80/443 and
-# reverse-proxies mailcow, so mailcow's ACME never succeeds and Dovecot keeps
-# serving the self-signed certificate it generated at install time. IMAP
-# clients that verify certificates — including Paperless' mail fetcher — then
-# fail with CERTIFICATE_VERIFY_FAILED, while the same hostname over HTTPS
-# serves a perfectly valid certificate from nginx.
-#
-# The fix is to stop mailcow issuing certificates and hand it the one nginx
-# already has.
-#
-# BOUNDARY NOTE: mailcow lives in /opt/mailcow-dockerized and is deliberately
-# NOT Nix-managed (see docs/ALUCARD_SECURITY.md). This module reaches across
-# that boundary to write two files and restart three containers. It is the
-# narrowest crossing that solves the problem; everything else about mailcow
-# stays outside Nix.
-
 let
   cfg = config.services.mailcowTls;
   sslDir = "${cfg.mailcowDir}/data/assets/ssl";
   acmeDir = "/var/lib/acme/${cfg.domain}";
+  configureBindings = pkgs.writeShellApplication {
+    name = "mailcow-network-policy";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.docker
+      pkgs.gnugrep
+      pkgs.gnused
+    ];
+    text = ''
+      set -euo pipefail
 
+      conf=${lib.escapeShellArg "${cfg.mailcowDir}/mailcow.conf"}
+      changed=0
+
+      ensure_setting() {
+        key=$1
+        value=$2
+
+        if grep -Fxq "$key=$value" "$conf"; then
+          return
+        fi
+        if grep -q "^$key=" "$conf"; then
+          sed -i "\\|^$key=|c\\$key=$value" "$conf"
+        else
+          printf '\n%s=%s\n' "$key" "$value" >> "$conf"
+        fi
+        changed=1
+      }
+
+      test -f "$conf"
+      ensure_setting HTTP_BIND 127.0.0.1
+      ensure_setting HTTPS_BIND 127.0.0.1
+      ensure_setting SKIP_LETS_ENCRYPT y
+
+      if [ "$changed" -eq 1 ]; then
+        echo "applying Mailcow reverse-proxy network policy"
+        cd ${lib.escapeShellArg cfg.mailcowDir}
+        docker compose up -d
+      fi
+    '';
+  };
   deploy = pkgs.writeShellApplication {
     name = "mailcow-tls-deploy";
     runtimeInputs = [
       pkgs.coreutils
       pkgs.docker
-      pkgs.gnugrep
     ];
     text = ''
-      acme=${lib.escapeShellArg acmeDir}
+      set -euo pipefail
       ssl=${lib.escapeShellArg sslDir}
+      acme=${lib.escapeShellArg acmeDir}
       conf=${lib.escapeShellArg "${cfg.mailcowDir}/mailcow.conf"}
 
       if [ ! -d "$ssl" ]; then
@@ -46,11 +67,11 @@ let
         exit 1
       fi
       if [ ! -r "$acme/fullchain.pem" ]; then
-        echo "no ACME certificate at $acme — has nginx obtained one yet?" >&2
+        echo "ACME certificate $acme/fullchain.pem is unavailable" >&2
         exit 1
       fi
 
-      # mailcow's own ACME client would overwrite these files on its next run.
+      # Mailcow's own ACME client would overwrite these files on its next run.
       # It cannot succeed here anyway (nginx owns :80), so it must be off.
       if ! grep -qE '^SKIP_LETS_ENCRYPT=y' "$conf" 2>/dev/null; then
         echo "WARNING: SKIP_LETS_ENCRYPT is not set to 'y' in $conf." >&2
@@ -103,14 +124,31 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    systemd.services.mailcow-network-policy = {
+      description = "Keep Mailcow web listeners behind host nginx";
+      wantedBy = [ "multi-user.target" ];
+      before = [ "mailcow-tls.service" ];
+      after = [ "docker.service" ];
+      requires = [ "docker.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        ExecStart = lib.getExe configureBindings;
+      };
+    };
+
     systemd.services.mailcow-tls = {
       description = "Deploy the host ACME certificate into mailcow";
       wantedBy = [ "multi-user.target" ];
       after = [
         "docker.service"
+        "mailcow-network-policy.service"
         "acme-${cfg.domain}.service"
       ];
-      requires = [ "docker.service" ];
+      requires = [
+        "docker.service"
+        "mailcow-network-policy.service"
+      ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
@@ -123,6 +161,9 @@ in
       systemctl --no-block restart mailcow-tls.service
     '';
 
-    environment.systemPackages = [ deploy ];
+    environment.systemPackages = [
+      configureBindings
+      deploy
+    ];
   };
 }
