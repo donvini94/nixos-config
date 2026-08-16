@@ -326,6 +326,7 @@ in
     systemd.services.paperless-offsite-backup = lib.mkIf cfg.offsite.enable {
       description = "Push the Paperless export off-site with restic";
       after = [ "paperless-exporter.service" ];
+      unitConfig.RequiresMountsFor = "/mnt/hetzner";
       serviceConfig = {
         Type = "oneshot";
         User = "root";
