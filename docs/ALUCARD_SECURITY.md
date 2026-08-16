@@ -150,6 +150,30 @@ sudo iptables -C DOCKER-USER -j CROWDSEC_CHAIN
 sudo ipset test crowdsec-blacklists-0 ADDRESS
 ```
 
+### Reaching the admin interfaces while a client IP is banned
+
+A firewall-bouncer decision drops the source address for every protocol, so the browser used to
+lift the ban loses the admin UIs at the same moment ICMP stops answering. SSH is unaffected when
+it runs over the tailnet, because `alucard/private-network-whitelist` exempts `100.64.0.0/10`, so
+the recovery path is a SOCKS proxy through that session rather than a DNS override:
+
+```console
+ssh -D 1080 -N alucard
+```
+
+Point the browser at SOCKS5 `127.0.0.1:1080` with remote DNS enabled. Requests then originate
+from Alucard itself, the `Host` header and public certificate stay intact, and Keycloak's
+`hostname-strict` check still passes. Pinning the public hostnames to a tailnet address in
+`networking.hosts` also works but hardcodes an address that is only stable while the node keeps
+its Tailscale identity, and it silently hides real public-edge outages, so prefer the proxy.
+
+Whitelisting the residential address is the wrong reflex: it is a Vodafone dynamic address that
+moves, and the recurring triggers so far have been the operator's own applications rather than
+the network they came from. Both known cases are whitelisted by request pattern in
+`hosts/alucard/security.nix` instead: Next.js `?_rsc=` prefetch bursts from the Onyx admin UI
+(`crowdsecurity/http-crawl-non_statics`) and Jellyfin client session 403s from Swiftfin
+(`LePresidente/http-generic-403-bf`).
+
 ## Public-service inventory
 
 nginx currently defines public HTTPS virtual hosts for Keycloak, GitLab, Docker Registry,

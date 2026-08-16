@@ -149,6 +149,46 @@ in
             ];
           };
         }
+        # Verified false positive, alert 1625 on 2026-08-16: the Onyx admin UI
+        # is a Next.js app whose router prefetches every route the pointer
+        # touches, so opening the admin panel emitted 55 distinct `?_rsc=`
+        # GETs in 9 seconds and tripped crowdsecurity/http-crawl-non_statics
+        # (capacity 40, distinct on file_name). Statuses are constrained so a
+        # scanner cannot append `?_rsc=` to hide 404/403 probing.
+        #
+        # The query string is matched through both field names on purpose. The
+        # NixOS module links local parsers as
+        # `s02-enrich/<store-hash>-parsers-s02-enrich.yaml`, and CrowdSec
+        # orders a stage by file name, so whether this node runs before or
+        # after `crowdsecurity/http-logs` changes with every store hash. Before
+        # that node `evt.Parsed.request` still carries `?args`; after it the
+        # query lives in `evt.Parsed.http_args`. `evt.Meta.http_status` comes
+        # from s01 and is stable either way.
+        {
+          name = "alucard/nextjs-rsc-prefetch-whitelist";
+          description = "Next.js router prefetch is not an aggressive crawl";
+          whitelist = {
+            reason = "Next.js RSC prefetch (?_rsc=) from the Onyx admin UI";
+            expression = [
+              "(evt.Parsed.request contains '_rsc=' || evt.Parsed.http_args contains '_rsc=') && evt.Meta.http_status in ['200', '204', '304']"
+            ];
+          };
+        }
+        # Verified false positive, alert 1339 on 2026-08-15: Swiftfin on iOS
+        # POSTs session progress to /Sessions/Playing and gets 403 once the
+        # Jellyfin session is stale, ten times in 46 seconds, which reads as
+        # credential stuffing to LePresidente/http-generic-403-bf. Scoped to
+        # the session-reporting endpoints so 403s anywhere else still count.
+        {
+          name = "alucard/jellyfin-session-403-whitelist";
+          description = "Stale Jellyfin client sessions are not a 403 brute force";
+          whitelist = {
+            reason = "Jellyfin client session reporting returns 403 when the session expired";
+            expression = [
+              "evt.Meta.http_verb == 'POST' && evt.Meta.http_status == '403' && evt.Parsed.request startsWith '/Sessions/'"
+            ];
+          };
+        }
       ];
     };
   };
@@ -173,6 +213,18 @@ in
     StateDirectory = "crowdsec";
     StateDirectoryMode = "0750";
   };
+
+  # The module publishes localConfig parsers, whitelists, and scenarios into
+  # /etc/crowdsec through systemd-tmpfiles links rather than the unit
+  # definition, so switch-to-configuration sees no reason to restart the
+  # engine: a whitelist added here lands on disk but stays unloaded until the
+  # next reboot. Verified on 2026-08-16, when two new whitelists were absent
+  # from `cs_node_hits_total` after two successive switches while the engine
+  # still reported the uptime it had since boot. Tie the unit to the local
+  # ruleset so changing it reloads the engine that enforces it.
+  systemd.services.crowdsec.restartTriggers = [
+    (builtins.toJSON config.services.crowdsec.localConfig)
+  ];
   systemd.services.crowdsec-update-hub.serviceConfig = {
     StateDirectory = "crowdsec";
     StateDirectoryMode = "0750";
