@@ -8,10 +8,6 @@
 let
   cfg = config.services.localLlama;
   stateDirectoryName = lib.removePrefix "/var/lib/" cfg.stateDirectory;
-  proxy = pkgs.writeText "llama-logging-proxy.py" (builtins.readFile ./llama-logging-proxy.py);
-  usageSummary = pkgs.writeText "llama-usage-summary.py" (builtins.readFile ./llama-usage-summary.py);
-  evalRunner = pkgs.writeText "ai-eval.py" (builtins.readFile ../eval/ai_eval.py);
-  evalHarvester = pkgs.writeText "ai-eval-harvest.py" (builtins.readFile ../eval/harvest.py);
   yaml = pkgs.formats.yaml { };
 
   modelType = lib.types.submodule (
@@ -51,6 +47,29 @@ let
           type = lib.types.ints.positive;
           default = 65536;
           description = "Total llama-server context across every parallel slot.";
+        };
+        output = lib.mkOption {
+          type = lib.types.ints.positive;
+          default = 8192;
+          description = "Maximum response tokens advertised to client configuration.";
+        };
+        reasoning = lib.mkOption {
+          type = lib.types.bool;
+          default = false;
+          description = "Whether clients should treat ${name} as a reasoning model.";
+        };
+        cost = lib.mkOption {
+          type = lib.types.submodule {
+            options = {
+              input = lib.mkOption { type = lib.types.number; };
+              output = lib.mkOption { type = lib.types.number; };
+            };
+          };
+          default = {
+            input = 0;
+            output = 0;
+          };
+          description = "USD per million input and output tokens; 0 for locally served models.";
         };
         parallelSlots = lib.mkOption {
           type = lib.types.ints.positive;
@@ -163,12 +182,6 @@ let
     }) cfg.models;
   };
 
-  prepareLogs = pkgs.writeShellScript "prepare-local-llama-logs" ''
-    ${pkgs.coreutils}/bin/install -d -m 0750 ${lib.escapeShellArg (builtins.dirOf cfg.requestLog)}
-    ${pkgs.coreutils}/bin/touch ${lib.escapeShellArg cfg.requestLog}
-    ${pkgs.coreutils}/bin/chmod 0640 ${lib.escapeShellArg cfg.requestLog}
-  '';
-
   modelNames = builtins.attrNames cfg.models;
   allModelIds = modelNames ++ lib.concatMap (name: cfg.models.${name}.aliases) modelNames;
   modelFiles = map (name: cfg.models.${name}.file) modelNames;
@@ -230,16 +243,6 @@ in
       type = lib.types.str;
       default = "/var/lib/llama/logs/requests.jsonl";
     };
-    bearerCredentialFile = lib.mkOption {
-      type = lib.types.nullOr lib.types.path;
-      default = null;
-      description = "Optional bearer token used only to attribute clients that cannot set X-AI-Caller.";
-    };
-    bearerCredentialCaller = lib.mkOption {
-      type = lib.types.str;
-      default = "wirken";
-      description = "Caller recorded when bearerCredentialFile matches.";
-    };
     logRetention = lib.mkOption {
       type = lib.types.ints.positive;
       default = 14;
@@ -279,25 +282,6 @@ in
       }
     ];
 
-    systemd.targets.ai-stack = {
-      description = "Local AI stack";
-      wantedBy = [ "multi-user.target" ];
-    };
-
-    users = {
-      groups.llama = { };
-      users = {
-        llama = {
-          isSystemUser = true;
-          group = "llama";
-          home = cfg.stateDirectory;
-        };
-      }
-      // lib.genAttrs cfg.operators (_: {
-        extraGroups = [ "llama" ];
-      });
-    };
-
     systemd.services.local-llama-swap = {
       description = "llama-swap local model router";
       wantedBy = [ "ai-stack.target" ];
@@ -326,36 +310,6 @@ in
       };
     };
 
-    systemd.services.local-llama-logger = {
-      description = "Payload-logging proxy for local llama.cpp";
-      wantedBy = [ "ai-stack.target" ];
-      partOf = [ "ai-stack.target" ];
-      environment = {
-        LLAMA_BACKEND = "http://${cfg.bindAddress}:${toString cfg.backendPort}";
-        LLAMA_PROXY_HOST = cfg.bindAddress;
-        LLAMA_PROXY_PORT = toString cfg.port;
-        LLAMA_REQUEST_LOG = cfg.requestLog;
-      }
-      // lib.optionalAttrs (cfg.bearerCredentialFile != null) {
-        LLAMA_BEARER_TOKEN_CREDENTIAL = "caller-bearer-token";
-        LLAMA_BEARER_CALLER = cfg.bearerCredentialCaller;
-      };
-      serviceConfig = {
-        User = "llama";
-        Group = "llama";
-        StateDirectory = stateDirectoryName;
-        StateDirectoryMode = "0750";
-        ExecStartPre = prepareLogs;
-        ExecStart = "${pkgs.python3}/bin/python3 ${proxy}";
-        Restart = "on-failure";
-        RestartSec = "2s";
-        UMask = "0027";
-      }
-      // lib.optionalAttrs (cfg.bearerCredentialFile != null) {
-        LoadCredential = "caller-bearer-token:${cfg.bearerCredentialFile}";
-      };
-    };
-
     systemd.services.ai-stack-resume = {
       description = "Recover the local AI stack after suspend";
       wantedBy = [ "suspend.target" ];
@@ -368,83 +322,25 @@ in
 
     services.logind.settings.Login.IdleAction = "ignore";
 
-    security.polkit.extraConfig = ''
-      polkit.addRule(function(action, subject) {
-        const units = ["ai-stack.target", "local-llama-swap.service", "local-llama-logger.service"];
-        const verbs = ["start", "stop", "restart", "kill"];
-        if (action.id === "org.freedesktop.systemd1.manage-units"
-            && subject.isInGroup("llama")
-            && units.indexOf(action.lookup("unit")) !== -1
-            && verbs.indexOf(action.lookup("verb")) !== -1) {
-          return polkit.Result.YES;
-        }
-      });
-    '';
-
-    services.logrotate.settings.${cfg.requestLog} = {
-      daily = true;
-      size = "1G";
-      rotate = cfg.logRetention;
-      compress = true;
-      missingok = true;
-      notifempty = true;
-      copytruncate = true;
+    # The ingress, its logging, metrics, and operator tooling are shared with
+    # the Requesty backend; this module only supplies the local one.
+    services.aiIngress = {
+      enable = true;
+      backendUrl = "http://${cfg.bindAddress}:${toString cfg.backendPort}";
+      bindAddress = cfg.bindAddress;
+      port = cfg.port;
+      inherit (cfg) stateDirectory requestLog logRetention operators;
+      environmentLabel = config.networking.hostName;
+      priceMap = lib.mapAttrs (_: model: model.cost) cfg.models;
+      lifecycleUnits = [
+        "ai-stack.target"
+        "local-llama-swap.service"
+        "local-llama-logger.service"
+      ];
+      # Model downloads and the llama-swap handoff need paths the confined
+      # filesystem view would hide.
+      hardened = false;
+      extraAfter = [ "local-llama-swap.service" ];
     };
-
-    environment.systemPackages = [
-      (pkgs.writeShellScriptBin "ai-stack-start" ''
-        set -euo pipefail
-        ${pkgs.systemd}/bin/systemctl start ai-stack.target
-        read -r -a stack_units <<< "$(${pkgs.systemd}/bin/systemctl show --property=Wants --value ai-stack.target)"
-        for _ in $(${pkgs.coreutils}/bin/seq 1 200); do
-          if ${pkgs.systemd}/bin/systemctl is-active --quiet ai-stack.target "''${stack_units[@]}" \
-            && ${pkgs.curl}/bin/curl --fail --silent --max-time 1 http://${cfg.bindAddress}:${toString cfg.port}/health >/dev/null; then
-            exit 0
-          fi
-          ${pkgs.coreutils}/bin/sleep 1
-        done
-        echo "AI stack did not become healthy within 200 seconds" >&2
-        exit 1
-      '')
-      (pkgs.writeShellScriptBin "ai-stack-stop" ''
-        set -euo pipefail
-        read -r -a stack_units <<< "$(${pkgs.systemd}/bin/systemctl show --property=Wants --value ai-stack.target)"
-        ${pkgs.systemd}/bin/systemctl stop ai-stack.target
-        for _ in $(${pkgs.coreutils}/bin/seq 1 150); do
-          all_stopped=true
-          for unit in "''${stack_units[@]}"; do
-            state="$(${pkgs.systemd}/bin/systemctl is-active "$unit" || true)"
-            if [ "$state" != inactive ] && [ "$state" != failed ]; then
-              all_stopped=false
-              break
-            fi
-          done
-          if [ "$all_stopped" = true ]; then
-            exit 0
-          fi
-          ${pkgs.coreutils}/bin/sleep 0.2
-        done
-        echo "AI services did not stop within 30 seconds" >&2
-        exit 1
-      '')
-      (pkgs.writeShellScriptBin "ai-stack-health" ''
-        set -euo pipefail
-        read -r -a stack_units <<< "$(${pkgs.systemd}/bin/systemctl show --property=Wants --value ai-stack.target)"
-        ${pkgs.systemd}/bin/systemctl is-active --quiet ai-stack.target "''${stack_units[@]}"
-        exec ${pkgs.curl}/bin/curl --fail --silent --show-error http://${cfg.bindAddress}:${toString cfg.port}/health
-      '')
-      (pkgs.writeShellScriptBin "ai-usage-summary" ''
-        export LLAMA_REQUEST_LOG=${lib.escapeShellArg cfg.requestLog}
-        exec ${pkgs.python3}/bin/python3 ${usageSummary} "$@"
-      '')
-      (pkgs.writeShellScriptBin "ai-eval" ''
-        export PATH=${lib.makeBinPath [ pkgs.git pkgs.coreutils pkgs.bash ]}:"$PATH"
-        exec ${pkgs.python3}/bin/python3 ${evalRunner} "$@"
-      '')
-      (pkgs.writeShellScriptBin "ai-eval-harvest" ''
-        export PATH=${lib.makeBinPath [ pkgs.git ]}:"$PATH"
-        exec ${pkgs.python3}/bin/python3 ${evalHarvester} "$@"
-      '')
-    ];
   };
 }

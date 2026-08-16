@@ -27,10 +27,11 @@
     {
       "customType": "regex",
       "managerFilePatterns": [
-        "/^modules/(hermes|n8n|vulnerability-scan|wirken)\\.nix$/"
+        "/^modules/(n8n|vulnerability-scan)\\.nix$/",
+        "/^lib/hermes-agent\\.nix$/"
       ],
       "matchStrings": [
-        "(?:default|trivyImage)\\s*=\\s*\\\"(?<depName>(?:[\\w.-]+/)+[\\w.-]+):(?<currentValue>[\\w.-]+)(?:@(?<currentDigest>sha256:[a-f0-9]{64}))?\\\""
+        "(?:default|image|trivyImage)\\s*=\\s*\\\"(?<depName>(?:[\\w.-]+/)*[\\w.-]+):(?<currentValue>[\\w.-]+)(?:@(?<currentDigest>sha256:[a-f0-9]{64}))?\\\""
       ],
       "datasourceTemplate": "docker"
     },

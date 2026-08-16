@@ -31,8 +31,8 @@ Tailscale Funnel is prohibited. It would turn a private tailnet service into a p
   `/run/secrets`.
 - Grafana, Prometheus, node-exporter, and cAdvisor provide machine and container metrics.
 - CrowdSec is configured for local log analysis and firewall remediation in both the host
-  `INPUT` and Docker `DOCKER-USER` chains. Its agent and authenticated firewall bouncer were
-  recovered and verified active on 2026-08-09. Community event sharing is disabled unless
+  `INPUT` and Docker `DOCKER-USER` chains. Its agent and authenticated firewall bouncer are
+  active. Community event sharing is disabled unless
   an operator deliberately enrolls the machine later.
 
 ## Private Tailscale access
@@ -45,8 +45,8 @@ documented entry points.
 Tailscale's default Linux netfilter mode independently accepts traffic arriving on
 `tailscale0`; it runs before the NixOS firewall. Consequently, any application that binds a
 wildcard address can also be reachable directly from an authorized tailnet peer even when it
-is not a Serve mapping. The 2026-08-09 check found Jellyfin's raw port 8096 in this category.
-This is private, not internet exposure, but it can bypass nginx/WAF. Loopback binding remains
+is not a Serve mapping. Such a listener is private exposure rather than internet exposure, but
+it can bypass nginx and the WAF. Loopback binding remains
 the backend boundary, and restrictive Tailscale grants are mandatory before inviting the
 cofounder or any customer identity.
 The HTTP applications remain bound to `127.0.0.1`. Traffic between devices is encrypted by
@@ -56,6 +56,10 @@ Alucard uses `systemd-resolved` plus explicit Cloudflare and Quad9 fallback reso
 prevents Tailscale's MagicDNS takeover from losing all public upstream DNS after activation.
 Raw-IP connectivity with hostname `SERVFAIL` is a resolver fault, not evidence that CrowdSec
 or the NixOS firewall blocked outbound traffic.
+
+If raw IP connectivity works but names return `SERVFAIL`, temporarily run
+`sudo tailscale set --accept-dns=false`, switch the current configuration, then re-enable it
+and verify that both `github.com` and another tailnet host resolve.
 
 Enroll each machine once:
 
@@ -84,7 +88,6 @@ bookmarked.
 | Hermes | `https://alucard.tailf117a1.ts.net:29119` |
 | Langfuse | `http://alucard.tailf117a1.ts.net:23000` |
 | Grafana | `http://alucard.tailf117a1.ts.net:23001` |
-| Wirken | `https://alucard.tailf117a1.ts.net:28790` |
 | Prometheus | `http://alucard.tailf117a1.ts.net:29091` |
 
 ### Media administration
@@ -138,10 +141,8 @@ crowdsec-admin decisions delete -i CLIENT_IPV4
 systemctl restart crowdsec-firewall-bouncer.service
 ```
 
-The remediation path was verified live on 2026-08-09 using a real nginx-derived decision: the
-address appeared in `crowdsec-blacklists-0`, and both `INPUT` and `DOCKER-USER` jumped to
-`CROWDSEC_CHAIN`. Recheck it without changing firewall state by selecting an active IPv4 decision
-from `crowdsec-admin decisions list`, then running:
+The remediation path is checked without changing firewall state by selecting an active IPv4
+decision from `crowdsec-admin decisions list`, then running:
 
 ```console
 sudo iptables -C INPUT -j CROWDSEC_CHAIN
@@ -166,10 +167,10 @@ their own explicit firewall justification and protocol-specific protection.
 | --- | --- | --- |
 | P0 | Keep AI and administration private | Enforced; tailnet endpoints verified from Dracula |
 | P0 | Remove direct public Jellyfin ports 8096/8920 | Enforced; both ports externally verified closed/filtered |
-| P0 | Bind Jellyfin 8096 and Mailcow web ports 880/4433 to loopback; retain public nginx access and the host ACME certificate | Enforced and checked locally on 2026-08-15 |
-| P0 | Back up and update Mailcow from 2025-07 to current stable | Complete; operator confirmed web login and mailbox retrieval on 2026-08-15 |
+| P0 | Bind Jellyfin 8096 and Mailcow web ports 880/4433 to loopback; retain public nginx access and the host ACME certificate | Enforced and checked locally |
+| P0 | Back up and update Mailcow from 2025-07 to current stable | Complete; operator confirmed web login and mailbox retrieval |
 | P1 | Install CrowdSec engine and firewall remediation | Complete; real nginx decision verified in the live ipset behind both host and Docker chains |
-| P1 | Add tested nginx AppSec/WAF integration | Active; normal Jellyfin request returned 302 and a traversal/shell probe returned 403 on 2026-08-09 |
+| P1 | Add tested nginx AppSec/WAF integration | Active; a normal Jellyfin request returns 302 and a traversal/shell probe returns 403 |
 | P1 | Add per-service rate and connection limits | Active at the nginx edge; configuration and normal application path verified |
 | P1 | Apply consistent security headers and bounded request sizes | Active; upload-heavy Registry/Filebrowser/WebDAV bypass WAF and retain explicit size policy |
 | P1 | Retire dead DNS/vhosts and remove unused firewall ports | Dead root/Git/docs/Coder backends return 404; unused TCP 53/873/11335/11445 removed |
@@ -201,11 +202,6 @@ sudo env TERM=dumb SYSTEMD_PAGER=cat \
   -p Result -p ExecMainStatus --no-pager
 ```
 
-Signal's loopback HTTP bridge is intentionally not included in Tailscale Serve. Its Unix socket
-is group-scoped, and its linked-device state is mode 0700. Sender allowlists remain mandatory:
-Signal transport encryption authenticates the sender but does not make the message safe agent
-input.
-
 Run an on-demand scan with `containers-scan`. The official rolling Trivy container inspects
 an archive exported from every distinct image currently resident in the root Docker daemon and
 the `vincenzo` rootless daemon when present. This avoids registry drift and does not expose a
@@ -215,15 +211,11 @@ scan age appear in the **AI and machine overview** Grafana dashboard. A finding 
 not proof of exploitability: review the package, reachable surface, and upstream fix before
 changing production images.
 
-The post-Mailcow scan on 2026-08-15 inspected 41 resident image references and exported
-84 critical, 1,357 high, and zero failed-image counts. These totals include duplicate packages
-across related images; `--ignore-unfixed` means every reported finding has a published fixed
-version. Root-only JSON reports remain the authoritative package/CVE inventory.
-
-On 2026-08-16, cAdvisor moved from the obsolete GCR `latest` image (v0.55.1) to the
-upstream-supported, digest-pinned `ghcr.io/google/cadvisor:v0.60.5`. Its live `/metrics`
-endpoint and runtime version were verified. A direct fresh scan of that exact digest reduced
-cAdvisor from four critical and 55 high findings to zero critical and eight high findings.
+The most recent full scan inspected 41 resident image references. Those totals include
+duplicate packages across related images; `--ignore-unfixed` means every reported finding has
+a published fixed version. Root-only JSON reports remain the authoritative package/CVE
+inventory. cAdvisor runs the upstream-supported, digest-pinned
+`ghcr.io/google/cadvisor:v0.60.5`; the obsolete GCR `latest` image is prohibited.
 
 ### Temporary vulnerability risk register
 
@@ -239,11 +231,11 @@ root-only reports and each image is exported as a Prometheus time series.
 | Seerr v3.4.1 | Critical: `CVE-2026-33937` (`handlebars` 4.7.8, fixed 4.7.9); `CVE-2026-59873` (`tar` 6.2.1–7.5.13, fixed 7.5.19) | Public request UI through nginx. TLS, ModSecurity, application authentication, and loopback-only container binding remain required. The installed version is the current upstream release. | Next Seerr release or 2026-08-23 |
 | Komga 1.26.3 | Critical: `CVE-2023-24538`, `CVE-2023-24540`, `CVE-2024-24790`, `CVE-2025-68121` (`stdlib` v1.17.8) | Public comics UI through nginx; application authentication and TLS remain required. Docker Hub `latest` resolves to the same official 1.26.3 digest, so retagging cannot remediate it. | Next Komga release or 2026-08-23 |
 | Private services | Kapowarr: `CVE-2026-33845`, `CVE-2026-42010`, `CVE-2026-31789`, `CVE-2025-68121`; Hermes: `CVE-2026-59873`; internal Redis/Postgres/MariaDB/Ofelia findings are recorded per package in the scan reports | These services are limited to loopback or private Docker networks; Hermes and AI interfaces are not public. Keep Docker-published ports closed and retain their existing service authentication. | Upstream release or 2026-08-30 |
-| Host packages | The 2026-08-05 Nixpkgs lock is retained. A 2026-08-13 update builds Alucard but fails Dracula because upstream `ananicy-cpp` 1.2.0 does not build with the newer C++ toolchain. No local package patch is permitted. | `ananicy-cpp` is an existing desktop process-priority daemon, not a security control. The operator chose to retain it rather than change desktop scheduling behavior. | A Nixpkgs update that builds out of the box, or 2026-08-30 |
+| Host packages | `nixpkgs` is pinned to `b7c2ada94fe99c15b0dbcf4d11fd7850b957a436` because the next `nixos-unstable` advance ships an `ananicy-cpp` that no longer compiles. Pinning upstream is the sanctioned workaround; no local package patch is added for it. | `ananicy-cpp` is a desktop process-priority daemon, not a security control. The operator chose to retain it rather than change desktop scheduling behaviour. | A channel snapshot that builds out of the box, or 2026-08-30 |
 
 ### Runtime privilege review
 
-All 41 rootful containers were reviewed on 2026-08-16. cAdvisor is privileged because the
+The rootful containers were reviewed individually. cAdvisor is privileged because the
 upstream collector requires host namespaces and `/dev/kmsg`; it remains loopback-only. Mailcow's
 official `netfilter` container is privileged, and its `ofelia` scheduler and `dockerapi` have the
 Docker socket; those are root-equivalent boundaries confined to the supported Mailcow stack.
@@ -266,21 +258,28 @@ curl -i 'https://stream.dumusstbereitsein.de/?probe=/etc/passwd&shell=/bin/sh'
 sudo tail -50 /var/log/nginx/modsec_audit.log
 ```
 
-This acceptance passed on 2026-08-09: the first request returned its normal HTTP 302 and the
-probe returned HTTP 403. The audit-log entry and Keycloak's local listener still require a
-host-side check because neither is exposed to the tailnet:
+The expected result is HTTP 302 for the first request and HTTP 403 for the probe. The
+audit-log entry and Keycloak's local listener still require a host-side check because neither
+is exposed to the tailnet:
 
 ```bash
 ss -ltn '( sport = :38080 )'
 systemd-analyze security keycloak.service
 ```
 
-Repeated nginx reloads and clean stops segfaulted in libmodsecurity's PCRE2 10.47 JIT allocator.
-Both live coredumps identified the JIT compile/free stacks. Alucard therefore disables the two
-eager JIT calls only in libmodsecurity; its maintained interpreter fallback remains active while
-nginx retains standard reload semantics and the full service sandbox. Verify this compatibility
-policy after changes with three consecutive `systemctl reload nginx` calls, a clean restart, and
-an HTTPS health check; a new coredump or failed unit is a release blocker.
+Repeated nginx reloads and clean stops segfaulted in libmodsecurity's PCRE2 10.47 JIT
+allocator: nixpkgs builds `pcre2` with `--enable-jit-sealloc`, which is not fork-safe, so
+`msc_rules_cleanup` reaches `sljit_free_exec` and every nginx worker dies with SIGSEGV on
+exit. Alucard therefore refuses the two eager JIT compile calls in libmodsecurity; its
+maintained interpreter fallback stays active while nginx retains standard reload semantics and
+the full service sandbox.
+
+This is the repository's only reviewed package mutation, and it lives in
+`hosts/alucard/security.nix`. `scripts/check-no-package-patches.sh` runs in CI and as a
+`nix flake check` check: it rejects any other package mutation and fails if this exception
+loses its `# UPSTREAM DEFECT` justification. Verify the policy after changes with three
+consecutive `systemctl reload nginx` calls, a clean restart, and an HTTPS health check; a new
+coredump or failed unit is a release blocker.
 
 ## Mailcow maintenance boundary
 

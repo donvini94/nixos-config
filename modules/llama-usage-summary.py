@@ -84,6 +84,8 @@ def new_group(caller, model):
         "prompt_tokens": 0,
         "completion_tokens": 0,
         "total_tokens": 0,
+        "actual_cost_usd": 0.0,
+        "estimated_cost_usd": 0.0,
         "latency_sum_ms": 0.0,
         "latency_records": 0,
         "ttft_sum_ms": 0.0,
@@ -91,6 +93,20 @@ def new_group(caller, model):
         "first_request": None,
         "last_request": None,
     }
+
+
+def record_cost(record, usage):
+    """Provider-billed and list-price-estimated spend, kept apart on purpose."""
+    cost = record.get("cost")
+    if isinstance(cost, dict):
+        return number(cost.get("actual_usd")), number(cost.get("estimated_usd"))
+    # Records predating cost accounting only ever carried provider billing.
+    if isinstance(usage, dict):
+        actual = number(usage.get("cost"))
+        if actual is None:
+            actual = number(usage.get("total_cost"))
+        return actual, None
+    return None, None
 
 
 def add_record(group, record, timestamp):
@@ -123,6 +139,10 @@ def add_record(group, record, timestamp):
         group["completion_tokens"] += int(completion or 0)
         group["total_tokens"] += int(total or 0)
 
+    actual, estimated = record_cost(record, usage)
+    group["actual_cost_usd"] += actual or 0.0
+    group["estimated_cost_usd"] += estimated or 0.0
+
     latency = number(record.get("latency_ms"))
     if latency is not None:
         group["latency_sum_ms"] += latency
@@ -150,6 +170,9 @@ def finish_group(group):
         round(latency_sum / latency_count, 3) if latency_count else None
     )
     result["avg_ttft_ms"] = round(ttft_sum / ttft_count, 3) if ttft_count else None
+    # Summing many six-decimal prices accumulates float noise worth trimming.
+    result["actual_cost_usd"] = round(result["actual_cost_usd"], 6)
+    result["estimated_cost_usd"] = round(result["estimated_cost_usd"], 6)
     return result
 
 
@@ -164,6 +187,8 @@ def print_table(groups):
         ("prompt_tokens", "PROMPT"),
         ("completion_tokens", "OUTPUT"),
         ("total_tokens", "TOTAL"),
+        ("actual_cost_usd", "USD_ACTUAL"),
+        ("estimated_cost_usd", "USD_EST"),
         ("avg_latency_ms", "AVG_LAT_MS"),
         ("avg_ttft_ms", "AVG_TTFT_MS"),
     ]
@@ -177,6 +202,9 @@ def print_table(groups):
     print("  ".join(label.ljust(width) for (_, label), width in zip(columns, widths)))
     for row in rows:
         print("  ".join(value.ljust(width) for value, width in zip(row, widths)))
+    actual = sum(group["actual_cost_usd"] for group in groups)
+    estimated = sum(group["estimated_cost_usd"] for group in groups)
+    print(f"totals: billed ${actual:.6f} USD, estimated ${estimated:.6f} USD")
 
 
 def main():
@@ -244,6 +272,14 @@ def main():
         "since": since.isoformat() if since else None,
         "log_files": paths,
         "corrupt_lines": corrupt_lines,
+        "totals": {
+            "actual_cost_usd": round(
+                sum(group["actual_cost_usd"] for group in groups), 6
+            ),
+            "estimated_cost_usd": round(
+                sum(group["estimated_cost_usd"] for group in groups), 6
+            ),
+        },
         "groups": groups,
     }
     if args.json:

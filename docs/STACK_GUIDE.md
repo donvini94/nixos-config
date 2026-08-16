@@ -13,12 +13,15 @@ For a concise, customer-demo-oriented introduction, start with
 On `dracula`:
 
 ```console
-ai-stack-start       # start inference, n8n, Hermes, and the Wirken trial
+ai-stack-start       # start inference, n8n, and Hermes
 ai-stack-health      # verify the stack and inference ingress
 ai-stack-stop        # stop the complete AI stack and release model VRAM
 observability-status # inspect Langfuse, Grafana, Prometheus, and exporters
 containers-update    # pull rolling application images and recreate active containers
 ```
+
+`modules/ai-ingress.nix` enables polkit and owns the rule, so members of the `llama` group
+start and stop `ai-stack.target` without root on both hosts.
 
 The browser interfaces are:
 
@@ -26,7 +29,6 @@ The browser interfaces are:
 | --- | --- | --- | --- |
 | n8n | <http://127.0.0.1:5678> | Visual, deterministic workflows | Usable |
 | Hermes | <http://127.0.0.1:9119> | Persistent autonomous agent and chat | Usable |
-| Wirken | <http://127.0.0.1:18790> | Governed-agent experiment and audit inspection | Experimental; no effectful work |
 | Inference API | <http://127.0.0.1:8080/v1> | Stable OpenAI-compatible API | Usable |
 | Langfuse | <http://127.0.0.1:13000> | Agent traces, token analysis, annotations, datasets, and evaluations | Usable |
 | Grafana | <http://127.0.0.1:13001> | Machine, container, GPU, n8n, and inference metrics | Usable |
@@ -38,7 +40,7 @@ internet.
 ## How an AI request moves
 
 ```text
-OMP / OpenCode / n8n / Hermes / Wirken / curl
+OMP / OpenCode / n8n / Hermes / curl
                     │
                     ▼
        logging ingress 127.0.0.1:8080
@@ -68,10 +70,9 @@ curl http://127.0.0.1:8080/v1/chat/completions \
 
 Available model IDs are `dirk-qwen3.8-27b-local` and `qwen3.6-35b-a3b`. Only one is resident
 at a time. Dirk is the text-only default: its optional `mmproj-F16.gguf` vision projector is not
-downloaded or loaded. The pinned Q4 model is 16.69 GiB, releasing 2.14 GiB of model-weight
-VRAM compared with the former Q5 artifact. Its one-slot, 32,768-token context retains the
-2 GiB Qwen3.8 F16 KV-cache budget. Live Q4 measurement with Dracula's desktop active used
-20,895 MiB and left 3,229 MiB free; preserve this headroom until a larger context is measured.
+downloaded or loaded. The pinned Q4 artifact releases 2.14 GiB of model-weight VRAM compared
+with the former Q5 one. Its one-slot, 32,768-token context retains the 2 GiB Qwen3.8 F16
+KV-cache budget; keep that cap until this artifact has been measured live.
 
 ## What each AI component is for
 
@@ -83,10 +84,12 @@ their different prompts and tool loops are part of the comparison.
 
 OMP receives the Nix-managed model and safety policy through its supported `PI_CONFIG_FILES`
 overlay. The overlay scopes the picker to the custom local/Requesty profiles plus authenticated
-built-in `anthropic/*` and `openai-codex/*` models. Those patterns track OMP's bundled catalog;
-they do not freeze or hardcode an upstream model list. Its `~/.omp/agent/config.yml` and
-`agent.db` remain writable. The latter holds OMP's provider credentials and is never managed by
-Nix, so rebuilds preserve OAuth/API-key state. Automatic onboarding is skipped because the custom
+built-in `anthropic/*` and `openai-codex/*` models. These wildcard scopes track OMP's bundled
+catalog; they do not freeze or hardcode an upstream model list. Model-role assignments live in
+`~/.omp/agent/config.yml`, so selections made through OMP's model picker persist. The default
+plan role is `openai-codex/gpt-5.6-sol`. Its `agent.db` remains writable and holds provider
+credentials; Nix never manages it, so rebuilds preserve OAuth/API-key state. Automatic
+onboarding is skipped because the custom
 providers are already configured; run `omp setup` explicitly only when intending to revisit
 upstream's setup flow.
 
@@ -96,11 +99,6 @@ Its auth state remains application-owned at `~/.local/share/opencode/auth.json`;
 that file. OpenAI's `/connect` supports ChatGPT Plus/Pro OAuth. OpenCode's Anthropic provider
 requires an Anthropic API key; a Claude consumer subscription/OAuth session is not an API
 credential. Use `/connect` only when that provider needs initial login or a renewed key.
-
-Operator acceptance on 2026-08-16 verified the interactive OMP and OpenCode
-pickers expose and select authenticated OpenAI/Codex and Anthropic providers
-alongside Dracula local and Alucard Requesty profiles. That state survived the
-host rebuild; neither Nix configuration overwrote application-owned credentials.
 
 Useful diagnostics:
 
@@ -115,36 +113,117 @@ opencode models
 ### n8n
 
 n8n is for visible, repeatable workflows: scheduled jobs, mail processing, webhooks, and
-multi-step business automation. Build and test workflows in its browser UI. Use
-`n8n-workflows-export` to create a reviewable export and `n8n-workflows-import` to load the
-repository's reviewed workflows. File nodes are restricted to the shared `/org` mount.
-See [the n8n guide](../n8n/README.md).
+multi-step business automation. Build and test workflows in its browser UI, then move the
+reviewed JSON with the single `n8n-workflows` command:
+
+```console
+n8n-workflows export /tmp/n8n-review   # dump every workflow; the destination must be empty
+n8n-workflows import                   # load this host's reviewed set, publish the active ones
+```
+
+`n8n/workflows/dracula/` and `n8n/workflows/alucard/` are the per-host reviewed sources; a
+bare `import` uses the directory Nix configured for the host. Imports preserve fixed IDs, so
+a re-import updates in place instead of duplicating. A running n8n keeps its old trigger
+state, so run `ai-stack-stop && ai-stack-start` before testing production webhooks.
+
+Review exported JSON before committing it: workflow definitions can contain addresses,
+prompts, file paths, and credential names/IDs even though credential values live encrypted in
+n8n's own database. File nodes are restricted to the shared `/org` mount; use focused
+subdirectories such as `/org/ai-inbox` for handoffs. Business workflows, including mail
+ingestion, stay separate from the infrastructure definitions.
+
+n8n stays containerized deliberately: its upstream ecosystem moves faster than nixpkgs, which
+ships 2.32.6 while both hosts run 2.34.6. Both the application and task-runner images are
+digest-pinned and started with `pull = "missing"`, so a restart cannot adopt a new upstream
+build.
+
+`n8n/workflows/dracula/provisioning-smoke.json` is an infrastructure acceptance workflow. It
+is safe to leave active and verifies the local-model relay plus both external Code-node
+runners; its results are not a model-quality measurement.
 
 ### Hermes
 
-Hermes is the persistent agent path. Its state is under `/var/lib/hermes/.hermes` and its
-workspace is `/var/lib/hermes/workspace`. It has a deliberately restricted host view and
-manual approval for commands that Hermes classifies as dangerous. Its one additional host
-surface is the shared Org tree, mounted at `/org`. See
-[the Hermes guide](../hermes/README.md).
+Hermes is the persistent agent path. It runs from the pinned upstream flake module
+`services.hermes-agent` (`github:NousResearch/hermes-agent/v2026.8.3`) in its OCI container
+mode on a digest-pinned `ubuntu:24.04` base, on both hosts. The unit is `hermes-agent.service`
+and the service identity is the `hermes` user and group.
 
-Hermes and n8n have private integration in both directions. Hermes calls only reviewed n8n
-production webhooks on host loopback. n8n calls Hermes' authenticated API through the private
-`n8n-local0` bridge at `http://host.docker.internal:8642/v1`; that port is not exposed to
-users or the tailnet. Both can update `/org`, with ACLs for Hermes and n8n file access confined
-to that tree. The workflows themselves remain separately reviewed/exported artifacts.
+State lives on the host at `/var/lib/hermes/.hermes`, with the workspace at
+`/var/lib/hermes/workspace`. The container sees that state directory mounted at `/data`, so
+in-container paths are `/data/.hermes` and `/data/workspace`. `hermes` on the host PATH is the
+single operator CLI and routes into the container automatically; every configured host user
+gets `~/.hermes` symlinked to the shared state.
 
-### Wirken
+`hermes/workspace/AGENTS.md` and `hermes/workspace/SOUL.md` are the repository-owned agent
+documents; both hosts install them into the workspace on activation.
 
-Wirken is wanted in the final stack, but its present deployment is the native, signed v1.17
-binary because upstream publishes no official container. Normal WebChat inference works.
-Effectful WebChat tools do not: an upstream session-ID defect prevents the approval prompt
-from reaching the browser, so the request times out and fails closed. Do not give this trial
-production credentials or use it for effectful work.
+The dashboard stays on loopback `127.0.0.1:9119`; Alucard publishes it through Tailscale Serve
+at <https://alucard.tailf117a1.ts.net:29119> behind Basic Auth as `demo`. It is started by the
+small local unit `hermes-dashboard.service` (`modules/hermes-dashboard.nix`) because upstream's
+container mode does not supervise it. Delete that unit once `services.hermes-agent` starts the
+dashboard itself.
 
-The current native service remains available for learning about its vault and signed audit
-chain while the upstream container and approval path are unresolved. It is not replaced by
-Open WebUI. See [the Wirken guide](../wirken/README.md).
+Hermes has a deliberately restricted host view: no Docker socket, no general web or browser
+toolset, manual approval for commands it classifies as dangerous, and a write-safe root of
+`/data/workspace:/data/.hermes:/org`. Its one additional host surface is the shared Org tree,
+mounted at `/org`. `approvals.mode = "manual"` is a dangerous-command gate, not approval of
+every action: routine reads, writes below the write-safe root, and ordinary Git commits
+proceed without a prompt. The write-safe root and the systemd/container confinement are the
+actual boundary; the session transcript and the ingress JSONL are the audit record.
+
+Alucard runs one shared agent for the two founders, `vincenzo` and `kyrill`, both in the
+`hermes` group. Sessions separate by chat origin, but memory, skills, workspace and `/org` are
+shared on purpose. This is a trusted two-person team boundary, not customer multi-tenancy, and
+the dashboard is not tenant-aware. Dracula keeps a separate personal agent on the local model;
+the two hosts never share state.
+
+Hermes' `.env` is fully owned by Nix and SOPS and is rewritten on every activation. Dashboard
+or QR edits to credentials are not authoritative — rotate in SOPS, as described in
+[SECRETS.md](SECRETS.md).
+
+Hermes' dashboard token analytics are a local lower-bound estimate: auxiliary calls, retries,
+fallbacks, and cache writes can be missing. Grafana and the ingress JSONL are the authoritative
+request, token, and cost record.
+
+No MCP server is enabled. Introduce a real external system through a maintained n8n node or a
+reviewed MCP server rather than a custom adapter.
+
+### Hermes and n8n interoperability
+
+Both containers mount the host Org tree read-write as `/org`, with an ACL granting the `hermes`
+service identity access; n8n keeps file nodes restricted to that tree. n8n reaches Hermes'
+authenticated API at `http://host.docker.internal:8642/v1` through a systemd socket proxy bound
+only to n8n's private `n8n-local0` Docker bridge. Reaching host services over
+`host.docker.internal` is the intended arrangement for the n8n container; port `8642` is not on
+the LAN, the tailnet, or the public firewall.
+
+On Alucard two reviewed workflows are the contract, imported with `n8n-workflows import`:
+
+- `POST /webhook/startup/hermes-delegate`, authenticated with the `X-Startup-Token` header.
+  The body must be exactly
+  `{"correlation_id": "[A-Za-z0-9_-]{1,64}", "prompt": "<non-empty string>"}` and returns
+  `{"status":"completed","correlation_id":...,"content":...}`. A missing or wrong token returns
+  403 and never reaches Hermes; a malformed body or any extra key returns 400 with a `reason`.
+- `POST /webhook/startup/hermes-inbox`, same authentication. The body must be exactly
+  `{"correlation_id": same regex, "kind": "artifact"|"event", "payload": <object>}` and returns
+  `{"status":"accepted", ...}` echoing those fields; malformed input returns 400. The persisted
+  n8n execution is the delivery record — there is no separate queue or idempotency store.
+
+Hermes reaches n8n through exactly one command, available on the container PATH:
+
+```console
+hermes-n8n-handoff --correlation-id ID --kind artifact|event --payload JSON
+```
+
+It reads `N8N_WEBHOOK_TOKEN` from the Hermes environment and posts only to the inbox webhook.
+It is the only automatic Hermes-to-n8n path.
+
+The credentials `startupHermesApi` (`Authorization: Bearer`, the Hermes API key) and
+`startupWebhookAuth` (`X-Startup-Token`) are provisioned into n8n's encrypted store by
+`n8n-credentials-sync.service` from SOPS. They are never in workflow JSON.
+
+n8n Community Edition is a single owner-managed automation plane: it supports multiple login
+users but not project, workflow, or credential sharing. Do not claim tenant isolation.
 
 ## Observability: what to look at where
 
@@ -158,37 +237,42 @@ The two browser tools answer different questions:
   Requesty cost, average latency, and time to first token. The provisioned **AI and machine
   overview** dashboard is the starting point.
 
-The live acceptance test on 2026-08-09 verified every Prometheus target, including the RTX
-3090 DCGM exporter, and sent a real OpenCode request through port `8080`. Langfuse v4
-recorded the turn as an agent observation, a user-message event, and a generation with
-9,720 total tokens; ingress metrics independently recorded 9,667 input and 53 output
-tokens. Langfuse v4 is observations-first, so API consumers should use
+Langfuse v4 is observations-first, so API consumers should use
 `/api/public/v2/observations`, not the removed legacy `/api/public/traces` endpoint. The
-OpenCode plugin did not populate `providedModelName` in this smoke trace, so the ingress
-model label remains the reliable model dimension until that integration improves.
+OpenCode plugin does not populate `providedModelName`, so the ingress model label remains the
+reliable model dimension.
 
-Alucard's acceptance verified the five non-GPU targets—ingress, containers, n8n, node, and
-Prometheus—and a real Requesty-backed OpenCode trace. Docker 29 keeps its embedded
-containerd socket at `/run/docker/containerd/containerd.sock`; the cAdvisor container is
-explicitly pointed there. Without that argument the scrape target is deceptively green but
-contains only the host root cgroup, so verify `count(container_last_seen) > 1` after changes.
+Docker 29 keeps its embedded containerd socket at `/run/docker/containerd/containerd.sock`;
+the cAdvisor container is explicitly pointed there. Without that argument the scrape target is
+deceptively green but contains only the host root cgroup, so verify
+`count(container_last_seen) > 1` after changes.
 
-Coverage is deliberately honest. OMP and n8n already appear in ingress token/latency
-metrics because all model calls pass port `8080`; their complete prompts and responses are
-also in the JSONL log. OMP does not yet have nested tool-span tracing because the available
-Pi integration is community-maintained and compatibility with the OMP fork must be tested.
-n8n has no native Langfuse tracing integration; use n8n's own execution history and
-Prometheus metrics now, then explicitly instrument the important production workflows
-rather than installing an unreviewed community node globally. Hermes remains covered by
-its own token dashboard plus ingress metrics and JSONL. Its bundled Langfuse plugin expects
-a pip-installed SDK, but the sealed upstream Nix package rejects that SDK's overlapping
-HTTP and Pydantic dependency closure. Nested Hermes traces therefore remain disabled until
-upstream provides a compatible dependency group; do not bypass its collision guard.
+Coverage is deliberately honest. The ingress proxy emits one Langfuse generation observation
+per `/v1/chat/completions` and `/v1/responses`, tagged `source=ai-ingress`, carrying model,
+caller, environment, status, latency, TTFT, token usage, and cost details. Export is
+asynchronous and best-effort: if Langfuse is down the inference call still succeeds and the
+proxy only logs a non-fatal error. Those observations are the cross-client coverage for OMP,
+Hermes, and n8n. OpenCode additionally runs its own Langfuse plugin for nested agent and tool
+traces; never sum OpenCode plugin cost and ingress cost for billing, because both describe the
+same call. Grafana's ingress metrics are the authoritative aggregate.
+
+n8n has no native Langfuse tracing integration. Use its own execution history and Prometheus
+metrics, then instrument the important production workflows explicitly rather than installing
+an unreviewed community node globally.
+
+Every ingress record carries a `cost` object, `{actual_usd, estimated_usd, source}`, where
+`source` is `provider`, `registry-estimate`, or `unavailable`. A provider-reported cost is
+never replaced by the local list-price estimate, and Dracula's local models have no list price,
+so they report `unavailable` rather than a fake $0. The Prometheus series follow the same
+split: `ai_ingress_cost_usd_total` is provider-reported actual cost and
+`ai_ingress_estimated_cost_usd_total` is the list-price estimate. Never sum the two.
 
 Prometheus keeps up to 90 days or 20 GB, whichever limit it reaches first. Langfuse keeps
 its application data in Docker volumes. The ingress JSONL remains the complete,
-provider-independent source of truth for model evaluation; Langfuse is the inspection,
-annotation, dataset, and experiment UI, not a replacement for reproducible task graders.
+provider-independent record of what each client actually sent and received; Langfuse is the
+inspection, annotation, dataset, and experiment UI. Langfuse datasets and evaluations are
+used for demonstrations — there is no local evaluation harness and no synthetic-task quality
+gate in this repository.
 
 Log in to Langfuse as `vincenzo@istbereit.de` and Grafana as `admin`. Retrieve the generated
 passwords locally without placing them in shell history:
@@ -213,6 +297,10 @@ All current UIs bind only to loopback. Before any customer deployment is remotel
 put it behind authenticated TLS, define trace retention and deletion, test backups and
 restores, and decide which fields must be redacted at ingestion.
 
+Vincenzo's account is in the `docker` group on both hosts, which is root-equivalent. A
+harness or agent running as that user is not contained by any container boundary here, so
+do not describe it as sandboxed.
+
 The encrypted secret inventory, consumers, generated runtime files, and rotation cautions
 are documented in [SECRETS.md](SECRETS.md). Read it before changing any SOPS value: several
 bootstrap values cannot be rotated merely by editing the encrypted file.
@@ -227,17 +315,41 @@ ai-usage-summary --caller omp --caller opencode
 journalctl -u local-llama-logger.service -f
 ```
 
+The summary window defaults to the last seven days; pass `--since all`, an ISO-8601
+timestamp, or `--json` when harvesting a complete trial. It aggregates requests, errors,
+incomplete streams, missing-usage records, tokens, latency, and TTFT without printing
+request or response content.
+
+Callers are attributed solely by the `X-AI-Caller` request header; a request that omits it is
+recorded as `unattributed`. Set the header in every new client rather than expecting the
+ingress to infer an identity from a credential.
+
 Full request records are stored in `/var/lib/llama/logs/requests.jsonl` and rotated daily.
 They include prompts and responses, so treat them as sensitive data.
+They must never reach Git or Syncthing. `.gitignore` excludes `*.jsonl`, `var/lib/llama/`,
+and `n8n/exports/`; the remote is a GitHub repository that must never receive request
+payloads.
 
 Useful service checks:
 
 ```console
 systemctl --no-pager status ai-stack.target
-systemctl --no-pager status docker-n8n.service hermes-agent.service wirken.service
+systemctl --no-pager status docker-n8n.service hermes-agent.service hermes-dashboard.service
 docker ps --filter name=hermes-agent
 docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'
 ```
+
+Models load on demand, so the first request after a boot or a model swap pays the full GGUF
+read from disk—tens of seconds cold against seconds warm. Never quote a first-request
+latency as steady-state throughput.
+
+`ai-stack-stop` is also the recovery path: every stop/start exercises the same code as a
+cold boot, and no service may need a manual post-boot step. Confirm the GPU actually came
+back with `nvidia-smi` rather than `systemctl status`—a unit reported inactive while still
+holding VRAM is the failure mode worth looking for. Desktop applications keep small
+allocations of their own, so the assertion is that no AI compute process remains. A CUDA
+context does not reliably survive suspend, so `ai-stack-resume` restarts `ai-stack.target`
+after `suspend.target` instead of assuming the context is intact.
 
 ## Container updates
 
@@ -248,6 +360,9 @@ adding an immutable digest (`image:tag@sha256:…`) and to update that digest if
 It groups the Langfuse web/worker pair and n8n/task-runner pair; unrelated applications stay in
 separate PRs. It opens at most two PRs per hour and five concurrently, during the Berlin
 weekday 22:00–24:00 window. Automerge is disabled.
+
+Every image in `observability/docker-compose.yml` is digest-pinned, as are the n8n
+application and task-runner images and the Hermes container base.
 
 `container-update.timer` is disabled by default. After merging a digest PR, rebuild the intended
 host, then restart only its already-active application units:
@@ -278,7 +393,7 @@ LOG_LEVEL=debug renovate --dry-run=full donvini94/nixos-config
 ```
 
 The dry run requires read access to the private repository and must report Compose images,
-Hermes/n8n/Trivy/Wirken Nix image defaults, `flake.lock`, GitHub Actions, and the annotated
+the n8n, Trivy, and Hermes base-image Nix defaults, `flake.lock`, GitHub Actions, and the
 llama-swap release. The llama-swap manager intentionally changes only its release version:
 regenerate its fixed-output Nix hash in the same PR before its required build can pass. Model
 pins and SOPS-encrypted files are deliberately outside Renovate's regex scope.
@@ -306,10 +421,10 @@ user-facing services are:
 | Seerr | <https://requests.dumusstbereitsein.de> | Request movies and series |
 | Komga | <https://comics.istbereit.de> | Read comics and manga |
 
-The remaining automation interfaces are loopback-only on Alucard: qBittorrent `18080`,
-Sonarr `18989`, Radarr `17878`, Prowlarr `19696`, Bazarr `16767`, SABnzbd `19090`, and
-Kapowarr `15656`. Reach them through an SSH tunnel when administration is needed, for
-example:
+The remaining media-automation interfaces are loopback-only on Alucard; their ports and
+tailnet URLs are inventoried in
+[Alucard security and exposure guide](./ALUCARD_SECURITY.md). Reach one through an SSH tunnel
+when Tailscale is unavailable, for example:
 
 ```console
 ssh -L 18989:127.0.0.1:18989 alucard
@@ -321,37 +436,36 @@ Compose images and recreates the active media stack.
 ## Business-demo stack on Alucard
 
 The reusable profile is enabled in `hosts/alucard/ai.nix`. It builds the same operator
-experience—OMP, OpenCode, n8n, Hermes, Wirken, Langfuse, Grafana, and the stable logged
+experience—OMP, OpenCode, n8n, Hermes, Langfuse, Grafana, and the stable logged
 ingress—while inference goes to Requesty's OpenAI-compatible router instead of a local GPU.
 Alucard's minimal Home Manager profile installs only the two coding harnesses, not Dracula's
 desktop configuration.
 
 Requesty is already the maintained routing product, so the default plan does not add another
-gateway merely to proxy it. Alucard will use `https://router.requesty.ai/v1`, SOPS-managed
-Requesty credentials, spending limits, and explicit `provider/model` or `policy/name` IDs.
-The key is loaded into the loopback ingress with a
-systemd credential and injected upstream; OMP, OpenCode, n8n, Hermes, and Wirken never
-receive the Requesty key. The local Nix registry is the client-visible allow-list even when
+gateway merely to proxy it. Alucard uses `https://router.requesty.ai/v1`, SOPS-managed
+Requesty credentials, spending limits, and explicit `provider/model` or `policy/name` IDs. The
+key is loaded into the loopback ingress with a systemd credential and injected upstream; OMP,
+OpenCode, n8n, and Hermes never receive the Requesty key. The local Nix registry is the
+client-visible allow-list even when
 the Requesty key can access the full catalog: unregistered model calls receive HTTP 403
 before reaching Requesty, and `/v1/models` exposes only registered IDs. A matching Requesty
 [Access List](https://docs.requesty.ai/features/access-lists) is optional defense in depth;
 separate keys remain the boundary for revocation, customer isolation, and cost ownership.
 Requesty's cost and provider-routing analytics complement Langfuse's agent traces and the
 local Grafana machine/container view. Requesty's response cost and `x-requesty-*` provider,
-cache, latency, and request-ID metadata are also retained in the sensitive ingress JSONL;
-cost is exported as `ai_ingress_cost_usd_total` for the Grafana dashboard.
+cache, latency, and request-ID metadata are retained in the sensitive ingress JSONL.
 
-The shared registry in `lib/requesty-models.nix` was checked against Requesty's authenticated
-[`GET /v1/models`](https://docs.requesty.ai/api-reference/endpoint/models-list) catalog on
-2026-08-09. It contains the cheap DeepSeek V4 Flash default, Qwen 3.7 Plus, DeepSeek V4 Pro,
-Kimi K3, and three closed frontier comparisons. OMP receives the catalog's current per-million
-token prices. Re-check IDs, capabilities, prices, and retention before changing this registry.
+The shared registry in `lib/requesty-models.nix` is the client-visible catalog: the cheap
+DeepSeek V4 Flash default, Qwen 3.7 Plus, DeepSeek V4 Pro, Kimi K3, and three closed frontier
+comparisons. OMP receives its per-million token prices. Re-check IDs, capabilities, prices,
+and provider retention against Requesty's authenticated
+[`GET /v1/models`](https://docs.requesty.ai/api-reference/endpoint/models-list) catalog before
+changing it. The customer-facing model table lives in
+[Alucard AI demo guide](./AI_DEMO_GUIDE.md).
 
 Dracula's OMP and OpenCode expose the same Requesty registry through
 `http://alucard.tailf117a1.ts.net:28080/v1` over Tailscale while retaining both local GPU
-models and the local dense default. No Requesty credential is installed on Dracula. Live
-acceptance on 2026-08-09 confirmed `omp models` and `opencode models` expose the full combined
-catalog; OMP uses its writable `~/.omp/agent` state and no longer repeats initial setup.
+models and the local dense default. No Requesty credential is installed on Dracula.
 
 Use the initial model through the unchanged ingress:
 
@@ -367,88 +481,38 @@ curl http://127.0.0.1:8080/v1/chat/completions \
 
 ### Messaging transport
 
-Telegram is the selected first mobile channel. Hermes' official container
-supports numeric user/chat allowlists, long polling, topics, attachments, voice, and `/model`.
-Long polling is outbound, so no public webhook or new inbound firewall port is required.
-Hermes is configured to use the domain-filtered proxy on loopback port `18084` for Telegram
-and Nous's managed-bot onboarding service. General web/browser toolsets remain disabled.
+Telegram is the mobile channel on Alucard. Hermes enforces a strict numeric user allowlist and
+polls outbound, so no public webhook and no inbound firewall port are required. Supported
+messaging adapters egress through the domain-filtered proxy on loopback port `18084`, whose
+allowlist is exactly `api.telegram.org` and `setup.hermes-agent.nousresearch.com`. General web
+and browser toolsets stay disabled.
 
-Operator enrollment:
+The bot token and the allowlist live in SOPS as `hermes/telegram_bot_token` and
+`hermes/telegram_allowed_users`. The allowlist is comma-separated and structurally
+multi-value, so the second founder's numeric ID can be appended once it is known; never use
+`*`. Nix rewrites Hermes' `.env` on every activation, so a token entered in the dashboard or
+created through its QR onboarding is not authoritative and is overwritten on the next switch.
+Rotate in SOPS. Revoke a compromised bot with BotFather `/revoke`, then put the replacement
+token in SOPS.
 
-1. Open Alucard Hermes **Channels → Telegram → Create with QR**.
-2. Scan the displayed code in Telegram and confirm the managed bot creation. The owner ID
-   returned by Telegram seeds Hermes' strict numeric allowlist.
-3. Keep BotFather group joining disabled for the initial DM-only deployment.
-4. The allowed DM, `/model`, and attributed-inference checks passed live on 2026-08-15.
-   Acceptance still needs proof that a non-allowed account gets no agent response. No inbound
-   public port was opened.
+Keep BotFather group joining disabled until a specific group ID and sender policy are
+reviewed.
 
-The upstream dashboard writes the generated bot token and allowlist to the isolated service
-state at `/var/lib/hermes/.hermes/.env`, mode `0640`, readable only by the `hermes` service
-group. Nix deliberately does not regenerate that file, so QR-created credentials survive
-rebuilds. Revoke a compromised bot with BotFather `/revoke`; manual BotFather token entry in
-the same dashboard is the fallback when the managed setup service is unavailable.
-
-The dashboard owns mutable channel credentials, enable flags, and `config.yaml` after its
-initial seed. The official container keeps gateway and dashboard in one PID namespace under
-its s6 supervisor, so dashboard restarts use the lifecycle Hermes supports. Do not install a
-second host or user gateway.
-
-The official image contains the personal-account WhatsApp bridge, but customer use remains
-deferred in favor of WhatsApp Business Cloud when a business number and Meta application exist.
-
-Wirken's upstream administrative CLI remains available through `wirken-admin`. Do not attach
-the Hermes bot—or another publicly discoverable bot—to Wirken: its released Telegram
-adapter accepts all private messages, while platform sender identity is only audited and is
-not an authorization input. Keep Wirken on its private WebChat/CLI surfaces until upstream
-ships a sender authorization boundary or a separately reviewed channel satisfies it.
-
-During the observation week, exercise Wirken approvals with
-`wirken-admin ask --message "..."`. This upstream terminal path attaches its stdin approval
-gate, but v1.17 opens the CLI audit writer without the gateway signing key. The resulting
-events are hash-chained, not independently signed chain heads. Inspect them with
-`wirken-audit-log --limit 20`, and treat the path as an evaluation rather than a production
-governance claim. Effectful WebChat remains excluded by its upstream approval-session defect.
-
-### Container vulnerability visibility
-
-Alucard runs Aqua Trivy's official rolling container daily and after the manual
-`containers-scan` command. It scans distinct images running in both the root Docker daemon and
-Vincenzo's rootless daemon from local Docker archives, retains root-only JSON reports, and
-publishes aggregate and per-image counts through node-exporter's textfile collector. Grafana
-shows critical, high, per-image, failure, and scan-age panels. The scanner never receives a
-Docker socket. This complements update automation: pulling a newer image and proving that the
-deployed image has no known fixed critical issue are separate operations.
-
-The command prints one final `Trivy: ...` line. Rootless Docker operations run as the owning
-user, while each archive is exported by immutable local image ID. This includes the Onyx stack
-and prevents multi-tag archives from producing false scan failures.
-
-Deployment checklist:
+### Requesty deployment checklist
 
 1. In Requesty, create an `alucard-demo` project or workload key, set its monthly spend
    limit, and optionally attach a matching Access List or create reviewed fallback policies.
 2. Run `sops secrets/alucard-ai.yaml` on Dracula or Alucard and replace only
    `requesty.api_key`. The other machine-specific service secrets are already generated.
 3. Put the allowed model/policy IDs, display names, context limits, and output limits in the
-   registry at the top of `hosts/alucard/ai.nix`, then select a default.
+   registry in `lib/requesty-models.nix`, then select a default.
 4. Build, switch, and verify `/v1/models` through port `8080` before sending a paid prompt.
 
 Startup authenticates to Requesty's model-list endpoint and requires every locally
 registered model to exist in the key's returned catalog. A placeholder key or missing model
 fails closed before the ingress accepts traffic; a broader key is narrowed locally.
 
-The AI browser and API listeners are deliberately loopback-only and their ports are not
-opened in Alucard's global firewall or public reverse proxy. The Hermes dashboard and agent
-API both bind loopback; only the dashboard is published through authenticated Tailscale
-Serve. Host assertions reject any other non-loopback AI listener or any AI port in the
-global firewall.
-
-Alucard uses `systemd-resolved` with explicit public fallback resolvers so accepting
-Tailscale MagicDNS cannot leave public DNS without an upstream. If raw IP connectivity works
-but names return `SERVFAIL`, temporarily run `sudo tailscale set --accept-dns=false`, switch
-the current configuration, then re-enable it and verify both `github.com` and another tailnet
-host resolve.
+The AI browser and API listeners are deliberately loopback-only.
 
 From Dracula, start the declarative private tunnel:
 
@@ -465,7 +529,6 @@ Keep that terminal open and use these local addresses:
 | Hermes | <http://127.0.0.1:29119> |
 | Langfuse | <http://127.0.0.1:23000> |
 | Grafana | <http://127.0.0.1:23001> |
-| Wirken | <http://127.0.0.1:28790> |
 | Prometheus | <http://127.0.0.1:29091> |
 
 The alternate local ports avoid collisions with Dracula's own stack. Stop the tunnel with

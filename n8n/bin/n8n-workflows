@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+# n8n-workflows {import|export} — move reviewed workflow JSON in and out of the
+# running n8n container.
+#
+# Import is the deployment path for repository-owned workflows: fixed IDs and
+# `active` state are preserved so a re-import updates in place instead of
+# creating duplicates. Export is the review path: it refuses a non-empty target
+# so a dump can never silently overwrite a previous one.
+set -euo pipefail
+
+container="${N8N_CONTAINER_NAME:-n8n}"
+
+die() {
+  echo "$*" >&2
+  exit 1
+}
+
+usage() {
+  cat >&2 <<'EOF'
+usage: n8n-workflows import [SOURCE_DIR]
+       n8n-workflows export [DEST_DIR]
+
+  import  Load every *.json from SOURCE_DIR (default: the repository's
+          reviewed workflow set) and publish the ones marked active.
+  export  Write every workflow currently in n8n to DEST_DIR, which must be
+          empty or absent.
+EOF
+  exit 2
+}
+
+require_running_container() {
+  docker inspect --format '{{.State.Running}}' "$container" 2>/dev/null | grep -qx true ||
+    die "n8n container is not running: $container"
+}
+
+cmd_import() {
+  local source_dir="${1:-${N8N_WORKFLOW_DIR:-}}"
+  [[ -n $source_dir ]] || die "no workflow directory given and N8N_WORKFLOW_DIR is unset"
+  [[ -d $source_dir ]] || die "workflow directory does not exist: $source_dir"
+  require_running_container
+
+  local -a workflow_files
+  mapfile -d '' workflow_files < <(find "$source_dir" -maxdepth 1 -type f -name '*.json' -print0 | sort -z)
+  ((${#workflow_files[@]} > 0)) || die "no workflow JSON files found in $source_dir"
+
+  # Validate before touching n8n: a half-imported set is worse than none.
+  local workflow_file
+  for workflow_file in "${workflow_files[@]}"; do
+    jq empty "$workflow_file" >/dev/null
+  done
+
+  local container_dir="/tmp/n8n-workflow-import-$$"
+  # shellcheck disable=SC2064  # container_dir must expand now, not at trap time
+  trap "docker exec '$container' rm -rf -- '$container_dir' >/dev/null 2>&1 || true" EXIT
+
+  docker exec "$container" mkdir -p -- "$container_dir"
+  for workflow_file in "${workflow_files[@]}"; do
+    docker exec -i "$container" sh -c 'cat > "$1"' sh \
+      "$container_dir/$(basename -- "$workflow_file")" < "$workflow_file"
+  done
+  docker exec "$container" n8n import:workflow --separate --input="$container_dir"
+
+  for workflow_file in "${workflow_files[@]}"; do
+    if [[ "$(jq -r '.active // false' "$workflow_file")" == true ]]; then
+      docker exec "$container" n8n publish:workflow \
+        --id="$(jq -er '.id | select(type == "string" and length > 0)' "$workflow_file")"
+    fi
+  done
+
+  echo "Imported ${#workflow_files[@]} workflow(s). Restart ai-stack.target before testing triggers."
+}
+
+cmd_export() {
+  local destination="${1:-${N8N_WORKFLOW_EXPORT_DIR:-}}"
+  if [[ -z $destination ]]; then
+    destination="${XDG_STATE_HOME:-"$HOME/.local/state"}/n8n/exports/$(date -u +%Y%m%dT%H%M%SZ)"
+  fi
+  require_running_container
+
+  if [[ -e $destination ]] && find "$destination" -mindepth 1 -maxdepth 1 -print -quit | grep -q .; then
+    die "refusing to overwrite non-empty destination: $destination"
+  fi
+
+  local host_tmp container_dir
+  host_tmp="$(mktemp -d)"
+  container_dir="/tmp/n8n-workflow-export-$$"
+  # shellcheck disable=SC2064  # both paths must expand now, not at trap time
+  trap "docker exec '$container' rm -rf -- '$container_dir' >/dev/null 2>&1 || true; rm -rf -- '$host_tmp'" EXIT
+
+  docker exec "$container" mkdir -p -- "$container_dir"
+  docker exec "$container" n8n export:workflow --backup --output="$container_dir"
+
+  local -a exported_names
+  mapfile -t exported_names < <(
+    docker exec "$container" sh -c \
+      'find "$1" -maxdepth 1 -type f -name "*.json" -exec basename {} \;' sh "$container_dir" | sort
+  )
+  local exported_name
+  for exported_name in "${exported_names[@]}"; do
+    [[ $exported_name != */* && $exported_name != "." && $exported_name != ".." ]] ||
+      die "refusing unsafe exported filename: $exported_name"
+    docker exec "$container" sh -c 'cat "$1"' sh "$container_dir/$exported_name" \
+      > "$host_tmp/$exported_name"
+  done
+
+  local -a workflow_files
+  mapfile -d '' workflow_files < <(find "$host_tmp" -maxdepth 1 -type f -name '*.json' -print0 | sort -z)
+  if ((${#workflow_files[@]} == 0)); then
+    echo "n8n contains no workflows; nothing was written"
+    return 0
+  fi
+  local workflow_file
+  for workflow_file in "${workflow_files[@]}"; do
+    jq empty "$workflow_file" >/dev/null
+  done
+
+  mkdir -p -- "$destination"
+  cp -- "${workflow_files[@]}" "$destination/"
+  echo "Exported ${#workflow_files[@]} workflow(s) to $destination"
+}
+
+case "${1:-}" in
+  import)
+    shift
+    cmd_import "$@"
+    ;;
+  export)
+    shift
+    cmd_export "$@"
+    ;;
+  *) usage ;;
+esac

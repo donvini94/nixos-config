@@ -23,7 +23,12 @@
   };
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # PIN: nixos-unstable's 2026-08-13 advance (0e251e2) ships an ananicy-cpp
+    # that no longer compiles (missing <cstdint>/<cstring> includes). The fix is
+    # already on nixpkgs master, so unpin — back to plain `nixos-unstable` —
+    # once a channel snapshot containing it exists. Pinning upstream is the only
+    # sanctioned workaround here; this repository carries no package patches.
+    nixpkgs.url = "github:NixOS/nixpkgs/b7c2ada94fe99c15b0dbcf4d11fd7850b957a436";
     home-manager.url = "github:nix-community/home-manager/master";
 
     sops-nix.url = "github:Mic92/sops-nix";
@@ -63,6 +68,7 @@
       nil,
       lsfg-vk-flake,
       caelestia-shell,
+      hermes-agent,
       emacs-overlay,
       ...
     }@inputs:
@@ -72,20 +78,7 @@
       mail = "vincenzo.pace94@icloud.com";
       system = "x86_64-linux";
 
-      # TEMP: nixpkgs ships highlight-4.20 with shellscript-crash-fix.patch, but the
-      # upstream tarball already contains those changes — patch is rejected as
-      # "Reversed (or previously applied)" and the build fails. Drop the patch list
-      # until nixpkgs drops it. Tracked in memory/highlight_overlay_temp.md.
-      highlightFixOverlay = _final: prev: {
-        highlight = prev.highlight.overrideAttrs (_old: {
-          patches = [ ];
-        });
-      };
-
-      overlays = [
-        emacs-overlay.overlay
-        highlightFixOverlay
-      ];
+      overlays = [ emacs-overlay.overlay ];
 
       mkDesktopHost =
         hostname:
@@ -103,6 +96,7 @@
             lsfg-vk-flake.nixosModules.default
             hosts.nixosModule
             home-manager.nixosModules.home-manager
+            hermes-agent.nixosModules.default
 
             # Desktop wiring
             {
@@ -117,7 +111,6 @@
                     ;
                 };
                 backupFileExtension = "hm-backup";
-                sharedModules = [ { nixpkgs.overlays = [ highlightFixOverlay ]; } ];
                 users.${username} = import ./home.nix;
               };
             }
@@ -133,6 +126,7 @@
             ./configuration.nix
             ./hosts/${hostname}
             home-manager.nixosModules.home-manager
+            hermes-agent.nixosModules.default
             {
               home-manager = {
                 extraSpecialArgs = { inherit username; };
@@ -148,5 +142,14 @@
         dracula = mkDesktopHost "dracula";
         alucard = mkServerHost "alucard";
       };
+
+      # `nix flake check` is the gate that keeps local package patches from
+      # coming back; CI runs the same script directly.
+      checks.${system}.no-package-patches =
+        nixpkgs.legacyPackages.${system}.runCommand "check-no-package-patches"
+          { nativeBuildInputs = [ nixpkgs.legacyPackages.${system}.bash ]; }
+          ''
+            bash ${./scripts/check-no-package-patches.sh} ${./.} | tee "$out"
+          '';
     };
 }

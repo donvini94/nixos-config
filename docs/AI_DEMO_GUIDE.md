@@ -25,7 +25,6 @@ HTTPS URL: Tailscale's certificate and the Hermes host check are bound to it, so
 | Component | What it demonstrates | Link |
 | --- | --- | --- |
 | Hermes | A conversational agent that can use tools and complete multi-step work | [Open Hermes Sessions](https://alucard.tailf117a1.ts.net:29119/sessions) |
-| Wirken | Experimental governed-agent UI and signed audit-chain inspection; effectful browser tools are not yet usable | [Open Wirken](https://alucard.tailf117a1.ts.net:28790) |
 | n8n | Visual business automation and AI workflows | [Open n8n](http://alucard.tailf117a1.ts.net:25678) |
 | Langfuse | Traces of model and agent activity: prompts, responses, latency, tokens, and evaluation | [Open Langfuse](http://alucard.tailf117a1.ts.net:23000) |
 | Grafana | Operational view of the server, containers, request traffic, token usage, and cost | [Open Grafana](http://alucard.tailf117a1.ts.net:23001) |
@@ -43,10 +42,12 @@ allowed to request.
 
 Around that API:
 
-- Hermes and Wirken demonstrate two styles of agentic work.
+- Hermes demonstrates agentic work: a conversational agent that uses tools across multiple
+  steps.
 - n8n turns model calls and business-system actions into visual workflows.
-- Langfuse explains fully instrumented model and agent runs. Today, OpenCode has detailed
-  traces; other clients still have aggregate ingress metrics and complete JSONL records.
+- Langfuse explains instrumented model and agent runs. Every model call made through the
+  platform API produces a trace-level record; OpenCode additionally contributes nested
+  agent and tool spans.
 - Grafana explains whether the infrastructure is healthy and how usage changes over time.
 - Tailscale provides identity-based private network access without publishing administrative
   dashboards to the internet.
@@ -61,9 +62,7 @@ their integration endpoint.
 2. Open **Grafana** and connect that interaction to traffic, token use, cost, and system health.
 3. For a trace-level demonstration, run an existing instrumented **OpenCode** example and open
    its trace in **Langfuse**. Do not claim that every client already provides nested traces.
-4. Open **Wirken** when the discussion turns to the governance experiment, approval UX, audit
-   evidence, and the currently documented upstream gaps. Do not present it as production-ready.
-5. Explain that a customer's applications can use the same `/v1` API contract while routing
+4. Explain that a customer's applications can use the same `/v1` API contract while routing
    simple tasks to inexpensive open models and difficult tasks to stronger frontier models.
 
 Do not improvise claims about benchmark superiority, guaranteed savings, compliance, data
@@ -72,22 +71,12 @@ policy, backup/restore evidence, and customer-specific architecture.
 
 For the first Hermes demonstration, create a session and ask it to update a harmless test file
 under `/org/ai-inbox`, then inspect the result and optionally hand it to an n8n workflow.
-Alucard's Hermes intentionally has no general web-search/browser tool and cannot modify the host
-outside its isolated workspace and the explicitly shared Org tree. See
-the [Hermes operator guide](../hermes/README.md) for the exact boundaries.
+Alucard's Hermes intentionally has no general web-search or browser tool and cannot modify the
+host outside its workspace and the explicitly shared Org tree. Its exact boundaries are
+documented in [the stack guide](./STACK_GUIDE.md).
 
-For a live Wirken approval experiment, use its upstream terminal path rather than effectful
-WebChat:
-
-```console
-wirken-admin ask --message "Create a short implementation plan and save it in the workspace."
-wirken-audit-log --limit 20
-```
-
-Tool approvals appear in the terminal. The decision is hash-chained, but Wirken v1.17's CLI
-writer does not itself emit signed chain heads. WebChat remains suitable only for no-tool
-conversation until its upstream session bug is fixed. These are explicit evaluation findings,
-not production governance claims.
+Alucard runs a single shared agent for the two founders rather than one agent per person. Do
+not present the dashboard as multi-tenant or as customer isolation.
 
 ## Hermes Desktop
 
@@ -132,13 +121,10 @@ The current curated choices are:
 | Open frontier comparison | `sference/kimi-k3` |
 | Closed frontier comparisons | Gemini 3.1 Pro, Claude Sonnet 5, GPT-5.6 Terra |
 
-The registry and displayed token prices were checked against Requesty's authenticated catalog
-on 2026-08-09. Live acceptance then confirmed that Alucard's `/v1/models` exposes exactly these
-seven IDs and that Dracula's OMP 17.2.12 and OpenCode 1.18.13 list all seven alongside both local
-models without copying the Requesty credential. The catalog reported 30-day provider retention
-for the selected Claude and OpenAI routes; do not use those routes for sensitive customer data
-without an agreed policy.
-The selected DeepSeek, Qwen, Kimi, and Gemini routes reported no provider retention.
+The registry is the client-visible allow-list: Alucard's `/v1/models` exposes exactly these
+seven IDs. Requesty's catalog reports 30-day provider retention for the selected Claude and
+OpenAI routes; do not use those routes for sensitive customer data without an agreed policy.
+The selected DeepSeek, Qwen, Kimi, and Gemini routes report no provider retention.
 
 OMP and OpenCode on Alucard expose these models directly. On Dracula they appear alongside
 the two local GPU models through Alucard's private tailnet ingress; the Requesty key never
@@ -154,16 +140,14 @@ Dracula keeps `dracula-local/dirk-qwen3.8-27b-local` as its no-cost text-only de
 
 ## Telegram agent channel
 
-Telegram is the selected mobile channel because it provides a bot identity without a dedicated
-SIM. Hermes is the only Telegram front door initially. In Hermes **Channels**, use **Telegram →
-Create with QR**; the managed setup returns the owner ID for a strict numeric allowlist. The
-allowed-DM path, `/model`, and Hermes-attributed inference passed live on 2026-08-15. The bot is
-not fully accepted until an unlisted account receives no response.
+Telegram is the mobile channel because it provides a bot identity without a dedicated SIM.
+Hermes is the only Telegram front door. Access is a strict numeric allowlist of Telegram user
+IDs; an account that is not on the list receives no agent response. The bot token and the
+allowlist are managed as encrypted secrets by the platform operator, not through the
+dashboard.
 
-Do not connect this bot to Wirken. Wirken 1.17 has a native Telegram adapter, but its own
-security documentation says platform sender identities are audited rather than authorized,
-and its Telegram guide says the bot responds to all private messages. That is unsuitable for
-an Internet-discoverable demo bot. Signal remains installed but inactive as a future option.
+Polling is outbound, so the channel opens no inbound port and publishes nothing to the
+internet.
 
 ## Troubleshooting
 

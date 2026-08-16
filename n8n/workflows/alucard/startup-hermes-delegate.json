@@ -1,0 +1,230 @@
+{
+  "active": true,
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Validate request",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Validate request": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Request valid?",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Request valid?": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Call Hermes",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Reject request",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Call Hermes": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build response",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Build response": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Return response",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "id": "startupHermesDelegate",
+  "name": "Startup / Hermes delegate",
+  "nodes": [
+    {
+      "id": "0f1d2a71-2c1e-4a2c-9a3a-3b6d1c5a7e01",
+      "name": "Webhook",
+      "parameters": {
+        "authentication": "headerAuth",
+        "httpMethod": "POST",
+        "options": {},
+        "path": "startup/hermes-delegate",
+        "responseMode": "responseNode"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "startupWebhookAuth",
+          "name": "Startup webhook token"
+        }
+      },
+      "position": [
+        0,
+        0
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "webhookId": "5a1c0f42-7c2e-4d9a-9f1b-2c7a4e6b8d10"
+    },
+    {
+      "id": "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c02",
+      "name": "Validate request",
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body ?? {};\nconst keys = Object.keys(body).sort();\nconst expected = ['correlation_id', 'prompt'];\nconst shapeOk = keys.length === expected.length && keys.every((k, i) => k === expected[i]);\nconst idOk = typeof body.correlation_id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(body.correlation_id);\nconst promptOk = typeof body.prompt === 'string' && body.prompt.trim().length > 0;\nconst valid = shapeOk && idOk && promptOk;\nconst reason = !shapeOk\n  ? 'body must contain exactly correlation_id and prompt'\n  : !idOk\n    ? 'correlation_id must match [A-Za-z0-9_-]{1,64}'\n    : !promptOk\n      ? 'prompt must be a non-empty string'\n      : '';\nreturn [{ json: { valid, reason, correlation_id: body.correlation_id ?? null, prompt: body.prompt ?? null } }];"
+      },
+      "position": [
+        220,
+        0
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d03",
+      "name": "Request valid?",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "3c4d5e6f-7a8b-4c9d-0e1f-2a3b4c5d6e04",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        440,
+        0
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2
+    },
+    {
+      "id": "4d5e6f7a-8b9c-4d0e-1f2a-3b4c5d6e7f05",
+      "name": "Call Hermes",
+      "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "contentType": "json",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-AI-Caller",
+              "value": "n8n:startup-hermes-delegate"
+            }
+          ]
+        },
+        "jsonBody": "={{ { model: 'hermes-agent', stream: false, messages: [{ role: 'user', content: $json.prompt }] } }}",
+        "method": "POST",
+        "options": {
+          "timeout": 300000
+        },
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json",
+        "url": "http://host.docker.internal:8642/v1/chat/completions"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "startupHermesApi",
+          "name": "Startup Hermes API"
+        }
+      },
+      "position": [
+        660,
+        -100
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4
+    },
+    {
+      "id": "5e6f7a8b-9c0d-4e1f-2a3b-4c5d6e7f8a06",
+      "name": "Build response",
+      "parameters": {
+        "jsCode": "const hermes = $input.first().json;\nconst correlation_id = $('Validate request').first().json.correlation_id;\nreturn [{ json: { status: 'completed', correlation_id, content: hermes.choices?.[0]?.message?.content ?? null } }];"
+      },
+      "position": [
+        880,
+        -100
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "6f7a8b9c-0d1e-4f2a-3b4c-5d6e7f8a9b07",
+      "name": "Return response",
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "position": [
+        1100,
+        -100
+      ],
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4
+    },
+    {
+      "id": "7a8b9c0d-1e2f-4a3b-4c5d-6e7f8a9b0c08",
+      "name": "Reject request",
+      "parameters": {
+        "options": {
+          "responseCode": 400
+        },
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'rejected', reason: $json.reason } }}"
+      },
+      "position": [
+        660,
+        120
+      ],
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [],
+  "versionId": "8b9c0d1e-2f3a-4b5c-6d7e-8f9a0b1c2d09"
+}

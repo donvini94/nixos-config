@@ -11,8 +11,7 @@ Docker images, Compose files, or `/var/lib` application state.
 | --- | --- | --- | --- |
 | `n8n/encryption_key` | n8n | Encrypts stored n8n credentials | Data-encryption root; do not casually rotate |
 | `n8n/runner_auth_token` | n8n and task runners | Authenticates runner registration | Coordinated service rotation |
-| `wirken/vault_passphrase` | Wirken | Unlocks the encrypted credential vault | Vault-encryption root; follow upstream migration procedure |
-| `wirken/ingress_token` | Wirken and inference ingress | Authenticates/attributes Wirken model calls | Coordinated service rotation |
+| `hermes/api_server_key` | Hermes agent API | Bearer key for Hermes' loopback automation API | Coordinated service rotation |
 | `langfuse/postgres_password` | Langfuse and Postgres | Application database login | Database migration required |
 | `langfuse/clickhouse_password` | Langfuse and ClickHouse | Analytics database login | Database migration required |
 | `langfuse/redis_auth` | Langfuse and Redis | Queue/cache authentication | Coordinated stack rotation |
@@ -38,6 +37,7 @@ sops-nix creates these root- or user-readable views under `/run/secrets`:
 | Runtime file | Contents and consumer |
 | --- | --- |
 | `/run/secrets/rendered/n8n-runner.env` | Runner authentication environment for the n8n sidecar |
+| `/run/secrets/rendered/hermes.env` | Secret half of Hermes' `.env`; rewritten on every activation |
 | `/run/secrets/rendered/observability.env` | Langfuse dependencies, project bootstrap, and Grafana bootstrap |
 | `/run/secrets/rendered/opencode-langfuse.json` | OpenCode Langfuse project credentials; owned by `vincenzo` |
 
@@ -86,30 +86,31 @@ maintenance window, then recreate and verify every consumer.
 
 ## Alucard and customer machines
 
-Alucard uses the separate encrypted `secrets/alucard-ai.yaml`. Its n8n, Wirken, Langfuse,
+Alucard uses the separate encrypted `secrets/alucard-ai.yaml`. Its n8n, Hermes, Langfuse,
 and Grafana values have been generated independently from Dracula. The operator-supplied
 Requesty key is encrypted there and is exposed at runtime only to the port-8080 ingress.
 
 | SOPS key group | Consumer | Rule |
 | --- | --- | --- |
 | `requesty/api_key` | Port-8080 ingress only | Set a monthly spend limit; optionally attach a matching Access List; never distribute to clients |
-| `n8n/*` | Alucard n8n and runners | Independent encryption root and runner token |
-| `wirken/*` | Alucard Wirken and ingress attribution | Independent vault passphrase and local-only attribution token |
+| `n8n/encryption_key`, `n8n/runner_auth_token` | Alucard n8n and runners | Independent encryption root and runner token |
+| `n8n/webhook_token` | n8n `startupWebhookAuth` credential and Hermes' `hermes-n8n-handoff` | Shared `X-Startup-Token`; the two sides must agree or the inbox webhook returns 403 |
 | `hermes/dashboard_password` | Hermes browser and Desktop login | Share through a password manager; rotate when demo access changes |
 | `hermes/dashboard_password_hash` | Hermes authentication runtime | Regenerate whenever the demo password changes; plaintext is not exposed to the service |
 | `hermes/dashboard_session_secret` | Hermes login-session signing | Planned rotation signs every Hermes client out |
+| `hermes/api_server_key` | Hermes agent API and n8n's `startupHermesApi` credential | Bearer key for the delegate workflow's call into Hermes |
+| `hermes/telegram_bot_token` | Hermes Telegram channel | Revoke through BotFather `/revoke`, then store the replacement here |
+| `hermes/telegram_allowed_users` | Hermes Telegram channel | Comma-separated numeric Telegram IDs; append a founder's ID when known, never `*` |
 | `langfuse/*` | Alucard Langfuse project and dependencies | Independent databases, cryptographic roots, project, and administrator |
 | `grafana/admin_password` | Alucard Grafana bootstrap | Independent administrator password |
 
-Hermes' supported QR onboarding stores `TELEGRAM_BOT_TOKEN` and `TELEGRAM_ALLOWED_USERS` in
-`/var/lib/hermes/.hermes/.env`, not SOPS. This is application-owned persistent state, mode
-`0640` for the isolated `hermes` group, and rebuilds preserve it. Include it in the encrypted
-Hermes state backup. If the token is exposed, revoke it through BotFather `/revoke`, reconnect
-through the dashboard, and verify the previous token fails. Never use `*` as an allowlist.
-The Hermes dashboard, rather than Nix/SOPS, writes these runtime values inside the persistent
-`/opt/data` mount. Pulling or recreating the official container does not replace `.env`.
-Signal linking state, if ever used, is similarly application state rather than a SOPS scalar;
-its inactive directory remains under `/var/lib/signal-cli`.
+Nix and SOPS own the secret half of Hermes' `.env` at `/var/lib/hermes/.hermes/.env`, and the
+upstream module rewrites that file on every activation instead of reconciling single keys.
+Credentials entered in the Hermes dashboard or produced by its QR onboarding are therefore not
+authoritative and are overwritten on the next switch: rotate in SOPS and rebuild. Both
+`startupHermesApi` and `startupWebhookAuth` reach n8n's encrypted credential store through
+`n8n-credentials-sync.service`, which imports them with n8n's own CLI; the values never appear
+in workflow JSON, argv, logs, or this repository.
 
 Edit it without printing values:
 
@@ -122,6 +123,42 @@ Retrieve the Hermes demo password only when placing it into a password manager:
 ```console
 sops --decrypt secrets/alucard-ai.yaml | yq -r '.hermes.dashboard_password'
 ```
+
+### Adding the second founder to the Hermes Telegram allowlist
+
+`hermes/telegram_allowed_users` is a comma-separated list of **numeric** Telegram user IDs, not
+usernames. It currently holds one ID. The service is already usable by both founders over SSH
+and the shared `hermes` CLI; this only adds the second Telegram chat origin, which Hermes keeps
+as a conversation history separate from the first.
+
+Kyrill obtains his own numeric ID by sending `/start` to `@userinfobot` in Telegram, or by
+running `/whoami` against the stack's own bot once he is allowlisted. Then, from Dracula:
+
+```console
+cd ~/nixos-config
+current=$(sops --decrypt --extract '["hermes"]["telegram_allowed_users"]' secrets/alucard-ai.yaml)
+printf '%s,%s' "$current" "<kyrill-numeric-id>" | jq -Rs . \
+  | sops set secrets/alucard-ai.yaml '["hermes"]["telegram_allowed_users"]' --value-stdin
+```
+
+That never prints the existing value. Confirm the shape, then deploy:
+
+```console
+sops --decrypt --extract '["hermes"]["telegram_allowed_users"]' secrets/alucard-ai.yaml | awk -F, '{ print NF " allowlisted id(s)" }'
+ssh alucard 'cd ~/nixos-config && sudo nixos-rebuild switch --flake .#alucard'
+```
+
+The switch rewrites `/var/lib/hermes/.hermes/.env` and restarts `hermes-agent.service`, so no
+dashboard step is involved. Verify that the new ID actually reached the container:
+
+```console
+ssh alucard 'docker --host unix:///run/docker.sock exec hermes-agent \
+  sh -c "grep -c \"^TELEGRAM_ALLOWED_USERS=\" /data/.hermes/.env"'
+```
+
+Then have Kyrill message the bot and confirm a Telegram-sourced session appears while Vincenzo's
+existing history stays separate. An unlisted account must still get no response — that is the
+control this list enforces, so never widen it to `*` and never set `GATEWAY_ALLOW_ALL_USERS`.
 
 Do not copy Dracula's project keys or administrative passwords. Prefer one Alucard workload
 key with a spending limit and optional matching Requesty Access List; create additional keys only

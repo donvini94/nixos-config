@@ -9,6 +9,14 @@
 let
   enableAI = true;
   requesty = import ../../lib/requesty-models.nix;
+  hermes = import ../../lib/hermes-agent.nix;
+  hermesN8nHandoff = pkgs.callPackage ../../packages/hermes-n8n-handoff.nix { };
+  # Both founders drive the same agent from their own host accounts. The CLI is
+  # intentionally shared state, not a per-user session boundary.
+  hermesUsers = [
+    username
+    "kyrill"
+  ];
   inherit (requesty) defaultModel models;
   secretFile = ../../secrets/alucard-ai.yaml;
   hermesProxyPort = 18084;
@@ -20,11 +28,11 @@ let
 in
 {
   imports = [
+    ../../modules/ai-ingress.nix
     ../../modules/remote-openai.nix
     ../../modules/n8n.nix
-    ../../modules/hermes.nix
-    ../../modules/wirken.nix
-    ../../modules/signal.nix
+    ../../modules/n8n-credentials.nix
+    ../../modules/hermes-dashboard.nix
   ];
 
   config = lib.mkIf enableAI {
@@ -38,10 +46,12 @@ in
         message = "Alucard AI services must remain loopback-only; use Tailscale Serve";
       }
       {
+        # The upstream module has no bind-address option: Hermes reads these
+        # from .env, so the loopback guarantee lives in the rendered values.
         assertion =
-          config.services.localHermes.dashboard.bindAddress == "127.0.0.1"
-          && config.services.localHermes.dashboard.environmentFile != null;
-        message = "Alucard Hermes must engage its auth gate; systemd still limits peers to loopback";
+          hermes.runtimeEnv.HERMES_DASHBOARD_HOST == "127.0.0.1"
+          && hermes.runtimeEnv.API_SERVER_HOST == "127.0.0.1";
+        message = "Alucard Hermes dashboard and API must stay loopback-only; use Tailscale Serve";
       }
       {
         assertion =
@@ -54,7 +64,6 @@ in
             13001
             18081
             hermesProxyPort
-            18790
             19000
             19091
             19100
@@ -80,12 +89,9 @@ in
         owner = username;
         mode = "0400";
       };
-      "wirken/vault_passphrase" = {
-        sopsFile = secretFile;
-        owner = "root";
-        mode = "0400";
-      };
-      "wirken/ingress_token" = {
+      # Shared by the n8n webhook credential and Hermes' handoff command; the
+      # two must agree or the inbox rejects Hermes with 403.
+      "n8n/webhook_token" = {
         sopsFile = secretFile;
         owner = "root";
         mode = "0400";
@@ -106,6 +112,18 @@ in
         mode = "0400";
       };
       "hermes/api_server_key" = {
+        sopsFile = secretFile;
+        owner = "root";
+        mode = "0400";
+      };
+      "hermes/telegram_bot_token" = {
+        sopsFile = secretFile;
+        owner = "root";
+        mode = "0400";
+      };
+      # Comma-separated numeric Telegram IDs. Structurally multi-value: append
+      # the second founder's ID when it is known. Never "*", never allow-all.
+      "hermes/telegram_allowed_users" = {
         sopsFile = secretFile;
         owner = "root";
         mode = "0400";
@@ -142,7 +160,12 @@ in
       group = "root";
     };
 
-    sops.templates."hermes-dashboard.env" = {
+    # Nix/SOPS is authoritative for the whole secret half of Hermes' .env: the
+    # upstream module rewrites that file on every activation instead of
+    # reconciling single keys, so anything only stored by the dashboard would be
+    # dropped. Telegram credentials were migrated out of the live container's
+    # .env on 2026-08-16. Edit SOPS, never the dashboard.
+    sops.templates."hermes.env" = {
       content = ''
         HERMES_DASHBOARD_BASIC_AUTH_USERNAME=demo
         HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH=${
@@ -150,6 +173,9 @@ in
         }
         HERMES_DASHBOARD_BASIC_AUTH_SECRET=${config.sops.placeholder."hermes/dashboard_session_secret"}
         API_SERVER_KEY=${config.sops.placeholder."hermes/api_server_key"}
+        TELEGRAM_BOT_TOKEN=${config.sops.placeholder."hermes/telegram_bot_token"}
+        TELEGRAM_ALLOWED_USERS=${config.sops.placeholder."hermes/telegram_allowed_users"}
+        N8N_WEBHOOK_TOKEN=${config.sops.placeholder."n8n/webhook_token"}
       '';
       restartUnits = [ "hermes-agent.service" ];
       mode = "0400";
@@ -157,11 +183,21 @@ in
       group = "root";
     };
 
-    # Restart when the environment template's shape changes. Secret-value
-    # changes are handled separately by the template's restartUnits hook.
-    systemd.services.hermes-agent.restartTriggers = [
-      config.sops.templates."hermes-dashboard.env".file
-    ];
+    # Upstream wants multi-user.target; this stack is gated behind
+    # ai-stack.target and must not start before the ingress it talks to.
+    # restartTriggers covers .env *shape* changes; the template's restartUnits
+    # covers secret-value changes.
+    systemd.services.hermes-agent = {
+      wantedBy = lib.mkForce [ "ai-stack.target" ];
+      partOf = [ "ai-stack.target" ];
+      after = [
+        "local-llama-logger.service"
+        "tinyproxy.service"
+      ];
+      requires = [ "local-llama-logger.service" ];
+      wants = [ "tinyproxy.service" ];
+      restartTriggers = [ config.sops.templates."hermes.env".file ];
+    };
 
     sops.templates."observability.env" = {
       content = ''
@@ -205,9 +241,22 @@ in
       upstreamBearerCredentialFile = config.sops.secrets."requesty/api_key".path;
       inherit models defaultModel;
       operators = [ username ];
-      bearerCredentialFile = config.sops.secrets."wirken/ingress_token".path;
-      bearerCredentialCaller = "wirken";
     };
+
+    # Ingress-level tracing is the cross-client view: OMP, OpenCode, Hermes and
+    # n8n all traverse this one proxy. OpenCode's own plugin adds nested
+    # agent/tool spans on top; the two are never summed for billing.
+    services.aiIngress.langfuse = {
+      enable = true;
+      publicKeyFile = config.sops.secrets."langfuse/project_public_key".path;
+      secretKeyFile = config.sops.secrets."langfuse/project_secret_key".path;
+    };
+
+    # Hermes runs as its own service identity inside a container and reaches
+    # the Org tree only through this inherited ACL.
+    systemd.tmpfiles.rules = [
+      "A+ /home/${username}/org - - - - u:hermes:rwX,d:u:hermes:rwx"
+    ];
 
     services.localN8n = {
       enable = true;
@@ -217,26 +266,62 @@ in
       operators = [ username ];
       orgDirectory = "/home/${username}/org";
       hermesApiPort = 8642;
+      workflowDirectory = ../../n8n/workflows/alucard;
     };
 
-    services.localHermes = {
+    # Both credentials are provisioned by n8n's own CLI so they land encrypted
+    # in n8n's database; the values exist only in SOPS and systemd credentials.
+    services.n8nCredentials = {
       enable = true;
-      model = defaultModel;
-      providerName = "alucard-requesty";
-      legacyProviderNames = [
-        "dracula-local"
-        "stack-ingress"
-      ];
-      contextLength = models.${defaultModel}.context;
-      proxyUrl = hermesProxyUrl;
-      operators = [ username ];
-      orgDirectory = "/home/${username}/org";
-      apiServer.enable = true;
-      dashboard = {
-        bindAddress = "127.0.0.1";
-        environmentFile = config.sops.templates."hermes-dashboard.env".path;
+      hermesApiKeyFile = config.sops.secrets."hermes/api_server_key".path;
+      webhookTokenFile = config.sops.secrets."n8n/webhook_token".path;
+    };
+
+    # One agent for the trusted founding pair. Sessions separate by chat origin;
+    # memory, skills, workspace and /org are shared on purpose. This is a
+    # two-person team boundary, not customer multi-tenancy — if that ever
+    # changes, deploy separate upstream instances instead of widening this one.
+    services.hermes-agent = {
+      enable = true;
+      addToSystemPackages = true;
+      settings = hermes.mkSettings {
+        providerName = "alucard-requesty";
+        inherit defaultModel;
+        ingressUrl = "http://127.0.0.1:8080/v1";
+        contextLength = models.${defaultModel}.context;
+      };
+      documents = {
+        "AGENTS.md" = ../../hermes/workspace/AGENTS.md;
+        "SOUL.md" = ../../hermes/workspace/SOUL.md;
+      };
+      environment = hermes.runtimeEnv // {
+        # Supported messaging adapters egress through the domain-filtered proxy.
+        HTTPS_PROXY = hermesProxyUrl;
+        https_proxy = hermesProxyUrl;
+        TELEGRAM_PROXY = hermesProxyUrl;
+        NO_PROXY = "127.0.0.1,localhost";
+        no_proxy = "127.0.0.1,localhost";
+      };
+      environmentFiles = [ config.sops.templates."hermes.env".path ];
+      extraPackages = [ hermesN8nHandoff ];
+      container = {
+        enable = true;
+        backend = "docker";
+        image = hermes.image;
+        hostUsers = hermesUsers;
+        extraVolumes = [ "/home/${username}/org:/org:rw" ];
+        # extraPackages only reaches the host profile and the native unit's
+        # PATH; in container mode the agent's PATH comes from the image, so the
+        # handoff command has to be named explicitly. The store is already
+        # mounted read-only, so no extra volume is needed.
+        extraOptions = hermes.containerOptions ++ [
+          "--env"
+          "PATH=${hermesN8nHandoff}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+        ];
       };
     };
+
+    services.hermesDashboard.enable = true;
 
     # Supported Hermes messaging adapters use this domain-filtered proxy.
     # Agent policy separately limits tool-driven network calls to approved
@@ -278,19 +363,6 @@ in
       ];
     };
 
-    services.localWirken = {
-      enable = true;
-      model = defaultModel;
-      vaultPassphraseFile = config.sops.secrets."wirken/vault_passphrase".path;
-      ingressCredentialFile = config.sops.secrets."wirken/ingress_token".path;
-      operators = [ username ];
-    };
-
-    services.localSignal = {
-      enable = true;
-      operators = [ username ];
-    };
-
     services.localObservability = {
       enable = true;
       environmentFile = config.sops.templates."observability.env".path;
@@ -301,7 +373,6 @@ in
     };
 
     services.containerUpdates.units = [
-      "wirken-sandbox-image.service"
       "docker-n8n.service"
       "docker-n8n-runners.service"
     ];

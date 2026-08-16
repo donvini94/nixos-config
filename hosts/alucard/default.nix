@@ -27,7 +27,6 @@ in
     ../../modules/observability.nix
     ../../modules/container-updates.nix
     ../../modules/vulnerability-scan.nix
-    ../../configuration.nix
     ../../secrets/secrets.nix
   ];
 

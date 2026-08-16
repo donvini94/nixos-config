@@ -15,22 +15,15 @@ let
     endpoint = "http://127.0.0.1:8080/v1";
     provider = "dracula-local";
     providerName = "Dracula local llama.cpp";
-    defaultModel = "dirk-qwen3.8-27b-local";
+    inherit (osConfig.services.localLlama) defaultModel;
     disableStrictTools = true;
-    models = {
-      "dirk-qwen3.8-27b-local" = {
-        name = "Dirk Qwen3.8 27B UD-Q4_K_XL (Dracula local)";
-        context = 32768;
-        output = 8192;
-        reasoning = false;
-      };
-      "qwen3.6-35b-a3b" = {
-        name = "Qwen3.6 35B-A3B UD-Q3_K_M (Dracula local)";
-        context = 32768;
-        output = 8192;
-        reasoning = false;
-      };
-    };
+    # llama.nix names these fields for the serving side; clients consume the
+    # OpenAI-shaped names that services.remoteOpenAI.models already exposes.
+    models = lib.mapAttrs (_id: model: {
+      name = model.displayName;
+      context = model.contextSize;
+      inherit (model) output reasoning cost;
+    }) osConfig.services.localLlama.models;
   };
   requestyProfile = {
     endpoint =
@@ -74,19 +67,12 @@ let
         headers.X-AI-Caller = "omp";
         models = lib.mapAttrsToList (id: model: {
           inherit id;
-          inherit (model) name;
-          reasoning = model.reasoning;
+          inherit (model) name reasoning;
           input = [ "text" ];
-          cost =
-            (model.cost or {
-              input = 0;
-              output = 0;
-            }
-            )
-            // {
-              cacheRead = 0;
-              cacheWrite = 0;
-            };
+          cost = model.cost // {
+            cacheRead = 0;
+            cacheWrite = 0;
+          };
           contextWindow = model.context;
           maxTokens = model.output;
           compat = {
@@ -122,16 +108,6 @@ let
   yaml = pkgs.formats.yaml { };
   ompPackage = pkgs.callPackage ../packages/omp.nix { };
   ompManagedConfig = yaml.generate "omp-nixos-config.yml" {
-    modelRoles = {
-      default = defaultModelSelector;
-      smol = defaultModelSelector;
-      slow = defaultModelSelector;
-      plan = defaultModelSelector;
-      commit = defaultModelSelector;
-      tiny = defaultModelSelector;
-      task = defaultModelSelector;
-      advisor = defaultModelSelector;
-    };
     cycleOrder = [ "default" ];
     inherit enabledModels;
     disabledProviders = [ "llama.cpp" ];

@@ -1,0 +1,157 @@
+{
+  "active": true,
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Validate message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Validate message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Message valid?",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Message valid?": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Acknowledge",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Reject message",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "id": "startupHermesInbox",
+  "name": "Startup / Hermes inbox",
+  "nodes": [
+    {
+      "id": "9c0d1e2f-3a4b-4c5d-6e7f-8a9b0c1d2e10",
+      "name": "Webhook",
+      "parameters": {
+        "authentication": "headerAuth",
+        "httpMethod": "POST",
+        "options": {},
+        "path": "startup/hermes-inbox",
+        "responseMode": "responseNode"
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "startupWebhookAuth",
+          "name": "Startup webhook token"
+        }
+      },
+      "position": [
+        0,
+        0
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "webhookId": "0d1e2f3a-4b5c-4d6e-7f8a-9b0c1d2e3f11"
+    },
+    {
+      "id": "1e2f3a4b-5c6d-4e7f-8a9b-0c1d2e3f4a12",
+      "name": "Validate message",
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body ?? {};\nconst keys = Object.keys(body).sort();\nconst expected = ['correlation_id', 'kind', 'payload'];\nconst shapeOk = keys.length === expected.length && keys.every((k, i) => k === expected[i]);\nconst idOk = typeof body.correlation_id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(body.correlation_id);\nconst kindOk = body.kind === 'artifact' || body.kind === 'event';\nconst payloadOk = body.payload !== null && typeof body.payload === 'object' && !Array.isArray(body.payload);\nconst valid = shapeOk && idOk && kindOk && payloadOk;\nconst reason = !shapeOk\n  ? 'body must contain exactly correlation_id, kind and payload'\n  : !idOk\n    ? 'correlation_id must match [A-Za-z0-9_-]{1,64}'\n    : !kindOk\n      ? \"kind must be 'artifact' or 'event'\"\n      : !payloadOk\n        ? 'payload must be a JSON object'\n        : '';\nreturn [{ json: { valid, reason, correlation_id: body.correlation_id ?? null, kind: body.kind ?? null, payload: body.payload ?? null } }];"
+      },
+      "position": [
+        220,
+        0
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "2f3a4b5c-6d7e-4f8a-9b0c-1d2e3f4a5b13",
+      "name": "Message valid?",
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "3a4b5c6d-7e8f-4a9b-0c1d-2e3f4a5b6c14",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "position": [
+        440,
+        0
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2
+    },
+    {
+      "id": "4b5c6d7e-8f9a-4b0c-1d2e-3f4a5b6c7d15",
+      "name": "Acknowledge",
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'accepted', correlation_id: $json.correlation_id, kind: $json.kind, payload: $json.payload } }}"
+      },
+      "position": [
+        660,
+        -100
+      ],
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4
+    },
+    {
+      "id": "5c6d7e8f-9a0b-4c1d-2e3f-4a5b6c7d8e16",
+      "name": "Reject message",
+      "parameters": {
+        "options": {
+          "responseCode": 400
+        },
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'rejected', reason: $json.reason } }}"
+      },
+      "position": [
+        660,
+        120
+      ],
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4
+    }
+  ],
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [],
+  "versionId": "6d7e8f9a-0b1c-4d2e-3f4a-5b6c7d8e9f17"
+}

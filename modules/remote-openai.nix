@@ -7,19 +7,9 @@
 
 let
   cfg = config.services.remoteOpenAI;
-  stateDirectoryName = lib.removePrefix "/var/lib/" cfg.stateDirectory;
-  proxy = pkgs.writeText "openai-logging-proxy.py" (builtins.readFile ./llama-logging-proxy.py);
-  usageSummary = pkgs.writeText "ai-usage-summary.py" (builtins.readFile ./llama-usage-summary.py);
-  evalRunner = pkgs.writeText "ai-eval.py" (builtins.readFile ../eval/ai_eval.py);
-  evalHarvester = pkgs.writeText "ai-eval-harvest.py" (builtins.readFile ../eval/harvest.py);
   expectedModels = pkgs.writeText "remote-openai-models" (
     lib.concatStringsSep "\n" (builtins.attrNames cfg.models) + "\n"
   );
-  prepareLogs = pkgs.writeShellScript "prepare-remote-openai-logs" ''
-    ${pkgs.coreutils}/bin/install -d -m 0750 ${lib.escapeShellArg (builtins.dirOf cfg.requestLog)}
-    ${pkgs.coreutils}/bin/touch ${lib.escapeShellArg cfg.requestLog}
-    ${pkgs.coreutils}/bin/chmod 0640 ${lib.escapeShellArg cfg.requestLog}
-  '';
   validateUpstream = pkgs.writeShellScript "validate-remote-openai" ''
     set -euo pipefail
     credential="$CREDENTIALS_DIRECTORY/upstream-bearer-token"
@@ -130,15 +120,6 @@ in
       type = lib.types.listOf lib.types.str;
       default = [ ];
     };
-    bearerCredentialFile = lib.mkOption {
-      type = lib.types.nullOr lib.types.path;
-      default = null;
-      description = "Optional inbound token used only for caller attribution.";
-    };
-    bearerCredentialCaller = lib.mkOption {
-      type = lib.types.str;
-      default = "wirken";
-    };
     logRetention = lib.mkOption {
       type = lib.types.ints.positive;
       default = 14;
@@ -165,161 +146,29 @@ in
       }
     ];
 
-    systemd.targets.ai-stack = {
-      description = "AI application stack";
-      wantedBy = [ "multi-user.target" ];
+    # The ingress, its logging, metrics, and operator tooling are shared with
+    # the local llama backend; this module only supplies the Requesty one and
+    # the catalog check that refuses to start on a drifted model registry.
+    services.aiIngress = {
+      enable = true;
+      inherit (cfg)
+        backendUrl
+        backendHealthPath
+        bindAddress
+        port
+        stateDirectory
+        requestLog
+        logRetention
+        operators
+        upstreamBearerCredentialFile
+        ;
+      environmentLabel = config.networking.hostName;
+      allowedModels = builtins.attrNames cfg.models;
+      priceMap = lib.mapAttrs (_: model: model.cost) cfg.models;
+      extraPreStart = [ validateUpstream ];
+      extraAfter = [ "network-online.target" ];
     };
 
-    users = {
-      groups.llama = { };
-      users = {
-        llama = {
-          isSystemUser = true;
-          group = "llama";
-          home = cfg.stateDirectory;
-        };
-      }
-      // lib.genAttrs cfg.operators (_: {
-        extraGroups = [ "llama" ];
-      });
-    };
-
-    systemd.services.local-llama-logger = {
-      description = "Payload-logging proxy for the remote OpenAI backend";
-      wantedBy = [ "ai-stack.target" ];
-      partOf = [ "ai-stack.target" ];
-      after = [ "network-online.target" ];
-      wants = [ "network-online.target" ];
-      environment = {
-        LLAMA_BACKEND = cfg.backendUrl;
-        LLAMA_BACKEND_HEALTH_PATH = cfg.backendHealthPath;
-        LLAMA_PROXY_HOST = cfg.bindAddress;
-        LLAMA_PROXY_PORT = toString cfg.port;
-        LLAMA_REQUEST_LOG = cfg.requestLog;
-        LLAMA_ALLOWED_MODELS = builtins.toJSON (builtins.attrNames cfg.models);
-        LLAMA_UPSTREAM_BEARER_CREDENTIAL = "upstream-bearer-token";
-      }
-      // lib.optionalAttrs (cfg.bearerCredentialFile != null) {
-        LLAMA_BEARER_TOKEN_CREDENTIAL = "caller-bearer-token";
-        LLAMA_BEARER_CALLER = cfg.bearerCredentialCaller;
-      };
-      serviceConfig = {
-        User = "llama";
-        Group = "llama";
-        StateDirectory = stateDirectoryName;
-        StateDirectoryMode = "0750";
-        ExecStartPre = [
-          validateUpstream
-          prepareLogs
-        ];
-        ExecStart = "${pkgs.python3}/bin/python3 ${proxy}";
-        LoadCredential = [
-          "upstream-bearer-token:${cfg.upstreamBearerCredentialFile}"
-        ]
-        ++ lib.optional (
-          cfg.bearerCredentialFile != null
-        ) "caller-bearer-token:${cfg.bearerCredentialFile}";
-        Restart = "on-failure";
-        RestartSec = "2s";
-        UMask = "0027";
-        NoNewPrivileges = true;
-        PrivateDevices = true;
-        PrivateTmp = true;
-        ProtectHome = true;
-        ProtectSystem = "strict";
-        RestrictAddressFamilies = [
-          "AF_UNIX"
-          "AF_INET"
-          "AF_INET6"
-        ];
-      };
-    };
-
-    security.polkit.extraConfig = ''
-      polkit.addRule(function(action, subject) {
-        const units = ["ai-stack.target", "local-llama-logger.service"];
-        const verbs = ["start", "stop", "restart", "kill"];
-        if (action.id === "org.freedesktop.systemd1.manage-units"
-            && subject.isInGroup("llama")
-            && units.indexOf(action.lookup("unit")) !== -1
-            && verbs.indexOf(action.lookup("verb")) !== -1) {
-          return polkit.Result.YES;
-        }
-      });
-    '';
-
-    services.logrotate.settings.${cfg.requestLog} = {
-      daily = true;
-      size = "1G";
-      rotate = cfg.logRetention;
-      compress = true;
-      missingok = true;
-      notifempty = true;
-      copytruncate = true;
-    };
-
-    environment.systemPackages = [
-      (pkgs.writeShellScriptBin "ai-stack-start" ''
-        set -euo pipefail
-        ${pkgs.systemd}/bin/systemctl start ai-stack.target
-        read -r -a stack_units <<< "$(${pkgs.systemd}/bin/systemctl show --property=Wants --value ai-stack.target)"
-        for _ in $(${pkgs.coreutils}/bin/seq 1 200); do
-          if ${pkgs.systemd}/bin/systemctl is-active --quiet ai-stack.target "''${stack_units[@]}" \
-            && ${pkgs.curl}/bin/curl --fail --silent --max-time 1 \
-              http://${cfg.bindAddress}:${toString cfg.port}/health >/dev/null; then
-            exit 0
-          fi
-          ${pkgs.coreutils}/bin/sleep 1
-        done
-        echo "AI stack did not become healthy within 200 seconds" >&2
-        exit 1
-      '')
-      (pkgs.writeShellScriptBin "ai-stack-stop" ''
-        set -euo pipefail
-        read -r -a stack_units <<< "$(${pkgs.systemd}/bin/systemctl show --property=Wants --value ai-stack.target)"
-        ${pkgs.systemd}/bin/systemctl stop ai-stack.target
-        for _ in $(${pkgs.coreutils}/bin/seq 1 150); do
-          all_stopped=true
-          for unit in "''${stack_units[@]}"; do
-            state="$(${pkgs.systemd}/bin/systemctl is-active "$unit" || true)"
-            if [ "$state" != inactive ] && [ "$state" != failed ]; then
-              all_stopped=false
-              break
-            fi
-          done
-          if [ "$all_stopped" = true ]; then
-            exit 0
-          fi
-          ${pkgs.coreutils}/bin/sleep 0.2
-        done
-        echo "AI services did not stop within 30 seconds" >&2
-        exit 1
-      '')
-      (pkgs.writeShellScriptBin "ai-stack-health" ''
-        set -euo pipefail
-        read -r -a stack_units <<< "$(${pkgs.systemd}/bin/systemctl show --property=Wants --value ai-stack.target)"
-        ${pkgs.systemd}/bin/systemctl is-active --quiet ai-stack.target "''${stack_units[@]}"
-        exec ${pkgs.curl}/bin/curl --fail --silent --show-error \
-          http://${cfg.bindAddress}:${toString cfg.port}/health
-      '')
-      (pkgs.writeShellScriptBin "ai-usage-summary" ''
-        export LLAMA_REQUEST_LOG=${lib.escapeShellArg cfg.requestLog}
-        exec ${pkgs.python3}/bin/python3 ${usageSummary} "$@"
-      '')
-      (pkgs.writeShellScriptBin "ai-eval" ''
-        export PATH=${
-          lib.makeBinPath [
-            pkgs.git
-            pkgs.coreutils
-            pkgs.bash
-          ]
-        }:"$PATH"
-        exec ${pkgs.python3}/bin/python3 ${evalRunner} "$@"
-      '')
-      (pkgs.writeShellScriptBin "ai-eval-harvest" ''
-        export PATH=${lib.makeBinPath [ pkgs.git ]}:"$PATH"
-        exec ${pkgs.python3}/bin/python3 ${evalHarvester} "$@"
-      '')
-    ];
+    systemd.services.local-llama-logger.wants = [ "network-online.target" ];
   };
 }

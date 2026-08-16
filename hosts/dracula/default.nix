@@ -9,6 +9,7 @@
 
 let
   requesty = import ../../lib/requesty-models.nix;
+  hermes = import ../../lib/hermes-agent.nix;
   hermesDesktop = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.desktop;
   hermesDesktopLauncher = pkgs.makeDesktopItem {
     name = "hermes-desktop";
@@ -24,11 +25,11 @@ in
     ../../modules/desktop.nix
     ../../modules/nvidia.nix
     ../../modules/gaming.nix
+    ../../modules/ai-ingress.nix
     ../../modules/llama.nix
     ../../modules/remote-openai.nix
     ../../modules/n8n.nix
-    ../../modules/hermes.nix
-    ../../modules/wirken.nix
+    ../../modules/hermes-dashboard.nix
     ../../modules/observability.nix
     ../../modules/container-updates.nix
     ./hardware.nix
@@ -84,9 +85,22 @@ in
     backendPort = 18080;
     modelStartPort = 18100;
     operators = [ username ];
-    bearerCredentialFile = config.sops.secrets."wirken/ingress_token".path;
-    bearerCredentialCaller = "wirken";
   };
+
+  # Ingress-level tracing is the cross-client view: OMP, OpenCode, Hermes and
+  # n8n all traverse this one proxy. OpenCode's own plugin adds nested
+  # agent/tool spans on top; the two are never summed for billing.
+  services.aiIngress.langfuse = {
+    enable = true;
+    publicKeyFile = config.sops.secrets."langfuse/project_public_key".path;
+    secretKeyFile = config.sops.secrets."langfuse/project_secret_key".path;
+  };
+
+  # Hermes runs as its own service identity inside a container and reaches the
+  # Org tree only through this inherited ACL.
+  systemd.tmpfiles.rules = [
+    "A+ /home/${username}/org - - - - u:hermes:rwX,d:u:hermes:rwx"
+  ];
 
   # No Requesty credential is copied to Dracula. Interactive clients reach the
   # authenticated Alucard ingress privately over Tailscale.
@@ -103,16 +117,6 @@ in
     "n8n/runner_auth_token" = {
       sopsFile = ../../secrets/dracula-ai.yaml;
       owner = username;
-      mode = "0400";
-    };
-    "wirken/vault_passphrase" = {
-      sopsFile = ../../secrets/dracula-ai.yaml;
-      owner = "root";
-      mode = "0400";
-    };
-    "wirken/ingress_token" = {
-      sopsFile = ../../secrets/dracula-ai.yaml;
-      owner = "root";
       mode = "0400";
     };
     "hermes/api_server_key" = {
@@ -205,26 +209,45 @@ in
     operators = [ username ];
     orgDirectory = "/home/${username}/org";
     hermesApiPort = 8642;
+    workflowDirectory = ../../n8n/workflows/dracula;
   };
 
-  services.localHermes = {
+  # Personal, single-operator agent. Alucard runs a separate shared instance;
+  # the two never share state.
+  services.hermes-agent = {
     enable = true;
-    model = "dirk-qwen3.8-27b-local";
-    providerName = "dracula-local";
-    legacyProviderNames = [ "stack-ingress" ];
-    contextLength = 32768;
-    operators = [ username ];
-    orgDirectory = "/home/${username}/org";
-    apiServer.enable = true;
-    dashboard.environmentFile = config.sops.templates."hermes.env".path;
+    addToSystemPackages = true;
+    settings = hermes.mkSettings {
+      providerName = "dracula-local";
+      defaultModel = "dirk-qwen3.8-27b-local";
+      ingressUrl = "http://127.0.0.1:8080/v1";
+      contextLength = 32768;
+    };
+    documents = {
+      "AGENTS.md" = ../../hermes/workspace/AGENTS.md;
+      "SOUL.md" = ../../hermes/workspace/SOUL.md;
+    };
+    environment = hermes.runtimeEnv;
+    environmentFiles = [ config.sops.templates."hermes.env".path ];
+    container = {
+      enable = true;
+      backend = "docker";
+      image = hermes.image;
+      hostUsers = [ username ];
+      extraVolumes = [ "/home/${username}/org:/org:rw" ];
+      extraOptions = hermes.containerOptions;
+    };
   };
 
-  services.localWirken = {
-    enable = true;
-    model = "dirk-qwen3.8-27b-local";
-    vaultPassphraseFile = config.sops.secrets."wirken/vault_passphrase".path;
-    ingressCredentialFile = config.sops.secrets."wirken/ingress_token".path;
-    operators = [ username ];
+  services.hermesDashboard.enable = true;
+
+  # Upstream wants multi-user.target; this stack is gated behind ai-stack.target
+  # and must not start before the ingress it talks to.
+  systemd.services.hermes-agent = {
+    wantedBy = lib.mkForce [ "ai-stack.target" ];
+    partOf = [ "ai-stack.target" ];
+    after = [ "local-llama-logger.service" ];
+    requires = [ "local-llama-logger.service" ];
   };
 
   services.localObservability = {
@@ -238,7 +261,6 @@ in
   services.containerUpdates = {
     enable = true;
     units = [
-      "wirken-sandbox-image.service"
       "docker-n8n.service"
       "docker-n8n-runners.service"
     ];

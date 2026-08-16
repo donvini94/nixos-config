@@ -1,3 +1,7 @@
+# Images are pinned by digest so a rebuild can never pull a different bit-for-bit
+# artifact than the one that was reviewed. Renovate proposes digest bumps as PRs;
+# the readable tag in front of @sha256: exists only so a human can see the version.
+
 name: observability
 
 x-langfuse-environment: &langfuse-environment
@@ -42,13 +46,13 @@ x-langfuse-dependencies: &langfuse-dependencies
 
 services:
   langfuse-worker:
-    image: docker.io/langfuse/langfuse-worker:4
+    image: docker.io/langfuse/langfuse-worker:4@sha256:e11bbafc9e0b68c7dd9ae819ed8b1f21e0cf05fe89b9dda0c72e2c6a233145b3
     restart: always
     depends_on: *langfuse-dependencies
     environment: *langfuse-environment
 
   langfuse-web:
-    image: docker.io/langfuse/langfuse:4
+    image: docker.io/langfuse/langfuse:4@sha256:f24c8b1c987a5dc78e3a75ad3e5d9f87ebcadafbd91d8674a739c43fad451905
     restart: always
     depends_on: *langfuse-dependencies
     ports:
@@ -69,7 +73,7 @@ services:
       LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_INIT_USER_PASSWORD}
 
   clickhouse:
-    image: docker.io/clickhouse/clickhouse-server:25.12
+    image: docker.io/clickhouse/clickhouse-server:25.12@sha256:8a790dd3468db22b1d4e7b18a176f378ff5ff6053b9c48dd4ea1fa71a24c5ba6
     restart: always
     user: "101:101"
     environment:
@@ -87,7 +91,7 @@ services:
       start_period: 1s
 
   minio:
-    image: cgr.dev/chainguard/minio
+    image: cgr.dev/chainguard/minio:latest@sha256:4c94e754559e9fb91cefe103a056d63582b5892de612b647d8e1b0751af5067e
     restart: always
     entrypoint: sh
     command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" --console-address ":9001" /data'
@@ -106,7 +110,7 @@ services:
       start_period: 1s
 
   redis:
-    image: docker.io/redis:7
+    image: docker.io/redis:7@sha256:e9b2e45ecd47fbb69b877cf8d045d5cccaaaed52524b6e098b4abe8212994f73
     restart: always
     command: --requirepass ${REDIS_AUTH} --maxmemory-policy noeviction
     volumes:
@@ -120,7 +124,7 @@ services:
       REDIS_AUTH: ${REDIS_AUTH}
 
   postgres:
-    image: docker.io/postgres:17
+    image: docker.io/postgres:17@sha256:e38411452a464af89e5adadb8d223bf53b898d47d6ef918b2d58c08707350449
     restart: always
     environment:
       POSTGRES_USER: postgres
@@ -137,7 +141,7 @@ services:
       retries: 10
 
   prometheus:
-    image: docker.io/prom/prometheus:latest
+    image: docker.io/prom/prometheus:latest@sha256:508729e0e2d18e11fd742a5a5ca70e557b940a93948c3c95fd0123a6fd538b69
     restart: always
     network_mode: host
     command:
@@ -151,7 +155,7 @@ services:
       - prometheus_data:/prometheus
 
   grafana:
-    image: docker.io/grafana/grafana:latest
+    image: docker.io/grafana/grafana:latest@sha256:ab5cb380e3ff3172d6c8bd2e7cfd31cce977d2881b260e1f5bc089bf0b759b43
     restart: always
     network_mode: host
     depends_on:
@@ -172,7 +176,7 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
 
   node-exporter:
-    image: quay.io/prometheus/node-exporter:latest
+    image: quay.io/prometheus/node-exporter:latest@sha256:1b4e4438faca4dd7e001dd445d161a4a2091b0fededa84093b3a8dfeae1f1be0
     restart: always
     network_mode: host
     pid: host
@@ -209,7 +213,7 @@ services:
       - /dev/disk:/dev/disk:ro
 
   dcgm-exporter:
-    image: nvcr.io/nvidia/k8s/dcgm-exporter:latest
+    image: nvcr.io/nvidia/k8s/dcgm-exporter:latest@sha256:613ab03c11d442fd960ff515f547e9921537454a712d08160bc8f677f89f1c35
     profiles: [gpu]
     restart: always
     cap_add:

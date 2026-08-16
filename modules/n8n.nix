@@ -9,7 +9,6 @@ let
   cfg = config.services.localN8n;
   n8nUrl = "http://${cfg.bindAddress}:${toString cfg.port}";
   stateDirectory = "/var/lib/n8n-container";
-  nativeStateDirectory = "/var/lib/private/n8n/.n8n";
   dockerNetwork = "n8n-local";
   dockerBridge = "n8n-local0";
   dockerSubnet = "172.30.0.0/24";
@@ -26,16 +25,20 @@ in
   options.services.localN8n = {
     enable = lib.mkEnableOption "local n8n workflow service";
 
+    # Pinned by digest, with the readable version kept in front of it. n8n and
+    # its task runners speak a versioned protocol and share one SQLite schema,
+    # so they must move together, in a reviewed commit — never by a restart
+    # happening to pull a newer `latest`. Renovate proposes digest bumps.
     image = lib.mkOption {
       type = lib.types.str;
-      default = "docker.n8n.io/n8nio/n8n:latest";
-      description = "Rolling official n8n OCI image.";
+      default = "docker.n8n.io/n8nio/n8n:2.34.6@sha256:f5140088385af2d4e681e177d8264bcb41e8fe126062030c5c65cd8f3e1605e1";
+      description = "Digest-pinned official n8n OCI image.";
     };
 
     runnerImage = lib.mkOption {
       type = lib.types.str;
-      default = "docker.io/n8nio/runners:latest";
-      description = "Rolling official n8n task-runner OCI image.";
+      default = "docker.io/n8nio/runners:2.34.6@sha256:57356a1d2355177e308d6df72b9cc5dff25e36b146c2339eddb4bbfd69f3dc36";
+      description = "Digest-pinned official n8n task-runner OCI image; must match `image`.";
     };
 
     bindAddress = lib.mkOption {
@@ -64,6 +67,15 @@ in
       type = lib.types.nullOr lib.types.path;
       default = null;
       description = "Root-only environment file containing the runner authentication token.";
+    };
+
+    # Workflows are host-specific: the delegate/inbox pair only makes sense
+    # where Hermes is the shared team agent, and the provisioning smoke test
+    # asserts Dracula's local model. Importing the whole tree on both hosts
+    # would install workflows whose dependencies do not exist there.
+    workflowDirectory = lib.mkOption {
+      type = lib.types.path;
+      description = "Directory of reviewed workflow JSON installed by `n8n-workflows import`.";
     };
 
     operators = lib.mkOption {
@@ -121,7 +133,7 @@ in
         n8n = {
           image = cfg.image;
           autoStart = false;
-          pull = "always";
+          pull = "missing";
           ports = [ "${cfg.bindAddress}:${toString cfg.port}:5678" ];
           networks = [ dockerNetwork ];
           volumes = [
@@ -199,7 +211,7 @@ in
         n8n-runners = {
           image = cfg.runnerImage;
           autoStart = false;
-          pull = "always";
+          pull = "missing";
           dependsOn = [ "n8n" ];
           networks = [ dockerNetwork ];
           environmentFiles = [ cfg.runnerEnvironmentFile ];
@@ -224,26 +236,6 @@ in
       "d ${stateDirectory} 0750 1000 1000 -"
       "d ${cfg.orgDirectory} 2770 ${builtins.head cfg.operators} users -"
     ];
-
-    systemd.services.n8n-state-migrate = {
-      description = "Migrate native n8n state to the official container layout";
-      before = [ "docker-n8n.service" ];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-      };
-      script = ''
-        set -euo pipefail
-        ${pkgs.coreutils}/bin/install -d -m 0750 -o 1000 -g 1000 ${stateDirectory}
-        if [ ! -e ${stateDirectory}/database.sqlite ] \
-          && [ -e ${nativeStateDirectory}/database.sqlite ]; then
-          ${pkgs.coreutils}/bin/cp -a ${nativeStateDirectory}/. ${stateDirectory}/
-          ${pkgs.coreutils}/bin/chown -R 1000:1000 ${stateDirectory}
-          ${pkgs.coreutils}/bin/touch ${stateDirectory}/.migrated-from-native
-        fi
-        ${pkgs.coreutils}/bin/chmod 0750 ${stateDirectory}
-      '';
-    };
 
     systemd.services.n8n-docker-network = {
       description = "Private Docker network for n8n and its task runners";
@@ -351,14 +343,8 @@ in
     systemd.services.docker-n8n = {
       wantedBy = lib.mkForce [ "ai-stack.target" ];
       partOf = [ "ai-stack.target" ];
-      after = [
-        "n8n-state-migrate.service"
-        "n8n-docker-network.service"
-      ];
-      requires = [
-        "n8n-state-migrate.service"
-        "n8n-docker-network.service"
-      ];
+      after = [ "n8n-docker-network.service" ];
+      requires = [ "n8n-docker-network.service" ];
       serviceConfig = {
         TimeoutStartSec = lib.mkForce "600s";
         TimeoutStopSec = lib.mkForce "40s";
@@ -422,7 +408,7 @@ in
     };
 
     environment.systemPackages = [
-      (pkgs.writeShellScriptBin "n8n-workflows-import" ''
+      (pkgs.writeShellScriptBin "n8n-workflows" ''
         export PATH=${
           lib.makeBinPath [
             pkgs.coreutils
@@ -432,20 +418,12 @@ in
             pkgs.jq
           ]
         }:"$PATH"
-        export N8N_WORKFLOW_DIR=${../n8n/workflows}
-        exec ${pkgs.bash}/bin/bash ${../n8n/bin/n8n-workflows-import} "$@"
-      '')
-      (pkgs.writeShellScriptBin "n8n-workflows-export" ''
-        export PATH=${
-          lib.makeBinPath [
-            pkgs.coreutils
-            pkgs.docker
-            pkgs.findutils
-            pkgs.gnugrep
-            pkgs.jq
-          ]
-        }:"$PATH"
-        exec ${pkgs.bash}/bin/bash ${../n8n/bin/n8n-workflows-export} "$@"
+        # The n8n container belongs to the system daemon. Operators may have a
+        # rootless DOCKER_HOST in their environment (Alucard does), which would
+        # otherwise make this tool report the container as missing.
+        export DOCKER_HOST=unix:///run/docker.sock
+        export N8N_WORKFLOW_DIR=${cfg.workflowDirectory}
+        exec ${pkgs.bash}/bin/bash ${../n8n/bin/n8n-workflows} "$@"
       '')
     ];
   };

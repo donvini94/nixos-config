@@ -20,7 +20,7 @@ let
   #   astronaut · black_hole · cyberpunk · hyprland_kath · jake_the_dog
   #   japanese_aesthetic · pixel_sakura · pixel_sakura_static
   #   post-apocalyptic_hacker · purple_leaves
-  sddm-astronaut = (pkgs.sddm-astronaut.override {
+  sddm-astronaut = pkgs.sddm-astronaut.override {
     embeddedTheme = "black_hole";
     # themeConfig is emitted as `black_hole.conf.user`, which SDDM MERGES over the
     # base conf (non-empty keys only). The QML branches on the Background file
@@ -33,7 +33,8 @@ let
       DimBackground = "0.0";
 
       # Layout: solid panel on the LEFT, video to its right (anchored to the form).
-      # The form WIDTH is patched in Main.qml below (no config key for it).
+      # The theme sizes the form at `parent.width / 2.5` with no config key for it;
+      # at 5120 that is a 2048px panel and the video keeps the remaining width.
       FormPosition = "left";
       HaveFormBackground = "true";
 
@@ -78,22 +79,7 @@ let
       HoverSessionButtonTextColor = "#fb5d37";
       HoverVirtualKeyboardButtonTextColor = "#fb5d37";
     };
-  }).overrideAttrs (old: {
-    # The login-form width is hard-coded in Main.qml (`parent.width / 2.5`) with no
-    # config key. Repoint it so on the 5120-wide ultrawide the video keeps its
-    # NATIVE 3840px on the right and the form takes the remaining 1280px (1:1, no
-    # scaling). The Math.max floor keeps the form usable if the greeter ever comes
-    # up narrower than 5120 (e.g. NVIDIA auto-selecting the monitor's 2560 base-EDID
-    # mode): `parent.width - 3840` == `parent.width * 0.25` at exactly 5120, so the
-    # intended layout is unchanged, but the form can never collapse to <=0 width.
-    # Use postFixup, NOT postInstall: the override's custom installPhase never calls
-    # `runHook postInstall`, but fixupPhase runs by default and calls postFixup.
-    postFixup = (old.postFixup or "") + ''
-      f=$out/share/sddm/themes/sddm-astronaut-theme/Main.qml
-      chmod u+w "$f"
-      substituteInPlace "$f" --replace 'parent.width / 2.5' 'Math.max(parent.width - 3840, parent.width * 0.25)'
-    '';
-  });
+  };
 in
 {
   # programs.hyprland.enable already registers xdg-desktop-portal-hyprland

@@ -59,11 +59,6 @@
             host.port = 13001;
           }
           {
-            bind.port = 28790;
-            host.address = "localhost";
-            host.port = 18790;
-          }
-          {
             bind.port = 29091;
             host.address = "localhost";
             host.port = 19091;

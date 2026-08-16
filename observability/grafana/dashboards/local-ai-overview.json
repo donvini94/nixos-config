@@ -71,45 +71,53 @@
       "targets": [{ "expr": "100 * (1 - node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay\"})", "legendFormat": "{{mountpoint}}", "refId": "A" }]
     },
     {
-      "type": "timeseries", "title": "AI cost by caller and model", "id": 11,
+      "type": "timeseries", "title": "AI cost by caller and model (provider actual)", "id": 11,
+      "description": "Provider-reported spend only. Never add this to the list-price estimate panel: both describe the same traffic, so summing them double-counts.",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
-      "fieldConfig": { "defaults": { "unit": "currencyUSD" } },
-      "targets": [{ "expr": "sum by (caller, model) (increase(ai_ingress_cost_usd_total[5m]))", "legendFormat": "{{caller}} · {{model}}", "refId": "A" }]
+      "fieldConfig": { "defaults": { "unit": "currencyUSD", "color": { "mode": "fixed", "fixedColor": "green" } } },
+      "targets": [{ "expr": "sum by (caller, model) (increase(ai_ingress_cost_usd_total[5m]))", "legendFormat": "actual · {{caller}} · {{model}}", "refId": "A" }]
+    },
+    {
+      "type": "timeseries", "title": "AI cost by caller and model (list-price estimate)", "id": 18,
+      "description": "Registry list prices applied to observed token counts. Diverges from the actual panel when the provider discounts, caches, or the price map is stale; a flat zero here means the model is missing from LLAMA_PRICE_MAP.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD", "color": { "mode": "fixed", "fixedColor": "orange" } } },
+      "targets": [{ "expr": "sum by (caller, model) (increase(ai_ingress_estimated_cost_usd_total[5m]))", "legendFormat": "estimate · {{caller}} · {{model}}", "refId": "A" }]
     },
     {
       "type": "stat", "title": "Critical image vulnerabilities", "id": 12,
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 28 },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 36 },
       "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } } },
       "targets": [{ "expr": "security_container_vulnerabilities{severity=\"critical\"}", "refId": "A" }]
     },
     {
       "type": "stat", "title": "High image vulnerabilities", "id": 13,
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 28 },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 36 },
       "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }] } } },
       "targets": [{ "expr": "security_container_vulnerabilities{severity=\"high\"}", "refId": "A" }]
     },
     {
       "type": "stat", "title": "Container scan failures", "id": 14,
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 32 },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 36 },
       "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } } },
       "targets": [{ "expr": "security_container_scan_failures", "refId": "A" }]
     },
     {
       "type": "stat", "title": "Container scan age", "id": 15,
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 32 },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 36 },
       "fieldConfig": { "defaults": { "unit": "s", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 172800 }] } } },
       "targets": [{ "expr": "time() - security_container_scan_timestamp_seconds", "refId": "A" }]
     },
     {
       "type": "bargauge", "title": "Critical vulnerabilities by resident image", "id": 16,
-      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 36 },
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 40 },
       "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } } },
       "options": { "displayMode": "gradient", "orientation": "horizontal", "showUnfilled": true },
       "targets": [{ "expr": "sort_desc(security_container_image_vulnerabilities{severity=\"critical\"} > 0)", "instant": true, "legendFormat": "{{image}} ({{engine}})", "refId": "A" }]
     },
     {
       "type": "bargauge", "title": "High vulnerabilities by resident image", "id": 17,
-      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 36 },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 40 },
       "fieldConfig": { "defaults": { "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }] } } },
       "options": { "displayMode": "gradient", "orientation": "horizontal", "showUnfilled": true },
       "targets": [{ "expr": "sort_desc(security_container_image_vulnerabilities{severity=\"high\"} > 0)", "instant": true, "legendFormat": "{{image}} ({{engine}})", "refId": "A" }]
@@ -123,5 +131,5 @@
   "timezone": "browser",
   "title": "AI and machine overview",
   "uid": "local-ai-overview",
-  "version": 4
+  "version": 5
 }

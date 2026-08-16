@@ -57,10 +57,19 @@ let
   };
 in
 {
-  # libmodsecurity 3.0.16 with PCRE2 10.47 reproducibly crashes in the JIT
-  # allocator during both ruleset reload and process cleanup. Its own matching
-  # code already falls back to PCRE2_NO_JIT when compilation is unavailable,
-  # so disable only those two eager JIT calls until upstream resolves it.
+  # UPSTREAM DEFECT, verified live on 2026-08-16: nixpkgs builds pcre2 with
+  # `--enable-jit-sealloc`, whose mmap-backed JIT allocator is documented as
+  # NOT fork-safe. nginx compiles the CRS ruleset in the master and forks
+  # workers, so every worker exit runs msc_rules_cleanup -> pcre2_code_free ->
+  # sljit_free_exec against JIT code the parent also owns, and the worker dies
+  # with SIGSEGV (backtrace captured in journal, core dumped). That kills
+  # in-flight connections on every reload, including ACME renewals.
+  #
+  # libmodsecurity already falls back to PCRE2_NO_JIT when JIT compilation is
+  # unavailable, so refusing the two eager jit_compile calls is behaviour the
+  # library supports. No nixpkgs revision avoids this: 3.0.16 + pcre2 10.47 is
+  # what both nixos-unstable and master ship. Remove once nixpkgs drops
+  # --enable-jit-sealloc or libmodsecurity stops eagerly JIT-compiling.
   nixpkgs.overlays = [
     (_final: prev: {
       libmodsecurity = prev.libmodsecurity.overrideAttrs (old: {
