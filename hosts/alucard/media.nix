@@ -9,6 +9,17 @@
     };
   };
 
+  # The Onyx stack's OpenSearch container requests unlimited memlock
+  # (`ulimits.memlock: -1`, paired with `bootstrap.memory_lock=true`). A
+  # rootless daemon can only grant what its own RLIMIT_MEMLOCK allows, and the
+  # systemd *user* manager inherits PID 1's 8MB default, so container creation
+  # fails with an OCI rlimit error. Raise the ceiling for user managers only —
+  # not for every system service — and dockerd inherits it, because a systemd
+  # manager hands its own limits to the units it starts.
+  # nixpkgs already emits a drop-in for this template unit, so merge into it
+  # instead of defining systemd.units."user@.service" (which conflicts).
+  systemd.services."user@".serviceConfig.LimitMEMLOCK = "infinity";
+
   # Required directories for media automation
   systemd.tmpfiles.rules = [
     "d /var/lib/media-stack 0755 root root"
