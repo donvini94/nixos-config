@@ -97,6 +97,11 @@ that file. OpenAI's `/connect` supports ChatGPT Plus/Pro OAuth. OpenCode's Anthr
 requires an Anthropic API key; a Claude consumer subscription/OAuth session is not an API
 credential. Use `/connect` only when that provider needs initial login or a renewed key.
 
+Operator acceptance on 2026-08-16 verified the interactive OMP and OpenCode
+pickers expose and select authenticated OpenAI/Codex and Anthropic providers
+alongside Dracula local and Alucard Requesty profiles. That state survived the
+host rebuild; neither Nix configuration overwrote application-owned credentials.
+
 Useful diagnostics:
 
 ```console
