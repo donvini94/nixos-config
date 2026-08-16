@@ -175,7 +175,7 @@ their own explicit firewall justification and protocol-specific protection.
 | P1 | Retire dead DNS/vhosts and remove unused firewall ports | Dead root/Git/docs/Coder backends return 404; unused TCP 53/873/11335/11445 removed |
 | P2 | Define Keycloak/2FA policy for every public application | Pending identity review |
 | P2 | Harden native services and containers | Keycloak loopback bind and systemd sandbox prepared; remaining application policy review pending |
-| P2 | Add vulnerability scanning and security alerts | Trivy daily scan and Grafana/Prometheus export verified; per-image remediation and external notification routing pending |
+| P2 | Add vulnerability scanning and security alerts | 41-image post-Mailcow scan and Prometheus/Grafana export verified; cAdvisor upgraded; fixed findings and upstream-owned residuals are triaged below |
 | P2 | Implement and test application-aware backups/restores | Pending; required before customer use |
 | P3 | Add GeoIP restrictions to selected web services | Pending explicit country policy; never global mail blocking |
 
@@ -193,10 +193,31 @@ scan age appear in the **AI and machine overview** Grafana dashboard. A finding 
 not proof of exploitability: review the package, reachable surface, and upstream fix before
 changing production images.
 
-The first live scan on 2026-08-09 inspected 40 image references and exported 175 critical,
-2,265 high, and one failed-image count. These totals include duplicate packages across related
-images, but all requested findings have published fixes because the scan uses `--ignore-unfixed`.
-Per-image triage and remediation are required before calling Alucard production-ready.
+The post-Mailcow scan on 2026-08-15 inspected 41 resident image references and exported
+84 critical, 1,357 high, and zero failed-image counts. These totals include duplicate packages
+across related images; `--ignore-unfixed` means every reported finding has a published fixed
+version. Root-only JSON reports remain the authoritative package/CVE inventory.
+
+On 2026-08-16, cAdvisor moved from the obsolete GCR `latest` image (v0.55.1) to the
+upstream-supported, digest-pinned `ghcr.io/google/cadvisor:v0.60.5`. Its live `/metrics`
+endpoint and runtime version were verified. A direct fresh scan of that exact digest reduced
+cAdvisor from four critical and 55 high findings to zero critical and eight high findings.
+
+### Temporary vulnerability risk register
+
+These entries are temporary, evidence-based risk acceptances—not evidence that the findings are
+unexploitable. They are reviewed on the earlier of the stated date or an upstream image release.
+The remaining high findings are **not** blanket-accepted: their package/CVE detail remains in the
+root-only reports and each image is exported as a Prometheus time series.
+
+| Component | Fixed findings currently resident | Exposure and compensating controls | Revisit |
+| --- | --- | --- | --- |
+| cAdvisor v0.60.5 | High: `CVE-2026-33818`, `CVE-2026-39821`, `CVE-2026-56853`, `CVE-2026-56858`, `CVE-2026-56859`, `CVE-2026-56860`, `CVE-2026-56862` (`stdlib` v1.25.12, fixed v1.25.13); `GHSA-hrxh-6v49-42gf` (`grpc` v1.81.1, fixed v1.82.1) | Privileged host inspector, but bound only to `127.0.0.1:18081`; Prometheus reaches it locally. Replacing it with the unsupported GCR image is prohibited. | Next cAdvisor release or 2026-08-30 |
+| Mailcow 2026-07a | Critical: `CVE-2026-31789` (OpenSSL), `CVE-2026-3593` (BIND), `CVE-2026-33845`/`CVE-2026-42010` (GnuTLS), `CVE-2026-44170`/`CVE-2026-44172`/`CVE-2026-49261` (MariaDB) across its current components | Public mail protocols and web UI are necessary. Nix firewall policy, nginx TLS/WAF, service authentication, and upstream-only `update.sh` constrain exposure; independent image replacement is unsupported. | Next Mailcow stable release or 2026-08-23 |
+| Seerr v3.4.1 | Critical: `CVE-2026-33937` (`handlebars` 4.7.8, fixed 4.7.9); `CVE-2026-59873` (`tar` 6.2.1–7.5.13, fixed 7.5.19) | Public request UI through nginx. TLS, ModSecurity, application authentication, and loopback-only container binding remain required. The installed version is the current upstream release. | Next Seerr release or 2026-08-23 |
+| Komga 1.26.3 | Critical: `CVE-2023-24538`, `CVE-2023-24540`, `CVE-2024-24790`, `CVE-2025-68121` (`stdlib` v1.17.8) | Public comics UI through nginx; application authentication and TLS remain required. Docker Hub `latest` resolves to the same official 1.26.3 digest, so retagging cannot remediate it. | Next Komga release or 2026-08-23 |
+| Private services | Kapowarr: `CVE-2026-33845`, `CVE-2026-42010`, `CVE-2026-31789`, `CVE-2025-68121`; Hermes: `CVE-2026-59873`; internal Redis/Postgres/MariaDB/Ofelia findings are recorded per package in the scan reports | These services are limited to loopback or private Docker networks; Hermes and AI interfaces are not public. Keep Docker-published ports closed and retain their existing service authentication. | Upstream release or 2026-08-30 |
+| Host packages | The 2026-08-05 Nixpkgs lock is retained. A 2026-08-13 update builds Alucard but fails Dracula because upstream `ananicy-cpp` 1.2.0 does not build with the newer C++ toolchain. No local package patch is permitted. | `ananicy-cpp` is an existing desktop process-priority daemon, not a security control. The operator chose to retain it rather than change desktop scheduling behavior. | A Nixpkgs update that builds out of the box, or 2026-08-30 |
 
 The WAF uses the current OWASP CRS v4 LTS rather than Nixpkgs' older CRS 3.3.4,
 which predates July 2026 security fixes. Response-body inspection is disabled to
