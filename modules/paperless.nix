@@ -47,18 +47,21 @@ let
       export RESTIC_PASSWORD_FILE
       export RESTIC_REPOSITORY="$repo"
 
-      # Preflight. The Hetzner box is a CIFS mount with uid/gid remapping, and
-      # an unwritable destination otherwise fails deep inside restic with a
-      # much less obvious error.
-      parent=$(dirname "$repo")
-      if [ ! -d "$parent" ]; then
-        echo "offsite parent directory $parent does not exist (is the CIFS mount up?)" >&2
-        exit 1
-      fi
-      if [ ! -w "$parent" ]; then
-        echo "offsite parent directory $parent is not writable by $(id -un)" >&2
-        exit 1
-      fi
+      # Local repositories need their parent created only after the automount
+      # is active. Remote restic URLs have no local directory to prepare.
+      case "$repo" in
+        /*)
+          parent=$(dirname "$repo")
+          if ! mkdir -p "$parent"; then
+            echo "could not create offsite parent directory $parent" >&2
+            exit 1
+          fi
+          if [ ! -w "$parent" ]; then
+            echo "offsite parent directory $parent is not writable by $(id -un)" >&2
+            exit 1
+          fi
+          ;;
+      esac
 
       if ! restic cat config >/dev/null 2>&1; then
         echo "initialising restic repository at $repo"
