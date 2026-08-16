@@ -173,11 +173,16 @@ their own explicit firewall justification and protocol-specific protection.
 | P1 | Add per-service rate and connection limits | Active at the nginx edge; configuration and normal application path verified |
 | P1 | Apply consistent security headers and bounded request sizes | Active; upload-heavy Registry/Filebrowser/WebDAV bypass WAF and retain explicit size policy |
 | P1 | Retire dead DNS/vhosts and remove unused firewall ports | Dead root/Git/docs/Coder backends return 404; unused TCP 53/873/11335/11445 removed |
-| P2 | Define Keycloak/2FA policy for every public application | Pending identity review |
+| P2 | Define Keycloak/2FA policy for every public application | Deferred for one identity-platform design and rollout with Keycloak, Teleport, and OpenBao; not a standalone hardening change. |
 | P2 | Harden native services and containers | Keycloak loopback bind and systemd sandbox prepared; remaining application policy review pending |
 | P2 | Add vulnerability scanning and security alerts | 41-image post-Mailcow scan and Prometheus/Grafana export verified; cAdvisor upgraded; fixed findings and upstream-owned residuals are triaged below |
-| P2 | Implement and test application-aware backups/restores | Paperless CIFS/Restic backup and clean decrypt-and-restore verification passed on 2026-08-16. Media and Mailcow application backups remain pending. |
 | P3 | Add GeoIP restrictions to selected web services | Pending explicit country policy; never global mail blocking |
+
+The future identity-platform work combines Keycloak policy, Teleport access, and
+OpenBao secret-management boundaries in one reviewed deployment. It must define
+the authentication authority, 2FA requirements, service enrollment, secret
+migration, break-glass access, and rollback together; adding any component in
+isolation would create conflicting trust boundaries.
 
 ### Paperless off-site recovery verification
 
