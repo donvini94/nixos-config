@@ -200,6 +200,18 @@ in
           # catch-all route so only the authenticated playback endpoint family
           # is exempt.
           extraConfig = "modsecurity off;";
+          # CRS 4.25.1 ships `config.json` in both `restricted-files.data` and
+          # `lfi-os-files.data`, so 930120/930130 score the Jellyfin web
+          # client's own bootstrap file at CRITICAL and 949110 answers 403.
+          # The client cannot start without it: the public UI was dead while
+          # `/web/index.html` and the API both answered 200. Verified on
+          # 2026-08-16, 16 such 403s from the operator's address in 90
+          # minutes, and reproduced with a bare `curl` on 2026-08-17. An exact
+          # match outranks the `^~` and prefix routes below.
+          locations."= /web/config.json" = {
+            proxyPass = "http://127.0.0.1:8096";
+            extraConfig = "modsecurity off;";
+          };
           locations."^~ /Sessions/Playing" = {
             proxyPass = "http://127.0.0.1:8096";
             extraConfig = "modsecurity off;";
