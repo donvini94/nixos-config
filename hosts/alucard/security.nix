@@ -55,6 +55,64 @@ let
         -c=/etc/crowdsec/config.yaml "$@"
     '';
   };
+  crowdsecPaths = config.services.crowdsec.settings.general.config_paths;
+  hubChangedMarker = "/run/crowdsec-update-hub/hub-changed";
+  # Content of every installed hub item and detection data file. `.index.json`
+  # is excluded because `hub update` rewrites the catalogue daily whether or
+  # not an item changed, and the database, its WAL sidecars, the LAPI
+  # credentials, and the GeoLite archives are excluded because CrowdSec writes
+  # those itself: including any of them would report a change on every run and
+  # turn the conditional restart below into an unconditional one.
+  hubFingerprint = pkgs.writeShellApplication {
+    name = "crowdsec-hub-fingerprint";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.findutils
+    ];
+    text = ''
+      {
+        find ${lib.escapeShellArg crowdsecPaths.hub_dir} \
+          -type f ! -name .index.json -print0
+        find ${lib.escapeShellArg crowdsecPaths.data_dir} -maxdepth 1 \
+          -type f ! -name 'crowdsec.db*' ! -name '*.mmdb' \
+          ! -name '*_credentials.yaml' -print0
+      } | sort -z | xargs -0 -r sha256sum | sha256sum | cut -d ' ' -f 1
+    '';
+  };
+  hubUpgrade = pkgs.writeShellApplication {
+    name = "crowdsec-hub-upgrade";
+    runtimeInputs = [ pkgs.coreutils ];
+    text = ''
+      cscli() {
+        ${lib.getExe' config.services.crowdsec.package "cscli"} \
+          -c=/etc/crowdsec/config.yaml "$@"
+      }
+
+      rm -f ${lib.escapeShellArg hubChangedMarker}
+      before="$(${lib.getExe hubFingerprint})"
+      cscli --error hub update
+      # Deliberately not quiet: this is the only record of which detection
+      # items moved, and a new false positive is triaged against it.
+      cscli hub upgrade
+      after="$(${lib.getExe hubFingerprint})"
+
+      if [ "$before" = "$after" ]; then
+        echo "hub content unchanged ($before); leaving the running engine alone"
+      else
+        echo "hub content changed ($before -> $after); restarting the engine"
+        : > ${lib.escapeShellArg hubChangedMarker}
+      fi
+    '';
+  };
+  hubReload = pkgs.writeShellApplication {
+    name = "crowdsec-hub-reload";
+    runtimeInputs = [ pkgs.systemd ];
+    text = ''
+      if [ -e ${lib.escapeShellArg hubChangedMarker} ]; then
+        systemctl try-restart crowdsec.service
+      fi
+    '';
+  };
 in
 {
   # UPSTREAM DEFECT, verified live on 2026-08-16: nixpkgs builds pcre2 with
@@ -225,14 +283,53 @@ in
   systemd.services.crowdsec.restartTriggers = [
     (builtins.toJSON config.services.crowdsec.localConfig)
   ];
+  # The same tmpfiles indirection makes a whitelist unretractable: each entry
+  # is published as its own `L+` link named after its store hash, and a `L+`
+  # rule that disappears never deletes the file it created. Verified on
+  # 2026-08-17 with a probe whitelist that outlived its own deletion and kept
+  # accumulating `cs_node_hits_total`. `systemd-tmpfiles --create --remove`
+  # performs every `r` before any `L+` in one invocation, so globbing the
+  # generated names makes the published ruleset equal what this file declares
+  # instead of the union of everything it has ever declared.
+  systemd.services.crowdsec.after = [ "systemd-tmpfiles-resetup.service" ];
+
+  # `autoUpdateService` is broken twice over upstream, and had failed every
+  # night since at least 2026-08-14. Its `ExecStart` is only `cscli hub
+  # update`, which refreshes the catalogue and upgrades nothing, so detection
+  # content never advanced. Its `ExecStartPost` then ran `systemctl reload
+  # crowdsec.service` as the unit's own DynamicUser, which is denied — and
+  # `crowdsec.service` clears `ExecReload`, so that reload could not have
+  # worked even as root.
+  #
+  # Refresh the catalogue, upgrade the installed items, and restart the engine
+  # only when the upgrade actually moved something. Conditional matters: the
+  # file datasource resumes at the end of the access log rather than replaying
+  # it, so every restart is a short blind window, and it also discards every
+  # in-flight leaky bucket. `try-restart` because `ExecReload` is empty, and a
+  # `+` line because a unit's `User=` does not apply to those. The local
+  # whitelists are unaffected by an upgrade: they are local items, not hub
+  # ones.
   systemd.services.crowdsec-update-hub.serviceConfig = {
     StateDirectory = "crowdsec";
     StateDirectoryMode = "0750";
+    RuntimeDirectory = "crowdsec-update-hub";
+    ExecStart = lib.mkForce [
+      (lib.getExe hubUpgrade)
+      "+${lib.getExe hubReload}"
+    ];
+    ExecStartPost = lib.mkForce [ ];
   };
   # Normalize nested state left behind by the module's earlier DynamicUser
   # migration. Preserve existing file modes while repairing owner/group.
   systemd.tmpfiles.rules = [
     "Z /var/lib/private/crowdsec - crowdsec crowdsec - -"
+    "r /etc/crowdsec/parsers/s00-raw/*-parsers-s00-raw.yaml"
+    "r /etc/crowdsec/parsers/s01-parse/*-parsers-s01-parse.yaml"
+    "r /etc/crowdsec/parsers/s02-enrich/*-parsers-s02-enrich.yaml"
+    "r /etc/crowdsec/postoverflows/s01-whitelist/*-postoverflows-s01-whitelist.yaml"
+    "r /etc/crowdsec/scenarios/*-scenario.yaml"
+    "r /etc/crowdsec/contexts/*-context.yaml"
+    "r /etc/crowdsec/notifications/*-notification.yaml"
   ];
 
   # The upstream module requires the registration unit but does not order the
@@ -277,6 +374,28 @@ in
       limit_conn_zone $binary_remote_addr zone=public_connections:10m;
       modsecurity on;
       modsecurity_rules_file ${modsecurityRules};
+
+      # Every CrowdSec HTTP scenario groups by `source_ip + '/' +
+      # target_fqdn`, and `crowdsecurity/nginx-logs` can only fill
+      # `target_fqdn` from an optional leading vhost field in the access log:
+      # `(%{IPORHOST:target_fqdn}(:%{INT:port})? )?`. Stock `combined` has no
+      # such field, so the whole reverse proxy collapses into one bucket per
+      # client IP and a session that touches several of our own services sums
+      # into a single 40-distinct-path `http-crawl-non_statics` overflow.
+      # Verified on 2026-08-16: 74 distinct paths in 57.8s while demoing
+      # Jellyfin and Paperless back to back, 4h ban on the operator's address.
+      #
+      # `$host` needs no sanitising. nginx answers a syntactically invalid
+      # Host header with 400 and falls back to the matched `server_name`, so
+      # the field can never contain a space or a quote, and the grok search is
+      # unanchored: a value that is not IPORHOST-shaped (a bracketed IPv6
+      # literal, an empty default) leaves `target_fqdn` empty and parses the
+      # rest of the line exactly as it does today.
+      log_format crowdsec_vhost
+        '$host $remote_addr - $remote_user [$time_local] '
+        '"$request" $status $body_bytes_sent '
+        '"$http_referer" "$http_user_agent"';
+      access_log /var/log/nginx/access.log crowdsec_vhost;
     '';
   };
 

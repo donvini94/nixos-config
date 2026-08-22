@@ -17,9 +17,13 @@ Tailscale Funnel is prohibited. It would turn a private tailnet service into a p
 - nginx terminates ACME TLS and runs with NixOS systemd hardening.
 - nginx applies OWASP CRS 4.25.1 LTS through ModSecurity, per-address request and
   connection limits, bounded request bodies, and consistent low-risk headers.
-  The authenticated Jellyfin playback endpoint family `POST /Sessions/Playing*` is the sole
-  location-level WAF exception: CRS 4.25.1 falsely blocks Swiftfin's payload before
-  Jellyfin can authorize it; Jellyfin itself retains authorization for those endpoints.
+  Two location-level WAF exceptions exist, both on the Jellyfin host. The authenticated
+  playback endpoint family `POST /Sessions/Playing*` is exempt because CRS 4.25.1 falsely
+  blocks Swiftfin's payload before Jellyfin can authorize it, and Jellyfin itself retains
+  authorization for those endpoints. `GET /web/config.json` is exempt because CRS ships
+  `config.json` in both `restricted-files.data` and `lfi-os-files.data`, so 930120/930130
+  score the web client's own bootstrap file at CRITICAL and 949110 answers 403 — the public
+  UI could not start at all while `/web/index.html` and the API answered 200.
 - AI and media-administration backends bind to loopback. Jellyfin and Mailcow web backends
   also bind to `127.0.0.1`: they remain available to friends and family through their public
   nginx HTTPS hosts, while raw backend ports cannot bypass nginx. Mail protocols remain direct.
@@ -168,11 +172,81 @@ from Alucard itself, the `Host` header and public certificate stay intact, and K
 its Tailscale identity, and it silently hides real public-edge outages, so prefer the proxy.
 
 Whitelisting the residential address is the wrong reflex: it is a Vodafone dynamic address that
-moves, and the recurring triggers so far have been the operator's own applications rather than
-the network they came from. Both known cases are whitelisted by request pattern in
-`hosts/alucard/security.nix` instead: Next.js `?_rsc=` prefetch bursts from the Onyx admin UI
+moves, and every trigger so far has been the operator's own browsing rather than the network it
+came from. Two of them were genuinely application-specific and are whitelisted by request
+pattern in `hosts/alucard/security.nix`: Next.js `?_rsc=` prefetch bursts from the Onyx admin UI
 (`crowdsecurity/http-crawl-non_statics`) and Jellyfin client session 403s from Swiftfin
-(`LePresidente/http-generic-403-bf`).
+(`LePresidente/http-generic-403-bf`). The third had no application-specific pattern to whitelist
+at all.
+
+### Crawl buckets are per virtual host
+
+`crowdsecurity/http-crawl-non_statics` groups by
+`evt.Meta.source_ip + '/' + evt.Parsed.target_fqdn` and trips on 40 distinct non-static paths.
+`crowdsecurity/nginx-logs` fills `target_fqdn` only from an optional leading vhost field in the
+access log, and stock `combined` has none, so until 2026-08-17 the entire reverse proxy shared
+one 40-path budget per client address. Demonstrating four services in one sitting was therefore
+enough to earn a 4h ban with no single service behaving unusually: on 2026-08-16 at 20:22:48
+CEST a Jellyfin-then-Paperless walkthrough produced 74 distinct paths in 57.8s and banned
+92.208.223.20.
+
+`security.nix` now emits `$host` as the first access-log field through the `crowdsec_vhost`
+format, so every service gets its own bucket. Reproduced against CrowdSec's own engine: 60
+distinct paths split 20/20/20 across three hostnames raise one `http-crawl-non_statics` ban
+without the field and none with it.
+
+Two consequences are worth remembering. Paperless cannot fill this bucket on its own — every URL
+its frontend builds ends in `/` and `evt.Parsed.file_name` is only the final path segment, so its
+entire API fan-out counts as a single distinct value. And an alert now names the service it came
+from, which is worth reading before adding another whitelist.
+
+### Retracting a local whitelist
+
+`services.crowdsec.localConfig` publishes each entry as its own `systemd-tmpfiles` `L+` link
+named after its store hash, and a rule that disappears never deletes the file it created. Before
+2026-08-17 a whitelist could therefore be added declaratively but never withdrawn: the engine
+kept loading it from `/etc/crowdsec` after it was gone from Nix. `security.nix` now removes the
+generated names with `r` globs, which `systemd-tmpfiles --create --remove` executes before it
+recreates the declared links, and orders the agent after `systemd-tmpfiles-resetup.service` so
+a switch cannot start it against the previous ruleset.
+
+### Nightly hub upgrades
+
+`autoUpdateService` was doing nothing useful and failing while it did so. Upstream's unit runs
+only `cscli hub update`, which refreshes the catalogue and upgrades no item, and then reloads
+the agent from an `ExecStartPost` that runs as the unit's own `DynamicUser` — denied, and
+pointless anyway because `crowdsec.service` clears `ExecReload`. It had failed every night since
+at least 2026-08-14.
+
+`security.nix` replaces the command with `cscli hub update`, `cscli hub upgrade`, and a
+conditional `systemctl try-restart crowdsec.service` from a `+`-prefixed line, which is how a
+`User=`-confined unit reaches root. The restart is conditional on a content fingerprint of the
+installed hub items and data files because the file datasource resumes at the end of the access
+log instead of replaying it, so every restart is a short blind window and also discards every
+in-flight leaky bucket. Exercised in both directions on 2026-08-17: a run that re-downloaded all
+19 data files byte-identically left the engine alone, and a forced content change restarted it.
+
+Detection content therefore now moves on its own, which is also how a scenario can start
+false-positiving without anything in this repository changing. `cscli hub upgrade` output is
+deliberately not silenced, so that is the record to check first:
+
+```console
+journalctl -u crowdsec-update-hub --since '-2 days' -o cat
+```
+
+Local whitelists are unaffected by an upgrade — they are local items, not hub ones.
+
+### Identifying a ban without sudo
+
+The agent's journal is readable by the operator account and records every decision, which is
+enough to name the scenario and the address before unlocking `cscli`:
+
+```console
+journalctl -u crowdsec --since today -o cat | grep 'ban on Ip'
+```
+
+The nginx access log stays root-only, so the triggering requests themselves still need
+`crowdsec-admin alerts inspect ALERT_ID --details`.
 
 ## Public-service inventory
 
@@ -198,6 +272,7 @@ their own explicit firewall justification and protocol-specific protection.
 | P1 | Add per-service rate and connection limits | Active at the nginx edge; configuration and normal application path verified |
 | P1 | Apply consistent security headers and bounded request sizes | Active; upload-heavy Registry/Filebrowser/WebDAV bypass WAF and retain explicit size policy |
 | P1 | Retire dead DNS/vhosts and remove unused firewall ports | Dead root/Git/docs/Coder backends return 404; unused TCP 53/873/11335/11445 removed |
+| P1 | Make `autoUpdateService` actually reach the engine | Complete; `crowdsec-update-hub.service` had failed every night since at least 2026-08-14 and now upgrades hub items and restarts the engine only when their content changed. Both branches exercised on 2026-08-17: an upgrade that re-downloaded all 19 data files byte-identically left the running engine alone, and a forced content change restarted it through the `+`-prefixed line. |
 | P2 | Define Keycloak/2FA policy for every public application | Deferred for one identity-platform design and rollout with Keycloak, Teleport, and OpenBao; not a standalone hardening change. |
 | P2 | Harden native services and containers | Keycloak loopback bind and systemd sandbox prepared; remaining application policy review pending |
 | P2 | Add vulnerability scanning and security alerts | 41-image post-Mailcow scan and Prometheus/Grafana export verified; cAdvisor upgraded; fixed findings and upstream-owned residuals are triaged below |
