@@ -141,11 +141,27 @@ printf '%s,%s' "$current" "<kyrill-numeric-id>" | jq -Rs . \
   | sops set secrets/alucard-ai.yaml '["hermes"]["telegram_allowed_users"]' --value-stdin
 ```
 
-That never prints the existing value. Confirm the shape, then deploy:
+That never prints the existing value. The leaf must stay a single string. If it becomes a YAML
+list — `sops set` handed a JSON array, or a hand-edit under `sops secrets/alucard-ai.yaml` — the
+next switch dies in `sops-install-secrets` with `secret hermes/telegram_allowed_users ... is not
+valid: the value of key 'hermes' is not a string`. Confirm the shape, then deploy:
 
 ```console
-sops --decrypt --extract '["hermes"]["telegram_allowed_users"]' secrets/alucard-ai.yaml | awk -F, '{ print NF " allowlisted id(s)" }'
+sops --decrypt --output-type json secrets/alucard-ai.yaml \
+  | jq -r '.hermes.telegram_allowed_users
+           | if type == "string" and test("^[0-9]+(,[0-9]+)*$")
+             then "\(split(",") | length) allowlisted id(s)"
+             else "BAD SHAPE: \(type)" end'
 ssh alucard 'cd ~/nixos-config && sudo nixos-rebuild switch --flake .#alucard'
+```
+
+`BAD SHAPE: array` is repaired in place, without printing any ID, by joining the entries back
+into one scalar:
+
+```console
+sops --decrypt --output-type json secrets/alucard-ai.yaml \
+  | jq '.hermes.telegram_allowed_users | join(",")' \
+  | sops set secrets/alucard-ai.yaml '["hermes"]["telegram_allowed_users"]' --value-stdin
 ```
 
 The switch rewrites `/var/lib/hermes/.hermes/.env` and restarts `hermes-agent.service`, so no
