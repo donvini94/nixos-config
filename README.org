@@ -4,107 +4,291 @@
 * Overview
 
 Flake-based NixOS configuration managing two systems:
-- *dracula* — Desktop workstation (AMD CPU, NVIDIA GPU, Hyprland + caelestia-shell)
-- *alucard* — Home server (Hetzner OpenStack VM, nginx reverse proxy, Docker media stack)
+- *dracula* — Desktop workstation (AMD CPU, NVIDIA RTX 3090, Hyprland + caelestia-shell), also the local LLM inference host
+- *alucard* — Hetzner OpenStack VM: public nginx edge, Docker media stack, document management, mail, and a private agent/automation stack
 
 The flake provides two host-builder functions:
 - =mkDesktopHost "hostname"= — Full desktop with Hyprland, home-manager, sops, hosts blocking
 - =mkServerHost "hostname"= — Minimal server (host imports what it needs)
 
-For detailed architecture and module documentation, see [[file:CLAUDE.md][CLAUDE.md]].
+Both hosts share one AI ingress module, one observability stack, and one container-update
+mechanism; each parameterises them differently. Every AI and admin surface binds loopback —
+nothing in the AI stack is published on a public domain, and on alucard the only remote entry
+point is Tailscale.
+
+Detailed operator documentation lives in [[file:docs/][docs/]]; module conventions in [[file:AGENTS.md][AGENTS.md]].
 
 * Repository Structure
 
 #+begin_src
 .
-├── flake.nix                 # Host-builder functions (mkDesktopHost, mkServerHost)
-├── configuration.nix         # Shared base config (shells, locale, gnupg, nix settings)
-├── home.nix                  # Home-manager import manifest
-├── modules/                  # Shared system-level modules
-│   ├── desktop.nix           #   Meta-module: imports all desktop sub-modules + PAM + hosts blocking
-│   ├── nvidia.nix            #   Opt-in: NVIDIA driver, graphics, env vars, container toolkit
-│   ├── hyprland/default.nix  #   Hyprland + GDM + portals
-│   ├── packages.nix          #   System packages shared by ALL hosts (desktop + server)
-│   ├── programming.nix       #   Dev tools needing system integration (Python+CUDA, Rust, Emacs)
-│   ├── services.nix          #   Pipewire, rtkit, Emacs daemon, printing, Mullvad
-│   ├── fonts.nix             #   Font definitions
-│   └── gaming.nix            #   Opt-in: Steam, Proton, Wine, GameMode
-├── hm-modules/               # Home-manager user-level modules (one file per tool)
-│   ├── git.nix               #   Git identity
-│   ├── ssh.nix               #   SSH config + control master sockets
-│   ├── fish.nix              #   Fish shell + abbreviations
-│   ├── shell.nix             #   Bash, zoxide, direnv, atuin
-│   ├── caelestia.nix         #   Desktop shell config + runtime dependencies
-│   ├── services.nix          #   User services (udiskie, syncthing, mpd, gammastep)
-│   ├── packages.nix          #   User-level packages (dev tools, writing, communication)
-│   ├── hyprland.nix          #   Keybinds, window rules, input config
-│   ├── doom.nix              #   Doom Emacs symlink setup
-│   └── helix, kitty, mpv, starship, yazi, zathura, zellij  # Per-tool configs
+├── flake.nix                   # Host builders + the `no-package-patches` flake check
+├── configuration.nix           # Shared base config (shells, locale, gnupg, nix settings)
+├── home.nix                    # Home-manager import manifest (dracula)
+├── modules/                    # Shared system-level modules
+│   ├── desktop.nix             #   Meta-module: desktop sub-modules + PAM + hosts blocking
+│   ├── nvidia.nix              #   Opt-in: driver, graphics, env vars, container toolkit
+│   ├── gaming.nix              #   Opt-in: Steam, Proton, Wine, lossless scaling
+│   ├── hyprland/default.nix    #   Hyprland + GDM + portals
+│   ├── packages.nix            #   System packages shared by ALL hosts
+│   ├── programming.nix         #   Dev tools needing system integration (Python+CUDA, Rust, Emacs)
+│   ├── services.nix            #   Pipewire, rtkit, Emacs daemon, printing, Mullvad
+│   ├── fonts.nix               #   Font definitions
+│   ├── ai-ingress.nix          #   SHARED: OpenAI-compatible logging proxy, `ai-stack.target`
+│   ├── llama.nix               #   dracula: llama-swap + pinned GGUF model registry
+│   ├── llama-logging-proxy.py  #   The ingress implementation (stdlib Python)
+│   ├── llama-usage-summary.py  #   `ai-usage-summary` report generator
+│   ├── remote-openai.nix       #   alucard: Requesty upstream behind the same ingress
+│   ├── n8n.nix                 #   n8n + task runners (containerised, private bridge)
+│   ├── n8n-credentials.nix     #   alucard: sops → n8n credential import
+│   ├── hermes-dashboard.nix    #   Hermes dashboard supervisor (upstream OCI gap)
+│   ├── observability.nix       #   SHARED: Langfuse + Prometheus + Grafana compose driver
+│   ├── container-updates.nix   #   SHARED: reviewed-digest container recreation
+│   ├── vulnerability-scan.nix  #   alucard: daily Trivy scan → Prometheus textfile metrics
+│   ├── paperless.nix           #   alucard: Paperless-ngx + provisioning + off-site backup
+│   └── mailcow-tls.nix         #   alucard: bind mailcow to loopback, hand it the ACME cert
+├── lib/
+│   ├── hermes-agent.nix        #   Hermes image pin, container hardening, settings builder
+│   └── requesty-models.nix     #   Requesty model catalog + per-Mtok costs (plain data)
+├── packages/
+│   ├── llama-swap.nix          #   Pinned llama-swap release binary
+│   ├── omp.nix                 #   Pinned oh-my-pi (`omp`) release binary
+│   ├── pokemmo.nix             #   dracula: FHS-sandboxed PokeMMO launcher (self-updating client)
+│   └── hermes-n8n-handoff.nix  #   `hermes-n8n-handoff` webhook CLI (Hermes container only)
+├── hm-modules/                 # Home-manager user-level modules (one file per tool)
+│   ├── ai-clients.nix          #   SHARED: wrapped `omp` + `opencode` pinned to the ingress
+│   ├── claude.nix              #   dracula: ~/.claude pointer + memory-only Syncthing whitelist
+│   ├── omp.nix                 #   dracula: out-of-store symlinks into ~/.omp/agent
+│   ├── git, ssh, fish, shell, hyprland, caelestia, services, packages, email, gtk
+│   └── helix, kitty, mpv, pokemmo, starship, yazi, zathura, zellij, doom
 ├── hosts/
-│   ├── dracula/              # Desktop workstation
-│   │   ├── default.nix       #   Import manifest + hostname + user + stateVersion
-│   │   ├── hardware.nix      #   Boot, filesystems, CPU (AMD), peripherals
-│   │   └── services.nix      #   Jellyfin, Docker, OBS, host-specific packages
-│   └── alucard/              # Home server
-│       ├── default.nix       #   Base system, Hetzner mount, scheduled tasks
-│       ├── disk-config.nix   #   Disko BTRFS partitioning
-│       ├── networking.nix    #   Firewall, SSH, fail2ban
-│       ├── services.nix      #   Nginx, Keycloak, Jellyfin, Navidrome, Paperless
-│       ├── media.nix         #   Docker media automation stack
-│       ├── syncthing.nix     #   Syncthing devices and folders
-│       └── users.nix         #   User accounts and SSH keys
-├── secrets/                  # sops-nix encrypted secrets (age)
-├── doom/                     # Doom Emacs config (org-tangle based)
-├── scripts/                  # Helper scripts
-└── wallpapers/               # Desktop wallpapers
+│   ├── dracula/                # Desktop workstation
+│   │   ├── default.nix         #   Imports + local LLM registry + AI stack wiring + sops
+│   │   ├── hardware.nix        #   Boot, filesystems, CPU (AMD), peripherals
+│   │   └── services.nix        #   Docker + CDI, NVIDIA container toolkit, host packages
+│   └── alucard/                # Home server
+│       ├── default.nix         #   Composition, Hetzner CIFS mount, shelve/unshelve timers
+│       ├── disk-config.nix     #   Disko BTRFS partitioning
+│       ├── networking.nix      #   Firewall, sshd, fail2ban, mining-pool egress blocks
+│       ├── security.nix        #   ModSecurity + OWASP CRS, CrowdSec agent + bouncer
+│       ├── private-access.nix  #   Tailscale Serve map + Hermes origin-guard vhost
+│       ├── services.nix        #   Public nginx vhosts, Keycloak, Jellyfin, Navidrome, …
+│       ├── ai.nix              #   Requesty ingress, n8n, Hermes, tinyproxy egress allowlist
+│       ├── media.nix           #   Docker daemons, media stack unit, mining watchdog
+│       ├── syncthing.nix       #   Syncthing devices and folders
+│       ├── users.nix           #   User accounts and SSH keys
+│       └── home.nix            #   Server-side home-manager (AI clients only)
+├── observability/              # Compose file + provisioned Grafana dashboard/datasource
+├── n8n/                        # `n8n-workflows` helper + reviewed workflow JSON
+├── hermes/workspace/           # AGENTS.md / SOUL.md installed into the Hermes workspace
+├── paperless/                  # Idempotent provisioner + public taxonomy
+├── omp/                        # OMP harness context: AGENTS.md + RULES.md (symlinked in)
+├── claude/                     # Retired Claude Code harness: pointer file + Mac handoff notes
+├── secrets/                    # sops-nix encrypted secrets (age)
+├── docs/                       # Operator guides (see below)
+├── scripts/                    # Helper scripts + the supply-chain guard
+├── doom/                       # Doom Emacs config (org-tangle based)
+└── mail/                       # Mail setup notes and helpers
 #+end_src
 
 * Desktop (dracula)
 
-| Component       | Tool                                          |
-|-----------------+-----------------------------------------------|
-| Window manager  | Hyprland                                      |
-| Desktop shell   | caelestia-shell (bar, notifications, launcher, lock, OSD) |
-| Editor          | Doom Emacs, Helix                             |
-| Terminal        | Kitty                                         |
-| Shell           | Fish (with direnv, zoxide, atuin, starship)   |
-| File manager    | Yazi (TUI), Thunar (GUI)                      |
-| PDF viewer      | Zathura                                       |
-| Media           | mpv                                           |
-| VPN             | Mullvad                                       |
+| Component      | Tool                                                      |
+|----------------+-----------------------------------------------------------|
+| Window manager | Hyprland (pinned v0.54.3)                                 |
+| Desktop shell  | caelestia-shell (bar, notifications, launcher, lock, OSD) |
+| Editor         | Doom Emacs, Helix                                         |
+| Terminal       | Kitty                                                     |
+| Shell          | Fish (with direnv, zoxide, atuin, starship)               |
+| File manager   | Yazi (TUI), Thunar (GUI)                                  |
+| PDF viewer     | Zathura                                                   |
+| Media          | mpv                                                       |
+| VPN            | Mullvad, Tailscale                                        |
+| AI clients     | =omp=, =opencode=, Claude Code, Codex, Hermes desktop     |
+
+* AI Stack
+
+One module, =modules/ai-ingress.nix=, defines the contract on both hosts: an
+OpenAI-compatible logging proxy on =127.0.0.1:8080= that every client speaks to. It is the
+single chokepoint for caller attribution (=X-AI-Caller=), token accounting, cost, the JSONL
+audit log, Prometheus metrics, and Langfuse traces. The module *asserts* the bind address is
+loopback. Only the backend behind it differs per host.
+
+#+begin_src
+dracula:  omp / opencode / Hermes / n8n
+              → local-llama-logger  127.0.0.1:8080
+              → local-llama-swap    127.0.0.1:18080
+              → llama-server        127.0.0.1:18100+   (loaded on demand)
+
+alucard:  omp / opencode / Hermes / n8n
+              → local-llama-logger  127.0.0.1:8080
+              → https://router.requesty.ai
+#+end_src
+
+** Models
+
+Dracula serves two pinned GGUFs (HF revision + sha256, auto-downloaded and verified into
+=/var/lib/llama/models=), swapped on demand by llama-swap:
+
+| Model ID                 | Context | Default |
+|--------------------------+---------+---------|
+| =dirk-qwen3.8-27b-local= |   32768 | yes     |
+| =qwen3.6-35b-a3b=        |   65536 | no      |
+
+Alucard carries the only server-side upstream credential (Requesty). Its model allowlist and
+price map come from =lib/requesty-models.nix=, and =modules/remote-openai.nix= refuses to start
+if that list drifts from the authenticated =/v1/models= catalog. Dracula holds *no* Requesty
+key — its clients reach Alucard's authenticated ingress over Tailscale instead.
+
+** Agents and automation
+
+- *Hermes* — NousResearch's =hermes-agent=, a pinned flake input, run as a hardened Docker
+  container. Dracula runs a personal single-operator agent against the local model; Alucard
+  runs a separate shared instance against Requesty. They share no state. API on =:8642=
+  (bearer auth), dashboard on =:9119= (basic auth). On alucard, Telegram is the only chat
+  transport, and its egress goes through a tinyproxy allowlist (=:18084=) permitting exactly
+  two hosts.
+- *n8n* — containerised, read-only, cap-drop-ALL, on a private bridge. It reaches the ingress
+  and the Hermes API only through systemd socket proxies bound to the bridge gateway, never a
+  host NIC. Workflows are reviewed JSON in =n8n/workflows/<host>/= and imported with
+  =n8n-workflows=.
+- *Lifecycle* — everything is grouped under =ai-stack.target=. Members of group =llama=
+  (=services.aiIngress.operators=) start and stop it without root via a polkit rule.
 
 * Server (alucard)
 
-Hetzner OpenStack VM with nginx reverse proxies, ACME/Let's Encrypt, and Keycloak authentication.
+Hetzner OpenStack VM. Public traffic terminates at nginx with ACME/Let's Encrypt; every
+backend binds loopback, and Nix assertions fail the build if a backend port ever appears in
+the firewall allowlist.
 
 Domains: =dumusstbereitsein.de=, =istbereit.de=
 
-** Native NixOS Services
+** Public vhosts
 
-| Service    | Description              | Domain                           |
-|------------+--------------------------+----------------------------------|
-| Keycloak   | SSO authentication       | auth.dumusstbereitsein.de        |
-| Jellyfin   | Media streaming          | stream.dumusstbereitsein.de      |
-| Navidrome  | Music streaming          | music.dumusstbereitsein.de       |
-| Calibre-Web| E-book library           | read.istbereit.de                |
-| Paperless  | Document management      | paperless.dumusstbereitsein.de   |
-| Coder      | Code-server              | coder.istbereit.de               |
-| Syncthing  | File synchronization     | (local network)                  |
+| Domain                              | Backend                 | Notes                          |
+|-------------------------------------+-------------------------+--------------------------------|
+| =dumusstbereitsein.de=              | =404=                   | apex placeholder               |
+| =auth.dumusstbereitsein.de=         | Keycloak =:38080=       | WAF off on the admin REST API  |
+| =stream.dumusstbereitsein.de=       | Jellyfin =:8096=        | WAF off on the playback route  |
+| =music.dumusstbereitsein.de=        | Navidrome =:4533=       |                                |
+| =paperless.dumusstbereitsein.de=    | Paperless-ngx =:58080=  |                                |
+| =requests.dumusstbereitsein.de=     | Jellyseerr =:5055=      | media stack                    |
+| =registry.dumusstbereitsein.de=     | Docker registry =:5000= | basic auth                     |
+| =chat.dumusstbereitsein.de=         | Onyx =:1447=            | managed outside this repo      |
+| =files.dumusstbereitsein.de=        | =:53842=                | managed outside this repo      |
+| =git.=, =docs.dumusstbereitsein.de= | =404=                   | placeholders                   |
+| =read.istbereit.de=                 | Calibre-Web =:8083=     |                                |
+| =comics.istbereit.de=               | Komga =:25600=          | Keycloak OIDC                  |
+| =mail.istbereit.de=                 | mailcow =:880=          | host ACME cert, loopback-bound |
+| =webdav.istbereit.de=               | Paperless consume dir   | basic auth, upload-only        |
+| =budget.istbereit.de=               | Actual Budget =:5006=   | managed outside this repo      |
+| =knowyourfiber.com=                 | static root             |                                |
 
-** Docker Media Automation Stack
+Every vhost is wrapped by a =harden= function adding per-IP rate limiting, connection limits,
+and =X-Content-Type-Options= / =Referrer-Policy= / =Permissions-Policy=.
 
-| Service      | Purpose             |
-|--------------+---------------------|
-| Sonarr       | TV show automation  |
-| Radarr       | Movie automation    |
-| Prowlarr     | Indexer management  |
-| Bazarr       | Subtitle management |
-| qBittorrent  | Torrent client      |
-| SABnzbd      | Usenet downloader   |
-| Gluetun      | VPN tunnel (Mullvad)|
-| Jellyseerr   | Media requests      |
+** Private access (Tailscale)
+
+No Funnel, no exit node, no subnet routes. =tailscale serve= publishes loopback ports onto
+=alucard.tailf117a1.ts.net= and nothing else:
+
+| Tailnet port | Service          |
+|--------------+------------------|
+|        23000 | Langfuse         |
+|        23001 | Grafana          |
+|        25678 | n8n              |
+|        28080 | AI ingress       |
+|        29091 | Prometheus       |
+|        29119 | Hermes dashboard |
+
+Each media app keeps its own loopback port number on the tailnet: Kapowarr 15656, Bazarr
+16767, Radarr 17878, qBittorrent 18080, Sonarr 18989, SABnzbd 19090, Prowlarr 19696.
+
+The Hermes dashboard needs browser WebSockets, so it is the one HTTPS map: tailnet =:29119=
+→ an internal nginx vhost that rewrites =Host=/=Origin= and returns 403 for any other origin
+→ =127.0.0.1:9119=.
+
+** Docker media automation stack
+
+All published ports bind loopback; torrent traffic is confined to the Gluetun (Mullvad
+WireGuard) network namespace.
+
+| Service     | Purpose             |
+|-------------+---------------------|
+| Gluetun     | VPN tunnel          |
+| qBittorrent | Torrent client      |
+| SABnzbd     | Usenet downloader   |
+| Sonarr      | TV show automation  |
+| Radarr      | Movie automation    |
+| Prowlarr    | Indexer management  |
+| Bazarr      | Subtitle management |
+| Jellyseerr  | Media requests      |
+| Komga       | Comic/manga library |
+| Kapowarr    | Comic management    |
 
 See [[file:hosts/alucard/MEDIA_AUTOMATION_SETUP.md][MEDIA_AUTOMATION_SETUP.md]] for the full media stack documentation.
+
+** Documents
+
+=modules/paperless.nix= runs Paperless-ngx plus an idempotent provisioner
+(=paperless/provision.py=) that reconciles tags, correspondents, document types, workflows and
+saved views from =paperless/taxonomy.yaml= (public) and =secrets/paperless.yaml= (private). It
+upserts by name and never deletes — drift is reported, not applied. Nightly exports are pushed
+off-site to the Hetzner storage box with restic, and a separate unit restores the latest
+snapshot and verifies its contents.
+
+* Security (alucard)
+
+Three independent layers, each in its own file:
+
+| Layer     | Implementation                                                       | File             |
+|-----------+----------------------------------------------------------------------+------------------|
+| L7 WAF    | ModSecurity + OWASP CRS (pinned release), audit log, rate/conn zones | =security.nix=   |
+| L3/L4 IDS | CrowdSec agent + firewall bouncer on =INPUT= and =DOCKER-USER=       | =security.nix=   |
+| SSH       | fail2ban, key-only auth, no root login                               | =networking.nix= |
+
+Plus: outbound mining-pool port blocks in the firewall, a =mining-watchdog= unit that stops
+any container found talking to a pool port, and a daily Trivy scan of every running image
+(root *and* rootless daemons) whose results land in Prometheus as textfile metrics.
+
+CRS exemptions are surgical and each documents a verified false positive in a comment next to
+the rule. Because nginx evaluates the server-level WAF before a nested location can re-enable
+it, the pattern is =modsecurity off= at the vhost and =modsecurity on= on the catch-all route.
+
+* Observability
+
+=modules/observability.nix= drives one digest-pinned compose stack, identical on both hosts
+and parameterised per host (GPU metrics on dracula only):
+
+| Component     |  Port | Purpose                                           |
+|---------------+-------+---------------------------------------------------|
+| Langfuse      | 13000 | LLM traces (+ postgres, clickhouse, redis, minio) |
+| Grafana       | 13001 | Provisioned "AI and machine overview" dashboard   |
+| Prometheus    | 19091 | 90 d / 20 GB retention                            |
+| node-exporter | 19100 | Host metrics + textfile collector                 |
+| cAdvisor      | 18081 | Container metrics                                 |
+| DCGM exporter | 19400 | GPU metrics (compose profile =gpu=, dracula)      |
+
+Scrape targets: the AI ingress, n8n, CrowdSec, node, containers, and Prometheus itself. The
+dashboard renders inference latency/TTFT/cost next to Trivy vulnerability counts, so security
+and AI telemetry close the loop in the same place. Cost is reported on two deliberately
+non-summable tracks — provider-billed and list-price estimate; local models report neither
+rather than a fake =$0.00=.
+
+* Operator Commands
+
+| Command                | Purpose                                                     |
+|------------------------+-------------------------------------------------------------|
+| =ai-stack-start/stop=  | Drive =ai-stack.target=, polling until healthy (no root)    |
+| =ai-stack-health=      | Assert units active, then probe the ingress =/health=       |
+| =ai-usage-summary=     | Per-caller / per-model tokens, cost, latency, TTFT          |
+| =n8n-workflows=        | =import= reviewed workflow JSON / =export= the live set     |
+| =observability-status= | Stack unit status + =docker compose ps=                     |
+| =containers-update=    | Re-pull and recreate the declared container stacks          |
+| =containers-scan=      | Run the Trivy scan now and print a one-line summary         |
+| =crowdsec-admin=       | Sudo-wrapped =cscli= (decisions, alerts, hub)               |
+| =paperless-provision=  | Reconcile the Paperless taxonomy (=--dry-run= is faithful)  |
+| =mailcow-tls-deploy=   | Install the ACME cert into mailcow and restart its services |
 
 * Build Commands
 
@@ -121,20 +305,46 @@ sudo nixos-rebuild build --flake .#dracula
 # Update flake inputs
 nix flake update
 
-# Check / show flake
+# Check / show flake  (`check` runs the no-package-patches guard)
 nix flake check
 nix flake show
 #+end_src
 
+* CI and Supply Chain
+
+- =.github/workflows/nix-build.yml= builds =nixosConfigurations.{dracula,alucard}.config.system.build.toplevel=
+  on every PR and push to master, and runs the package-patch guard as a second job.
+- =scripts/check-no-package-patches.sh= rejects =overrideAttrs=, =postPatch=, =applyPatches=,
+  ~patches =~ assignments and locally defined overlay lambdas. Exactly one file is allow-listed, and it
+  must keep an =# UPSTREAM DEFECT= justification comment or the check fails anyway. It is also
+  wired in as a flake check, so =nix flake check= enforces the same rule locally.
+- =renovate.json= pins container digests and GitHub Action SHAs, with =automerge: false= — a
+  reviewed Git commit is the only path a container image changes.
+
 * Secret Management
 
-Uses [[https://github.com/Mic92/sops-nix][sops-nix]] with age encryption. Three recipient keys (desktop, server, macbook).
+Uses [[https://github.com/Mic92/sops-nix][sops-nix]] with age encryption. Three recipient keys (desktop, server, macbook). Secrets are
+delivered to services via systemd =LoadCredential= or sops templates, never plain env vars in
+the store.
 
 #+begin_src bash
-sops secrets/dmbs.yaml    # Edit encrypted secrets
+sops secrets/dmbs.yaml          # Base host secrets
+sops secrets/alucard-ai.yaml    # Server AI stack (Requesty, n8n, Langfuse, Hermes)
+sops secrets/dracula-ai.yaml    # Desktop AI stack
+sops secrets/paperless.yaml     # Private half of the Paperless taxonomy
 #+end_src
 
-Config files: [[file:.sops.yaml][.sops.yaml]], [[file:secrets/secrets.nix][secrets.nix]], [[file:secrets/dmbs.yaml][dmbs.yaml]]
+Config files: [[file:.sops.yaml][.sops.yaml]], [[file:secrets/secrets.nix][secrets.nix]]. Inventory and rotation classes: [[file:docs/SECRETS.md][docs/SECRETS.md]].
+
+* Documentation
+
+| File                                                        | Contents                                                       |
+|-------------------------------------------------------------+----------------------------------------------------------------|
+| [[file:docs/STACK_GUIDE.md][docs/STACK_GUIDE.md]]           | Operator map: every unit, path, port and command on both hosts |
+| [[file:docs/ALUCARD_SECURITY.md][docs/ALUCARD_SECURITY.md]] | Exposure model, access planes, runbooks                        |
+| [[file:docs/SECRETS.md][docs/SECRETS.md]]                   | Secret inventory and rotation (no values)                      |
+| [[file:docs/AI_DEMO_GUIDE.md][docs/AI_DEMO_GUIDE.md]]       | Walkthrough of the AI stack for a non-operator audience        |
+| [[file:AGENTS.md][AGENTS.md]]                               | Module layout conventions and package-placement rules          |
 
 * Adding a New Desktop Host
 
@@ -184,6 +394,8 @@ sudo nixos-rebuild switch --flake .#newhost
 2. Create your host under =hosts/<name>/= following the pattern above
 3. Enable/disable opt-in modules (=nvidia.nix=, =gaming.nix=) as needed
 4. For a server: adapt =hosts/alucard/= — each file is self-contained
-5. Set up your own sops-nix age keys in =.sops.yaml= and re-encrypt secrets
+5. For the AI stack: import =modules/ai-ingress.nix= plus exactly one backend
+   (=llama.nix= for local GGUFs, =remote-openai.nix= for a hosted router)
+6. Set up your own sops-nix age keys in =.sops.yaml= and re-encrypt secrets
 
-See [[file:CLAUDE.md][CLAUDE.md]] for detailed architecture notes and module documentation.
+See [[file:AGENTS.md][AGENTS.md]] for module conventions and [[file:docs/STACK_GUIDE.md][docs/STACK_GUIDE.md]] for the full operator map.

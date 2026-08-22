@@ -16,6 +16,7 @@
     ./hm-modules/kitty.nix
     ./hm-modules/gtk.nix
     ./hm-modules/mpv.nix
+    ./hm-modules/pokemmo.nix
     ./hm-modules/packages.nix
     ./hm-modules/starship.nix
     ./hm-modules/yazi.nix
@@ -26,6 +27,7 @@
     ./hm-modules/services.nix
     ./hm-modules/email.nix
     ./hm-modules/claude.nix
+    ./hm-modules/omp.nix
     ./hm-modules/ai-clients.nix
     inputs.caelestia-shell.homeManagerModules.default
   ];

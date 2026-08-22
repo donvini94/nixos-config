@@ -1,15 +1,16 @@
-# Claude Code harness — authored, owned, and versioned in this repo.
+# Claude Code harness — retired. OMP is the active harness; see omp.nix.
 #
-# Design (mirrors doom.nix): the authored config lives in nixos-config/claude/
-# and is symlinked into ~/.claude via mkOutOfStoreSymlink, so every piece stays
-# WRITABLE and editable in place (no rebuild per edit) while being git-tracked.
+# Only two things remain here:
+#   1. ~/.claude/CLAUDE.md — a thin pointer that @-imports nixos-config/omp/AGENTS.md,
+#      so a stray Claude Code session gets the same instructions instead of a stale fork.
+#   2. ~/.claude/.stignore — ~/.claude/memory/ is still the cross-machine memory store
+#      for every harness, and this whitelist is what makes only that directory sync.
 #
 # NOT managed here (deliberately, machine-specific + high-churn writable state):
 #   settings.json, .credentials.json, plugins/, projects/, memory/, session-*,
-#   history, caches. Plugins are installed per-machine via `claude plugin install`.
+#   history, caches.
 #
-# ~/.claude is a symlink to ~/Claude, a Syncthing folder. Only memory/ syncs
-# (see .stignore below); everything authored is owned here instead of synced.
+# ~/.claude is a symlink to ~/Claude, a Syncthing folder.
 { config, ... }:
 
 let
@@ -17,10 +18,8 @@ let
   link = config.lib.file.mkOutOfStoreSymlink;
 in
 {
-  # --- authored harness (writable symlinks into the repo working tree) ---
+  # --- thin pointer into the canonical OMP context (writable symlink into the repo) ---
   home.file.".claude/CLAUDE.md".source = link "${repo}/CLAUDE.md";
-  home.file.".claude/RTK.md".source = link "${repo}/RTK.md";
-  home.file.".claude/hooks/rtk-rewrite.sh".source = link "${repo}/hooks/rtk-rewrite.sh";
 
   # --- Syncthing ignore rules for ~/.claude (folder id: "claude") ---
   # .stignore is per-device and never itself synced; a read-only nix-store
@@ -31,9 +30,9 @@ in
     // WHITELIST model: only paths included below sync; trailing `*` ignores the rest.
     // First match wins, top-to-bottom.  `!` = include, `*` = catch-all ignore.
     //
-    // MEMORY-ONLY: only accumulated memory syncs. Everything else (CLAUDE.md, RTK.md,
-    // hooks/) is owned declaratively here in nixos-config and symlinked in, so it must
-    // NOT sync (Syncthing would fight the symlinks).
+    // MEMORY-ONLY: only accumulated memory syncs. The authored CLAUDE.md pointer is
+    // owned declaratively here in nixos-config and symlinked in, so it must NOT sync
+    // (Syncthing would fight the symlink).
     // ===========================================================================
 
     // accumulated knowledge — the only thing that syncs
