@@ -403,12 +403,23 @@ and human review decide whether an update is safe. These are complementary contr
 
 ### Moving configuration between machines
 
-The `nixos-config` working directory is shared by Syncthing, but `/.git` is explicitly
-ignored. Synchronizing Git's internal refs and object files can produce a branch ref before
-the corresponding object arrives and corrupt the repository. Commits must move through a
-Git remote, `git bundle`, or another Git transport; Syncthing is only allowed to move
-working-tree files. If Nix reports `object not found`, repair the object database before
-rebuilding—do not reset or reclone over uncommitted files.
+`nixos-config` moves between machines by Git alone. It is deliberately not a Syncthing
+folder: syncing a working tree while each machine keeps its own `.git` produces a stale
+`HEAD` against already-current files, which reads as phantom modifications, and syncing
+`.git` itself can land a branch ref before its objects arrive and corrupt the database.
+Both failure modes were observed on this folder before it was withdrawn: a `.git/index`
+conflict on 2026-08-08 froze the MacBook's `HEAD` for eight days and left 106
+`*.sync-conflict-*` artifacts in `.git`.
+
+The decisive argument is narrower than corruption. A flake reads only Git-tracked files, so
+a change Syncthing delivers but nobody commits is invisible to `nixos-rebuild --flake`. That
+is not a theoretical gap: `hm-modules/omp.nix` was present on both desktops and excluded
+from every rebuild for two weeks because it was untracked. Syncthing was moving files the
+builder could not read.
+
+Every machine therefore needs push and fetch access to the remote, including Alucard, which
+deploys from its own checkout. If Nix reports `object not found`, repair the object database
+before rebuilding — do not reset or reclone over uncommitted files.
 
 ## Media stack on Alucard
 

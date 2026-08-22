@@ -125,21 +125,6 @@
             params.keep = 5;
           };
         };
-        "nixos-config" = {
-          id = "nixos-config";
-          path = "/home/vincenzo/nixos-config";
-          ignorePatterns = [ "/.git" ];
-          devices = [
-            "dracula"
-            "bereitbook-pro-m4"
-          ];
-          type = "sendreceive";
-          enable = true;
-          versioning = {
-            type = "simple";
-            params.keep = 5;
-          };
-        };
         "amiconsult" = {
           id = "amiconsult";
           path = "/home/vincenzo/amiconsult";
