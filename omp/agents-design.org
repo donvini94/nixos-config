@@ -1,0 +1,169 @@
+#+title: OMP agents - what they are and which three to build
+#+date: 2026-08-23
+#+author: Vincenzo Pace
+
+Written to be read cold, later. Nothing here is implemented yet. The decisions are made and
+the reasons are recorded; what remains is writing three files and wiring them.
+
+* What an agent is in this harness
+
+An agent is a *separate session in a subprocess*. It gets its own system prompt, its own
+context window, its own tool allowlist, and optionally its own model. It runs its own loop
+to completion and hands back a final output artifact, reachable afterwards at
+=agent://<id>=. While it runs you can watch it, read its transcript, and steer it from
+Agent Hub (=Alt+A=), or programmatically with =hub send=.
+
+That is the whole mechanism. The consequences are what make it a distinct tool.
+
+** The four properties a rule cannot give you
+
+1. *Fresh context.* The agent has no conversation history. It has never seen me reason
+   about the task, so it cannot inherit my misreading of it. This is the only mechanism in
+   the harness that produces genuinely independent judgment.
+2. *A separate budget.* A large read - eighty sources, a whole subtree - is spent in its
+   window, and only the compressed conclusion lands in mine.
+3. *A different model.* Mechanical work can run on something cheap; a hard judgment call
+   can run on something stronger than the session model.
+4. *Real concurrency.* Several agents run at once. Parallel tool calls inside one session
+   are not the same thing.
+
+** What it costs
+
+The agent starts blank. Everything it needs has to be handed to it, which is a real price:
+an agent that needs 30 KB of my conventions before it is useful is a badly chosen agent.
+The =autoloadSkills= frontmatter field softens this by injecting named skills from the
+parent session before the child's first prompt.
+
+** How it differs from the two things it gets confused with
+
+| Layer | Fires when | Resident cost | Gives you |
+|-------+------------+---------------+-----------|
+| Template / linter | every build | zero tokens | mechanical enforcement, no judgment |
+| Rule | a matching file is touched, or a pattern is typed | one prompt line | judgment, inside my context |
+| Skill | I read it on demand | one metadata line | procedure, inside my context |
+| Agent | I dispatch it | a subprocess | judgment from *outside* my context |
+
+The decision test follows from the table. *Use an agent when fresh context or isolation is
+the point.* If the value you want is domain knowledge, that is a rule or a skill, and an
+agent wrapping it only adds latency. If the value is mechanical, that is a linter.
+
+* Mechanics worth knowing before writing one
+
+- User agents live in =~/.omp/agent/agents/*.md=. Project agents live in =.omp/agents/*.md=
+  and override user ones by name.
+- =.claude/agents=, =.codex/agents= and =.gemini/agents= are *deliberately skipped* by
+  discovery, because their frontmatter is not the OMP task-agent contract. The old
+  =~/.claude/agents/prose-reviewer.md= would never have been discovered here. Porting is
+  the only route, not a tidy-up.
+- Required frontmatter is =name= and =description=; the body is the system prompt. A file
+  missing either is skipped with a warning, and one bad file does not break the others.
+- Useful optional fields: =tools= (an allowlist; =yield= is added automatically),
+  =model= (a prioritised list, accepting =@role= aliases resolved through =modelRoles= in
+  =config.yml=), =thinking-level=, =output= (a schema for structured results),
+  =autoloadSkills=, =read-summarize: false= (verbatim file reads instead of structural
+  summaries - what =scout= and =librarian= use), and =blocking=.
+- Discovery is first-wins by exact, case-sensitive name, and a non-bundled agent overrides
+  a bundled one. So writing =~/.omp/agent/agents/reviewer.md= replaces the generic bundled
+  =reviewer= everywhere.
+- =task.maxRecursionDepth= defaults to 2. An agent that should not spawn children needs no
+  =spawns= field at all.
+
+Wiring follows the rules precedent in =hm-modules/omp.nix=: declare each file with
+=mkOutOfStoreSymlink= so it stays writable and git-tracked. Agents are loaded with =readdir=
+rather than a glob, so a single directory symlink would probably work - but the rules
+loader's glob silently ignored a directory link and cost an hour to diagnose, so use
+per-file links and keep one pattern in the module.
+
+* The three to build
+
+Ordered by what to do first, which is not the same as by value.
+
+** 1. slop - the prose gate
+
+The one deliberately being replaced. A reviewer that has watched the text being written
+cannot judge it, so the fresh context is the entire point rather than a side benefit.
+
+- *Contract:* receives the artifact path and the banned-construction list. Never receives
+  my reasoning or my summary of the draft.
+- *Returns:* findings as =file:line=, each classed BLOCK or FIX, and nothing else. No
+  rewrite - a reviewer that rewrites stops being a check and becomes a second author.
+- *Tools:* =read=, =grep=. Read-only.
+- *Model:* a cheap role alias is enough; the banned list is explicit and the task is
+  recognition rather than invention.
+- *Closes:* the gap named in =~/org/.agents/skills/ai-security-research/=, where the
+  =aisec-prose= rule fires on writes and therefore cannot see prose a subagent hands back
+  in context.
+
+** 2. intent-check - did it build the thing that was asked for
+
+The highest-value one, because it addresses the failure that actually costs whole sessions:
+reading a few files, forming a confident and wrong model of the task, and implementing
+against that model all the way to the end.
+
+That failure is invisible from inside the session by construction - the misreading *is* the
+context. An agent handed only the original request and the finished diff, with no access to
+my reasoning, is the only thing in the harness that can catch it.
+
+- *Contract:* the user's request verbatim, plus the diff or artifact. Explicitly *not* my
+  interpretation, plan, or commit message, since those carry the misreading forward.
+- *Returns:* three lists - satisfied, missing, and not asked for. Plus one line naming the
+  most likely misread if it sees one.
+- *Tools:* =read=, =grep=. Read-only.
+- *Relationship to the config:* Interaction Rule 4 in =omp/AGENTS.md= already makes me
+  state the interpretation before spending the session. That is the front gate. This is the
+  check at the end, and the two are complementary rather than redundant.
+
+** 3. evidence-check - per-claim verification for research output
+
+Earns a subprocess on budget rather than on judgment. Verifying twenty claims means
+fetching twenty sources, and doing that in the main window destroys it for the actual work.
+
+- *Contract:* a list of claims with their cited sources.
+- *Returns:* one record per claim carrying the six attributes the evidence standard already
+  requires - source, tier, status, as-of, claim, verified-by - and an explicit list of what
+  came back empty.
+- *Tools:* =read=, =grep=, =web_search=. Read-only.
+- *Uses:* =autoloadSkills: ai-security-research=, which is precisely what that field exists
+  for. The source-reliability hierarchy and the evidence table are already written; the
+  agent should inherit them rather than restate them.
+- *Caution:* the standing constraint against parallel fan-out for research runs still
+  holds. One of these, dispatched deliberately, not thirteen.
+
+* What not to build, and why
+
+- *An ISC or Rust or Python "expert" agent.* The value there is domain knowledge, which is
+  now =rule://isc-rule=, =rule://rust= and =rule://python=, plus real gates - =mvn test=,
+  the SaaS rule validator, =cargo clippy=, =ruff=. An agent would add latency and lose the
+  compiler.
+- *A matrix-consistency agent.* =check.mjs= already computes it and exits non-zero. That is
+  a linter, and it belongs in a timer rather than a subprocess.
+- *An externalisation reviewer.* =lint-external.mjs= does it mechanically.
+- *A planning or architecture agent.* It starts blank, knows less than the session, and
+  adds a round trip with no parallelism.
+
+* Open decisions
+
+1. *Scope.* All three are useful in any repo, so user scope (=~/.omp/agent/agents/=) is the
+   default. The alternative is putting =evidence-check= in =~/org/.omp/agents/= because its
+   contract is tied to that repo's evidence standard. Mild preference for user scope, since
+   the thesis and client work will both want it.
+2. *Model roles.* =slop= and =intent-check= want a cheap role; =evidence-check= wants a
+   strong one. That means two =modelRoles= entries in =config.yml= rather than concrete
+   selectors in the agent files, so the routing can change without editing them.
+3. *Whether to override bundled =reviewer=.* The bundled one knows nothing about the
+   language rules. Writing =~/.omp/agent/agents/reviewer.md= would replace it globally by
+   name. Worth doing only after the three above have proved themselves.
+
+* Verification before any of these counts as done
+
+Each agent needs one dispatch against a real artifact, not a synthetic one:
+
+- =slop= against a document known to contain banned constructions, confirming it finds them
+  and reports =file:line=.
+- =intent-check= against a change deliberately given a wrong interpretation, confirming it
+  names the misread.
+- =evidence-check= against a handful of claims where one source is known dead, confirming
+  the negative is reported rather than dropped.
+
+An agent that has never been dispatched is in the same category as
+=agentic-market-watch.js=: a saved draft whose benefit is still open.

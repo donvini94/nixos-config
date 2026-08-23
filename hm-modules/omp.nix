@@ -37,4 +37,7 @@ in
     link "${repo}/rules/rust-runtime-hazard.md";
   home.file.".omp/agent/rules/python-silent-failure.md".source =
     link "${repo}/rules/python-silent-failure.md";
+  home.file.".omp/agent/rules/isc-rule.md".source = link "${repo}/rules/isc-rule.md";
+  home.file.".omp/agent/rules/isc-rule-divergence.md".source =
+    link "${repo}/rules/isc-rule-divergence.md";
 }
