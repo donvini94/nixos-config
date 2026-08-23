@@ -13,6 +13,12 @@
 # it keeps its hold after a long conversation has pushed the opening context out of view.
 # Keep it short; long background belongs in AGENTS.md, where it costs budget only once.
 #
+# rules/*.md are per-language guardrails. Two kinds: rulebook rules (globs + description,
+# read on demand via rule://<name>) and TTSR rules (condition + scope, fired mid-stream
+# when a pattern is written into a matching file). Symlinked FILE BY FILE, not as a
+# directory: OMP enumerates <agent-dir>/rules/*.md with a glob, and a glob does not
+# traverse a symlinked directory — a directory link makes every rule silently invisible.
+#
 # NOT managed here (machine-specific + high-churn writable state):
 #   config.yml, models.yml (see ai-clients.nix), agent.db, history.db, sessions/, logs/.
 { config, ... }:
@@ -24,4 +30,11 @@ in
 {
   home.file.".omp/agent/AGENTS.md".source = link "${repo}/AGENTS.md";
   home.file.".omp/agent/RULES.md".source = link "${repo}/RULES.md";
+
+  home.file.".omp/agent/rules/rust.md".source = link "${repo}/rules/rust.md";
+  home.file.".omp/agent/rules/python.md".source = link "${repo}/rules/python.md";
+  home.file.".omp/agent/rules/rust-runtime-hazard.md".source =
+    link "${repo}/rules/rust-runtime-hazard.md";
+  home.file.".omp/agent/rules/python-silent-failure.md".source =
+    link "${repo}/rules/python-silent-failure.md";
 }
