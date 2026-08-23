@@ -11,13 +11,19 @@ Sourced from `omp/research/RustCraft.md` — Gjengset, dtolnay, matklad, Ryhl, N
 the Rust API Guidelines and the std-dev-guide. Where those disagree, the choice made here
 is noted as a choice.
 
-## Scope
+## One assumption: greenfield, full control, maintained by us long term
 
-Three shapes: binaries and CLIs, long-running services, and internal libraries consumed by
-other code I own. **Nothing here is published to crates.io.** So the downstream-caller
-ceremony is deliberately absent — no MSRV policy, no `cargo-semver-checks`, no sealed
-traits, no `#[non_exhaustive]`, no mandatory doctests. If a crate is ever published, that
-decision changes and this rule stops covering it.
+Every project is new and we own the environment: internal tooling, and software running in
+enterprise environments that we keep running for years. Latest stable toolchain, current
+edition, no legacy constraint to design around. If a project genuinely cannot use this
+stack, that is an exception to raise explicitly, not a branch to guess at.
+
+Two consequences pull in opposite directions and both hold. **Nothing is published to
+crates.io**, so the downstream-caller ceremony is out — no MSRV policy, no
+`cargo-semver-checks`, no sealed traits, no `#[non_exhaustive]`, no mandatory doctests; a
+breaking change is fixed on both sides in one commit. But **we maintain this for years**, so
+the things that decay without discipline are in: a real error taxonomy, observability from
+the start, and tests at module boundaries. The reader to design for is me in two years.
 
 ## Errors
 
@@ -53,6 +59,18 @@ decision changes and this rule stops covering it.
 - Long-lived owned state is an actor: a `Handle` holding an `mpsc::Sender` plus a task
   owning the state, spawned from the handle's constructor rather than from a `&mut self`
   method. Never merge the two — that gives every handle clone access to the task's fields.
+
+## Observability — anything long-lived
+
+Instrument as you build; retrofitting telemetry into a service you already cannot see into
+means reproducing the incident first. `tracing` with `#[instrument]` on the operations that
+can fail or block, spans carrying the identifiers you will search by, structured fields
+rather than formatted strings, and JSON output in production. A log line that cannot be
+correlated to a request is a line you will not use at 3am. *(Crate choice is my read —
+`omp/research/RustCraft.md` covers async and error discipline but not instrumentation.)*
+
+Never log a token, credential, or secret-bearing struct. If a type can hold one, give it a
+`Debug` impl that redacts, so a stray `{:?}` cannot leak it.
 
 ## Types
 
