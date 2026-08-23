@@ -1,0 +1,49 @@
+[project]
+name = "changeme"
+version = "0.1.0"
+requires-python = ">=3.14"
+# Lower bounds only. Exact versions live in uv.lock. Never a speculative upper cap.
+dependencies = [
+  "httpx>=0.27",           # enforces timeouts by default, unlike requests
+  "pydantic>=2",           # the single modelling library
+  "pydantic-settings>=2",  # config, same modelling library
+  "structlog>=24",         # structured diagnostics
+  "click>=8",              # CLI; argparse cannot nest subcommands properly
+]
+
+[project.scripts]
+changeme = "changeme.cli:main"
+
+# Without [build-system] the project is never installed into the env and `uv run pytest`
+# fails with ModuleNotFoundError.
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = ["pytest>=8", "mypy>=1", "ruff>=0.16", "pip-audit>=2"]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+
+[tool.ruff.lint]
+# S113 request-without-timeout, E722 bare-except, B904 raise-without-from,
+# PLW1510 subprocess-without-check, S301 pickle, S105-107 hardcoded secrets.
+select = ["E", "F", "I", "B", "S", "PL", "UP", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]  # assert is the point in a test
+
+[tool.mypy]
+strict = true
+plugins = ["pydantic.mypy"]
+
+# Escapes are per-module and written down. Never a blanket ignore, never --strict off.
+# [[tool.mypy.overrides]]
+# module = ["some_untyped_vendor_sdk.*"]
+# ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]

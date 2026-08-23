@@ -1,0 +1,19 @@
+name: ci
+
+on: [push, pull_request]
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --check
+      # The gate set lives in Cargo.toml [lints]; -D warnings makes it binding.
+      # `pedantic` is deliberately NOT here — it is the local writing pass:
+      #   cargo clippy --all-targets -- -W clippy::pedantic
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test

@@ -1,0 +1,51 @@
+[package]
+name = "CHANGEME"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+# The standard picks. Replace, don't extend, unless the problem is genuinely new.
+anyhow = "1"                                              # binary-layer errors + .context()
+thiserror = "2"                                           # typed errors at a module boundary
+clap = { version = "4", features = ["derive"] }           # CLI parsing
+tracing = "0.1"                                           # structured spans and events
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+# Lints live here, not in crate-root attributes: declarative, workspace-inheritable, and
+# lib.rs stays about the code. Verified against cargo 1.96 / clippy 0.1.96.
+[lints.rust]
+unsafe_code = "forbid"                # drop only when unsafe is genuinely needed; say why in the commit
+missing_debug_implementations = "warn"
+unreachable_pub = "warn"
+unused_lifetimes = "warn"
+elided_lifetimes_in_paths = "warn"
+unused_must_use = "deny"
+
+[lints.clippy]
+# Groups need an explicit low priority so the specific lints below can override them.
+correctness = { level = "deny", priority = -1 }
+suspicious = { level = "warn", priority = -1 }
+complexity = { level = "warn", priority = -1 }
+perf = { level = "warn", priority = -1 }
+style = { level = "warn", priority = -1 }
+
+# Debugging residue must not ship.
+dbg_macro = "warn"
+todo = "warn"
+
+# expect("reason") over bare unwrap(). Tests opt out with a module-level
+# #![allow(clippy::unwrap_used)] — see tests/it/main.rs.
+unwrap_used = "deny"
+
+# Library and service crates only. A CLI writing to stdout is the entire point, so these
+# stay commented in a binary. Uncomment when this crate is a lib or a daemon.
+# print_stdout = "warn"
+# print_stderr = "warn"
+
+# NOT enabled: `pedantic`, `nursery`, `restriction`. pedantic is for the writing pass
+# (`cargo clippy -- -W clippy::pedantic`), not the gate — dtolnay runs it and carries ~55
+# allows to do so. Nobody credible enables nursery or restriction wholesale.

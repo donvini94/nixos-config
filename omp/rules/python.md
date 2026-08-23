@@ -40,23 +40,33 @@ Python. Modern idiom is expected; cleverness still is not.
   freezes out security releases and creates unresolvable conflicts in Python's flat package
   space.
 
-## Data modelling — pydantic, always
+## Data modelling — pydantic, with Schlawack's two constraints
 
-Every data model is a pydantic model. API request and response shapes, config, domain
-objects, anything with a fixed set of fields. Not `dict`, not `tuple`, not
-`dataclasses.dataclass`, not `attrs`. Config comes from `pydantic-settings`.
+pydantic is the single modelling library. API request and response shapes, config, records,
+anything with a fixed set of fields. Not `dict`, not `tuple`, not `dataclasses.dataclass`,
+not `attrs`. Config via `pydantic-settings`. One library, so there is never a per-file
+"which one here" decision to get wrong.
 
-> **Deliberate override.** `omp/research/PythonCraft.md` records Schlawack's position that
-> pydantic is a validation library for untrusted input and should not model domain objects,
-> because it re-validates trusted data and lets the API shape pressure business code. That
-> argument is sound and we are overriding it on purpose: with full environment control, one
-> uniform way to model data beats a per-case judgment call, validation at every boundary is
-> worth more than the cycles it costs, and a single modelling library removes an entire
-> class of "which one here" decision from every file. Do not silently revert this to
-> dataclasses on the strength of the research file.
+Schlawack argues in `omp/research/PythonCraft.md` that pydantic is a validation and
+coercion library, and that modelling domain objects with it means re-validating trusted data
+and letting the wire shape apply design pressure to business logic. His objection is
+correct, and it is answered by mechanism rather than by a second library:
 
-Parse at the edge and keep parsed types inward — `model_validate` on the way in, typed
-attributes everywhere after. A `dict` reaching business logic is a bug.
+- **Do not re-validate what you already validated.** `model_validate` at the boundary where
+  data arrives untrusted; `model_construct` when reconstructing an object from a store you
+  wrote yourself. Validation is a boundary operation, not a constructor.
+- **Do not let a wire schema become the domain type.** When the API shape and the shape the
+  logic wants actually diverge, define both and convert between them. The divergence is the
+  signal that they are two types; a field you carry only to satisfy a remote API does not
+  belong on the object your code reasons about.
+
+Note on the source: Schlawack authors `attrs`, so this is a maintainer writing about a rival
+library — tier 4 on the hierarchy in the `ai-security-research` skill. That is why the
+argument was taken on its merits rather than on authority, and the merits hold in exactly
+the two cases above. It also happens that most data here arrives from IdP and vendor APIs as
+untrusted input, which is the case he says pydantic is *for*.
+
+Parse at the edge and keep parsed types inward. A `dict` reaching business logic is a bug.
 
 ## Typing
 
@@ -74,6 +84,9 @@ Annotate every signature and model field. Do not annotate locals the checker alr
 - **Every call carries an explicit timeout anyway** — the default is a floor, not a
   decision. A `(connect, read)` tuple when the two differ. A timeout set once on the client
   covers its calls; say so rather than repeating it.
+- Verified against ruff 0.16: **`S113` fires on `requests` only, not on `httpx`** — so on
+  our stack this rule has no linter behind it. The `python-silent-failure` interrupt is the
+  only enforcement, which is why it exists.
 - Retries are opt-in, bounded, backed off, and restricted to idempotent methods. Never wrap
   a non-idempotent identity operation in a retry — you will double-create or double-delete a
   principal.
@@ -139,12 +152,19 @@ does — the types carry that.
 
 ## Scaffolding a new project
 
-- `pyproject.toml` with a `[build-system]` section (without it `uv run pytest` fails with
-  `ModuleNotFoundError` because the project is never installed), a `dev` dependency group
-  holding `pytest`, and `ruff` plus `mypy` config in the same file.
-- `.python-version` pinning the interpreter, `uv lock` committed.
-- One CI job: `ruff check`, `ruff format --check`, `mypy`, `pytest`, `pip-audit`, with
-  `UV_LOCKED=1` so a stale lock fails the build.
-- `ruff` selections that carry the rules above mechanically — at least `E,F,I,B,S,PL`:
-  `S113` request-without-timeout, `E722` bare-except, `B904` raise-without-from, `PLW1510`
-  subprocess-without-check, `S301` pickle, `S105`–`S107` hardcoded secrets.
+**Copy `omp/templates/python/`. Do not hand-roll the config.** It is verified end to end
+against uv 0.12, ruff 0.16, mypy strict and Python 3.14: `uv sync`, `ruff check`,
+`ruff format --check`, `mypy src tests` and `pytest` all pass on a fresh copy, and the lint
+selection was confirmed to reject a bare `except`, a hardcoded secret, `subprocess.run`
+without `check`, and `pickle.loads`. Rename `changeme`, delete what you do not need.
+
+What it carries, so the rules above are enforced by tooling rather than by memory:
+`pyproject.toml` with `[build-system]` (without it `uv run pytest` fails with
+`ModuleNotFoundError`), a `dev` dependency group, `ruff` selecting `E,F,I,B,S,PL,UP,RUF`,
+`mypy` strict with the pydantic plugin, `.python-version`, a CI job running the gate with
+`UV_LOCKED=1`, and `src/changeme/client.py` demonstrating cursor-exhausting pagination, an
+explicit timeout, and diagnostics on stderr so stdout stays pipeable.
+
+Verified rule-to-lint mapping: `E722` bare-except, `PLW1510` subprocess-without-check,
+`S301` pickle, `S105`–`S107` hardcoded secrets, `S607` partial executable path. `B904`
+raise-without-from is selected but was not exercised by the probe.

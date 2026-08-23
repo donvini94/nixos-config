@@ -83,13 +83,16 @@ Never log a token, credential, or secret-bearing struct. If a type can hold one,
   `Default`, `Serialize`, or `Deserialize`. `derive` supplies them, and a bound written by
   hand propagates to every user forever.
 
-## Crate-root lints, day one
+## Lints live in `Cargo.toml`, not in crate-root attributes
 
-```rust
-#![forbid(unsafe_code)]  // drop only when unsafe is genuinely needed, and say why in the commit
-#![warn(missing_debug_implementations, unreachable_pub, rust_2018_idioms)]
-#![deny(unused_must_use)]
-```
+A `[lints.rust]` / `[lints.clippy]` table is declarative, workspace-inheritable, and keeps
+`lib.rs` about the code. The exact table is in `omp/templates/rust/Cargo.toml`; do not
+retype it from memory. It sets `unsafe_code = "forbid"`, `unused_must_use = "deny"`,
+`unwrap_used = "deny"`, the five clippy gate groups at explicit `priority = -1` so specific
+lints can override them, and `dbg_macro`/`todo` as warnings.
+
+`print_stdout` and `print_stderr` stay commented in a binary — a CLI writing to stdout is
+the entire point — and get uncommented in a library or daemon.
 
 `missing_docs` on an internal library only when the crate will outlive my memory of it.
 `#[must_use]` only where discarding the value is almost certainly a bug — not reflexively;
@@ -146,11 +149,20 @@ carry that. Silence everywhere else.
 
 ## Scaffolding a new crate
 
-- A `[lints]` table in `Cargo.toml` carrying the gate set, workspace-inherited if there is
-  a workspace.
+**Copy `omp/templates/rust/`. Do not hand-roll the manifest.** Verified against cargo 1.96
+and clippy 0.1.96: `cargo check --all-targets`, `cargo clippy --all-targets` and
+`cargo test` are clean on a fresh copy, and the gate was confirmed to reject code — adding a
+bare `unwrap()` fails clippy with exit 101, and adding an `unsafe` block fails on
+`-F unsafe-code`. Rename `CHANGEME`, delete what you do not need.
+
+It carries the `[lints]` table, the standard dependency set (`anyhow`, `thiserror`, `clap`,
+`tracing`, `tracing-subscriber`), `src/main.rs` showing the `.context()` and `#[instrument]`
+patterns, the single `tests/it/` integration binary with its `#![allow(clippy::unwrap_used)]`,
+and a CI job.
+
+Beyond the template:
 - Multi-crate: flat `crates/*` under a virtual manifest, directory name identical to crate
   name, `version = "0.0.0"` for anything unpublished. No hierarchy — there are no perfect
   hierarchies, and Cargo's namespace is flat anyway.
 - Repo automation in an `xtask` crate, not shell scripts.
-- CI: `cargo fmt --check`, clippy at the gate set, `cargo test`. Add
-  `cargo hack --feature-powerset check` only once the crate actually has features.
+- Add `cargo hack --feature-powerset check` to CI only once the crate actually has features.
