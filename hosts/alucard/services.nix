@@ -155,6 +155,7 @@ in
       port = 58080;
       # Nightly document_exporter at 02:30, pushed to the Hetzner box at 03:30.
       offsite.enable = true;
+      offsite.onCalendar = "*:0/2";
     };
 
     # mailcow's own ACME cannot work behind this nginx, so hand it our cert.
