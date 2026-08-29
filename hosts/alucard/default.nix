@@ -40,10 +40,6 @@
     rootlessDockerUser = username;
   };
 
-  # DRILL (temporary): run the repaired scanner during activation to prove it
-  # now enumerates both Docker engines.
-  systemd.services.container-vulnerability-scan.wantedBy = [ "multi-user.target" ];
-
   # Secrets platform. Reachable only over the tailnet (see private-access.nix);
   # sealed after every boot until an operator supplies the Shamir shares.
   services.localOpenBao.enable = true;
