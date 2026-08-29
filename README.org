@@ -67,7 +67,7 @@ Detailed operator documentation lives in [[file:docs/][docs/]]; module conventio
 │   │   ├── hardware.nix        #   Boot, filesystems, CPU (AMD), peripherals
 │   │   └── services.nix        #   Docker + CDI, NVIDIA container toolkit, host packages
 │   └── alucard/                # Home server
-│       ├── default.nix         #   Composition, Hetzner CIFS mount, shelve/unshelve timers
+│       ├── default.nix         #   Composition, Hetzner CIFS mount, OpenBao + Teleport
 │       ├── disk-config.nix     #   Disko BTRFS partitioning
 │       ├── networking.nix      #   Firewall, sshd, fail2ban, mining-pool egress blocks
 │       ├── security.nix        #   ModSecurity + OWASP CRS, CrowdSec agent + bouncer
@@ -75,7 +75,7 @@ Detailed operator documentation lives in [[file:docs/][docs/]]; module conventio
 │       ├── services.nix        #   Public nginx vhosts, Keycloak, Jellyfin, Navidrome, …
 │       ├── ai.nix              #   Requesty ingress, n8n, Hermes, tinyproxy egress allowlist
 │       ├── media.nix           #   Docker daemons, media stack unit, mining watchdog
-│       ├── syncthing.nix       #   Syncthing devices and folders
+│       ├── syncthing.nix       #   Syncthing devices and folders (no peer may add folders)
 │       ├── users.nix           #   User accounts and SSH keys
 │       └── home.nix            #   Server-side home-manager (AI clients only)
 ├── observability/              # Compose file + provisioned Grafana dashboard/datasource
@@ -315,11 +315,16 @@ nix flake show
 - =.github/workflows/nix-build.yml= builds =nixosConfigurations.{dracula,alucard}.config.system.build.toplevel=
   on every PR and push to master, and runs the package-patch guard as a second job.
 - =scripts/check-no-package-patches.sh= rejects =overrideAttrs=, =postPatch=, =applyPatches=,
-  ~patches =~ assignments and locally defined overlay lambdas. Exactly one file is allow-listed, and it
-  must keep an =# UPSTREAM DEFECT= justification comment or the check fails anyway. It is also
-  wired in as a flake check, so =nix flake check= enforces the same rule locally.
-- =renovate.json= pins container digests and GitHub Action SHAs, with =automerge: false= — a
-  reviewed Git commit is the only path a container image changes.
+  ~patches =~ assignments and locally defined overlay lambdas. The allow-list is currently
+  *empty*: the libmodsecurity mutation was dropped on 2026-08-29 once nixpkgs stopped building
+  =pcre2= with =--enable-jit-sealloc=. Any future exception must carry an =# UPSTREAM DEFECT=
+  comment or the check fails anyway. It is also wired in as a flake check, so
+  =nix flake check= enforces the same rule locally.
+- =renovate.json= is configured to pin container digests and GitHub Action SHAs with
+  =automerge: false=, so a reviewed Git commit is the only path a container image changes.
+  *Renovate is not installed on the repository yet* — it has never opened a PR or the
+  dependency dashboard issue. Digests and action SHAs are currently pinned by hand; see
+  =docs/OPERATOR-ACTIONS.org=.
 
 * Secret Management
 

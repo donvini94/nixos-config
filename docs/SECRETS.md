@@ -192,7 +192,9 @@ live in the default `secrets/dmbs.yaml`; its taxonomy PII lives in a dedicated
 | SOPS key | File | Consumer | Rotation class |
 | --- | --- | --- | --- |
 | `paperless/password` | `dmbs.yaml` | Paperless `admin` superuser; also how `paperless-provision` obtains an API token | Change in Paperless, then update SOPS |
-| `paperless/restic_password` | `dmbs.yaml` | `paperless-offsite-backup.service` | **Backup-encryption root — rotating it orphans every existing snapshot** |
+| `paperless/restic_password` | `dmbs.yaml` | `offsite-backup-paperless.service` | **Backup-encryption root — rotating it orphans every existing snapshot** |
+| `backup/restic_password` | `dmbs.yaml` | `offsite-backup-keycloak.service`, `offsite-backup-n8n.service` | **Backup-encryption root — rotating it orphans every existing snapshot** |
+| `nginx/htpasswd` | `dmbs.yaml` | nginx basic auth for the Docker registry and the Paperless WebDAV drop box | Was tracked as `secrets/htpasswd` until 2026-08-29; the hash remains in Git history, so rotate — see `OPERATOR-ACTIONS.org` |
 | *(whole file)* | `paperless.yaml` | `paperless-provision.service` | Correspondent names, IMAP hosts, app passwords |
 
 `secrets/paperless.yaml` is consumed as a whole document (`key = ""`), so it is mounted at

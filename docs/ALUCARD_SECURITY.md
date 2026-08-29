@@ -284,22 +284,43 @@ the authentication authority, 2FA requirements, service enrollment, secret
 migration, break-glass access, and rollback together; adding any component in
 isolation would create conflicting trust boundaries.
 
-### Paperless off-site recovery verification
+### Off-site recovery verification
 
-`paperless-offsite-backup.service` creates the repository parent only after the
-Hetzner CIFS automount is active, then snapshots Paperless' exporter output and
-its Django signing key. `paperless-offsite-restore-verify.service` restores the
-latest snapshot into a temporary directory beneath `/var/lib/paperless`, verifies
-both paths, and removes that directory without touching live Paperless data or the
-repository. Run it on demand after changing the backup configuration:
+`services.offsiteBackup` (`modules/offsite-backup.nix`) gives every declared
+state store its own restic repository under `/mnt/hetzner/restic/<job>`, a
+`offsite-backup-<job>.service` that stages a consistent copy before snapshotting,
+and a `offsite-restore-verify-<job>.service` that restores the latest snapshot
+into a scratch directory and fails unless the declared paths come back non-empty.
+The module refuses a job that declares no `verifyPaths`: an unverified backup is
+not a backup.
+
+Current jobs:
+
+| job | staged by | why staging |
+| --- | --- | --- |
+| `keycloak` | `pg_dump --format=custom` | the cluster is live during the window, and a realm export omits users and credentials |
+| `n8n` | `sqlite3 .backup` | copying `database.sqlite` under WAL captures a torn page; rows stay encrypted because `n8n/encryption_key` lives only in SOPS |
+| `paperless` | exporter output snapshotted in place, Django signing key staged | a restore without the signing key invalidates every session and signed value |
+
+Backups run daily, restore drills weekly. Check both:
+
+```bash
+offsite-backup-status
+```
+
+Run one on demand after changing the backup configuration:
 
 ```bash
 sudo env TERM=dumb SYSTEMD_PAGER=cat \
-  systemctl start paperless-offsite-restore-verify.service
+  systemctl start offsite-restore-verify-keycloak.service
 sudo env TERM=dumb SYSTEMD_PAGER=cat \
-  systemctl show paperless-offsite-restore-verify.service \
+  systemctl show offsite-restore-verify-keycloak.service \
   -p Result -p ExecMainStatus --no-pager
 ```
+
+OpenBao is deliberately absent: a Raft snapshot is an authenticated API call, so
+the job cannot exist before the cluster is initialised. See
+`docs/OPERATOR-ACTIONS.org`.
 
 Run an on-demand scan with `containers-scan`. The official rolling Trivy container inspects
 an archive exported from every distinct image currently resident in the root Docker daemon and
@@ -366,19 +387,24 @@ ss -ltn '( sport = :38080 )'
 systemd-analyze security keycloak.service
 ```
 
-Repeated nginx reloads and clean stops segfaulted in libmodsecurity's PCRE2 10.47 JIT
-allocator: nixpkgs builds `pcre2` with `--enable-jit-sealloc`, which is not fork-safe, so
-`msc_rules_cleanup` reaches `sljit_free_exec` and every nginx worker dies with SIGSEGV on
-exit. Alucard therefore refuses the two eager JIT compile calls in libmodsecurity; its
-maintained interpreter fallback stays active while nginx retains standard reload semantics and
-the full service sandbox.
+Historically, repeated nginx reloads and clean stops segfaulted in libmodsecurity's PCRE2
+10.47 JIT allocator: nixpkgs built `pcre2` with `--enable-jit-sealloc`, which is not
+fork-safe, so `msc_rules_cleanup` reached `sljit_free_exec` and every nginx worker died with
+SIGSEGV on exit. Alucard carried a reviewed source mutation refusing the two eager JIT
+compile calls.
 
-This is the repository's only reviewed package mutation, and it lives in
-`hosts/alucard/security.nix`. `scripts/check-no-package-patches.sh` runs in CI and as a
-`nix flake check` check: it rejects any other package mutation and fails if this exception
-loses its `# UPSTREAM DEFECT` justification. Verify the policy after changes with three
-consecutive `systemctl reload nginx` calls, a clean restart, and an HTTPS health check; a new
-coredump or failed unit is a release blocker.
+**Resolved upstream on 2026-08-29.** nixpkgs `9fbb54b` no longer passes
+`--enable-jit-sealloc` (`pcre2.configureFlags` is now `--enable-pcre2-16 --enable-pcre2-32
+--enable-jit=auto`), which is exactly the removal condition the exception named. The mutation
+and its entry in `scripts/check-no-package-patches.sh` are gone, and the repository now
+carries **zero** package mutations. Verified on stock `libmodsecurity-3.0.16` with a restart
+and two reloads: no coredumps, benign traffic 200, a CRS SQLi probe still 403.
+
+`scripts/check-no-package-patches.sh` runs in CI and as a `nix flake check` check with an
+empty exception list, so any new mutation fails the build. If a future exception is
+unavoidable, it must carry an `# UPSTREAM DEFECT` comment naming the live failure and the
+condition for removing it. Verify WAF behaviour after nginx changes with consecutive reloads,
+a clean restart, and an HTTPS health check; a new coredump or failed unit is a release blocker.
 
 ## Mailcow maintenance boundary
 
