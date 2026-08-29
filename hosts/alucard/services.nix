@@ -413,7 +413,10 @@ in
     jobs.keycloak = {
       # pg_dump, not a file copy: Keycloak's cluster is live during the window,
       # and the realm export alone omits users, sessions and credentials.
-      runtimeInputs = [ config.services.postgresql.package ];
+      runtimeInputs = [
+        config.services.postgresql.package
+        pkgs.util-linux
+      ];
       requires = [ "postgresql.service" ];
       after = [ "postgresql.service" ];
       prepare = ''
