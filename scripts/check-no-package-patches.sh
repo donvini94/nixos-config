@@ -19,9 +19,7 @@ root=${1:-.}
 status=0
 
 # path -> one-line justification. Keep this list empty whenever upstream allows.
-declare -A EXCEPTIONS=(
-  [hosts/alucard/security.nix]='nixpkgs pcre2 --enable-jit-sealloc is not fork-safe; stock libmodsecurity segfaults on every nginx worker exit'
-)
+declare -A EXCEPTIONS=()
 
 fail() {
   status=1

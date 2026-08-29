@@ -96,7 +96,6 @@
     mecab
     kakasi
     cmigemo
-    animdl
     ani-cli
 
     # Communication

@@ -23,12 +23,7 @@
   };
 
   inputs = {
-    # PIN: nixos-unstable's 2026-08-13 advance (0e251e2) ships an ananicy-cpp
-    # that no longer compiles (missing <cstdint>/<cstring> includes). The fix is
-    # already on nixpkgs master, so unpin — back to plain `nixos-unstable` —
-    # once a channel snapshot containing it exists. Pinning upstream is the only
-    # sanctioned workaround here; this repository carries no package patches.
-    nixpkgs.url = "github:NixOS/nixpkgs/b7c2ada94fe99c15b0dbcf4d11fd7850b957a436";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     home-manager.url = "github:nix-community/home-manager/master";
 
     sops-nix.url = "github:Mic92/sops-nix";

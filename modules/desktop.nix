@@ -34,7 +34,6 @@
     pavucontrol
     filezilla
     linux-firmware
-    mtpfs
     wofi-pass
     powertop
     picard
