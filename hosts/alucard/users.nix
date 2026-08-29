@@ -46,12 +46,5 @@ in
       extraGroups = [ "wheel" ];
       openssh.authorizedKeys.keys = [ kyrill ];
     };
-    jellyfin = {
-      extraGroups = [
-        "wheel"
-        "docker"
-      ];
-      openssh.authorizedKeys.keys = vincenzoKeys ++ [ kyrill ];
-    };
   };
 }

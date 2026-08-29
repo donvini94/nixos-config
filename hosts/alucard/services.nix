@@ -60,6 +60,15 @@ in
         ] config.networking.firewall.allowedTCPPorts == [ ];
       message = "Alucard web backends must remain behind nginx instead of being globally firewalled";
     }
+    {
+      assertion =
+        lib.intersectLists [
+          "docker"
+          "wheel"
+        ] config.users.users.jellyfin.extraGroups == [ ]
+        && config.users.users.jellyfin.openssh.authorizedKeys.keys == [ ];
+      message = "The public Jellyfin service account must not have host administrator access";
+    }
   ];
 
   # ACME / Let's Encrypt
