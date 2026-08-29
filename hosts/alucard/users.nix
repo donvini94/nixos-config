@@ -22,6 +22,10 @@ in
   users.users = {
     vincenzo = {
       isNormalUser = true;
+      # Declared, not allocated: the rootless Docker runtime directory
+      # (/run/user/1000) is referenced at evaluation time by the vulnerability
+      # scanner's sandbox. This is the uid the account already has.
+      uid = 1000;
       extraGroups = [
         "wheel"
         "docker"
