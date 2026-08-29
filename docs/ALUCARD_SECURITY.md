@@ -322,20 +322,33 @@ OpenBao is deliberately absent: a Raft snapshot is an authenticated API call, so
 the job cannot exist before the cluster is initialised. See
 `docs/OPERATOR-ACTIONS.org`.
 
-Run an on-demand scan with `containers-scan`. The official rolling Trivy container inspects
-an archive exported from every distinct image currently resident in the root Docker daemon and
-the `vincenzo` rootless daemon when present. This avoids registry drift and does not expose a
-Docker socket to the scanner. Full JSON reports stay root-only under
+Run an on-demand scan with `containers-scan`. The digest-pinned Trivy container inspects an
+archive exported from every distinct image resident in the root Docker daemon and in the
+`vincenzo` rootless daemon. Enumeration uses each container's *immutable image ID*, not the
+reference from `docker ps`: a digest-pinned pull never creates the plain tag locally, so three
+startup-stack images (n8n, its task runners, and the Hermes `ubuntu` base) were previously
+unresolvable and reported as failures. This avoids registry drift and does not expose a Docker
+socket to the scanner. Full JSON reports stay root-only under
 `/var/lib/container-vulnerability-scan/reports`; aggregate critical/high/failure counts and
 scan age appear in the **AI and machine overview** Grafana dashboard. A finding is inventory,
 not proof of exploitability: review the package, reachable surface, and upstream fix before
 changing production images.
 
-The most recent full scan inspected 41 resident image references. Those totals include
-duplicate packages across related images; `--ignore-unfixed` means every reported finding has
-a published fixed version. Root-only JSON reports remain the authoritative package/CVE
-inventory. cAdvisor runs the upstream-supported, digest-pinned
-`ghcr.io/google/cadvisor:v0.60.5`; the obsolete GCR `latest` image is prohibited.
+**A partial scan fails the unit.** Any image that cannot be exported or inspected, and an
+unreachable rootless daemon, increment a failure counter; metrics are published first so the
+dashboard still shows what was learned, then the unit exits non-zero. A silently skipped
+engine reads on a dashboard exactly like a clean result, which is how the rootless daemon went
+unscanned: `ProtectHome=true` masks `/run/user` so thoroughly that neither it nor a deeper
+path can be bound back in. The unit now uses `ProtectHome=tmpfs` plus a `BindPaths=` entry for
+the rootless runtime directory, which requires that user's uid to be *declared* rather than
+allocated — there is an assertion for it.
+
+The most recent full scan inspected 51 resident image references across both engines
+(41 rootful, 10 rootless) with zero failures. Those totals include duplicate packages across
+related images; `--ignore-unfixed` means every reported finding has a published fixed version.
+Root-only JSON reports remain the authoritative package/CVE inventory. cAdvisor runs the
+upstream-supported, digest-pinned `ghcr.io/google/cadvisor:v0.60.5`; the obsolete GCR `latest`
+image is prohibited.
 
 ### Temporary vulnerability risk register
 
