@@ -403,6 +403,11 @@ in
       '';
     };
 
+  # DRILL (temporary): run the Paperless backup and its restore verification
+  # during activation so the post-migration snapshot is proven now.
+  systemd.services.offsite-backup-paperless.wantedBy = [ "multi-user.target" ];
+  systemd.services.offsite-restore-verify-paperless.wantedBy = [ "multi-user.target" ];
+
   # Startup-critical state that a host loss would otherwise destroy. The
   # Paperless job lives in modules/paperless.nix because its snapshot depends on
   # that module's exporter directory and signing key.
