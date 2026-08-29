@@ -6,9 +6,6 @@
   username,
   ...
 }:
-let
-  openstackServerId = "d94fd33f-6907-4d47-9929-ea785a78676d";
-in
 {
   imports = [
     (modulesPath + "/profiles/qemu-guest.nix")
@@ -121,51 +118,6 @@ in
       "nofail"
       "serverino"
     ];
-  };
-
-  # Scheduled tasks: OpenStack shelve/unshelve
-  systemd.services.unshelve-server = {
-    description = "Unshelve OpenStack server";
-    serviceConfig = {
-      Type = "oneshot";
-      User = "vincenzo";
-      ExecStart = pkgs.writeShellScript "unshelve-server.sh" ''
-        source /home/vincenzo/.leafcloud_rc.sh
-        ${pkgs.openstackclient}/bin/openstack server unshelve ${openstackServerId}
-      '';
-    };
-  };
-
-  systemd.timers.unshelve-server = {
-    description = "Timer for unshelving OpenStack server";
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnCalendar = "Mon-Fri *-*-* 07:00:00";
-      Persistent = true;
-      Unit = "unshelve-server.service";
-    };
-  };
-
-  systemd.services.shelve-server = {
-    description = "Shelve OpenStack server";
-    serviceConfig = {
-      Type = "oneshot";
-      User = "vincenzo";
-      ExecStart = pkgs.writeShellScript "shelve-server.sh" ''
-        source /home/vincenzo/.leafcloud_rc.sh
-        ${pkgs.openstackclient}/bin/openstack server shelve ${openstackServerId}
-      '';
-    };
-  };
-
-  systemd.timers.shelve-server = {
-    description = "Timer for shelving OpenStack server";
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnCalendar = "Mon-Fri *-*-* 19:00:00";
-      Persistent = true;
-      Unit = "shelve-server.service";
-    };
   };
 
   system.stateVersion = "23.05";
