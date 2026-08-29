@@ -155,7 +155,6 @@ in
       port = 58080;
       # Nightly document_exporter at 02:30, pushed to the Hetzner box at 03:30.
       offsite.enable = true;
-      offsite.onCalendar = "*:0/2";
     };
 
     # mailcow's own ACME cannot work behind this nginx, so hand it our cert.
@@ -409,8 +408,6 @@ in
   # that module's exporter directory and signing key.
   services.offsiteBackup = {
     enable = true;
-    onCalendar = "*:0/2";
-    verifyOnCalendar = "*:1/2";
     jobs.keycloak = {
       # pg_dump, not a file copy: Keycloak's cluster is live during the window,
       # and the realm export alone omits users, sessions and credentials.
