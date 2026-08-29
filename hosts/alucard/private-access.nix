@@ -25,6 +25,8 @@ let
     "19696" = 19696; # Prowlarr
     # Secrets platform. Administration only; workloads reach it on loopback.
     "28200" = 8200; # OpenBao
+    # Access plane. Teleport terminates its own TLS, so this is raw passthrough.
+    "33080" = 3080; # Teleport proxy (multiplexed web, SSH and tunnels)
   };
   tailscaleReady = pkgs.writeShellScript "tailscale-private-services-ready" ''
     set -euo pipefail
