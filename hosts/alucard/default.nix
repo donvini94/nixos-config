@@ -24,6 +24,7 @@
     ../../modules/observability.nix
     ../../modules/container-updates.nix
     ../../modules/vulnerability-scan.nix
+    ../../modules/offsite-backup.nix
     ../../secrets/secrets.nix
   ];
 

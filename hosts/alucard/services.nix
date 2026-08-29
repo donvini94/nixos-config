@@ -403,6 +403,43 @@ in
       '';
     };
 
+  # Startup-critical state that a host loss would otherwise destroy. The
+  # Paperless job lives in modules/paperless.nix because its snapshot depends on
+  # that module's exporter directory and signing key.
+  services.offsiteBackup = {
+    enable = true;
+    jobs.keycloak = {
+      # pg_dump, not a file copy: Keycloak's cluster is live during the window,
+      # and the realm export alone omits users, sessions and credentials.
+      runtimeInputs = [ config.services.postgresql.package ];
+      requires = [ "postgresql.service" ];
+      after = [ "postgresql.service" ];
+      prepare = ''
+        install -d -m 0700 "$stage"
+        runuser -u postgres -- pg_dump --format=custom --no-owner keycloak \
+          > "$stage/keycloak.dump"
+        test -s "$stage/keycloak.dump"
+      '';
+      verifyPaths = [ "${"/var/lib/offsite-backup/keycloak/keycloak.dump"}" ];
+    };
+
+    jobs.n8n = {
+      # `.backup` takes a consistent copy of a database the container is still
+      # writing to; copying database.sqlite under WAL would capture a torn page.
+      # The rows stay encrypted: n8n/encryption_key lives only in SOPS, so this
+      # snapshot is useless without the separately held key.
+      runtimeInputs = [ pkgs.sqlite ];
+      after = [ "docker-n8n.service" ];
+      prepare = ''
+        install -d -m 0700 "$stage"
+        sqlite3 /var/lib/n8n-container/database.sqlite \
+          ".backup '$stage/database.sqlite'"
+        test -s "$stage/database.sqlite"
+      '';
+      verifyPaths = [ "${"/var/lib/offsite-backup/n8n/database.sqlite"}" ];
+    };
+  };
+
   # Allow nginx to write to paperless consume dir (WebDAV uploads)
   systemd.services.nginx.serviceConfig = {
     ReadWritePaths = [ (config.services.paperless.dataDir + "/consume") ];

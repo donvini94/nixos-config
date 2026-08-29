@@ -34,86 +34,6 @@ let
   };
 
   # Backs up the exporter's output plus the one piece of state the exporter
-  # cannot capture: the runtime-generated Django secret key.
-  offsiteScript = pkgs.writeShellApplication {
-    name = "paperless-offsite-backup";
-    runtimeInputs = [
-      pkgs.restic
-      pkgs.coreutils
-    ];
-    text = ''
-      repo=${lib.escapeShellArg cfg.offsite.repository}
-      RESTIC_PASSWORD_FILE="$CREDENTIALS_DIRECTORY/restic-password"
-      export RESTIC_PASSWORD_FILE
-      export RESTIC_REPOSITORY="$repo"
-
-      # Local repositories need their parent created only after the automount
-      # is active. Remote restic URLs have no local directory to prepare.
-      case "$repo" in
-        /*)
-          parent=$(dirname "$repo")
-          if ! mkdir -p "$parent"; then
-            echo "could not create offsite parent directory $parent" >&2
-            exit 1
-          fi
-          if [ ! -w "$parent" ]; then
-            echo "offsite parent directory $parent is not writable by $(id -un)" >&2
-            exit 1
-          fi
-          ;;
-      esac
-
-      if ! restic cat config >/dev/null 2>&1; then
-        echo "initialising restic repository at $repo"
-        restic init
-      fi
-
-      # The secret key is not part of document_exporter's output, so a restore
-      # without it invalidates every session and signed value.
-      secretKey=${lib.escapeShellArg "${paperless.dataDir}/nixos-paperless-secret-key.env"}
-      extra=()
-      if [ -r "$secretKey" ]; then
-        extra+=("$secretKey")
-      else
-        echo "warning: $secretKey not readable, not included in the snapshot" >&2
-      fi
-
-      restic backup --tag paperless --host ${lib.escapeShellArg config.networking.hostName} \
-        ${lib.escapeShellArg paperless.exporter.directory} "''${extra[@]}"
-
-      restic forget --tag paperless --prune \
-        --keep-daily ${toString cfg.offsite.keepDaily} \
-        --keep-weekly ${toString cfg.offsite.keepWeekly} \
-        --keep-monthly ${toString cfg.offsite.keepMonthly}
-    '';
-  };
-
-  # An on-demand decrypt-and-restore verification. It proves the retained
-  # snapshot contains both the exporter output and the Django signing key
-  # without touching the live Paperless data directory.
-  offsiteRestoreVerifyScript = pkgs.writeShellApplication {
-    name = "paperless-offsite-restore-verify";
-    runtimeInputs = [
-      pkgs.restic
-      pkgs.coreutils
-    ];
-    text = ''
-      set -euo pipefail
-      RESTIC_PASSWORD_FILE="$CREDENTIALS_DIRECTORY/restic-password"
-      export RESTIC_PASSWORD_FILE
-      export RESTIC_REPOSITORY=${lib.escapeShellArg cfg.offsite.repository}
-
-      target=$(mktemp -d --tmpdir=${lib.escapeShellArg paperless.dataDir} .restic-restore-verify.XXXXXXXX)
-      cleanup() {
-        rm -rf "$target"
-      }
-      trap cleanup EXIT
-
-      restic restore latest --target "$target"
-      test -d "$target${paperless.exporter.directory}"
-      test -f "$target${paperless.dataDir}/nixos-paperless-secret-key.env"
-    '';
-  };
 in
 {
   options.services.paperlessStack = {
@@ -166,35 +86,20 @@ in
     offsite = {
       enable = lib.mkEnableOption "encrypted off-site restic backup of the document export";
 
-      repository = lib.mkOption {
-        type = lib.types.str;
-        default = "/mnt/hetzner/restic/paperless";
-        description = "restic repository path or URL.";
-      };
-
       passwordSecret = lib.mkOption {
         type = lib.types.str;
         default = "paperless/restic_password";
-        description = "sops key holding the restic repository password.";
+        description = ''
+          sops key encrypting the Paperless repository. It predates the shared
+          backup key and must stay distinct: repointing it would orphan every
+          snapshot already in the repository.
+        '';
       };
 
       onCalendar = lib.mkOption {
         type = lib.types.str;
         default = "03:30";
         description = "When to push off-site. Must be after the exporter has finished.";
-      };
-
-      keepDaily = lib.mkOption {
-        type = lib.types.int;
-        default = 7;
-      };
-      keepWeekly = lib.mkOption {
-        type = lib.types.int;
-        default = 5;
-      };
-      keepMonthly = lib.mkOption {
-        type = lib.types.int;
-        default = 12;
       };
     };
   };
@@ -223,8 +128,7 @@ in
         # checks the Host header, so this does not widen external exposure.
         PAPERLESS_ALLOWED_HOSTS = "${cfg.domain},127.0.0.1,localhost";
 
-        PAPERLESS_FILENAME_FORMAT =
-          "{{ created_year }}/{{ correspondent }}/{{ created }}_{{ document_type }}_{{ title }}";
+        PAPERLESS_FILENAME_FORMAT = "{{ created_year }}/{{ correspondent }}/{{ created }}_{{ document_type }}_{{ title }}";
         PAPERLESS_FILENAME_FORMAT_REMOVE_NONE = true;
 
         # German date conventions: 03.04.2026 is 3 April, not 4 March.
@@ -276,15 +180,6 @@ in
         sopsFile = ../secrets/paperless.yaml;
         key = "ignore_dates";
         owner = paperless.user;
-        mode = "0400";
-      };
-    }
-    // lib.optionalAttrs cfg.offsite.enable {
-      # Deliberately NOT in secrets/paperless.yaml: that file is read whole by
-      # the provisioner running as the `paperless` user, and the service user
-      # has no business holding the backup encryption key.
-      ${cfg.offsite.passwordSecret} = {
-        owner = "root";
         mode = "0400";
       };
     };
@@ -353,44 +248,30 @@ in
       };
     };
 
-    systemd.services.paperless-offsite-backup = lib.mkIf cfg.offsite.enable {
-      description = "Push the Paperless export off-site with restic";
-      after = [ "paperless-exporter.service" ];
-      unitConfig.RequiresMountsFor = "/mnt/hetzner";
-      serviceConfig = {
-        Type = "oneshot";
-        User = "root";
-        LoadCredential = [
-          "restic-password:${config.sops.secrets.${cfg.offsite.passwordSecret}.path}"
+    # The exporter already writes a consistent dump to its own directory, so the
+    # job snapshots that in place. The Django signing key is not part of the
+    # exporter's output, and a restore without it invalidates every session and
+    # signed value, so it is staged alongside.
+    services.offsiteBackup = lib.mkIf cfg.offsite.enable {
+      enable = true;
+      jobs.paperless = {
+        inherit (cfg.offsite) passwordSecret onCalendar;
+        after = [ "paperless-exporter.service" ];
+        paths = [ paperless.exporter.directory ];
+        prepare = ''
+          install -d -m 0700 "$stage"
+          secret_key=${lib.escapeShellArg "${paperless.dataDir}/nixos-paperless-secret-key.env"}
+          if [ -r "$secret_key" ]; then
+            install -m 0400 "$secret_key" "$stage/nixos-paperless-secret-key.env"
+          else
+            echo "$secret_key is not readable; refusing to take a restore-incomplete snapshot" >&2
+            exit 1
+          fi
+        '';
+        verifyPaths = [
+          "/var/lib/offsite-backup/paperless/nixos-paperless-secret-key.env"
+          paperless.exporter.directory
         ];
-        ExecStart = lib.getExe offsiteScript;
-        # The CIFS mount is an automount; give it room to come up.
-        TimeoutStartSec = "2h";
-      };
-    };
-
-    systemd.services.paperless-offsite-restore-verify = lib.mkIf cfg.offsite.enable {
-      description = "Verify a Paperless off-site backup can be restored";
-      after = [ "paperless-offsite-backup.service" ];
-      conflicts = [ "paperless-offsite-backup.service" ];
-      unitConfig.RequiresMountsFor = "/mnt/hetzner";
-      serviceConfig = {
-        Type = "oneshot";
-        User = "root";
-        LoadCredential = [
-          "restic-password:${config.sops.secrets.${cfg.offsite.passwordSecret}.path}"
-        ];
-        ExecStart = lib.getExe offsiteRestoreVerifyScript;
-        TimeoutStartSec = "2h";
-      };
-    };
-
-    systemd.timers.paperless-offsite-backup = lib.mkIf cfg.offsite.enable {
-      wantedBy = [ "timers.target" ];
-      timerConfig = {
-        OnCalendar = cfg.offsite.onCalendar;
-        Persistent = true;
-        RandomizedDelaySec = "15m";
       };
     };
   };
