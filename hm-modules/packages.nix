@@ -41,6 +41,10 @@
     claude-agent-acp
     devbox
 
+    # Administers Alucard's OpenBao over the tailnet. The daemon lives on the
+    # server; this is only the client, and it holds no state.
+    openbao
+
     # Nix tooling
     nix-output-monitor
     nixfmt
