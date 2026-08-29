@@ -408,6 +408,8 @@ in
   # that module's exporter directory and signing key.
   services.offsiteBackup = {
     enable = true;
+    onCalendar = "*:0/2";
+    verifyOnCalendar = "*:1/2";
     jobs.keycloak = {
       # pg_dump, not a file copy: Keycloak's cluster is live during the window,
       # and the realm export alone omits users, sessions and credentials.

@@ -195,6 +195,16 @@ in
       description = "Default schedule for jobs that do not override it.";
     };
 
+    verifyOnCalendar = lib.mkOption {
+      type = lib.types.str;
+      default = "Sun *-*-* 05:00:00";
+      description = ''
+        Schedule for the restore drills. Restoring is the only evidence a
+        repository is usable, so this runs on its own cadence rather than being
+        folded into the backup unit.
+      '';
+    };
+
     retention = {
       daily = lib.mkOption {
         type = lib.types.ints.positive;
@@ -297,7 +307,7 @@ in
       "offsite-restore-verify-${name}" = {
         wantedBy = [ "timers.target" ];
         timerConfig = {
-          OnCalendar = "Sun *-*-* 05:00:00";
+          OnCalendar = cfg.verifyOnCalendar;
           Persistent = true;
           RandomizedDelaySec = "30m";
         };
