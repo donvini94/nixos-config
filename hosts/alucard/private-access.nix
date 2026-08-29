@@ -23,6 +23,8 @@ let
     "18989" = 18989; # Sonarr
     "19090" = 19090; # SABnzbd
     "19696" = 19696; # Prowlarr
+    # Secrets platform. Administration only; workloads reach it on loopback.
+    "28200" = 8200; # OpenBao
   };
   tailscaleReady = pkgs.writeShellScript "tailscale-private-services-ready" ''
     set -euo pipefail

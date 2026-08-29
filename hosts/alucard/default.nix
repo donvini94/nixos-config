@@ -25,6 +25,7 @@
     ../../modules/container-updates.nix
     ../../modules/vulnerability-scan.nix
     ../../modules/offsite-backup.nix
+    ../../modules/openbao.nix
     ../../secrets/secrets.nix
   ];
 
@@ -37,6 +38,10 @@
     enable = true;
     rootlessDockerUser = username;
   };
+
+  # Secrets platform. Reachable only over the tailnet (see private-access.nix);
+  # sealed after every boot until an operator supplies the Shamir shares.
+  services.localOpenBao.enable = true;
 
   # Boot
   boot = {
