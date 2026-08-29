@@ -333,6 +333,9 @@ in
   systemd.services.jellyfin = {
     requires = [ "jellyfin-network-policy.service" ];
     after = [ "jellyfin-network-policy.service" ];
+    # A group-policy change is a security boundary, so the running process
+    # must drop its old supplementary groups during the same activation.
+    restartTriggers = [ (builtins.toJSON config.users.users.jellyfin.extraGroups) ];
   };
 
   # Keycloak realm export (manual activation only)
