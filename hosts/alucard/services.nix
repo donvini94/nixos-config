@@ -224,7 +224,7 @@ in
             client_max_body_size 0;
           '';
           locations."/".proxyPass = "http://localhost:5000";
-          basicAuthFile = ../../secrets/htpasswd;
+          basicAuthFile = config.sops.secrets."nginx/htpasswd".path;
         };
         "stream.${domain}" = {
           enableACME = true;
@@ -320,7 +320,7 @@ in
           enableACME = true;
           forceSSL = true;
           extraConfig = "modsecurity off;";
-          basicAuthFile = ../../secrets/htpasswd;
+          basicAuthFile = config.sops.secrets."nginx/htpasswd".path;
           locations."/" = {
             root = config.services.paperless.consumptionDir;
             extraConfig = ''

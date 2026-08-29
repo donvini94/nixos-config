@@ -18,10 +18,17 @@
       "paperless/password".mode = "640";
       "smb_hetzner/username" = { };
       "smb_hetzner/password" = { };
-      "vaultwarden/admin_token" = {};
-      "mullvad/private_key" = {};
-      "mullvad/addresses" = {};
-      "komga/oidc_secret" = {};
+      "mullvad/private_key" = { };
+      "mullvad/addresses" = { };
+      "komga/oidc_secret" = { };
+      # nginx basic-auth realm for the Docker registry and the Paperless WebDAV
+      # drop box. Read by the nginx master, which starts as root and keeps the
+      # descriptor across worker forks.
+      "nginx/htpasswd" = {
+        owner = config.services.nginx.user;
+        group = config.services.nginx.group;
+        mode = "0400";
+      };
     };
 
     templates."smb-hetzner".content = ''
@@ -31,14 +38,6 @@
     templates."smb-hetzner".mode = "0600";
     templates."smb-hetzner".owner = "root";
     templates."smb-hetzner".group = "root";
-
-    templates."vaultwarden.env".content = ''
-      ADMIN_TOKEN=${config.sops.placeholder."vaultwarden/admin_token"}
-    '';
-    # Permissions: systemd reads it as root; keep it tight
-    templates."vaultwarden.env".mode  = "0640";
-    templates."vaultwarden.env".owner = "root";
-    templates."vaultwarden.env".group = "root";
 
     templates."mullvad.env".content = ''
       MULLVAD_PRIVATE_KEY=${config.sops.placeholder."mullvad/private_key"}
