@@ -69,12 +69,17 @@ Detailed operator documentation lives in [[file:docs/][docs/]]; module conventio
 │   │   ├── hardware.nix        #   Boot, filesystems, CPU (AMD), peripherals
 │   │   └── services.nix        #   Docker + CDI, NVIDIA container toolkit, host packages
 │   └── alucard/                # Home server
-│       ├── default.nix         #   Composition, Hetzner CIFS mount, backup jobs
+│       ├── default.nix         #   Composition, boot, Hetzner CIFS mount
 │       ├── disk-config.nix     #   Disko BTRFS partitioning
 │       ├── networking.nix      #   Firewall, sshd, fail2ban, mining-pool egress blocks
 │       ├── security.nix        #   ModSecurity + OWASP CRS, CrowdSec agent + bouncer
 │       ├── private-access.nix  #   Tailscale Serve map + Hermes origin-guard vhost
-│       ├── services.nix        #   Public nginx vhosts, Keycloak, Jellyfin, Navidrome, …
+│       ├── services/
+│       │   ├── default.nix             # Service import manifest + off-site backup enable
+│       │   ├── reverse-proxy.nix       # Public nginx vhosts, ACME, backend firewall guard
+│       │   ├── identity.nix            # PostgreSQL, Keycloak, realm export + backup
+│       │   ├── media-services.nix      # Jellyfin, Navidrome, Calibre-Web
+│       │   └── hosted-applications.nix # Paperless, mailcow TLS, registry, n8n backup
 │       ├── ai.nix              #   Requesty ingress, n8n, Hermes, tinyproxy egress allowlist
 │       ├── media.nix           #   Docker daemons, media stack unit, mining watchdog
 │       ├── syncthing.nix       #   Syncthing devices and folders (no peer may add folders)

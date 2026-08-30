@@ -144,7 +144,7 @@ Delete it once you are satisfied the budget data is intact.
 :END:
 
 Both stacks published their ports on =0.0.0.0=, contradicting the "every backend
-binds loopback behind nginx" invariant that =hosts/alucard/services.nix= asserts.
+binds loopback behind nginx" invariant that =hosts/alucard/services/reverse-proxy.nix= asserts.
 Fixed by editing their compose files *outside this repository*, so a fresh clone
 of either project loses the change:
 

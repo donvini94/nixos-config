@@ -61,7 +61,11 @@ Then create `hosts/newhost/` with `default.nix` (imports shared modules), `hardw
 **Server (`hosts/alucard/`):**
 - `default.nix` — Base system, boot, nix settings, Hetzner mount, scheduled tasks
 - `networking.nix` — Firewall, SSH, fail2ban, mining pool blocks
-- `services.nix` — Nginx vhosts, Keycloak, Jellyfin, Navidrome, Calibre-Web, Paperless
+- `services/default.nix` — Service import manifest + shared off-site backup enable
+- `services/reverse-proxy.nix` — Public nginx vhosts, ACME, backend firewall guard
+- `services/identity.nix` — PostgreSQL, Keycloak, realm export and backup
+- `services/media-services.nix` — Jellyfin, Navidrome, Calibre-Web
+- `services/hosted-applications.nix` — Paperless, mailcow TLS, registry, n8n backup
 - `media.nix` — Docker, media automation stack, mining watchdog
 - `users.nix` — User accounts and SSH keys
 - `syncthing.nix` — Syncthing devices and folders
