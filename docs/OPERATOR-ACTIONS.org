@@ -32,6 +32,28 @@ disproportionate for a two-person MVP, so the plain fix stands on its own:
 None of this needs new software. Worth doing before anyone outside the two
 founders gets shell access.
 
+** TODO Delete the OpenBao and Teleport state directories
+:PROPERTIES:
+:ADDED: 2026-08-29
+:END:
+
+Both services were removed on 2026-08-29. Removing a unit does not remove its
+=StateDirectory=, so three root-owned trees are left behind:
+
+- =/var/lib/openbao= — an initialised Raft store. Its unseal shares were
+  disclosed in a chat transcript, so treat the contents as readable by anyone
+  who obtains the directory.
+- =/var/lib/teleport= — the cluster certificate authority.
+- =/var/lib/teleport-tls= — a Let's Encrypt private key for
+  =alucard.tailf117a1.ts.net=, valid until 2026-11-07.
+
+#+begin_src bash
+ssh -t Bereitserver 'sudo rm -rf /var/lib/openbao /var/lib/teleport /var/lib/teleport-tls'
+#+end_src
+
+Nothing depends on them. Tailscale keeps its own copy of the certificate under
+=/var/lib/tailscale=, so removing =teleport-tls= costs nothing.
+
 * Supply chain
 ** TODO Install the Renovate GitHub App
 :PROPERTIES:
