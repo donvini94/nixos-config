@@ -67,7 +67,7 @@ Detailed operator documentation lives in [[file:docs/][docs/]]; module conventio
 │   │   ├── hardware.nix        #   Boot, filesystems, CPU (AMD), peripherals
 │   │   └── services.nix        #   Docker + CDI, NVIDIA container toolkit, host packages
 │   └── alucard/                # Home server
-│       ├── default.nix         #   Composition, Hetzner CIFS mount, OpenBao + Teleport
+│       ├── default.nix         #   Composition, Hetzner CIFS mount, backup jobs
 │       ├── disk-config.nix     #   Disko BTRFS partitioning
 │       ├── networking.nix      #   Firewall, sshd, fail2ban, mining-pool egress blocks
 │       ├── security.nix        #   ModSecurity + OWASP CRS, CrowdSec agent + bouncer

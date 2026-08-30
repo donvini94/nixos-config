@@ -25,8 +25,6 @@
     ../../modules/container-updates.nix
     ../../modules/vulnerability-scan.nix
     ../../modules/offsite-backup.nix
-    ../../modules/openbao.nix
-    ../../modules/teleport.nix
     ../../secrets/secrets.nix
   ];
 
@@ -38,17 +36,6 @@
   services.containerVulnerabilityScan = {
     enable = true;
     rootlessDockerUser = username;
-  };
-
-  # Secrets platform. Reachable only over the tailnet (see private-access.nix);
-  # sealed after every boot until an operator supplies the Shamir shares.
-  services.localOpenBao.enable = true;
-
-  # Access plane. Raw SSH on port 22 stays as the break-glass path until
-  # Teleport has proven itself through a real recovery.
-  services.localTeleport = {
-    enable = true;
-    publicHost = "alucard.tailf117a1.ts.net";
   };
 
   # Boot

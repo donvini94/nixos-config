@@ -273,16 +273,31 @@ their own explicit firewall justification and protocol-specific protection.
 | P1 | Apply consistent security headers and bounded request sizes | Active; upload-heavy Registry/Filebrowser/WebDAV bypass WAF and retain explicit size policy |
 | P1 | Retire dead DNS/vhosts and remove unused firewall ports | Dead root/Git/docs/Coder backends return 404; unused TCP 53/873/11335/11445 removed |
 | P1 | Make `autoUpdateService` actually reach the engine | Complete; `crowdsec-update-hub.service` had failed every night since at least 2026-08-14 and now upgrades hub items and restarts the engine only when their content changed. Both branches exercised on 2026-08-17: an upgrade that re-downloaded all 19 data files byte-identically left the running engine alone, and a forced content change restarted it through the `+`-prefixed line. |
-| P2 | Define Keycloak/2FA policy for every public application | Deferred for one identity-platform design and rollout with Keycloak, Teleport, and OpenBao; not a standalone hardening change. |
+| P2 | Define Keycloak/2FA policy for every public application | Open. Keycloak is the application identity provider; scope this to Keycloak alone. |
 | P2 | Harden native services and containers | Keycloak loopback bind and systemd sandbox prepared; remaining application policy review pending |
-| P2 | Add vulnerability scanning and security alerts | 41-image post-Mailcow scan and Prometheus/Grafana export verified; cAdvisor upgraded; fixed findings and upstream-owned residuals are triaged below |
+| P2 | Add vulnerability scanning and security alerts | Complete; both Docker engines enumerated by immutable image ID (51 images, 0 failures) and a partial scan now fails the unit. Findings triaged below. |
 | P3 | Add GeoIP restrictions to selected web services | Pending explicit country policy; never global mail blocking |
 
-The future identity-platform work combines Keycloak policy, Teleport access, and
-OpenBao secret-management boundaries in one reviewed deployment. It must define
-the authentication authority, 2FA requirements, service enrollment, secret
-migration, break-glass access, and rollback together; adding any component in
-isolation would create conflicting trust boundaries.
+### Identity platform: not adopted
+
+OpenBao and Teleport were deployed and verified on 2026-08-29, then removed the
+same day. The decision was explicit: for a two-person MVP they were two more
+systems to operate for benefits the setup does not yet consume.
+
+- **OpenBao** would have added dynamic secrets, leases, revocation and read
+  auditing. None of those are in use; the existing secrets are static
+  deploy-time configuration, which SOPS already handles well. Holding static
+  strings in OpenBao would have meant SOPS plus a manual unseal after every
+  reboot, since a single node has no KMS or second instance to auto-unseal
+  against.
+- **Teleport** would have added per-person identity, short-lived certificates
+  and session recording. Its concrete target here was the shared `nix` account;
+  that problem is now tracked directly in `docs/OPERATOR-ACTIONS.org` and has a
+  fix that needs no new software.
+
+Reopen only if a real requirement appears: dynamic per-client database
+credentials, an audit trail a customer asks for, or shell access for someone
+outside the two founders. Do not reintroduce either as general hardening.
 
 ### Off-site recovery verification
 
@@ -317,10 +332,6 @@ sudo env TERM=dumb SYSTEMD_PAGER=cat \
   systemctl show offsite-restore-verify-keycloak.service \
   -p Result -p ExecMainStatus --no-pager
 ```
-
-OpenBao is deliberately absent: a Raft snapshot is an authenticated API call, so
-the job cannot exist before the cluster is initialised. See
-`docs/OPERATOR-ACTIONS.org`.
 
 Run an on-demand scan with `containers-scan`. The digest-pinned Trivy container inspects an
 archive exported from every distinct image resident in the root Docker daemon and in the
