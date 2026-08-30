@@ -25,6 +25,10 @@ Detailed operator documentation lives in [[file:docs/][docs/]]; module conventio
 ├── flake.nix                   # Host builders + the `no-package-patches` flake check
 ├── configuration.nix           # Shared base config (shells, locale, gnupg, nix settings)
 ├── home.nix                    # Home-manager import manifest (dracula)
+├── ai-ingress/                 # Shared AI ingress Python sources and regression tests
+│   ├── proxy.py                #   The ingress implementation (stdlib Python)
+│   ├── usage-summary.py        #   `ai-usage-summary` report generator
+│   └── test_proxy.py           #   AI ingress proxy regression suite
 ├── modules/                    # Shared system-level modules
 │   ├── desktop.nix             #   Meta-module: desktop sub-modules + PAM + hosts blocking
 │   ├── nvidia.nix              #   Opt-in: driver, graphics, env vars, container toolkit
@@ -36,8 +40,6 @@ Detailed operator documentation lives in [[file:docs/][docs/]]; module conventio
 │   ├── fonts.nix               #   Font definitions
 │   ├── ai-ingress.nix          #   SHARED: OpenAI-compatible logging proxy, `ai-stack.target`
 │   ├── llama.nix               #   dracula: llama-swap + pinned GGUF model registry
-│   ├── llama-logging-proxy.py  #   The ingress implementation (stdlib Python)
-│   ├── llama-usage-summary.py  #   `ai-usage-summary` report generator
 │   ├── remote-openai.nix       #   alucard: Requesty upstream behind the same ingress
 │   ├── n8n.nix                 #   n8n + task runners (containerised, private bridge)
 │   ├── n8n-credentials.nix     #   alucard: sops → n8n credential import

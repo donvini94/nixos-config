@@ -27,8 +27,10 @@ let
   # instead of inside Hermes is deliberate: instrumentation belongs to the
   # ingress, which sees every client.
   python = pkgs.python3.withPackages (ps: [ ps.langfuse ]);
-  proxy = pkgs.writeText "ai-ingress-proxy.py" (builtins.readFile ./llama-logging-proxy.py);
-  usageSummary = pkgs.writeText "ai-usage-summary.py" (builtins.readFile ./llama-usage-summary.py);
+  proxy = pkgs.writeText "ai-ingress-proxy.py" (builtins.readFile ../ai-ingress/proxy.py);
+  usageSummary = pkgs.writeText "ai-usage-summary.py" (
+    builtins.readFile ../ai-ingress/usage-summary.py
+  );
 
   prepareLogs = pkgs.writeShellScript "prepare-ai-ingress-logs" ''
     ${pkgs.coreutils}/bin/install -d -m 0750 ${lib.escapeShellArg (builtins.dirOf cfg.requestLog)}

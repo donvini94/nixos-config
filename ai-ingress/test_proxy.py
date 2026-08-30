@@ -67,7 +67,7 @@ def load_proxy(backend_url, log_path):
     )
     for name in ("LLAMA_ALLOWED_MODELS", "LANGFUSE_BASE_URL"):
         os.environ.pop(name, None)
-    path = Path(__file__).with_name("llama-logging-proxy.py")
+    path = Path(__file__).with_name("proxy.py")
     spec = importlib.util.spec_from_file_location("llama_logging_proxy", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
