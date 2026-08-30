@@ -28,9 +28,10 @@ jobs:
       - uses: DeterminateSystems/determinate-nix-action@527f17dd63d2d60d3e5552934bc84b9a33a14d11 # v3
       - run: nix build .#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel
 
-  no-package-patches:
-    name: No repository-owned package patches
+  checks:
+    name: Flake checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - run: ./scripts/check-no-package-patches.sh .
+      - uses: DeterminateSystems/determinate-nix-action@527f17dd63d2d60d3e5552934bc84b9a33a14d11 # v3
+      - run: nix flake check

@@ -22,7 +22,7 @@ Detailed operator documentation lives in [[file:docs/][docs/]]; module conventio
 
 #+begin_src
 .
-├── flake.nix                   # Host builders + the `no-package-patches` flake check
+├── flake.nix                   # Host builders + repository flake checks
 ├── configuration.nix           # Shared base config (shells, locale, gnupg, nix settings)
 ├── home.nix                    # Home-manager import manifest (dracula)
 ├── ai-ingress/                 # Shared AI ingress Python sources and regression tests
@@ -307,7 +307,7 @@ sudo nixos-rebuild build --flake .#dracula
 # Update flake inputs
 nix flake update
 
-# Check / show flake  (`check` runs the no-package-patches guard)
+# Check / show flake  (`check` runs repository regression gates)
 nix flake check
 nix flake show
 #+end_src
@@ -315,13 +315,13 @@ nix flake show
 * CI and Supply Chain
 
 - =.github/workflows/nix-build.yml= builds =nixosConfigurations.{dracula,alucard}.config.system.build.toplevel=
-  on every PR and push to master, and runs the package-patch guard as a second job.
-- =scripts/check-no-package-patches.sh= rejects =overrideAttrs=, =postPatch=, =applyPatches=,
+  on every PR and push to master, and runs =nix flake check= as a separate job.
+- =nix flake check= runs both the package-patch guard and the AI ingress regression suite.
+  =scripts/check-no-package-patches.sh= rejects =overrideAttrs=, =postPatch=, =applyPatches=,
   ~patches =~ assignments and locally defined overlay lambdas. The allow-list is currently
   *empty*: the libmodsecurity mutation was dropped on 2026-08-29 once nixpkgs stopped building
   =pcre2= with =--enable-jit-sealloc=. Any future exception must carry an =# UPSTREAM DEFECT=
-  comment or the check fails anyway. It is also wired in as a flake check, so
-  =nix flake check= enforces the same rule locally.
+  comment or the check fails anyway.
 - =renovate.json= is configured to pin container digests and GitHub Action SHAs with
   =automerge: false=, so a reviewed Git commit is the only path a container image changes.
   *Renovate is not installed on the repository yet* — it has never opened a PR or the

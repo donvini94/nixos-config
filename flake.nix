@@ -138,13 +138,22 @@
         alucard = mkServerHost "alucard";
       };
 
-      # `nix flake check` is the gate that keeps local package patches from
-      # coming back; CI runs the same script directly.
-      checks.${system}.no-package-patches =
-        nixpkgs.legacyPackages.${system}.runCommand "check-no-package-patches"
-          { nativeBuildInputs = [ nixpkgs.legacyPackages.${system}.bash ]; }
-          ''
-            bash ${./scripts/check-no-package-patches.sh} ${./.} | tee "$out"
-          '';
+      # `nix flake check` is the local and CI gate for repository invariants.
+      checks.${system} = {
+        no-package-patches =
+          nixpkgs.legacyPackages.${system}.runCommand "check-no-package-patches"
+            { nativeBuildInputs = [ nixpkgs.legacyPackages.${system}.bash ]; }
+            ''
+              bash ${./scripts/check-no-package-patches.sh} ${./.} | tee "$out"
+            '';
+
+        ai-ingress-tests =
+          nixpkgs.legacyPackages.${system}.runCommand "check-ai-ingress-tests"
+            { nativeBuildInputs = [ nixpkgs.legacyPackages.${system}.python3 ]; }
+            ''
+              PYTHONDONTWRITEBYTECODE=1 python3 ${./ai-ingress}/test_proxy.py
+              touch "$out"
+            '';
+      };
     };
 }
