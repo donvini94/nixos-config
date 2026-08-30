@@ -143,10 +143,13 @@ Delete it once you are satisfied the budget data is intact.
 :ADDED: 2026-08-29
 :END:
 
-Both stacks published their ports on =0.0.0.0=, contradicting the "every backend
-binds loopback behind nginx" invariant that =hosts/alucard/services/reverse-proxy.nix= asserts.
-Fixed by editing their compose files *outside this repository*, so a fresh clone
-of either project loses the change:
+Both stacks published their ports on =0.0.0.0=. The assertion in
+=hosts/alucard/services/reverse-proxy.nix= only rejects selected ports in
+=networking.firewall.allowedTCPPorts=; it cannot inspect Compose files outside
+this repository or protect against Docker-published ports. Both stacks therefore
+violated the intended "every backend binds loopback behind nginx" invariant while
+the Nix assertion still passed. Fixed by editing their compose files *outside
+this repository*, so a fresh clone of either project loses the change:
 
 - =~/.config/onyx/deployment/docker-compose.yml= — both nginx port mappings now
   carry a =127.0.0.1:= prefix. Note there are *two* mappings that both resolve to

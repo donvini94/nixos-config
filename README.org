@@ -329,9 +329,9 @@ nix flake show
   comment or the check fails anyway.
 - =renovate.json= is configured to pin container digests and GitHub Action SHAs with
   =automerge: false=, so a reviewed Git commit is the only path a container image changes.
-  *Renovate is not installed on the repository yet* — it has never opened a PR or the
-  dependency dashboard issue. Digests and action SHAs are currently pinned by hand; see
-  =docs/OPERATOR-ACTIONS.org=.
+  Renovate is installed and [[https://github.com/donvini94/nixos-config/issues/1][Dependency Dashboard issue #1]] exists.
+  Updates remain non-automerge and use the configured weekday 22:00–23:00 Europe/Berlin
+  schedule; see =docs/OPERATOR-ACTIONS.org=.
 
 * Secret Management
 
