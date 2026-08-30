@@ -13,7 +13,7 @@
     ./networking.nix
     ./private-access.nix
     ./security.nix
-    ./services.nix
+    ./services/default.nix
     ./media.nix
     ./users.nix
     ./syncthing.nix
