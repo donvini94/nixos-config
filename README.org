@@ -319,8 +319,11 @@ nix flake show
 
 * CI and Supply Chain
 
-- =.github/workflows/nix-build.yml= builds =nixosConfigurations.{dracula,alucard}.config.system.build.toplevel=
-  on every PR and push to master, and runs =nix flake check= as a separate job.
+- =.github/workflows/nix-build.yml= evaluates the complete build plan for
+  =nixosConfigurations.{dracula,alucard}.config.system.build.toplevel= on every PR and push
+  to master. The Dracula closure is currently 67.4 GiB, so hosted CI uses =nix build --dry-run=
+  instead of attempting to realize it on an undersized runner; full builds remain the local
+  deployment gate. CI runs =nix flake check= as a separate job.
 - =nix flake check= runs both the package-patch guard and the AI ingress regression suite.
   =scripts/check-no-package-patches.sh= rejects =overrideAttrs=, =postPatch=, =applyPatches=,
   ~patches =~ assignments and locally defined overlay lambdas. The allow-list is currently
