@@ -45,13 +45,11 @@ let
   defaultProfile = if isDracula then localProfile else requestyProfile;
   modelSelector = profile: model: "${profile.provider}/${model}";
   defaultModelSelector = modelSelector defaultProfile defaultProfile.defaultModel;
-  enabledModels =
-    lib.concatMap (profile: map (modelSelector profile) (builtins.attrNames profile.models)) profiles
-    ++ authenticatedOmpProviderScopes;
-  authenticatedOmpProviderScopes = [
-    "anthropic/*"
-    "openai-codex/*"
-  ];
+  # Custom-provider selectors only; the harness package adds the scopes for
+  # OMP's bundled subscription-authenticated providers.
+  profileModels = lib.concatMap (
+    profile: map (modelSelector profile) (builtins.attrNames profile.models)
+  ) profiles;
   authenticatedOpenCodeProviders = [
     "anthropic"
     "openai"
@@ -106,31 +104,8 @@ let
     }) profiles
   );
   yaml = pkgs.formats.yaml { };
-  ompPackage = pkgs.callPackage ../packages/omp.nix { };
-  ompManagedConfig = yaml.generate "omp-nixos-config.yml" {
-    cycleOrder = [ "default" ];
-    inherit enabledModels;
-    disabledProviders = [ "llama.cpp" ];
-    advisor.enabled = false;
-    tools.approvalMode = "always-ask";
-    startup.checkUpdate = false;
-    marketplace.autoUpdate = "off";
-  };
-  omp = pkgs.writeShellApplication {
-    name = "omp";
-    text = ''
-      managed_config=${lib.escapeShellArg (toString ompManagedConfig)}
-      if [[ -n "''${PI_CONFIG_FILES-}" ]]; then
-        export PI_CONFIG_FILES="$PI_CONFIG_FILES:$managed_config"
-      else
-        export PI_CONFIG_FILES="$managed_config"
-      fi
-
-      # The model endpoint and policy are already configured. Upstream's
-      # explicit `omp setup` command remains available when deliberately run.
-      export OMP_SKIP_SETUP="''${OMP_SKIP_SETUP:-1}"
-      exec ${lib.getExe ompPackage} "$@"
-    '';
+  omp = pkgs.callPackage ../packages/omp-harness.nix {
+    extraEnabledModels = profileModels;
   };
   opencode = pkgs.writeShellApplication {
     name = "opencode";

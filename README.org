@@ -55,12 +55,13 @@ Detailed operator documentation lives in [[file:docs/][docs/]]; module conventio
 ├── packages/
 │   ├── llama-swap.nix          #   Pinned llama-swap release binary
 │   ├── omp.nix                 #   Pinned oh-my-pi (`omp`) release binary
+│   ├── omp-harness.nix         #   Wrapped `omp`: pinned binary + managed config overlay
 │   ├── pokemmo.nix             #   dracula: FHS-sandboxed PokeMMO launcher (self-updating client)
 │   └── hermes-n8n-handoff.nix  #   `hermes-n8n-handoff` webhook CLI (Hermes container only)
 ├── hm-modules/                 # Home-manager user-level modules (one file per tool)
 │   ├── ai-clients.nix          #   SHARED: wrapped `omp` + `opencode` pinned to the ingress
 │   ├── claude.nix              #   dracula: ~/.claude pointer + memory-only Syncthing whitelist
-│   ├── omp.nix                 #   dracula: out-of-store symlinks into ~/.omp/agent
+│   ├── omp.nix                 #   SHARED: writable out-of-store symlinks into ~/.omp/agent
 │   ├── git, ssh, fish, shell, hyprland, caelestia, services, packages, email, gtk
 │   └── helix, kitty, mpv, pokemmo, starship, yazi, zathura, zellij, doom
 ├── hosts/
@@ -84,7 +85,8 @@ Detailed operator documentation lives in [[file:docs/][docs/]]; module conventio
 │       ├── media.nix           #   Docker daemons, media stack unit, mining watchdog
 │       ├── syncthing.nix       #   Syncthing devices and folders (no peer may add folders)
 │       ├── users.nix           #   User accounts and SSH keys
-│       └── home.nix            #   Server-side home-manager (AI clients only)
+│       ├── home.nix            #   Vincenzo's home-manager: AI clients + OMP context
+│       └── home-kyrill.nix     #   Kyrill's home-manager: the OMP harness alone
 ├── observability/              # Compose file + provisioned Grafana dashboard/datasource
 ├── n8n/                        # `n8n-workflows` helper + reviewed workflow JSON
 ├── hermes/workspace/           # AGENTS.md / SOUL.md installed into the Hermes workspace

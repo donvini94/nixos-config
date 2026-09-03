@@ -28,6 +28,10 @@
     ../../secrets/secrets.nix
   ];
 
+  # The flake wires home-manager for the primary user only. Kyrill drives this
+  # box from his own account, so his home configuration is named here.
+  home-manager.users.kyrill = import ./home-kyrill.nix;
+
   services.containerUpdates = {
     enable = true;
     units = [ "media-stack.service" ];

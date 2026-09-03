@@ -83,15 +83,26 @@ local ingress and ask before changing files or executing commands. Use both on r
 their different prompts and tool loops are part of the comparison.
 
 OMP receives the Nix-managed model and safety policy through its supported `PI_CONFIG_FILES`
-overlay. The overlay scopes the picker to the custom local/Requesty profiles plus authenticated
-built-in `anthropic/*` and `openai-codex/*` models. These wildcard scopes track OMP's bundled
-catalog; they do not freeze or hardcode an upstream model list. Model-role assignments live in
+overlay, built by `packages/omp-harness.nix`. The overlay scopes the picker to whichever custom
+local/Requesty profiles the account was given, plus authenticated built-in `anthropic/*` and
+`openai-codex/*` models. These wildcard scopes track OMP's bundled catalog; they do not freeze
+or hardcode an upstream model list. Model-role assignments live in
 `~/.omp/agent/config.yml`, so selections made through OMP's model picker persist. The default
 plan role is `openai-codex/gpt-5.6-sol`. Its `agent.db` remains writable and holds provider
 credentials; Nix never manages it, so rebuilds preserve OAuth/API-key state. Automatic
 onboarding is skipped because the custom
 providers are already configured; run `omp setup` explicitly only when intending to revisit
 upstream's setup flow.
+
+A Claude or ChatGPT login taken through `/providers` inside a running session reports the
+account as signed in, but its models stay out of the picker until OMP restarts: the model list
+is built once at startup. Restart before suspecting the scope or the credential.
+
+Alucard runs the harness for both founder accounts. `hosts/alucard/home.nix` is Vincenzo's and
+carries the authored context plus the Requesty profile; `hosts/alucard/home-kyrill.nix` installs
+the harness alone, so Kyrill's models come only from his own Claude and ChatGPT logins. The
+ingress authorizes no one per user — it binds loopback and spends one shared Requesty key — so
+which accounts receive that profile is the spend boundary.
 
 OpenCode's `enabled_providers` is an allow-list. The managed configuration enables the two custom
 profiles and built-in `anthropic` and `openai`, without declaring or overwriting either provider.
