@@ -1,27 +1,15 @@
+# Linux-desktop package set. Cross-platform CLI tooling lives in cli-tools.nix, which
+# the Mac imports too; this file is the part that is Wayland/GTK-bound, GUI-only, or
+# deliberately Linux-only.
 { pkgs, ... }:
 
 {
   home.packages = with pkgs; [
-    # Search (desktop extras beyond system baseline)
-    ripgrep-all
-    television
-    entr
-    lnav
-
     # Document tools
-    csvlens
-    graphviz
-    pandoc
     mupdf
 
-    # Download
-    aria2
-
-    # Reference
-    cht-sh
-    tldr
-
-    # Finance
+    # Finance — the hledger closure is Haskell-heavy (~900 MiB download,
+    # ~6 GiB unpacked); deliberately not on the Mac.
     hledger
     hledger-ui
     hledger-utils
@@ -31,57 +19,13 @@
     # Dev tools
     zed-editor
     zeal
-    leetcode-cli
     bruno
-    wakatime-cli
-    delta
     aider-chat
-    codecrafters-cli
     warp-terminal
     claude-agent-acp
-    devbox
-
-    # Nix tooling (the nixd language server lives in lsp.nix, which alucard
-    # also imports — this package set is desktop-only)
-    nix-output-monitor
-    nixfmt
-
-    # Tree-sitter
-    (tree-sitter.withPlugins (g: [
-      g.tree-sitter-rust
-      g.tree-sitter-haskell
-      g.tree-sitter-python
-      g.tree-sitter-bash
-      g.tree-sitter-typst
-    ]))
 
     # Writing & docs
-    typst
-    tinymist
     texliveMedium
-    hunspell
-    hunspellDicts.en_US
-    hunspellDicts.de_DE
-    vale
-    proselint
-
-    # Docker tooling
-    dockfmt
-    dockerfile-language-server
-
-    # Web dev
-    html-tidy
-    js-beautify
-    stylelint
-
-    # Utilities
-    exercism
-    ranger
-    jq
-    yq-go
-    yt-dlp
-    poppler-utils
-    glow
 
     # Media
     nsxiv
@@ -93,10 +37,6 @@
 
     # Japanese
     qolibri
-    mecab
-    kakasi
-    cmigemo
-    ani-cli
 
     # Communication
     discord

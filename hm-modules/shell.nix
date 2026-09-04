@@ -17,14 +17,5 @@
       enable = true;
       nix-direnv.enable = true;
     };
-    atuin = {
-      enable = true;
-      enableFishIntegration = true;
-      settings = {
-        auto_sync = true;
-        sync_address = "https://dumusstbereitsein.de";
-        search_mode = "prefix";
-      };
-    };
   };
 }

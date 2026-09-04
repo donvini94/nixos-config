@@ -105,6 +105,11 @@
             host.address = "localhost";
             host.port = 19090;
           }
+          {
+            bind.port = 15656;
+            host.address = "localhost";
+            host.port = 15656;
+          }
         ];
         SetEnv = {
           TERM = "xterm";

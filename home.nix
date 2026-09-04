@@ -17,7 +17,9 @@
     ./hm-modules/gtk.nix
     ./hm-modules/mpv.nix
     ./hm-modules/pokemmo.nix
+    ./hm-modules/cli-tools.nix
     ./hm-modules/packages.nix
+    ./hm-modules/atuin.nix
     ./hm-modules/starship.nix
     ./hm-modules/yazi.nix
     ./hm-modules/zathura.nix

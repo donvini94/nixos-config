@@ -1,4 +1,4 @@
-name: NixOS checks
+name: Nix checks
 
 on:
   pull_request:
@@ -30,6 +30,16 @@ jobs:
       # still evaluates the complete build graph; restore realization on a
       # self-hosted runner with enough Nix storage.
       - run: nix build --dry-run --no-link .#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel
+
+  darwin:
+    name: Darwin build plan (AC-0137)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: DeterminateSystems/determinate-nix-action@527f17dd63d2d60d3e5552934bc84b9a33a14d11 # v3
+      # Evaluates the whole darwin closure without realizing it: the toplevel is
+      # ~7 GiB unpacked, and `nix flake check` deliberately does not build it.
+      - run: nix build --dry-run --no-link '.#darwinConfigurations."AC-0137".system'
 
   checks:
     name: Flake checks

@@ -9,8 +9,8 @@
 # Nothing else in ~/.claude reaches OMP any more. OMP treats `claude` as a
 # first-class discovery source at priority 80 and would otherwise read that
 # tree's settings, MCP servers and hooks into every session, so `claude` is
-# listed in `disabledProviders` in omp/config-common.nix — which every host,
-# including the unmanaged Mac, reads. The pointer above therefore serves
+# listed in `disabledProviders` in omp/config-common.nix — which every host
+# reads, AC-0137 included. The pointer above therefore serves
 # Claude Code only, which is the whole point of it.
 #
 # NOT managed here (deliberately, machine-specific + high-churn writable state):

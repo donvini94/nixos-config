@@ -26,6 +26,14 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     home-manager.url = "github:nix-community/home-manager/master";
 
+    # The Mac (AC-0137). `inputs.nixpkgs.follows` is what keeps the darwin closure on
+    # the same locked nixpkgs as dracula and alucard, so a package is the same build
+    # everywhere.
+    nix-darwin = {
+      url = "github:nix-darwin/nix-darwin/master";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     sops-nix.url = "github:Mic92/sops-nix";
     disko.url = "github:nix-community/disko";
     hosts.url = "github:StevenBlack/hosts";
@@ -56,6 +64,7 @@
       self,
       nixpkgs,
       home-manager,
+      nix-darwin,
       hyprland,
       disko,
       hosts,
@@ -72,6 +81,11 @@
       fullName = "Vincenzo Pace";
       mail = "vincenzo.pace94@icloud.com";
       system = "x86_64-linux";
+
+      # The Mac's local account name differs from the NixOS hosts'. Its platform is set
+      # in hosts/ac-0137/default.nix via nixpkgs.hostPlatform, which is where
+      # darwinSystem reads it from.
+      macUsername = "vincenzopace";
 
       overlays = [ emacs-overlay.overlay ];
 
@@ -136,6 +150,39 @@
       nixosConfigurations = {
         dracula = mkDesktopHost "dracula";
         alucard = mkServerHost "alucard";
+      };
+
+      # Exactly one Mac, so this is inline rather than an mkDarwinHost factory.
+      #
+      # `useUserPackages = true` is load-bearing: it routes home-manager's packages
+      # through users.users.<name>.packages -> /etc/profiles/per-user/vincenzopace
+      # (nix-darwin/modules/users/default.nix:336-346, which also adds that profile to
+      # environment.profiles at mkOrder 900, ahead of /run/current-system/sw). That keeps
+      # activation away from ~/.nix-profile, which on this machine is a flake-style
+      # `nix profile`.
+      #
+      # No `overlays` here on purpose: emacs-overlay is for dracula's Emacs. On the Mac,
+      # Emacs is the emacs-plus-app cask.
+      darwinConfigurations."AC-0137" = nix-darwin.lib.darwinSystem {
+        specialArgs = {
+          inherit inputs;
+          username = macUsername;
+        };
+        modules = [
+          ./hosts/ac-0137
+          home-manager.darwinModules.home-manager
+          {
+            home-manager = {
+              useUserPackages = true;
+              backupFileExtension = "hm-backup";
+              extraSpecialArgs = {
+                inherit fullName mail inputs;
+                username = macUsername;
+              };
+              users.${macUsername} = import ./hosts/ac-0137/home.nix;
+            };
+          }
+        ];
       };
 
       # `nix flake check` is the local and CI gate for repository invariants.

@@ -1,18 +1,18 @@
 # Host-independent OMP settings — the single source of truth for every device.
 #
-# This file exists because the Mac is deliberately not nix-managed, and "set it by hand on
-# each box" is what produced the drift this replaced: dracula and alucard got a generated
-# overlay, the Mac got hand-typed values, and the two silently diverged.
+# This file exists because "set it by hand on each box" is what produced the drift it
+# replaced: dracula and alucard got a generated overlay, the Mac got hand-typed values,
+# and the two silently diverged.
 #
 # It is consumed twice:
 #   * dracula, alucard — packages/omp-harness.nix imports this attrset and merges it into
 #     the generated `PI_CONFIG_FILES` overlay.
-#   * the Mac — scripts/omp-link-unmanaged.sh renders it to JSON with `nix eval --json`
-#     and points `PI_CONFIG_FILES` at the result. OMP's generic config loader accepts
-#     .json as well as .yml, so no YAML dependency is needed on an unmanaged host.
+#   * AC-0137 — hosts/ac-0137/omp.nix renders it to YAML and points `PI_CONFIG_FILES` at
+#     the result. The harness binary there is the self-updating bun install, so only the
+#     config overlay is declared, not a wrapper.
 #
 # Nix, not YAML, is the authored form: nix is the only reader that cannot be taught a new
-# format, and rendering nix -> JSON is a one-liner while parsing YAML in nix needs IFD.
+# format, and rendering nix -> YAML/JSON is a one-liner while parsing YAML in nix needs IFD.
 #
 # ONLY genuinely universal settings belong here. Anything that names a provider-scoped
 # model id, or that legitimately differs per host, stays out:

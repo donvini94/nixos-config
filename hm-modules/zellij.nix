@@ -1,4 +1,4 @@
-{ ... }:
+{ pkgs, ... }:
 {
   programs.zellij = {
     enable = true;
@@ -29,7 +29,8 @@
       default_layout = "compact"; # minimal UI, more terminal space
       pane_frames = false; # cleaner look, borders only
       copy_on_select = true;
-      copy_command = "wl-copy"; # route yanks to the Wayland clipboard, not a void
+      # Route yanks to the platform clipboard, not a void.
+      copy_command = if pkgs.stdenv.hostPlatform.isDarwin then "pbcopy" else "wl-copy";
       copy_clipboard = "system"; # system clipboard, not the primary selection
       scrollback_editor = "emacsclient -a '' -c";
 

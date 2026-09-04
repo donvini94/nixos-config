@@ -1,0 +1,185 @@
+[
+  // ╔══════════════════════════════════════════════════════════════╗
+  // ║  Doom Emacs → Zed: SPC leader keymap                       ║
+  // ║  Space as leader key, vim-style modal editing               ║
+  // ╚══════════════════════════════════════════════════════════════╝
+
+  {
+    "context": "vim_mode == normal && !menu",
+    "bindings": {
+      // ── Quick Access (Doom top-level) ──────────────────────────
+      "space space": "file_finder::Toggle",          // SPC SPC  → find file in project
+      "space /": "pane::DeploySearch",               // SPC /    → search project (ripgrep)
+      "space :": "command_palette::Toggle",           // SPC :    → M-x
+      "space ,": "tab_switcher::Toggle",              // SPC ,    → switch buffer
+      "space .": "file_finder::Toggle",               // SPC .    → find file
+      "space tab": "pane::AlternateFile",             // SPC TAB  → last buffer
+
+      // ── Files (SPC f) ─────────────────────────────────────────
+      "space f f": "file_finder::Toggle",
+      "space f s": "workspace::Save",
+      "space f shift-s": "workspace::SaveAll",
+      "space f r": "tab_switcher::Toggle",            // recent (open) files
+      "space f n": "workspace::NewFile",
+      "space f y": "editor::CopyPath",
+      "space f shift-y": "editor::CopyRelativePath",
+
+      // ── Buffers (SPC b) ───────────────────────────────────────
+      "space b b": "tab_switcher::Toggle",
+      "space b d": "pane::CloseActiveItem",
+      "space b shift-d": "pane::CloseAllItems",
+      "space b n": "pane::ActivateNextItem",
+      "space b p": "pane::ActivatePrevItem",
+      "space b s": "workspace::NewFile",              // scratch buffer
+      "space b u": "pane::ReopenClosedItem",          // undo close
+
+      // ── Windows (SPC w) ───────────────────────────────────────
+      "space w v": "pane::SplitRight",
+      "space w s": "pane::SplitDown",
+      "space w d": "pane::CloseActiveItem",
+      "space w w": "workspace::ActivateNextPane",
+      "space w h": "workspace::ActivatePaneLeft",
+      "space w l": "workspace::ActivatePaneRight",
+      "space w j": "workspace::ActivatePaneDown",
+      "space w k": "workspace::ActivatePaneUp",
+      "space w m": "workspace::ToggleZoom",
+      "space w o": "workspace::CloseInactiveTabsAndPanes", // only window (like C-w o)
+
+      // ── Search (SPC s) ────────────────────────────────────────
+      "space s p": "pane::DeploySearch",              // search project
+      "space s s": "buffer_search::Deploy",           // search buffer
+      "space s r": "search::SelectAllMatches",        // select all matches
+      "space s d": "project_symbols::Toggle",         // search definitions (symbols)
+
+      // ── Project (SPC p) ───────────────────────────────────────
+      "space p f": "file_finder::Toggle",
+      "space p p": "projects::OpenRecent",
+      "space p t": "project_panel::ToggleFocus",
+      "space p s": "project_symbols::Toggle",         // project symbols
+
+      // ── Code / LSP (SPC c) ────────────────────────────────────
+      "space c a": "editor::ToggleCodeActions",
+      "space c r": "editor::Rename",
+      "space c d": "editor::GoToDefinition",
+      "space c shift-d": "editor::GoToDeclaration",
+      "space c i": "editor::GoToImplementation",
+      "space c t": "editor::GoToTypeDefinition",
+      "space c f": "editor::Format",
+      "space c x": "editor::FindAllReferences",       // cross-references
+      "space c s": "outline::Toggle",                   // document symbols
+      "space c h": "editor::Hover",                   // show hover info (like K)
+
+      // ── Git (SPC g) ──────────────────────────────────────────
+      "space g g": "git_panel::ToggleFocus",          // magit status equivalent
+      "space g s": "git_panel::ToggleFocus",          // alias (Doom SPC g s = status)
+      "space g b": "git::Blame",                      // blame
+      "space g d": "editor::ToggleHunkDiff",          // diff hunk inline
+      "space g r": "editor::RevertSelectedHunks",     // revert hunk
+      "space g c": "git::Commit",                     // commit
+      "space g p": "git::Push",                       // push
+      "space g shift-p": "git::Pull",                 // pull
+      "space g f": "git::Fetch",                      // fetch
+      "space g shift-b": "git::Branch",               // branch picker
+      "space g l": "git_graph::Open",                 // log (git graph)
+      "space g shift-s": "git::StageAll",             // stage all
+      "space g shift-u": "git::UnstageAll",           // unstage all
+      "space g shift-r": "git::ReviewDiff",           // AI review of branch diff
+      "space g h": "git::FileHistory",                // file history
+      "space g z": "git::ViewStash",                  // stash (z = Doom magit stash)
+      "space g w": "git::Worktree",                   // worktrees
+      "space g m": "git::GenerateCommitMessage",      // AI commit message
+
+      // ── Debugger (SPC d) — mirrors your DAP bindings ─────────
+      "space d s": "debugger::Start",                 // dap-debug
+      "space d n": "debugger::StepOver",              // dap-next
+      "space d i": "debugger::StepInto",              // dap-step-in
+      "space d o": "debugger::StepOut",               // dap-step-out
+      "space d c": "debugger::Continue",              // dap-continue
+      "space d r": "debugger::Restart",               // dap-debug-restart
+      "space d q": "debugger::Stop",                  // quit/stop
+      "space d p": "debugger::Pause",
+      "space d t": "debugger::RunToCursor",           // run to cursor (no DAP equivalent)
+      "space d b": "debugger::FocusBreakpointList",   // breakpoint list
+      "space d v": "debugger::FocusVariables",        // variables panel
+      "space d f": "debugger::FocusFrames",           // call stack frames
+      "space d shift-b": "debugger::ClearAllBreakpoints",
+
+      // ── AI / Agent (SPC l) — Zed-native ──────────────────────
+      "space l l": "agent::ToggleFocus",              // open/focus agent panel
+      "space l n": "agent::NewThread",                // new conversation
+      "space l h": "agent::OpenHistory",              // thread history
+      "space l m": "agent::CycleFavoriteModels",      // switch model
+      "space l t": "agent::ToggleThinkingMode",       // thinking mode on/off
+      "space l e": "agent::CycleThinkingEffort",      // thinking effort level
+      "space l f": "agent::ToggleFastMode",           // fast mode toggle
+      "space l d": "git::ReviewDiff",                   // AI code review
+      "space l r": "agent::OpenRulesLibrary",         // rules/system prompts
+      "space l p": "agent::ManageProfiles",           // agent profiles
+      "space l o": "agent::ToggleOptionsMenu",        // options menu
+      "space l i": "assistant::InlineAssist",         // inline assist at cursor
+
+      // ── Toggle (SPC t) ────────────────────────────────────────
+      "space t t": "terminal_panel::ToggleFocus",
+      "space t p": "project_panel::ToggleFocus",
+      "space t o": "outline_panel::ToggleFocus",
+      "space t z": "workspace::ToggleZoom",
+      "space t w": "editor::ToggleSoftWrap",
+      "space t l": "editor::ToggleLineNumbers",
+      "space t b": "editor::ToggleGitBlame",          // toggle inline blame
+      "space t i": "editor::ToggleInlayHints",        // toggle inlay hints
+
+      // ── Open (SPC o) ──────────────────────────────────────────
+      "space o t": "terminal_panel::ToggleFocus",
+      "space o p": "project_panel::ToggleFocus",
+      "space o a": "agent::ToggleFocus",
+      "space o g": "git_panel::ToggleFocus",
+      "space o d": "diagnostics::Deploy",             // diagnostics panel
+      "space o o": "outline_panel::ToggleFocus",
+
+      // ── Errors / Diagnostics (SPC e) ──────────────────────────
+      "space e l": "diagnostics::Deploy",
+      "space e n": "editor::GoToDiagnostic",
+      "space e p": "editor::GoToPreviousDiagnostic",
+
+      // ── Help (SPC h) ─────────────────────────────────────────
+      "space h k": "zed::OpenKeymap",                 // describe-key → see keybindings
+      "space h s": "zed::OpenSettings",               // settings
+      "space h d": "zed::OpenDocs",                   // documentation
+
+      // ── Quit (SPC q) ─────────────────────────────────────────
+      "space q q": "zed::Quit",
+    },
+  },
+
+  // ── Visual mode: AI + selection-dependent actions ─────────────
+  {
+    "context": "Editor && vim_mode == visual",
+    "bindings": {
+      "space l i": "assistant::InlineAssist",           // transform selection with AI
+      "space l s": "agent::AddSelectionToThread",       // send selection as context
+      "space l e": "debugger::EvaluateSelectedText",    // eval in debugger
+      "space /": "pane::DeploySearch",                  // search project for selection
+    },
+  },
+
+  // ── Insert mode ───────────────────────────────────────────────
+  {
+    "context": "Editor && vim_mode == insert",
+    "bindings": {
+      // ctrl-x prefix for completions (matches Zed vim defaults)
+      // ctrl-x ctrl-a → inline AI assist
+      // ctrl-x ctrl-o → completion menu
+      // ctrl-x ctrl-l → code actions
+    },
+  },
+
+  // ── Agent panel: keyboard navigation ──────────────────────────
+  {
+    "context": "AgentPanel",
+    "bindings": {
+      "ctrl-n": "agent::NewThread",
+      "ctrl-h": "agent::OpenHistory",
+      "ctrl-m": "agent::CycleFavoriteModels",
+    },
+  },
+]

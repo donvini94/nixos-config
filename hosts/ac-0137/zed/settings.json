@@ -1,0 +1,128 @@
+// Zed settings
+//
+// For information on how to configure Zed, see the Zed
+// documentation: https://zed.dev/docs/configuring-zed
+//
+// To see all of Zed's default settings without changing your
+// custom settings, run `zed: open default settings` from the
+// command palette (cmd-shift-p / ctrl-shift-p)
+{
+
+  // Extensions, declared so a fresh Zed reinstalls exactly this set. Mirrors
+  // ~/Library/Application Support/Zed/extensions/installed; `false` here means "never
+  // install", so an entry is added rather than removed when an extension is retired.
+  // https://zed.dev/docs/reference/all-settings#auto-install-extensions
+  "auto_install_extensions": {
+    "catppuccin": true,
+    "comment": true,
+    "docker-compose": true,
+    "dockerfile": true,
+    "dracula": true,
+    "git-firefly": true,
+    "html": true,
+    "iwe": true,
+    "java": true,
+    "json5": true,
+    "log": true,
+    "macos-classic": true,
+    "modus-themes": true,
+    "nix": true,
+    "one-dark-pro": true,
+    "org": true,
+    "rainbow-csv": true,
+    "ruff": true,
+    "sql": true,
+    "tokyo-night": true,
+    "toml": true,
+    "typst": true,
+    "xml": true,
+  },
+  // UI
+  "project_panel": {
+    "dock": "right"
+  },
+  "outline_panel": {
+    "dock": "right"
+  },
+  "collaboration_panel": {
+    "dock": "right"
+  },
+  "agent": {
+    "dock": "left",
+    "favorite_models": [],
+    "model_parameters": []
+  },
+  "cursor_blink": false,
+  "show_edit_predictions": true,
+  "edit_predictions": {
+    "mode": "subtle",
+  },
+  "active_pane_modifiers": {
+    "inactive_opacity": 0.7,
+  },
+
+  "title_bar": {
+    "show_branch_icon": true,
+    "show_menus": true,
+  },
+  "ui_font_size": 19,
+  "buffer_font_size": 20,
+  "buffer_font_family": "Iosevka Nerd Font",
+  "theme": {
+    "mode": "system",
+    "light": "Modus Operandi",
+    "dark": "Modus Vivendi",
+  },
+  "git_panel": {
+    "dock": "right",
+  },
+  "tabs": {
+    "git_status": true,
+    "file_icons": true,
+    "show_close_button": "hidden",
+  },
+
+  "toolbar": {
+    "code_actions": true,
+  },
+
+  "tab_bar": { "show": true },
+  "scrollbar": {
+    "show": "never",
+  },
+
+  // AI
+  "features": {
+    "edit_prediction_provider": "copilot",
+  },
+
+  // Editing
+  "vim_mode": true,
+  "vim": {
+    "default_mode": "normal",
+  },
+  "relative_line_numbers": "enabled",
+  "indent_guides": {
+    "enabled": true,
+    "coloring": "indent_aware",
+  },
+  "always_treat_brackets_as_autoclosed": true,
+  "soft_wrap": "editor_width",
+
+  // Convenience
+  "restore_on_startup": "last_session",
+  "restore_on_file_reopen": true,
+  "load_direnv": "shell_hook",
+
+  // Languages
+  "languages": {
+    "Python": {
+      "language_servers": ["ty", "ruff", "!basedpyright", "!pylsp", "!pyright"],
+      "formatter": {
+        "language_server": {
+          "name": "ruff"
+        }
+      },
+    },
+  },
+}

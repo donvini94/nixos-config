@@ -47,7 +47,7 @@ let
   yaml = formats.yaml { };
   ompPackage = callPackage ./omp.nix { };
   # Universal policy — disabled sources, secrets redaction, advisor, memory. Authored
-  # once in omp/config-common.nix so the unmanaged Mac reads the same values instead of
+  # once in omp/config-common.nix so AC-0137 reads the same values instead of
   # a hand-typed copy of them. See that file for what deliberately stays host-specific.
   common = import ../omp/config-common.nix;
   managedConfig = yaml.generate "omp-nixos-config.yml" (

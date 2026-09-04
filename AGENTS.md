@@ -5,7 +5,7 @@ natively; the root `CLAUDE.md` is only a pointer to it.
 
 ## Overview
 
-This is a NixOS configuration repository managing two systems: a desktop (dracula) and a home server (alucard). The desktop uses Hyprland with caelestia-shell for the desktop shell (bar, notifications, wallpaper, lock screen, launcher). The server runs multiple services behind nginx reverse proxies.
+This is a Nix configuration repository managing three systems: a NixOS desktop (dracula), a NixOS home server (alucard), and a nix-darwin Mac (AC-0137). The desktop uses Hyprland with caelestia-shell for the desktop shell (bar, notifications, wallpaper, lock screen, launcher). The server runs multiple services behind nginx reverse proxies. The Mac is a laptop daily driver — see "The Mac is nix-darwin managed" below.
 
 ## Build and Deployment Commands
 
@@ -16,6 +16,9 @@ sudo nixos-rebuild switch --flake .#dracula
 
 # Server (Hetzner QEMU)
 sudo nixos-rebuild switch --flake .#alucard
+
+# Mac (nix-darwin + home-manager)
+sudo darwin-rebuild switch --flake .#AC-0137
 ```
 
 ### Development Commands
@@ -36,9 +39,10 @@ sops secrets/dmbs.yaml    # Edit encrypted secrets
 
 ### Flake Structure
 
-`flake.nix` provides two host-builder functions:
+`flake.nix` provides two host-builder functions plus one inline darwin host:
 - `mkDesktopHost "hostname"` — full desktop with Hyprland, home-manager, sops, hosts blocking
 - `mkServerHost "hostname"` — minimal server (host imports what it needs)
+- `darwinConfigurations."AC-0137"` — inline, not a factory, because there is exactly one Mac
 
 Adding a new desktop host:
 ```nix
@@ -70,6 +74,14 @@ Then create `hosts/newhost/` with `default.nix` (imports shared modules), `hardw
 - `users.nix` — User accounts and SSH keys
 - `syncthing.nix` — Syncthing devices and folders
 
+**Mac (`hosts/ac-0137/`):**
+- `default.nix` — Darwin system layer: platform, stateVersion, primaryUser, `nix.enable = false`, fonts, `/etc/shells`, `system.defaults`
+- `homebrew.nix` — Declarative Brewfile (`cleanup = "uninstall"`)
+- `ui.nix` — SketchyBar + JankyBorders as launchd agents
+- `home.nix` — Home-manager import manifest for the Mac
+- `fish.nix`, `apps.nix`, `omp.nix` — Darwin-only home config
+- `sketchybar/`, `ghostty/`, `zed/`, `aerospace.toml` — Managed dotfile assets
+
 ### Shared Modules (`modules/`)
 - `desktop.nix` — Meta-module importing all desktop sub-modules + security/PAM + stevenBlackHosts
 - `nvidia.nix` — Opt-in NVIDIA module (driver, graphics, env vars, container toolkit)
@@ -84,11 +96,15 @@ Then create `hosts/newhost/` with `default.nix` (imports shared modules), `hardw
 - `git.nix` — Git identity
 - `ssh.nix` — SSH config + control master sockets
 - `fish.nix` — Fish shell + abbreviations
-- `shell.nix` — Bash, zoxide, direnv, atuin
+- `shell.nix` — Bash, zoxide, direnv (cross-platform)
+- `atuin.nix` — Synced shell history; NixOS hosts only (Ctrl-R conflict on the Mac)
 - `hyprland.nix` — Hyprland WM config (keybinds, input, window rules)
 - `caelestia.nix` — Desktop shell config + runtime dependencies
 - `services.nix` — User services (udiskie, syncthing, mpd, gammastep)
-- `packages.nix` — User-level packages (dev tools, writing, communication, Japanese)
+- `cli-tools.nix` — User-level CLI tooling that builds on Linux *and* darwin; imported by every host
+- `packages.nix` — Linux-desktop-only packages (GUI apps, hledger, texlive)
+- `lsp.nix` — Language servers for the OMP `lsp` tool
+- `omp.nix` — OMP harness context (`~/.omp/agent` links, derived `mcp.json`)
 - `helix.nix`, `kitty.nix`, `mpv.nix`, `starship.nix`, `yazi.nix`, `zathura.nix`, `zellij.nix`, `doom.nix` — Per-tool configs
 
 ### Desktop Shell
@@ -106,31 +122,54 @@ Uses sops-nix with age encryption. `secrets/secrets.nix` imports sops-nix intern
 - Both systems share `configuration.nix` for base settings
 - Server imports `modules/packages.nix` directly (no desktop modules, no home-manager)
 - NVIDIA config is opt-in via `modules/nvidia.nix` — non-NVIDIA hosts omit the import
-- Package placement rule: system packages = needs system-level integration (root, hardware, PAM, build toolchain). Everything else = `hm-modules/packages.nix`
+- Package placement rule: system packages = needs system-level integration (root, hardware, PAM, build toolchain). Everything else = `hm-modules/cli-tools.nix` if it builds on both Linux and darwin, `hm-modules/packages.nix` if it is Linux-desktop-only
+- Darwin host config goes in `hosts/ac-0137/`; darwin-only home modules live alongside it (`fish.nix`, `apps.nix`, `omp.nix`), not in `hm-modules/`
+- A shared `hm-modules/` file that has to differ per platform branches on `pkgs.stdenv.hostPlatform.isDarwin` inside the module — it never gets a second copy
 
-## The Mac is not nix-managed
+## The Mac is nix-darwin managed
 
-The Mac daily driver runs Determinate Nix (CLI/daemon, v3.x) so the flake in this repo can
-be worked on, but the machine itself is **not** managed by nix-darwin or home-manager —
-there is no `darwin-rebuild` and no `home-manager` binary. Userland CLI tools (fish, emacs,
-ghostty, zellij) come from Homebrew under `/opt/homebrew`. `hm-modules/` and `modules/`
-target the NixOS hosts (dracula desktop, alucard server) **only**.
+The Mac daily driver (`scutil --get LocalHostName` = `AC-0137`, user `vincenzopace`,
+aarch64) is `darwinConfigurations."AC-0137"` in this flake. Rebuild it with:
 
-To configure a tool on the Mac: install via `brew` and hand-write its config under
-`~/.config`. The Mac will not pick up anything from `hm-modules/`. Never attempt
-`nixos-rebuild` or `darwin-rebuild` there.
+```
+sudo darwin-rebuild switch --flake ~/nixos-config#AC-0137
+```
 
-Consequence: anything declared in `hm-modules/` has a hand-maintained Mac twin that must be
-kept in sync **by hand**. Known twins:
+Layering on that host:
 
-- `hm-modules/zellij.nix` → `~/.config/zellij/config.kdl` + `layouts/{code,bereit,work}.kdl`.
-  Ported 2026-06-28 (zellij 0.44.3 via brew). Mac adaptation: `copy_command "pbcopy"` where
-  NixOS uses `wl-copy`. The Mac terminal is **Ghostty**, not kitty, and needs no
-  terminal-side changes — its keybinds are cmd-based and don't collide with zellij's ctrl
-  modes. The `bereit`/`work` SSH layouts work because `~/.ssh/config` already has
-  `Bereitserver`, `media-admin`, `acGPT`.
-- `hm-modules/fish.nix` → `~/.config/fish/conf.d/zellij.fish` (standalone, deliberately not
-  in `fish.nix`): abbr `zj` = `zellij attach -c`, `zjl` = `zellij ls`.
+- **Determinate Nix** owns `/etc/nix`, `nix.custom.conf` and the daemon. `nix.enable =
+  false` in `hosts/ac-0137/default.nix`, so nix-darwin never writes Nix configuration and
+  home-manager forwards the same flag. Do not add `nix.settings` there.
+- **nix-darwin** owns fonts, `/etc/shells`, `system.defaults`, and the launchd agents for
+  SketchyBar and JankyBorders (`hosts/ac-0137/ui.nix`, labels `org.nixos.sketchybar` and
+  `org.nixos.jankyborders`).
+- **home-manager** is wired as a nix-darwin module with `useUserPackages = true`, so the
+  per-user package set lands in `/etc/profiles/per-user/vincenzopace` rather than
+  `~/.nix-profile`. `hosts/ac-0137/home.nix` is the import manifest.
+- **Homebrew** is declarative in `hosts/ac-0137/homebrew.nix` with `cleanup = "uninstall"`.
+  That file is the truth: an imperative `brew install` is reverted on the next switch. To
+  keep a formula, add it to the list. Homebrew's remit is toolchains
+  (rustup/openjdk/maven/cmake), macOS-integrated tools, GUI casks, and anything nixpkgs
+  cannot supply — AeroSpace and emacs-plus stay casks on purpose (version and
+  Accessibility-grant stability).
+
+There are no "Mac twins" any more. A tool configured in `hm-modules/` reaches the Mac by
+being imported in `hosts/ac-0137/home.nix`; if it needs platform-specific values, branch
+on `pkgs.stdenv.hostPlatform.isDarwin` in the shared module.
+
+Still deliberately stateful on that host, each for a stated reason:
+
+- **fisher fish plugins** (tide, fzf.fish, z, autopair, done) — `fishPlugins.fzf-fish` is
+  `broken = true` at the locked nixpkgs, so declaring the set would silently drop
+  `fzf.fish`. tide's own configuration lives in fish universal variables either way.
+  Because fisher's `fzf.fish` owns Ctrl-R, `hm-modules/atuin.nix` is NOT imported there.
+- **`~/.config/fish/conf.d/leafcloud.fish`** — holds a plaintext OpenStack password; must
+  never enter the repo.
+- **`~/.gnupg` and the `pass` store** — `pass` and `pinentry-mac` stay Homebrew formulae;
+  moving them pulls a second gnupg into agent-socket territory and `hm-modules/git.nix`
+  signs with `signing.format = "openpgp"`.
+- **The mail stack** (`isync`/`msmtp`/`mu`/`notmuch` + `mail/mac/`) and Doom's
+  `~/.config/emacs` checkout.
 
 ## Working practices for this repo
 
