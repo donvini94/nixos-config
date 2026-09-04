@@ -401,9 +401,14 @@ ty is Astral's Rust-based Python type checker and language server (from the Ruff
 
 ** Magit
 #+begin_src emacs-lisp
-;; Set before magit loads — version check runs during loading, after! fires too late
+;; Set before magit loads — the version check runs during loading, so `after!' fires too
+;; late. Resolved with `executable-find' rather than a hardcoded prefix: this used to be
+;; "/opt/homebrew/bin/git", and when AC-0137 moved to nix-darwin that formula was
+;; uninstalled, leaving magit pointing at a path that no longer existed. git now comes
+;; from the per-user nix profile there. The `exec-path-from-shell' block above has already
+;; imported the login shell's PATH by this point, which is what makes the lookup see it.
 (when (eq system-type 'darwin)
-  (setq magit-git-executable "/opt/homebrew/bin/git"))
+  (setq magit-git-executable (or (executable-find "git") "git")))
 
 (after! magit
   ;; Reduce startup overhead
