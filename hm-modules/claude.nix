@@ -6,6 +6,12 @@
 #   2. ~/.claude/.stignore — ~/.claude/memory/ is still the cross-machine memory store
 #      for every harness, and this whitelist is what makes only that directory sync.
 #
+# Nothing else in ~/.claude reaches OMP any more. OMP treats `claude` as a
+# first-class discovery source at priority 80 and would otherwise read that
+# tree's settings, MCP servers and hooks into every session, so
+# packages/omp-harness.nix lists `claude` in `disabledProviders`. The pointer
+# above therefore serves Claude Code only, which is the whole point of it.
+#
 # NOT managed here (deliberately, machine-specific + high-churn writable state):
 #   settings.json, .credentials.json, plugins/, projects/, memory/, session-*,
 #   history, caches.

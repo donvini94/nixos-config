@@ -12,6 +12,10 @@
     # has to be named here explicitly or this box silently has no AGENTS.md,
     # no RULES.md and none of the language rules.
     ../../hm-modules/omp.nix
+    # Same reasoning for the language servers: without this the `lsp` tool is
+    # inert on alucard for every language, because the servers otherwise arrive
+    # only through the desktop package set in the root home.nix.
+    ../../hm-modules/lsp.nix
   ];
 
   nixpkgs.config.allowUnfree = true;

@@ -41,10 +41,10 @@
     claude-agent-acp
     devbox
 
-    # Nix tooling
+    # Nix tooling (the nixd language server lives in lsp.nix, which alucard
+    # also imports — this package set is desktop-only)
     nix-output-monitor
     nixfmt
-    nixd
 
     # Tree-sitter
     (tree-sitter.withPlugins (g: [

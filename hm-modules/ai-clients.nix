@@ -104,8 +104,20 @@ let
     }) profiles
   );
   yaml = pkgs.formats.yaml { };
+  # The Requesty ingress declares its own cheap default ("DeepSeek V4 Flash —
+  # cheap default", $0.09/$0.18 per M), which is exactly what the `smol` role
+  # is for. Both hosts get the same selector rather than dracula getting the
+  # local llama.cpp model: `smol` backs session titles and prewalk, and a role
+  # that breaks whenever llama-server is down is worse than one remote hop.
+  smolModel = modelSelector requestyProfile requestyProfile.defaultModel;
   omp = pkgs.callPackage ../packages/omp-harness.nix {
     extraEnabledModels = profileModels;
+    modelRoles.smol = smolModel;
+    cycleOrder = [
+      "smol"
+      "default"
+      "slow"
+    ];
   };
   opencode = pkgs.writeShellApplication {
     name = "opencode";
@@ -167,8 +179,7 @@ in
       "$schema" = "https://opencode.ai/config.json";
       model = defaultModelSelector;
       small_model = defaultModelSelector;
-      enabled_providers =
-        map (profile: profile.provider) profiles ++ authenticatedOpenCodeProviders;
+      enabled_providers = map (profile: profile.provider) profiles ++ authenticatedOpenCodeProviders;
       share = "disabled";
       autoupdate = false;
       experimental.openTelemetry = true;
