@@ -122,16 +122,23 @@ else
   echo "  SKIP  nix not on PATH; cannot render config-common.nix" >&2
 fi
 
-# The rendered file only takes effect if OMP is told to load it. This is the one piece
-# that cannot be made self-applying from here, so verify rather than assume.
-case ":${PI_CONFIG_FILES-}:" in
-  *":$managed:"*) ;;
-  *)
-    echo "  WARN  PI_CONFIG_FILES does not include $managed" >&2
-    echo "        add to ~/.config/fish/config.fish:" >&2
-    echo "        set -gx PI_CONFIG_FILES $managed" >&2
-    ;;
-esac
+# The rendered file only takes effect if OMP is told to load it. Do that through
+# <agent-dir>/.env, which OMP parses itself, rather than a shell rc: the shell variable
+# only covers terminal launches, so an editor or GUI launch would silently run without
+# the shared settings. Verified: with memory.backend absent from config.yml,
+# `omp config get memory.backend` reports `off` without this file and `mnemopi` with it.
+env_file="$agent/.env"
+env_line="PI_CONFIG_FILES=$managed"
+if [[ -f $env_file ]] && grep -qxF "$env_line" "$env_file"; then
+  :
+elif [[ -f $env_file ]] && grep -q '^PI_CONFIG_FILES=' "$env_file"; then
+  echo "  SKIP  $env_file already sets PI_CONFIG_FILES to something else" >&2
+  grep -n '^PI_CONFIG_FILES=' "$env_file" >&2
+else
+  printf '%s\n' "$env_line" >>"$env_file"
+  echo "  write ${env_file#"$agent"/} (PI_CONFIG_FILES)"
+  changed=1
+fi
 
 if (( changed )); then
   echo
