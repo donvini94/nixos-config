@@ -97,6 +97,42 @@ else
   echo "  SKIP  uvx not on PATH; install uv to get the nixos MCP server" >&2
 fi
 
+# The universal settings live in omp/config-common.nix, which packages/omp-harness.nix
+# merges into the generated overlay on the nix hosts. Render the same attrset to JSON so
+# this host reads identical values instead of a hand-typed copy that drifts. OMP's config
+# loader accepts .json, so nix -> JSON needs no YAML tooling here.
+echo "managed config:"
+managed="$agent/nixos-managed.json"
+if command -v nix >/dev/null 2>&1; then
+  tmp=$(mktemp)
+  if nix eval --json --file "$repo/config-common.nix" >"$tmp" 2>/dev/null; then
+    if cmp -s "$tmp" "$managed"; then
+      rm -f "$tmp"
+    else
+      mv "$tmp" "$managed"
+      echo "  write ${managed#"$agent"/} from config-common.nix"
+      changed=1
+    fi
+  else
+    rm -f "$tmp"
+    echo "  FAIL  could not evaluate $repo/config-common.nix" >&2
+    exit 1
+  fi
+else
+  echo "  SKIP  nix not on PATH; cannot render config-common.nix" >&2
+fi
+
+# The rendered file only takes effect if OMP is told to load it. This is the one piece
+# that cannot be made self-applying from here, so verify rather than assume.
+case ":${PI_CONFIG_FILES-}:" in
+  *":$managed:"*) ;;
+  *)
+    echo "  WARN  PI_CONFIG_FILES does not include $managed" >&2
+    echo "        add to ~/.config/fish/config.fish:" >&2
+    echo "        set -gx PI_CONFIG_FILES $managed" >&2
+    ;;
+esac
+
 if (( changed )); then
   echo
   echo "Changed. Restart omp: rules, agents and MCP servers are read at startup."

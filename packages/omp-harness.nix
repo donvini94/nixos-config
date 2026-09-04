@@ -46,37 +46,22 @@
 let
   yaml = formats.yaml { };
   ompPackage = callPackage ./omp.nix { };
-  managedConfig = yaml.generate "omp-nixos-config.yml" {
-    inherit cycleOrder modelRoles;
-    enabledModels = extraEnabledModels ++ [
-      "anthropic/*"
-      "openai-codex/*"
-    ];
-    # OMP's bundled llama.cpp provider probes loopback port 8080, which on both
-    # hosts is the logging ingress, not a bare llama-server. The ingress is
-    # reached through its declared profile or not at all. lm-studio and ollama
-    # probe their own loopback ports and are served on neither host, so every
-    # start otherwise spends three failed connections before the model picker.
-    #
-    # `claude` is a discovery source, not the Anthropic model provider, and
-    # disabling it costs nothing now that Claude Code is retired. Left enabled
-    # it feeds `~/.claude` settings, MCP servers and hooks into every OMP
-    # session: its `tui` string collides with OMP's `tui.*` settings group, and
-    # alucard's stale get-shit-done hooks would be discovered as OMP hooks.
-    disabledProviders = [
-      "llama.cpp"
-      "lm-studio"
-      "ollama"
-      "claude"
-    ];
-    advisor.enabled = false;
-    tools.approvalMode = "always-ask";
-    startup.checkUpdate = false;
-    marketplace.autoUpdate = "off";
-    # Client tenant credentials pass through these sessions; redact
-    # credential-shaped tokens before they reach a provider.
-    secrets.enabled = true;
-  };
+  # Universal policy — disabled sources, secrets redaction, advisor, memory. Authored
+  # once in omp/config-common.nix so the unmanaged Mac reads the same values instead of
+  # a hand-typed copy of them. See that file for what deliberately stays host-specific.
+  common = import ../omp/config-common.nix;
+  managedConfig = yaml.generate "omp-nixos-config.yml" (
+    lib.recursiveUpdate common {
+      inherit cycleOrder modelRoles;
+      enabledModels = extraEnabledModels ++ [
+        "anthropic/*"
+        "openai-codex/*"
+      ];
+      # Host-specific: nix owns this binary, so OMP must not offer to replace it.
+      startup.checkUpdate = false;
+      tools.approvalMode = "always-ask";
+    }
+  );
 in
 writeShellApplication {
   name = "omp";

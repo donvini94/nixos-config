@@ -8,9 +8,10 @@
 #
 # Nothing else in ~/.claude reaches OMP any more. OMP treats `claude` as a
 # first-class discovery source at priority 80 and would otherwise read that
-# tree's settings, MCP servers and hooks into every session, so
-# packages/omp-harness.nix lists `claude` in `disabledProviders`. The pointer
-# above therefore serves Claude Code only, which is the whole point of it.
+# tree's settings, MCP servers and hooks into every session, so `claude` is
+# listed in `disabledProviders` in omp/config-common.nix — which every host,
+# including the unmanaged Mac, reads. The pointer above therefore serves
+# Claude Code only, which is the whole point of it.
 #
 # NOT managed here (deliberately, machine-specific + high-churn writable state):
 #   settings.json, .credentials.json, plugins/, projects/, memory/, session-*,
