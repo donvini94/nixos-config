@@ -20,17 +20,15 @@
     };
     "ghostty/themes/modus-vivendi-tinted".source = ./ghostty/themes/modus-vivendi-tinted;
 
-    # AeroSpace runs from its own login item, whose PATH has neither nix nor brew on it,
-    # so both commands it shells out to are absolute: @sketchybar@ becomes a store path
+    # AeroSpace's login-item environment has neither nix nor brew on PATH, so every
+    # command it shells out to is absolute: @sketchybar@ and @fish@ become store paths,
     # and `aerospace list-workspaces --focused` is called via /opt/homebrew/bin.
     "aerospace/aerospace.toml".source = pkgs.replaceVars ./aerospace.toml {
       sketchybar = lib.getExe pkgs.sketchybar;
+      fish = lib.getExe pkgs.fish;
     };
 
-    # JSONC — comments and trailing commas — so builtins.fromJSON and
-    # programs.zed-editor.userSettings are both unusable. Copied as text.
-    "zed/settings.json".source = ./zed/settings.json;
-    "zed/keymap.json".source = ./zed/keymap.json;
+    # Zed's settings and keymap are shared with dracula — see hm-modules/zed.nix.
 
     # Out-of-store, like hm-modules/doom.nix, because the tree must stay WRITABLE:
     # helpers/init.lua compiles the C event providers into helpers/**/bin at every

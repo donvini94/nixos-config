@@ -83,7 +83,12 @@ automatically-unhide-macos-hidden-apps = false
     alt-9 = 'workspace 9'
 
     alt-enter = 'exec-and-forget open -n -a Ghostty'
-    alt-n = 'exec-and-forget open -n -a Ghostty --args -e yazi'
+    # `-e` makes Ghostty exec this instead of its configured `command`, via
+    # `login -flp <user> …`. AeroSpace is a login item, so its environment is launchd's
+    # minimal one and a bare `yazi` does not resolve. Going through a login fish both
+    # fixes resolution and gives yazi the same PATH/EDITOR as an interactive session,
+    # which its openers and previewers need.
+    alt-n = 'exec-and-forget open -n -a Ghostty --args -e @fish@ -l -c yazi'
     alt-q = 'close'
     alt-shift-s = 'exec-and-forget open /Applications/Signal.app'
     alt-shift-d = 'exec-and-forget open /Applications/Discord.app'

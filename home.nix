@@ -20,6 +20,7 @@
     ./hm-modules/cli-tools.nix
     ./hm-modules/packages.nix
     ./hm-modules/atuin.nix
+    ./hm-modules/zed.nix
     ./hm-modules/starship.nix
     ./hm-modules/yazi.nix
     ./hm-modules/zathura.nix

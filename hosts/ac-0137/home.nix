@@ -10,6 +10,7 @@
     ../../hm-modules/mpv.nix
     ../../hm-modules/yazi.nix
     ../../hm-modules/zellij.nix
+    ../../hm-modules/zed.nix
     ../../hm-modules/doom.nix
     ../../hm-modules/claude.nix
     ../../hm-modules/omp.nix

@@ -80,7 +80,7 @@ Then create `hosts/newhost/` with `default.nix` (imports shared modules), `hardw
 - `ui.nix` — SketchyBar + JankyBorders as launchd agents
 - `home.nix` — Home-manager import manifest for the Mac
 - `fish.nix`, `apps.nix`, `omp.nix` — Darwin-only home config
-- `sketchybar/`, `ghostty/`, `zed/`, `aerospace.toml` — Managed dotfile assets
+- `sketchybar/`, `ghostty/`, `aerospace.toml` — Managed dotfile assets (Zed's are shared, in `hm-modules/zed/`)
 
 ### Shared Modules (`modules/`)
 - `desktop.nix` — Meta-module importing all desktop sub-modules + security/PAM + stevenBlackHosts
@@ -105,6 +105,7 @@ Then create `hosts/newhost/` with `default.nix` (imports shared modules), `hardw
 - `packages.nix` — Linux-desktop-only packages (GUI apps, hledger, texlive)
 - `lsp.nix` — Language servers for the OMP `lsp` tool
 - `omp.nix` — OMP harness context (`~/.omp/agent` links, derived `mcp.json`)
+- `zed.nix` — Zed settings + keymap (shared; JSONC copied verbatim)
 - `helix.nix`, `kitty.nix`, `mpv.nix`, `starship.nix`, `yazi.nix`, `zathura.nix`, `zellij.nix`, `doom.nix` — Per-tool configs
 
 ### Desktop Shell

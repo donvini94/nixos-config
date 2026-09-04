@@ -45,13 +45,24 @@ in
     # the display still stays awake. Neither is needed under Hyprland.
     scripts = lib.optionals isDarwin [ keepawake ];
 
+    # hwdec and profile are safe on both platforms (verified against mpv 0.40 and 0.41 on
+    # macOS; gpu-hq is accepted and aliases to high-quality).
     config = {
       hwdec = "auto";
-      vo = "gpu";
       profile = "gpu-hq";
     }
-    # gpu-context=wayland is fatal on macOS; unset, mpv picks the platform context.
-    // lib.optionalAttrs (!isDarwin) { gpu-context = "wayland"; }
+    # vo and gpu-context are Linux-only, and BOTH are hostile on macOS:
+    #   * gpu-context=wayland is simply fatal there.
+    #   * vo=gpu makes gpu-context default to `auto`, which picks the Vulkan/macvk
+    #     backend. The nixpkgs mpv has that compiled in, but the standalone
+    #     /Applications/mpv.app that LaunchServices uses to open files does not, so it
+    #     dies with "Error opening/initializing the selected video_out (--vo) device"
+    #     and no window ever appears. Unset, each mpv picks its own working macOS
+    #     default. This is the config the Mac had before it was nix-managed.
+    // lib.optionalAttrs (!isDarwin) {
+      vo = "gpu";
+      gpu-context = "wayland";
+    }
     // lib.optionalAttrs isDarwin { stop-screensaver = false; };
   };
 }
