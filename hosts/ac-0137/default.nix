@@ -9,7 +9,7 @@
 #     agents for the bar and borders, and the Brewfile.
 #   * home-manager owns ~/.config and the per-user package set (see ./home.nix).
 #   * Homebrew keeps toolchains, macOS-integrated tools and GUI casks (see ./homebrew.nix).
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 
 {
   imports = [
@@ -39,22 +39,30 @@
   programs.fish.enable = true;
   environment.shells = [ pkgs.fish ];
 
-  # PATH ordering on this host, measured rather than assumed:
-  #   1. nix-darwin's /etc/fish/nixos-env-preinit.fish sources set-environment, which
-  #      OVERWRITES PATH with the nix profiles + /usr/bin & friends. /opt/homebrew/bin is
-  #      not in that list.
-  #   2. In a LOGIN fish, fish's own `__fish_macos_set_env` then emulates
-  #      /usr/libexec/path_helper: /etc/paths and /etc/paths.d/* go FIRST, the inherited
-  #      PATH is appended after. So /opt/homebrew/bin ends up AHEAD of
-  #      /etc/profiles/per-user/vincenzopace/bin. Ghostty launches fish with argv[0]
-  #      "-fish", i.e. as a login shell, so interactive terminals take this path.
-  #   3. home-manager's hm-session-vars.fish then prepends home.sessionPath.
+  # PATH on this host, measured on the activated system rather than reasoned about.
   #
-  # Homebrew therefore WINS ties against the per-user nix profile. That is safe only
-  # because ./homebrew.nix uninstalls every formula that duplicates a nix-provided tool;
-  # the formulae it keeps are either keg-only (curl) or g-prefixed (coreutils, grep) and
-  # collide with nothing. Adding a formula that shadows a nix tool would silently take
-  # precedence — check with `command -v` after any change here.
+  # nix-darwin's /etc/fish/nixos-env-preinit.fish sources set-environment, which does a
+  # hard `export PATH=<nix profiles>:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin`. fish's
+  # own `__fish_macos_set_env` (its /usr/libexec/path_helper emulation, login shells only)
+  # runs BEFORE that and its result is therefore discarded. Net effect: everything
+  # /etc/paths.d contributes is silently dropped — verified empirically, 20 of 23 retained
+  # Homebrew formulae became unreachable by name after the first switch.
+  #
+  # So the non-nix prefixes are restored here explicitly. mkOrder 1500 puts them AFTER
+  # both the nix profiles (order 1000) and the macOS system dirs (order 1200), which is a
+  # deliberate change from the pre-nix-darwin order: nix and the base system now win every
+  # tie, and Homebrew is a fallback rather than an override.
+  #
+  # /pkg/env/global/bin and the three cryptexd bootstrap dirs from /etc/paths.d are
+  # omitted because they do not exist on this machine; /System/Cryptexes/App/usr/bin is
+  # omitted because nix-darwin's own 1200 entry omits it and it holds only safaridriver.
+  environment.systemPath = lib.mkOrder 1500 [
+    "/opt/homebrew/bin" # 689 binaries: rustup, openstack, mvn, pass, mu, emacsclient, …
+    "/opt/homebrew/sbin" # gnupg helpers, unbound
+    "/Library/TeX/texbin" # MacTeX; texliveMedium is Linux-only in this repo
+    "/usr/local/go/bin" # go, gofmt — gopls/gotests/gomodifytags are brew formulae
+    "/Library/Apple/usr/bin" # rvictl
+  ];
 
   # Replaces the five font-*-nerd-font casks. nix-darwin links these into
   # "/Library/Fonts/Nix Fonts", so they coexist with the SF casks and anything installed

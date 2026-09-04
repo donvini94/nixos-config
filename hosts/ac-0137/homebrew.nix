@@ -89,7 +89,6 @@
       "rustup"
       "sevenzip"
       "sqlcmd"
-      "ty"
       "wget"
       "wordnet"
       "wtf"
