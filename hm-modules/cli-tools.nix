@@ -34,6 +34,7 @@
     # Dev tools
     delta
     difftastic
+    gh
     leetcode-cli
     wakatime-cli
     codecrafters-cli
