@@ -194,6 +194,34 @@
         ];
       };
 
+      # The locally packaged tools that pin a content hash.
+      #
+      # They exist as outputs for two reasons, both about the hash rather than about
+      # wanting a `nix build .#lathe` shortcut. First, CI plans the host closures with
+      # `nix build --dry-run`, which never realizes a fixed-output derivation, so a
+      # stale `hash`/`vendorHash` passes every check and fails on the machine at switch
+      # time instead; .github/workflows/nix-build.yml realizes exactly this set.
+      # Second, `nix-update` addresses a flake attribute, which is how
+      # .github/workflows/package-update.yml bumps version AND hashes together —
+      # Renovate can only rewrite the version string, which is worse than nothing here.
+      #
+      # Packages that pin nothing (pokemmo, hermes-n8n-handoff) are deliberately absent:
+      # evaluation is full coverage for them, and the host build plans already do that.
+      # omp-harness is absent because it takes per-account arguments.
+      packages = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-darwin" ] (
+        packageSystem:
+        let
+          pkgs = nixpkgs.legacyPackages.${packageSystem};
+        in
+        {
+          lathe = pkgs.callPackage ./packages/lathe.nix { };
+        }
+        // nixpkgs.lib.optionalAttrs (packageSystem == "x86_64-linux") {
+          llama-swap = pkgs.callPackage ./packages/llama-swap.nix { };
+          omp = pkgs.callPackage ./packages/omp.nix { };
+        }
+      );
+
       # `nix flake check` is the local and CI gate for repository invariants.
       checks.${system} = {
         no-package-patches =

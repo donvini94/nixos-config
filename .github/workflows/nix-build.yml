@@ -41,6 +41,32 @@ jobs:
       # ~7 GiB unpacked, and `nix flake check` deliberately does not build it.
       - run: nix build --dry-run --no-link '.#darwinConfigurations."AC-0137".system'
 
+  packages:
+    name: Local packages (${{ matrix.system }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: x86_64-linux
+            runner: ubuntu-latest
+          - system: aarch64-darwin
+            runner: macos-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: DeterminateSystems/determinate-nix-action@527f17dd63d2d60d3e5552934bc84b9a33a14d11 # v3
+      # REALIZED, not planned. The host jobs above run --dry-run, which never
+      # runs a fixed-output derivation, so a version bump left with a stale
+      # `hash`/`vendorHash` is invisible to them and only fails at switch time.
+      # These closures are small enough to actually build on a hosted runner.
+      - name: Build every hash-pinned package
+        run: |
+          attrs=$(nix eval --json --apply builtins.attrNames \
+            ".#packages.${{ matrix.system }}" | jq -r '.[]')
+          for attr in $attrs; do
+            nix build --no-link --print-build-logs ".#packages.${{ matrix.system }}.$attr"
+          done
+
   checks:
     name: Flake checks
     runs-on: ubuntu-latest

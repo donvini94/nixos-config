@@ -22,7 +22,8 @@
 
 buildGoModule (finalAttrs: {
   pname = "lathe";
-  # renovate: datasource=github-releases depName=devenjarvis/lathe
+  # Bumped by .github/workflows/package-update.yml (nix-update), not Renovate:
+  # this version is one of three pins, alongside src.hash and vendorHash.
   version = "0.5.0";
 
   src = fetchFromGitHub {

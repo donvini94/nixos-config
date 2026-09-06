@@ -12,6 +12,9 @@
   "schedule": [
     "* 22-23 * * 1-5"
   ],
+  "ignorePaths": [
+    "packages/**"
+  ],
   "prHourlyLimit": 2,
   "prConcurrentLimit": 5,
   "enabledManagers": [
@@ -34,17 +37,6 @@
         "(?:default|image|trivyImage)\\s*=\\s*\\\"(?<depName>(?:[\\w.-]+/)*[\\w.-]+):(?<currentValue>[\\w.-]+)(?:@(?<currentDigest>sha256:[a-f0-9]{64}))?\\\""
       ],
       "datasourceTemplate": "docker"
-    },
-    {
-      "customType": "regex",
-      "managerFilePatterns": [
-        "/^packages/llama-swap\\.nix$/"
-      ],
-      "matchStrings": [
-        "# renovate: datasource=github-releases depName=(?<depName>[^\\s]+)\\s+version = \\\"(?<currentValue>[^\\\"]+)\\\";"
-      ],
-      "datasourceTemplate": "github-releases",
-      "versioningTemplate": "loose"
     }
   ],
   "packageRules": [

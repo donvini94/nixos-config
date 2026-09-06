@@ -6,7 +6,8 @@
 
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "llama-swap";
-  # renovate: datasource=github-releases depName=mostlygeek/llama-swap
+  # Bumped by .github/workflows/package-update.yml (nix-update), not Renovate:
+  # the version below is half the pin, `hash` is the other half.
   version = "247";
 
   src = fetchurl {

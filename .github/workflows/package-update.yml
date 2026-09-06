@@ -1,0 +1,84 @@
+# Version bumps for the locally packaged tools in packages/.
+#
+# Renovate deliberately does not do this. Its regex manager can only rewrite the
+# version string, and every package here also pins a source hash (lathe pins a
+# vendorHash too), so a version-only bump yields a branch that cannot build.
+# nix-update resolves the newest upstream release and rewrites version and hashes
+# together, then `--build` proves the result before a PR exists.
+#
+# The PR is opened with GITHUB_TOKEN, and GitHub does not start workflow runs for
+# events that token triggers — so nix-build.yml will NOT run on these PRs by
+# itself. That is why the build happens here, in the job that opens the PR. Push
+# any commit to the branch (or close/reopen the PR) to get the full matrix.
+name: Package updates
+
+on:
+  schedule:
+    # Monday 03:00 UTC, off the Renovate window (weekday evenings, Europe/Berlin).
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    name: nix-update ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Every attribute of packages.x86_64-linux in flake.nix. lathe is built
+        # for both systems but its hashes are platform-independent, so bumping it
+        # here covers the Mac as well.
+        package:
+          - lathe
+          - llama-swap
+          - omp
+    concurrency:
+      group: package-update-${{ matrix.package }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: DeterminateSystems/determinate-nix-action@527f17dd63d2d60d3e5552934bc84b9a33a14d11 # v3
+
+      - name: Bump ${{ matrix.package }}
+        run: |
+          nix run nixpkgs#nix-update -- \
+            --flake --version=stable --build "${{ matrix.package }}"
+
+      - name: Open a pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --quiet; then
+            echo "${{ matrix.package }} is already at the newest release."
+            exit 0
+          fi
+
+          version=$(nix eval --raw ".#packages.x86_64-linux.${{ matrix.package }}.version")
+          branch="nix-update/${{ matrix.package }}-$version"
+          title="chore(deps): update ${{ matrix.package }} to $version"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git commit -am "$title"
+          git push --force-with-lease -u origin "$branch"
+
+          if [ -n "$(gh pr list --head "$branch" --state open --json number --jq '.[].number')" ]; then
+            echo "PR for $branch already open; branch updated in place."
+            exit 0
+          fi
+
+          gh pr create --title "$title" --body "$(cat <<EOF
+          \`nix-update --flake --version=stable --build ${{ matrix.package }}\` rewrote the
+          version and every pinned hash, and built the result on the runner before this PR
+          was opened.
+
+          nix-build.yml does not run on PRs opened by GITHUB_TOKEN. Push a commit to this
+          branch, or close and reopen the PR, to get the host build plans and the
+          \`Local packages\` matrix.
+          EOF
+          )"

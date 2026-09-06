@@ -35,6 +35,22 @@ sudo nixos-rebuild dry-run --flake .#dracula  # Dry run
 sops secrets/dmbs.yaml    # Edit encrypted secrets
 ```
 
+### Dependency updates
+
+Two mechanisms, split by what a bump has to rewrite:
+
+- **Renovate** (`renovate.json`, dashboard in issue #1) owns flake inputs, docker images
+  and GitHub Action digests. It `ignorePaths` on `packages/**` — its regex manager can
+  only rewrite a version string, and every package there also pins a source hash.
+- **`.github/workflows/package-update.yml`** owns `packages/`. It runs `nix-update`
+  weekly against `packages.<system>` in `flake.nix`, which rewrites the version, `hash`
+  and `vendorHash` together, builds the result, and only then opens the PR.
+
+Anything in `packages/` that pins a hash MUST be an attribute of `packages.<system>`:
+the host jobs in CI run `nix build --dry-run`, which never realizes a fixed-output
+derivation, so an unexposed package with a stale hash fails on the machine rather than
+in CI.
+
 ## Architecture
 
 ### Flake Structure
