@@ -97,14 +97,14 @@ Then create `hosts/newhost/` with `default.nix` (imports shared modules), `hardw
 - `ssh.nix` — SSH config + control master sockets
 - `fish.nix` — Fish shell + abbreviations
 - `shell.nix` — Bash, zoxide, direnv (cross-platform)
-- `atuin.nix` — Synced shell history; NixOS hosts only (Ctrl-R conflict on the Mac)
+- `atuin.nix` — Synced shell history; every host (Ctrl-R left to fzf.fish on the Mac)
 - `hyprland.nix` — Hyprland WM config (keybinds, input, window rules)
 - `caelestia.nix` — Desktop shell config + runtime dependencies
 - `services.nix` — User services (udiskie, syncthing, mpd, gammastep)
 - `cli-tools.nix` — User-level CLI tooling that builds on Linux *and* darwin; imported by every host
 - `packages.nix` — Linux-desktop-only packages (GUI apps, hledger, texlive)
 - `lsp.nix` — Language servers for the OMP `lsp` tool
-- `omp.nix` — OMP harness context (`~/.omp/agent` links, derived `mcp.json`)
+- `omp.nix` — OMP harness context (`~/.omp/agent` links, derived `mcp.json`, lathe + its skills)
 - `zed.nix` — Zed settings + keymap (shared; JSONC copied verbatim)
 - `helix.nix`, `kitty.nix`, `mpv.nix`, `starship.nix`, `yazi.nix`, `zathura.nix`, `zellij.nix`, `doom.nix` — Per-tool configs
 
@@ -163,7 +163,8 @@ Still deliberately stateful on that host, each for a stated reason:
 - **fisher fish plugins** (tide, fzf.fish, z, autopair, done) — `fishPlugins.fzf-fish` is
   `broken = true` at the locked nixpkgs, so declaring the set would silently drop
   `fzf.fish`. tide's own configuration lives in fish universal variables either way.
-  Because fisher's `fzf.fish` owns Ctrl-R, `hm-modules/atuin.nix` is NOT imported there.
+  Because fisher's `fzf.fish` owns Ctrl-R, `hm-modules/atuin.nix` passes
+  `--disable-ctrl-r` on darwin and reaches history through the Up arrow only.
 - **`~/.config/fish/conf.d/leafcloud.fish`** — holds a plaintext OpenStack password; must
   never enter the repo.
 - **`~/.gnupg` and the `pass` store** — `pass` and `pinentry-mac` stay Homebrew formulae;

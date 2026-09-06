@@ -6,6 +6,7 @@
     ../../hm-modules/ssh.nix
     ../../hm-modules/fish.nix
     ../../hm-modules/shell.nix
+    ../../hm-modules/atuin.nix
     ../../hm-modules/helix.nix
     ../../hm-modules/mpv.nix
     ../../hm-modules/yazi.nix
@@ -24,7 +25,6 @@
   # Deliberately NOT imported:
   #   kitty.nix      — the Mac terminal is Ghostty (./apps.nix)
   #   starship.nix   — tide owns the prompt here, via fisher
-  #   atuin.nix      — Ctrl-R already belongs to fisher's fzf.fish (see hm-modules/atuin.nix)
   #   packages.nix   — Linux GUI apps
   #   zathura.nix, gtk.nix, hyprland.nix, caelestia.nix, services.nix, pokemmo.nix,
   #   email.nix      — Wayland/GTK/systemd, or the mail stack that stays on Homebrew

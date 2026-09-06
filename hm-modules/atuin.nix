@@ -1,12 +1,12 @@
-# Atuin — synced shell history, imported by the NixOS hosts only.
+# Atuin — synced shell history, imported by every host.
 #
-# Split out of shell.nix because atuin's fish integration rebinds Ctrl-R, and the Mac's
-# imperative fisher plugin set already gives that key to `patrickf1/fzf.fish`. Two
-# bindings racing for Ctrl-R is a worse outcome than not having atuin there, and the
-# alternative — importing this on the Mac with `lib.mkForce` on the keybinding — would
-# make dracula's behaviour depend on a Mac workaround. Migrating the Mac means moving
-# fisher's plugins into `programs.fish.plugins` first; `fishPlugins.fzf-fish` is
-# `broken = true` at the locked nixpkgs, so that is not today.
+# Split out of shell.nix because `atuin init fish` claims two keys: Up-arrow and
+# Ctrl-R. Up-arrow is the one actually used here; Ctrl-R on the Mac already
+# belongs to `patrickf1/fzf.fish`, which fisher installs imperatively (see
+# hosts/ac-0137/fish.nix for why that plugin set is not declared). Rather than
+# let two bindings race — fisher binds in conf.d, home-manager binds later in
+# config.fish, so the winner is an ordering accident — atuin is told not to take
+# Ctrl-R there at all. The NixOS hosts have no fzf.fish and keep both keys.
 #
 # The server is `services.atuin` on alucard (hosts/alucard/services/hosted-applications.nix),
 # reached over the tailnet: it binds 127.0.0.1:8888 there and is published as
@@ -19,12 +19,14 @@
 #
 # Plain http is intentional: the hop is inside WireGuard, and terminating TLS at
 # `tailscale serve --https` would buy nothing for a non-browser client.
-{ ... }:
+{ lib, pkgs, ... }:
 
 {
   programs.atuin = {
     enable = true;
     enableFishIntegration = true;
+    # Appended to `atuin init fish`; see the Ctrl-R note above.
+    flags = lib.optional pkgs.stdenv.hostPlatform.isDarwin "--disable-ctrl-r";
     settings = {
       auto_sync = true;
       sync_address = "http://alucard.tailf117a1.ts.net:28888";

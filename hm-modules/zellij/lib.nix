@@ -106,6 +106,25 @@ rec {
     theme "modus-vivendi-tinted"
     ${theme}
 
+    // Tell every pane that the surface it is drawn on is dark.
+    //
+    // A TUI that wants to pick readable colours asks the terminal for its
+    // background with OSC 11 — and a program inside a multiplexer is talking to
+    // the multiplexer, not to the terminal, so that answer is not trustworthy.
+    // OMP knows this: packages/tui resolves the appearance as COLORFGBG first,
+    // then the macOS system appearance, then "dark", and skips its own OSC 11
+    // result entirely when $ZELLIJ is set. On a Mac left in Light mode that
+    // second step wins and the whole TUI renders for a light background —
+    // #000000 input text on zellij's #0d0e1c pane, which is what this fixes.
+    // Every other guesser (vim's `background`, ncurses apps) reads the same
+    // variable, so this is the one place to say it.
+    //
+    // "15;0" is xterm's own convention: white foreground on black background,
+    // which is exactly what the theme above pins.
+    env {
+        COLORFGBG "15;0"
+    }
+
     // "titles" is a one-line pane header rather than a full box: you keep the
     // pane names the layouts set, the focus indicator and the floating-pane PIN
     // control, without the chrome of a full frame. `Ctrl g p z` toggles it off
