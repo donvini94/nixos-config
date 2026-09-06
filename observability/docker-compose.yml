@@ -91,7 +91,7 @@ services:
       start_period: 1s
 
   minio:
-    image: cgr.dev/chainguard/minio:latest@sha256:4c94e754559e9fb91cefe103a056d63582b5892de612b647d8e1b0751af5067e
+    image: cgr.dev/chainguard/minio:latest@sha256:617ff93bf711edab967765dcb8002bea6dc31e8584627cbd11008198466e0ae8
     restart: always
     entrypoint: sh
     command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" --console-address ":9001" /data'
