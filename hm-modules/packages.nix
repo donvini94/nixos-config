@@ -23,6 +23,7 @@
     aider-chat
     warp-terminal
     claude-agent-acp
+    chromium
 
     # Writing & docs
     texliveMedium

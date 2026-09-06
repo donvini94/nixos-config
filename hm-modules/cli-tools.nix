@@ -9,8 +9,45 @@
 #
 # Package placement rule from AGENTS.md still applies: anything needing system-level
 # integration goes in a system module, not here.
-{ pkgs, ... }:
+{
+  lib,
+  pkgs,
+  ...
+}:
 
+let
+  # omp-learn requires Bun >= 1.3.14, while the locked nixpkgs has 1.3.13.
+  # Remove this override when nixpkgs catches up.
+  bunVersion = "1.4.2";
+  bunSource =
+    {
+      aarch64-darwin = {
+        archive = "bun-darwin-aarch64";
+        hash = "sha256-kJh6OhbX21VtiGrD1VHnttPt8KHPQ6yu1iLoZ2vh0S8=";
+      };
+      aarch64-linux = {
+        archive = "bun-linux-aarch64";
+        hash = "sha256-VDKLvC2cjgyfiSxUTWbFeoO4QTnjSQnl7oF1jxrI/ac=";
+      };
+      x86_64-darwin = {
+        archive = "bun-darwin-x64-baseline";
+        hash = "sha256-utW71s8U0JgNEV9ZVMn/kE32GdXplNLaH/zNPzFjALA=";
+      };
+      x86_64-linux = {
+        archive = "bun-linux-x64-baseline";
+        hash = "sha256-xngEDxT+BEDrg503y9DOTAUaMtpygGrJfeamqra/co8=";
+      };
+    }
+    .${pkgs.stdenv.hostPlatform.system};
+  bun = pkgs.bun.overrideAttrs {
+    version = bunVersion;
+    src = pkgs.fetchurl {
+      url = "https://github.com/oven-sh/bun/releases/download/bun-v${bunVersion}/${bunSource.archive}.zip";
+      inherit (bunSource) hash;
+    };
+    sourceRoot = bunSource.archive;
+  };
+in
 {
   home.packages = with pkgs; [
     # Search
@@ -32,6 +69,7 @@
     tldr
 
     # Dev tools
+    bun
     # lazygit backs the `lg` abbreviation in hm-modules/fish.nix, so it has to
     # exist wherever that module is imported.
     lazygit
