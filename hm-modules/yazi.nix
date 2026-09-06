@@ -10,7 +10,6 @@ in
   programs.yazi = {
     enable = true;
     shellWrapperName = "y";
-    enableNushellIntegration = true;
     settings = {
       mgr = {
         sort_by = "natural";
@@ -19,8 +18,8 @@ in
         sort_reverse = false;
         linemode = "size";
       };
-      # Sized for the host's panel: 1920x1080 on dracula, the Mac's HiDPI
-      # external at 5120x2160.
+      # Sized for the host's panel: 1920x1080 on dracula, the Mac's HiDPI external at
+      # 5120x2160.
       preview = {
         max_width = if isDarwin then 5120 else 1920;
         max_height = if isDarwin then 2160 else 1080;
@@ -28,9 +27,6 @@ in
       };
     };
     keymap = {
-      # Bookmarks are mount points and project dirs, so they are per-platform:
-      # /media and /run/media do not exist on macOS, and ~/documents/KIT is a
-      # Linux-only checkout.
       mgr.prepend_keymap =
         if isDarwin then
           [

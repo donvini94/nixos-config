@@ -1,11 +1,9 @@
 { pkgs, ... }:
 
 {
-  # PATH additions live here rather than in interactiveShellInit so they reach
-  # non-interactive and GUI-launched processes too: home-manager renders
-  # home.sessionPath into hm-session-vars.fish, which fish sources from
-  # config.fish. `fish_add_path` in interactiveShellInit only ever covered
-  # interactive terminals.
+  # PATH lives here rather than in interactiveShellInit so it reaches non-interactive and
+  # GUI-launched processes too: home-manager renders home.sessionPath into
+  # hm-session-vars.fish, while `fish_add_path` only ever covers interactive terminals.
   home.sessionPath = [
     "$HOME/.config/emacs/bin"
     "$HOME/.local/bin"
@@ -35,17 +33,14 @@
       bereit = "ssh vincenzo@dumusstbereitsein.de";
       windows = "bash ~/nixos-config/scripts/windows.sh";
 
-      # Zellij helpers (zj / zjr / zjls / zjl) live in hm-modules/zellij, next
-      # to the keymap they belong to. They are functions rather than
-      # abbreviations because they branch on whether the session already exists.
+      # The zellij helpers (zj / zjr / zjls / zjl) are functions in hm-modules/zellij, next
+      # to the keymap they belong to: they branch on whether the session already exists.
     };
     interactiveShellInit = ''
       set fish_greeting
 
-      # Alt+E: edit current command line in emacs
       bind \ee edit_command_buffer
 
-      # Alt+S: prepend sudo to current command
       bind \es 'fish_commandline_prepend sudo'
     '';
   };

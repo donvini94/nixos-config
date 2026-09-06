@@ -23,9 +23,8 @@
         HostName = "dumusstbereitsein.de";
         User = "vincenzo";
       };
-      # Private AI administration tunnel. The local ports deliberately differ
-      # from Dracula's own AI stack so both machines can be inspected at once.
-      # Start it with `ssh -N ai-admin` and stop it with Ctrl-C.
+      # Private AI administration tunnel. The local ports deliberately differ from
+      # Dracula's own AI stack so both machines can be inspected at once.
       ai-admin = {
         HostName = "dumusstbereitsein.de";
         User = "vincenzo";
@@ -65,12 +64,9 @@
           }
         ];
       };
-      # Same host as Bereitserver, but carries the *arr-stack admin port-forwards.
-      # The `bereit` zellij layout routes its lazydocker pane through this alias
-      # so opening that session also binds the arr ports (one forwarding
-      # connection; the other panes use plain Bereitserver over the shared
-      # ControlMaster). TERM=xterm is conservative; the layout overrides it to
-      # xterm-256color per-command where colour matters.
+      # Same host as Bereitserver, but carries the *arr-stack admin port-forwards: the
+      # `bereit` zellij layout routes its lazydocker pane through this alias so opening that
+      # session binds the arr ports. The layout overrides TERM per-command where colour matters.
       media-admin = {
         HostName = "dumusstbereitsein.de";
         User = "vincenzo";
@@ -115,14 +111,6 @@
           TERM = "xterm";
         };
       };
-
-      # Work host — used by the `work` zellij layout (zellij -l work). Currently
-      # only reached from the Mac; fill in HostName/User (mirror the Mac's
-      # ~/.ssh) and uncomment to enable acGPT sessions from NixOS.
-      # acGPT = {
-      #   HostName = "...";
-      #   User = "...";
-      # };
     };
   };
 }

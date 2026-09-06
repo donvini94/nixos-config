@@ -2,23 +2,19 @@
 {
   wayland.windowManager.hyprland = {
     enable = true;
-    # Keep hyprlang syntax; the default flipped to "lua" in newer HM but our
-    # config below is in hyprlang. Drop this line if/when we migrate to lua.
+    # HM's default configType flipped to "lua"; the config below is hyprlang.
     configType = "hyprlang";
     settings = {
       env = [
-        # Device-specific: GPU device ordering for Aquamarine backend
-        # Update this value when adding a new host with different GPU topology
+        # Host-specific GPU ordering for the Aquamarine backend.
         "AQ_DRM_DEVICES,/dev/dri/card2:/dev/dri/card1"
 
-        # Wayland / toolkit
         "XDG_SESSION_TYPE,wayland"
         "XDG_CURRENT_DESKTOP,Hyprland"
         "ELECTRON_OZONE_PLATFORM_HINT,auto"
         "NIXOS_OZONE_WL,1"
         "QT_QPA_PLATFORMTHEME,qt6ct"
 
-        # Cursor
         "XCURSOR_SIZE,24"
         "XCURSOR_THEME,Bibata-Modern-Ice"
         "HYPRCURSOR_THEME,Bibata-Modern-Ice"
@@ -52,17 +48,14 @@
         gaps_in = 5;
         gaps_out = 5;
         border_size = 2;
-        # Border colours are set in extraConfig below (sourced from caelestia's
-        # runtime-generated scheme). They must NOT live here: HM sorts top-level
-        # settings keys alphabetically, so a `source` key would emit AFTER
-        # `general`, leaving $primary undefined at point of use.
+        # Border colours are set in extraConfig below: HM sorts top-level settings keys
+        # alphabetically, so a `source` key would emit AFTER `general`, leaving $primary
+        # undefined at point of use.
         layout = "master";
       };
 
       decoration = {
         rounding = 16;
-        # Subtle dimming of unfocused windows: adds depth and reinforces which
-        # window has focus. Kept low so inactive Modus-black content stays legible.
         dim_inactive = true;
         dim_strength = "0.1";
         blur = {
@@ -79,9 +72,8 @@
 
       animations = {
         enabled = true;
-        # Custom curves: easeOutQuint for smooth settles, overshot for a small
-        # springy pop on window open. `bezier` lines are hoisted by HM (it's an
-        # importantPrefix), so they are defined before the animation block uses them.
+        # HM hoists `bezier` (importantPrefix), so the curves are defined before the
+        # animation block uses them.
         bezier = [
           "easeOutQuint, 0.23, 1, 0.32, 1"
           "overshot, 0.05, 0.9, 0.1, 1.05"
@@ -103,14 +95,12 @@
         force_default_wallpaper = 0;
       };
 
-      # Pause caelestia's idle monitor while any window is fullscreen. Games
-      # (gamepad input bypasses wl_seat, so it never resets the idle timer) and
-      # fullscreen video both run here. Hyprland holds a Wayland idle-inhibitor;
-      # caelestia honors it via IdleMonitor.respectInhibitors (default true).
-      # Hyprland 0.55 rewrote the rule engine (v3 flat syntax): effect/value and
-      # match-prop/value are space-separated, elements comma-separated, and
-      # matchers need a `match:` prefix. So `idleinhibit fullscreen, class:.*`
-      # (pre-0.55) becomes `idle_inhibit fullscreen, match:class .*`.
+      # Pause caelestia's idle monitor while any window is fullscreen: gamepad input
+      # bypasses wl_seat, so games never reset the idle timer. Hyprland holds the Wayland
+      # idle-inhibitor and caelestia honors it via IdleMonitor.respectInhibitors.
+      # Hyprland 0.55 rewrote the rule engine to v3 flat syntax, where matchers need a
+      # `match:` prefix: pre-0.55 `idleinhibit fullscreen, class:.*` is now
+      # `idle_inhibit fullscreen, match:class .*`.
       windowrule = [
         "idle_inhibit fullscreen, match:class .*"
       ];
@@ -118,7 +108,6 @@
       "$mod" = "SUPER";
 
       bind = [
-        # ── Caelestia integrations ─────────────────────────────
         "$mod, R, global, caelestia:launcher"
         "$mod SHIFT, L, global, caelestia:lock"
         "CTRL ALT, Delete, global, caelestia:session"
@@ -129,7 +118,6 @@
         "$mod, Print, global, caelestia:screenshot"
         "$mod, BackSpace, global, caelestia:sidebar"
 
-        # ── Window management ──────────────────────────────────
         "$mod, Return, exec, kitty"
         "$mod, Q, killactive,"
         "$mod, V, togglefloating,"
@@ -137,30 +125,24 @@
         "$mod, Y, layoutmsg, orientationnext"
         "$mod, S, exec, grim -g \"$(slurp)\" - | wl-copy"
 
-        # Navigate windows (vim-style j/k)
         "$mod, J, cyclenext"
         "$mod, K, cyclenext, prev"
         "$mod SHIFT, J, movewindow, l"
         "$mod SHIFT, K, movewindow, r"
 
-        # Master layout: resize and promote
         "$mod, H, layoutmsg, mfact -0.05"
         "$mod, L, layoutmsg, mfact +0.05"
         "$mod, space, layoutmsg, swapwithmaster"
 
-        # Scratchpad: persistent hidden workspace
         "$mod, minus, togglespecialworkspace, scratchpad"
         "$mod SHIFT, minus, movetoworkspace, special:scratchpad"
 
-        # Clipboard history
         "$mod, period, exec, cliphist list | wofi -d | cliphist decode | wl-copy"
 
-        # ── Emacs ──────────────────────────────────────────────
         "$mod, E, exec, emacsclient -a '' -c"
         "$mod, C, exec, emacsclient -a '' -n -e '(make-orgcapture-frame)'"
         "$mod, O, exec, emacsclient -a '' -e '(org-agenda nil \"a\")'"
 
-        # ── Apps ───────────────────────────────────────────────
         "$mod, W, exec, firefox"
         "$mod, A, exec, steam-run anki"
         "$mod, Z, exec, zotero"
@@ -178,7 +160,6 @@
         "$mod SHIFT, P, exec, pavucontrol"
         "$mod SHIFT, H, exec, kitty -e btop"
 
-        # ── Workspaces ─────────────────────────────────────────
         "$mod, 1, workspace, 1"
         "$mod, 2, workspace, 2"
         "$mod, 3, workspace, 3"
@@ -203,7 +184,6 @@
         "$mod, mouse_up, workspace, e-1"
       ];
 
-      # Resize master with repeat
       binde = [
         ", XF86MonBrightnessUp, global, caelestia:brightnessUp"
         ", XF86MonBrightnessDown, global, caelestia:brightnessDown"
@@ -225,23 +205,14 @@
       ];
     };
 
-    # Dynamic border colours, driven by caelestia's wallpaper-extracted scheme.
-    #
-    # caelestia (programs.caelestia.cli.settings.theme.enableHypr = true) writes
-    # ~/.config/hypr/scheme/current.conf at runtime, defining $primary, $tertiary,
-    # $surfaceVariant, ... as bare hex. We source it here and re-declare the
-    # `general` border colours so they track the active wallpaper palette.
-    #
-    # Why extraConfig and not settings.source:
-    #   HM appends extraConfig verbatim AFTER the generated settings, as one
-    #   contiguous block. That guarantees (a) `source` is evaluated before the
-    #   $vars are used, and (b) this `general {}` overrides the structured one
-    #   above. Putting `source` in settings would sort it after `general`
-    #   (alphabetical) and break variable resolution.
-    #
-    # Not reproducible from a bare checkout: current.conf is runtime state. On a
-    # fresh machine run `caelestia scheme set -n dynamic` once; if the file is
-    # missing at launch hyprland just logs a source error and keeps defaults.
+    # caelestia writes ~/.config/hypr/scheme/current.conf at runtime, defining $primary,
+    # $tertiary, $surfaceVariant as bare hex; re-declaring the border colours here tracks
+    # the active wallpaper palette. It must be extraConfig and not settings.source: HM
+    # appends extraConfig verbatim AFTER the generated settings, so `source` is evaluated
+    # before the $vars are used and this `general {}` overrides the structured one above.
+    # current.conf is runtime state, not reproducible from a bare checkout — run
+    # `caelestia scheme set -n dynamic` once on a fresh machine; if the file is missing
+    # hyprland logs a source error and keeps defaults.
     extraConfig = ''
       source = /home/vincenzo/.config/hypr/scheme/current.conf
       general {

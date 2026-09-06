@@ -5,9 +5,6 @@
     enable = true;
     systemd.enable = true;
     settings = {
-      # NOTE: caelestia dropped `bar.status.showBattery`; the bar's battery is now
-      # an entry in the `bar.statusIcons` list. Omitted entirely here — this is a
-      # battery-less desktop, so caelestia renders no battery icon regardless.
       paths.wallpaperDir = "/home/vincenzo/nixos-config/wallpapers";
       background.desktopClock = {
         enabled = true;
@@ -50,10 +47,8 @@
     };
   };
 
-  # Caelestia runtime dependencies not already in system modules.
-  # xdg-desktop-portal-gtk lives in modules/hyprland/default.nix under
-  # xdg.portal.extraPortals — it must be registered system-side, not installed
-  # as a user binary, or xdg-desktop-portal will not delegate to it.
+  # xdg-desktop-portal-gtk must stay registered system-side in modules/hyprland/default.nix
+  # under xdg.portal.extraPortals; as a user binary xdg-desktop-portal will not delegate to it.
   home.packages = with pkgs; [
     hyprpicker
     cliphist

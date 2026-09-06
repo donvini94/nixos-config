@@ -17,8 +17,8 @@ let
     providerName = "Dracula local llama.cpp";
     inherit (osConfig.services.localLlama) defaultModel;
     disableStrictTools = true;
-    # llama.nix names these fields for the serving side; clients consume the
-    # OpenAI-shaped names that services.remoteOpenAI.models already exposes.
+    # llama.nix names these fields for the serving side; clients consume the OpenAI-shaped
+    # names that services.remoteOpenAI.models already exposes.
     models = lib.mapAttrs (_id: model: {
       name = model.displayName;
       context = model.contextSize;
@@ -104,11 +104,9 @@ let
     }) profiles
   );
   yaml = pkgs.formats.yaml { };
-  # The Requesty ingress declares its own cheap default ("DeepSeek V4 Flash —
-  # cheap default", $0.09/$0.18 per M), which is exactly what the `smol` role
-  # is for. Both hosts get the same selector rather than dracula getting the
-  # local llama.cpp model: `smol` backs session titles and prewalk, and a role
-  # that breaks whenever llama-server is down is worse than one remote hop.
+  # `smol` backs session titles and prewalk, so both hosts point it at the Requesty
+  # ingress's cheap default rather than dracula's local model: the role must not break
+  # whenever llama-server is down.
   smolModel = modelSelector requestyProfile requestyProfile.defaultModel;
   omp = pkgs.callPackage ../packages/omp-harness.nix {
     extraEnabledModels = profileModels;

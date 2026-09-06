@@ -7,9 +7,8 @@
 let
   pokemmo = pkgs.callPackage ../packages/pokemmo.nix { };
 
-  # The launcher owns this tree: it downloads the client on first run and
-  # replaces it on every game update, icons included. Nothing here is managed
-  # declaratively, which is also why the desktop entry points at a runtime path.
+  # The launcher owns this tree: it downloads the client on first run and replaces it on
+  # every game update, icons included, so the desktop entry points at a runtime path.
   gameDir = "${config.home.homeDirectory}/.local/share/pokemmo";
 in
 {
@@ -26,9 +25,9 @@ in
       "Game"
       "RolePlaying"
     ];
-    # Reported by the client's SDL3 window; lets the compositor tie the window
-    # back to this entry instead of showing an unmatched "PokeMMO" surface.
     startupNotify = false;
+    # What the client's SDL3 window reports; ties the window back to this entry instead of
+    # an unmatched "PokeMMO" surface.
     settings.StartupWMClass = "com.pokemmo.PokeMMO";
   };
 }

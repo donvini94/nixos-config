@@ -1,22 +1,19 @@
-# Linux-desktop package set. Cross-platform CLI tooling lives in cli-tools.nix, which
-# the Mac imports too; this file is the part that is Wayland/GTK-bound, GUI-only, or
-# deliberately Linux-only.
+# Linux-desktop package set: Wayland/GTK-bound, GUI-only, or deliberately Linux-only.
+# Cross-platform CLI tooling lives in cli-tools.nix, which the Mac imports too.
 { pkgs, ... }:
 
 {
   home.packages = with pkgs; [
-    # Document tools
     mupdf
 
-    # Finance — the hledger closure is Haskell-heavy (~900 MiB download,
-    # ~6 GiB unpacked); deliberately not on the Mac.
+    # The hledger closure is Haskell-heavy (~900 MiB download, ~6 GiB unpacked);
+    # deliberately not on the Mac.
     hledger
     hledger-ui
     hledger-utils
     hledger-interest
     hledger-web
 
-    # Dev tools
     zed-editor
     zeal
     bruno
@@ -25,21 +22,16 @@
     claude-agent-acp
     chromium
 
-    # Writing & docs
     texliveMedium
 
-    # Media
     nsxiv
 
-    # Productivity
     anki
     zotero
     zoom-us
 
-    # Japanese
     qolibri
 
-    # Communication
     discord
     telegram-desktop
     thunderbird
