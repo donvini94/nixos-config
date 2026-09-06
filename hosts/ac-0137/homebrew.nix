@@ -67,7 +67,6 @@
       "nnn"
       "notmuch"
       "nushell"
-      "opencode"
       "openjdk@17"
       "openstackclient"
       "pass"

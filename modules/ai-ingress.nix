@@ -2,7 +2,7 @@
 # identity, the logging proxy, log rotation, operator tooling and the polkit rule.
 # `modules/llama.nix` and `modules/remote-openai.nix` each supply only a backend.
 #
-# Every client (OMP, OpenCode, Hermes, n8n) speaks to this one port, so the proxy is
+# Every client (OMP, Hermes, n8n) speaks to this one port, so the proxy is
 # the only source of caller attribution, token counts, cost and the JSONL audit log.
 {
   config,
