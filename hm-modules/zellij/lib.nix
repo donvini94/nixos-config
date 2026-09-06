@@ -100,6 +100,11 @@ rec {
     // top line with no keybind hints, which is the whole point of this setup.
     default_layout "default"
 
+    // Zellij defaults to $SHELL, but Kitty explicitly launches fish while the
+    // workstation login shell can remain bash. Pin panes to the configured
+    // interactive shell so fish abbreviations and integrations are available.
+    default_shell "fish"
+
     // Start every pane pass-through; Ctrl g is the only key zellij owns.
     default_mode "locked"
 
