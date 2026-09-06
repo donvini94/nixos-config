@@ -9,8 +9,7 @@
 }:
 
 let
-  # omp-learn requires Bun >= 1.3.14, while the locked nixpkgs has 1.3.13.
-  # Remove this override when nixpkgs catches up.
+  # omp-learn requires Bun >= 1.3.14; the locked nixpkgs and unstable both ship 1.3.13.
   bunVersion = "1.4.2";
   bunSource =
     {
@@ -32,14 +31,21 @@ let
       };
     }
     .${pkgs.stdenv.hostPlatform.system};
-  bun = pkgs.bun.overrideAttrs {
-    version = bunVersion;
-    src = pkgs.fetchurl {
-      url = "https://github.com/oven-sh/bun/releases/download/bun-v${bunVersion}/${bunSource.archive}.zip";
-      inherit (bunSource) hash;
-    };
-    sourceRoot = bunSource.archive;
-  };
+  bun =
+    if lib.versionAtLeast pkgs.bun.version "1.3.14" then
+      lib.warn "nixpkgs bun is ${pkgs.bun.version}: delete the override in hm-modules/cli-tools.nix" pkgs.bun
+    else
+      # UPSTREAM DEFECT: nixpkgs' bun is too old for omp-learn, so version and src are
+      # swapped while its unpack, patchelf and wrapper logic is kept. The branch above
+      # drops this the day nixpkgs catches up, and says so on every rebuild.
+      pkgs.bun.overrideAttrs {
+        version = bunVersion;
+        src = pkgs.fetchurl {
+          url = "https://github.com/oven-sh/bun/releases/download/bun-v${bunVersion}/${bunSource.archive}.zip";
+          inherit (bunSource) hash;
+        };
+        sourceRoot = bunSource.archive;
+      };
 in
 {
   home.packages = with pkgs; [

@@ -9,17 +9,19 @@
 # Allowed:
 #   * named overlays coming from a pinned flake input (e.g.
 #     `emacs-overlay.overlay`) — reviewed upstream code, not a local diff;
-#   * files listed in EXCEPTIONS below, each of which must carry an
-#     `# UPSTREAM DEFECT` comment naming the live failure it works around and
-#     the condition for removing it. A mutation anywhere else fails, and a
-#     reviewed file that loses its justification comment fails too.
+#   * mutations in a file listed in EXCEPTIONS below, and only those carrying an
+#     `# UPSTREAM DEFECT` comment in the three lines above them, naming the live
+#     failure and the condition for removing it. Listing a file does not exempt
+#     the whole file: an unmarked mutation in it still fails.
 set -euo pipefail
 
 root=${1:-.}
 status=0
 
 # path -> one-line justification. Keep this list empty whenever upstream allows.
-declare -A EXCEPTIONS=()
+declare -A EXCEPTIONS=(
+  ["hm-modules/cli-tools.nix"]="omp-learn needs bun >= 1.3.14; nixpkgs ships 1.3.13"
+)
 
 fail() {
   status=1
@@ -32,21 +34,26 @@ if ((${#nix_files[@]} == 0)); then
   exit 1
 fi
 
-# Partition `grep -nH` hits into unreviewed violations and reviewed exceptions.
+# Partition `grep -nH` hits into unreviewed violations and marked exceptions.
 # Runs in the current shell so `fail` can set the exit status.
+justified() {
+  local file=$1 lineno=$2 start=$((lineno > 3 ? lineno - 3 : 1))
+  sed -n "${start},$((lineno - 1))p" "$file" | grep -q 'UPSTREAM DEFECT'
+}
+
 check() {
   local description=$1 pattern=$2
-  local line file rel violations=()
+  local line file lineno rest rel violations=()
 
   while IFS= read -r line; do
     file=${line%%:*}
+    rest=${line#*:}
+    lineno=${rest%%:*}
     rel=${file#"$root"/}
-    if [[ -v EXCEPTIONS[$rel] ]]; then
-      grep -q 'UPSTREAM DEFECT' "$file" ||
-        fail "reviewed exception $rel lost its '# UPSTREAM DEFECT' justification"
-    else
-      violations+=("$line")
+    if [[ -v EXCEPTIONS[$rel] ]] && justified "$file" "$lineno"; then
+      continue
     fi
+    violations+=("$line")
   done < <(grep -nHE "$pattern" "${nix_files[@]}" || true)
 
   if ((${#violations[@]})); then
