@@ -34,7 +34,6 @@ jobs:
         # here covers the Mac as well.
         package:
           - lathe
-          - llama-swap
           - omp
     concurrency:
       group: package-update-${{ matrix.package }}

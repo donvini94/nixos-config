@@ -191,12 +191,7 @@ in
   options.services.localLlama = {
     enable = lib.mkEnableOption "local OpenAI-compatible llama.cpp inference";
     package = lib.mkPackageOption pkgs "llama-cpp" { };
-    swapPackage = lib.mkOption {
-      type = lib.types.package;
-      default = pkgs.callPackage ../packages/llama-swap.nix { };
-      defaultText = lib.literalExpression "pkgs.callPackage ../packages/llama-swap.nix { }";
-      description = "Pinned llama-swap package.";
-    };
+    swapPackage = lib.mkPackageOption pkgs "llama-swap" { };
     models = lib.mkOption {
       type = lib.types.attrsOf modelType;
       default = { };

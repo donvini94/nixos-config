@@ -205,7 +205,6 @@
           lathe = pkgs.callPackage ./packages/lathe.nix { };
         }
         // nixpkgs.lib.optionalAttrs (packageSystem == "x86_64-linux") {
-          llama-swap = pkgs.callPackage ./packages/llama-swap.nix { };
           omp = pkgs.callPackage ./packages/omp.nix { };
         }
       );
