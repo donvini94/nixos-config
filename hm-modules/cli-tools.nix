@@ -32,6 +32,9 @@
     tldr
 
     # Dev tools
+    # lazygit backs the `lg` abbreviation in hm-modules/fish.nix, so it has to
+    # exist wherever that module is imported.
+    lazygit
     delta
     difftastic
     gh

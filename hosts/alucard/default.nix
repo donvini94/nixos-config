@@ -99,6 +99,12 @@
     lnav
   ];
 
+  # System-level fish, on top of the home-manager one. This is what generates
+  # completions from `environment.systemPackages` into /etc/fish and what makes
+  # the shell a valid entry in /etc/shells, which is the precondition for
+  # users.users.vincenzo.shell (hosts/alucard/users.nix).
+  programs.fish.enable = true;
+
   programs.tmux = {
     enable = true;
     keyMode = "vi";

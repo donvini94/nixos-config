@@ -27,62 +27,9 @@ in
     layouts = zellij.layouts;
   };
 
-  # A session is a server process that outlives the terminal, the SSH link and
-  # (via serialisation) the machine. These two entry points make "resume where I
-  # was" the default and "start something fresh" the explicit case.
-  programs.fish.functions = {
-    zj = {
-      description = "Attach to (or create) a persistent local zellij session";
-      body = ''
-        set -l name $argv[1]
-        test -z "$name"; and set name (basename $PWD)
-        set -l layout $argv[2]
-
-        # list-sessions includes EXITED sessions, and attaching to one
-        # resurrects it — which is exactly what we want here.
-        if contains -- $name (zellij list-sessions --short --no-formatting 2>/dev/null)
-            zellij attach $name
-        else if test -n "$layout"
-            # -n, not --layout: with --session, --layout means "add these tabs
-            # to a session that already exists" and errors out when it does
-            # not. -n is the flag that creates.
-            zellij --session $name --new-session-with-layout $layout
-        else
-            zellij --session $name
-        end
-      '';
-    };
-
-    zjr = {
-      description = "Attach to (or create) a persistent zellij session on a remote host";
-      body = ''
-        if test (count $argv) -lt 1
-            echo "usage: zjr <ssh-host> [session]" >&2
-            return 2
-        end
-        set -l host $argv[1]
-        set -l name $argv[2]
-        test -z "$name"; and set name main
-
-        # The session lives on the far end, so it survives this laptop closing.
-        # -t forces a remote TTY; the keepalives make a dead link fail fast
-        # instead of hanging on a half-open socket.
-        ssh -t -o ServerAliveInterval=30 -o ServerAliveCountMax=3 $host -- \
-            zellij attach --create $name
-      '';
-    };
-
-    zjls = {
-      description = "List zellij sessions on a remote host";
-      body = ''
-        if test (count $argv) -lt 1
-            echo "usage: zjls <ssh-host>" >&2
-            return 2
-        end
-        ssh $argv[1] -- zellij list-sessions --no-formatting
-      '';
-    };
-  };
+  # `zj`/`zjr`/`zjls` come from lib.nix so alucard's fish gets the identical
+  # `zj`; see the comment there.
+  programs.fish.functions = zellij.fishFunctions;
 
   programs.fish.shellAbbrs.zjl = "zellij list-sessions";
 

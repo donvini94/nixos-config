@@ -121,7 +121,7 @@ Uses sops-nix with age encryption. `secrets/secrets.nix` imports sops-nix intern
 - User tool configs go in `hm-modules/` (one file per tool)
 - `home.nix` is a pure import manifest — all config lives in hm-modules
 - Both systems share `configuration.nix` for base settings
-- Server imports `modules/packages.nix` directly (no desktop modules, no home-manager)
+- Server imports `modules/packages.nix` directly and no desktop modules. It *does* have home-manager: `hosts/alucard/home.nix` is its manifest, and it imports the shell/dev subset of `hm-modules/` (fish, shell, starship, atuin, git, cli-tools, helix, yazi, lsp, omp, ai-clients) plus its own `zellij.nix`. GUI, Wayland/GTK and desktop user-services modules stay out; the file lists each omission with its reason
 - NVIDIA config is opt-in via `modules/nvidia.nix` — non-NVIDIA hosts omit the import
 - Package placement rule: system packages = needs system-level integration (root, hardware, PAM, build toolchain). Everything else = `hm-modules/cli-tools.nix` if it builds on both Linux and darwin, `hm-modules/packages.nix` if it is Linux-desktop-only
 - Darwin host config goes in `hosts/ac-0137/`; darwin-only home modules live alongside it (`fish.nix`, `apps.nix`, `omp.nix`), not in `hm-modules/`

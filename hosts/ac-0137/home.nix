@@ -67,7 +67,6 @@
     dust
 
     neovim
-    lazygit
     lazydocker
 
     age

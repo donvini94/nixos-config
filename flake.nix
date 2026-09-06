@@ -138,7 +138,16 @@
             hermes-agent.nixosModules.default
             {
               home-manager = {
-                extraSpecialArgs = { inherit username; };
+                # fullName/mail are here for hm-modules/git.nix, which the server
+                # home now imports; without them evaluation fails on a missing
+                # argument rather than silently producing an unconfigured git.
+                extraSpecialArgs = {
+                  inherit
+                    username
+                    fullName
+                    mail
+                    ;
+                };
                 backupFileExtension = "hm-backup";
                 users.${username} = import ./hosts/${hostname}/home.nix;
               };

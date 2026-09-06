@@ -37,4 +37,10 @@ in
   // lib.mapAttrs' (
     name: text: lib.nameValuePair "zellij/layouts/${name}.kdl" { inherit text; }
   ) layouts;
+
+  # Only the local entry point. `zjr`/`zjls` drive a session on *another* host,
+  # and from here there is no other host to drive — this is the far end. `zj`
+  # matters because a session started by hand on this box has to be the same
+  # session the workstations reattach to.
+  programs.fish.functions = { inherit (zellij.fishFunctions) zj; };
 }

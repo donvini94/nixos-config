@@ -1,4 +1,4 @@
-{ ... }:
+{ pkgs, ... }:
 # Keys are named once and referenced per account. Every account below keeps
 # exactly the key set it had before: the lists are assembled from these names,
 # not widened. Adding a person means adding one binding and naming it on the
@@ -26,6 +26,13 @@ in
       # (/run/user/1000) is referenced at evaluation time by the vulnerability
       # scanner's sandbox. This is the uid the account already has.
       uid = 1000;
+      # Interactive work on this host happens over SSH, so the login shell is
+      # what an agent session lands in. fish is NOT POSIX: `ssh alucard -- '...'`
+      # runs the argument through this shell, so remote one-liners that rely on
+      # bash syntax ($(), &&-chained redirections, `export FOO=bar`) must be
+      # invoked explicitly as `ssh alucard -- bash -lc '...'`. The other accounts
+      # keep bash for exactly that reason.
+      shell = pkgs.fish;
       extraGroups = [
         "wheel"
         "docker"
