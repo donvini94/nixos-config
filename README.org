@@ -38,6 +38,7 @@ Detailed operator documentation lives in [[file:docs/][docs/]]; module conventio
 │   ├── programming.nix         #   Dev tools needing system integration (Python+CUDA, Rust, Emacs)
 │   ├── services.nix            #   Pipewire, rtkit, Emacs daemon, printing, Mullvad
 │   ├── fonts.nix               #   Font definitions
+│   ├── ai-stack.nix            #   SHARED: the AI stack both hosts run identically
 │   ├── ai-ingress.nix          #   SHARED: OpenAI-compatible logging proxy, `ai-stack.target`
 │   ├── llama.nix               #   dracula: llama-swap + pinned GGUF model registry
 │   ├── remote-openai.nix       #   alucard: Requesty upstream behind the same ingress
@@ -53,13 +54,12 @@ Detailed operator documentation lives in [[file:docs/][docs/]]; module conventio
 │   ├── hermes-agent.nix        #   Hermes image pin, container hardening, settings builder
 │   └── requesty-models.nix     #   Requesty model catalog + per-Mtok costs (plain data)
 ├── packages/
-│   ├── llama-swap.nix          #   Pinned llama-swap release binary
 │   ├── omp.nix                 #   Pinned oh-my-pi (`omp`) release binary
 │   ├── omp-harness.nix         #   Wrapped `omp`: pinned binary + managed config overlay
 │   ├── pokemmo.nix             #   dracula: FHS-sandboxed PokeMMO launcher (self-updating client)
 │   └── hermes-n8n-handoff.nix  #   `hermes-n8n-handoff` webhook CLI (Hermes container only)
 ├── hm-modules/                 # Home-manager user-level modules (one file per tool)
-│   ├── ai-clients.nix          #   SHARED: wrapped `omp` + `opencode` pinned to the ingress
+│   ├── ai-clients.nix          #   SHARED: wrapped `omp` pinned to the ingress
 │   ├── claude.nix              #   dracula: ~/.claude pointer + memory-only Syncthing whitelist
 │   ├── omp.nix                 #   SHARED: writable out-of-store symlinks into ~/.omp/agent
 │   ├── git, ssh, fish, shell, hyprland, caelestia, services, packages, email, gtk
@@ -113,7 +113,7 @@ Detailed operator documentation lives in [[file:docs/][docs/]]; module conventio
 | PDF viewer     | Zathura                                                   |
 | Media          | mpv                                                       |
 | VPN            | Mullvad, Tailscale                                        |
-| AI clients     | =omp=, =opencode=, Claude Code, Codex, Hermes desktop     |
+| AI clients     | =omp=, Claude Code, Codex, Hermes desktop                 |
 
 * AI Stack
 
@@ -124,12 +124,12 @@ audit log, Prometheus metrics, and Langfuse traces. The module *asserts* the bin
 loopback. Only the backend behind it differs per host.
 
 #+begin_src
-dracula:  omp / opencode / Hermes / n8n
+dracula:  omp / Hermes / n8n
               → local-llama-logger  127.0.0.1:8080
               → local-llama-swap    127.0.0.1:18080
               → llama-server        127.0.0.1:18100+   (loaded on demand)
 
-alucard:  omp / opencode / Hermes / n8n
+alucard:  omp / Hermes / n8n
               → local-llama-logger  127.0.0.1:8080
               → https://router.requesty.ai
 #+end_src

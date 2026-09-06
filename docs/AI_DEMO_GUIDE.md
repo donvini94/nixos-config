@@ -168,8 +168,8 @@ and get a structured answer back; Hermes can push a result to n8n with one comma
 directions validate their input and reject malformed calls, so an automation fails loudly
 instead of doing something surprising.
 
-**Coding acceleration.** OMP and OpenCode both run against the shared endpoint, so our own
-development is measured the same way as everything else. Cheap models do bulk work, expensive
+**Coding acceleration.** OMP runs against the shared endpoint, so our own development is
+measured the same way as everything else. Cheap models do bulk work, expensive
 models do hard work, and Grafana shows what each pattern actually costs.
 
 **Cost discipline.** Every call is attributed to a caller. When something gets expensive we can
@@ -231,7 +231,6 @@ routes report no provider retention.
 ```console
 curl http://alucard.tailf117a1.ts.net:28080/v1/models
 omp --model alucard-requesty/alibaba/qwen3.7-plus
-opencode run -m alucard-requesty/deepinfra/deepseek-v4-flash-0731 "your task"
 ```
 
 ## Hermes Desktop

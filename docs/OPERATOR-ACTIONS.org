@@ -89,7 +89,6 @@ pinned on 2026-08-29.
 | =lib/hermes-agent.nix= | =ubuntu:24.04= |
 | =modules/n8n.nix= | =n8n:2.34.6=, =runners:2.34.6= |
 | =modules/vulnerability-scan.nix= | =trivy:latest= |
-| =packages/llama-swap.nix= | =mostlygeek/llama-swap= v247 |
 
 Compose files and workflow actions are covered by the built-in =docker-compose=
 and =github-actions= managers.

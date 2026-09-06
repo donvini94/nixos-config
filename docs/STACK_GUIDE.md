@@ -40,7 +40,7 @@ internet.
 ## How an AI request moves
 
 ```text
-OMP / OpenCode / n8n / Hermes / curl
+OMP / n8n / Hermes / curl
                     │
                     ▼
        logging ingress 127.0.0.1:8080
@@ -60,7 +60,6 @@ Examples:
 
 ```console
 omp --model dracula-local/qwen3.6-35b-a3b
-opencode run -m dracula-local/qwen3.6-35b-a3b "your task"
 
 curl http://127.0.0.1:8080/v1/chat/completions \
   -H 'Content-Type: application/json' \
@@ -76,11 +75,10 @@ KV-cache budget; keep that cap until this artifact has been measured live.
 
 ## What each AI component is for
 
-### OMP and OpenCode
+### OMP
 
-These are the two interactive coding harnesses. Both are configured to use the permanent
-local ingress and ask before changing files or executing commands. Use both on real tasks;
-their different prompts and tool loops are part of the comparison.
+This is the interactive coding harness. It is configured to use the permanent
+local ingress and asks before changing files or executing commands.
 
 OMP receives the Nix-managed model and safety policy through its supported `PI_CONFIG_FILES`
 overlay, built by `packages/omp-harness.nix`. The overlay scopes the picker to whichever custom
@@ -104,21 +102,12 @@ the harness alone, so Kyrill's models come only from his own Claude and ChatGPT 
 ingress authorizes no one per user — it binds loopback and spends one shared Requesty key — so
 which accounts receive that profile is the spend boundary.
 
-OpenCode's `enabled_providers` is an allow-list. The managed configuration enables the two custom
-profiles and built-in `anthropic` and `openai`, without declaring or overwriting either provider.
-Its auth state remains application-owned at `~/.local/share/opencode/auth.json`; Nix never writes
-that file. OpenAI's `/connect` supports ChatGPT Plus/Pro OAuth. OpenCode's Anthropic provider
-requires an Anthropic API key; a Claude consumer subscription/OAuth session is not an API
-credential. Use `/connect` only when that provider needs initial login or a renewed key.
-
 Useful diagnostics:
 
 ```console
 omp --version
 omp config path
 omp models
-opencode --version
-opencode models
 ```
 
 ### n8n
@@ -241,17 +230,14 @@ users but not project, workflow, or credential sharing. Do not claim tenant isol
 The two browser tools answer different questions:
 
 - **Langfuse** explains an AI interaction: the user turn, model generations, tool calls,
-  retries, errors, token use, annotations, and later evaluation scores. OpenCode uses
-  Langfuse's official rolling plugin.
+  retries, errors, token use, annotations, and later evaluation scores.
 - **Grafana** explains the machines and services: CPU, RAM, disk, Docker-container memory,
   RTX 3090 utilization and VRAM, n8n runtime metrics, request rate, input/output token rate,
   Requesty cost, average latency, and time to first token. The provisioned **AI and machine
   overview** dashboard is the starting point.
 
 Langfuse v4 is observations-first, so API consumers should use
-`/api/public/v2/observations`, not the removed legacy `/api/public/traces` endpoint. The
-OpenCode plugin does not populate `providedModelName`, so the ingress model label remains the
-reliable model dimension.
+`/api/public/v2/observations`, not the removed legacy `/api/public/traces` endpoint.
 
 Docker 29 keeps its embedded containerd socket at `/run/docker/containerd/containerd.sock`;
 the cAdvisor container is explicitly pointed there. Without that argument the scrape target is
@@ -263,9 +249,7 @@ per `/v1/chat/completions` and `/v1/responses`, tagged `source=ai-ingress`, carr
 caller, environment, status, latency, TTFT, token usage, and cost details. Export is
 asynchronous and best-effort: if Langfuse is down the inference call still succeeds and the
 proxy only logs a non-fatal error. Those observations are the cross-client coverage for OMP,
-Hermes, and n8n. OpenCode additionally runs its own Langfuse plugin for nested agent and tool
-traces; never sum OpenCode plugin cost and ingress cost for billing, because both describe the
-same call. Grafana's ingress metrics are the authoritative aggregate.
+Hermes, and n8n. Grafana's ingress metrics are the authoritative aggregate.
 
 n8n has no native Langfuse tracing integration. Use its own execution history and Prometheus
 metrics, then instrument the important production workflows explicitly rather than installing
@@ -322,7 +306,7 @@ The ingress log is the authoritative record across clients:
 
 ```console
 ai-usage-summary
-ai-usage-summary --caller omp --caller opencode
+ai-usage-summary --caller omp
 journalctl -u local-llama-logger.service -f
 ```
 
@@ -404,10 +388,10 @@ LOG_LEVEL=debug renovate --dry-run=full donvini94/nixos-config
 ```
 
 The dry run requires read access to the private repository and must report Compose images,
-the n8n, Trivy, and Hermes base-image Nix defaults, `flake.lock`, GitHub Actions, and the
-llama-swap release. The llama-swap manager intentionally changes only its release version:
-regenerate its fixed-output Nix hash in the same PR before its required build can pass. Model
-pins and SOPS-encrypted files are deliberately outside Renovate's regex scope.
+the n8n, Trivy, and Hermes base-image Nix defaults, `flake.lock`, and GitHub Actions. Model
+pins and SOPS-encrypted files are deliberately outside Renovate's regex scope; `packages/`
+is bumped by `.github/workflows/package-update.yml` with `nix-update` instead, because those
+derivations pin a source hash Renovate cannot rewrite.
 
 Renovate proposes updates. Trivy/scanners identify vulnerabilities. Nix builds, smoke tests,
 and human review decide whether an update is safe. These are complementary controls.
@@ -458,16 +442,16 @@ Compose images and recreates the active media stack.
 ## Business-demo stack on Alucard
 
 The reusable profile is enabled in `hosts/alucard/ai.nix`. It builds the same operator
-experience—OMP, OpenCode, n8n, Hermes, Langfuse, Grafana, and the stable logged
+experience—OMP, n8n, Hermes, Langfuse, Grafana, and the stable logged
 ingress—while inference goes to Requesty's OpenAI-compatible router instead of a local GPU.
-Alucard's minimal Home Manager profile installs only the two coding harnesses, not Dracula's
+Alucard's minimal Home Manager profile installs only the coding harness, not Dracula's
 desktop configuration.
 
 Requesty is already the maintained routing product, so the default plan does not add another
 gateway merely to proxy it. Alucard uses `https://router.requesty.ai/v1`, SOPS-managed
 Requesty credentials, spending limits, and explicit `provider/model` or `policy/name` IDs. The
 key is loaded into the loopback ingress with a systemd credential and injected upstream; OMP,
-OpenCode, n8n, and Hermes never receive the Requesty key. The local Nix registry is the
+n8n, and Hermes never receive the Requesty key. The local Nix registry is the
 client-visible allow-list even when
 the Requesty key can access the full catalog: unregistered model calls receive HTTP 403
 before reaching Requesty, and `/v1/models` exposes only registered IDs. A matching Requesty
@@ -485,7 +469,7 @@ and provider retention against Requesty's authenticated
 changing it. The customer-facing model table lives in
 [Alucard AI demo guide](./AI_DEMO_GUIDE.md).
 
-Dracula's OMP and OpenCode expose the same Requesty registry through
+Dracula's OMP exposes the same Requesty registry through
 `http://alucard.tailf117a1.ts.net:28080/v1` over Tailscale while retaining both local GPU
 models and the local dense default. No Requesty credential is installed on Dracula.
 
@@ -493,7 +477,6 @@ Use the initial model through the unchanged ingress:
 
 ```console
 omp --model alucard-requesty/deepinfra/deepseek-v4-flash-0731
-opencode run -m alucard-requesty/deepinfra/deepseek-v4-flash-0731 "your task"
 
 curl http://127.0.0.1:8080/v1/chat/completions \
   -H 'Content-Type: application/json' \

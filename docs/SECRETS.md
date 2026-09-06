@@ -19,8 +19,8 @@ Docker images, Compose files, or `/var/lib` application state.
 | `langfuse/salt` | Langfuse | Hashes API keys | Persistent cryptographic root; do not casually rotate |
 | `langfuse/encryption_key` | Langfuse | Encrypts stored integration credentials | Persistent cryptographic root; do not casually rotate |
 | `langfuse/nextauth_secret` | Langfuse | Signs and validates login sessions | Planned rotation logs users out |
-| `langfuse/project_public_key` | OpenCode and Langfuse | Identifies the initialized tracing project | Rotate through Langfuse, then update SOPS |
-| `langfuse/project_secret_key` | OpenCode and Langfuse | Authenticates trace ingestion | Rotate through Langfuse, then update SOPS |
+| `langfuse/project_public_key` | Langfuse | Identifies the initialized tracing project | Rotate through Langfuse, then update SOPS |
+| `langfuse/project_secret_key` | Langfuse | Authenticates trace ingestion | Rotate through Langfuse, then update SOPS |
 | `langfuse/admin_password` | Initial Langfuse administrator | First-boot account password | Change in Langfuse; SOPS is bootstrap only |
 | `grafana/admin_password` | Initial Grafana administrator | First-boot account password | Change in Grafana; SOPS is bootstrap only |
 
@@ -39,7 +39,6 @@ sops-nix creates these root- or user-readable views under `/run/secrets`:
 | `/run/secrets/rendered/n8n-runner.env` | Runner authentication environment for the n8n sidecar |
 | `/run/secrets/rendered/hermes.env` | Secret half of Hermes' `.env`; rewritten on every activation |
 | `/run/secrets/rendered/observability.env` | Langfuse dependencies, project bootstrap, and Grafana bootstrap |
-| `/run/secrets/rendered/opencode-langfuse.json` | OpenCode Langfuse project credentials; owned by `vincenzo` |
 
 The individual non-rendered values also exist beneath `/run/secrets/<service>/<name>`.
 Rendered files are ephemeral and recreated during activation. Never copy them to the
