@@ -1,3 +1,7 @@
+# docker-compose rather than services.prometheus/services.grafana on purpose: the stack
+# shares one docker network with Hermes and n8n, tracks upstream Hermes releases directly,
+# and ships as a unit to customer deployments. Porting it to native NixOS modules would
+# cost all three.
 {
   config,
   lib,
