@@ -7,6 +7,7 @@
 
 let
   cfg = config.services.remoteOpenAI;
+  ingress = config.services.aiIngress;
   expectedModels = pkgs.writeText "remote-openai-models" (
     lib.concatStringsSep "\n" (builtins.attrNames cfg.models) + "\n"
   );
@@ -27,7 +28,7 @@ let
       ${pkgs.coreutils}/bin/tr -d '\r\n' < "$credential"
       ${pkgs.coreutils}/bin/printf '"\n'
     } | ${pkgs.curl}/bin/curl --config - --fail --silent --show-error \
-      --output "$response" ${lib.escapeShellArg "${cfg.backendUrl}${cfg.backendHealthPath}"}
+      --output "$response" ${lib.escapeShellArg "${ingress.backendUrl}${ingress.backendHealthPath}"}
     ${pkgs.jq}/bin/jq --exit-status --raw-output '.data[].id' "$response" \
       | ${pkgs.coreutils}/bin/sort --unique > "$actual"
     ${pkgs.coreutils}/bin/comm -23 ${expectedModels} "$actual" > "$missing"
@@ -76,73 +77,26 @@ in
 {
   options.services.remoteOpenAI = {
     enable = lib.mkEnableOption "authenticated remote OpenAI-compatible ingress";
-    backendUrl = lib.mkOption {
-      type = lib.types.str;
-      default = "https://router.requesty.ai";
-      description = "Upstream origin without the /v1 request path.";
-    };
-    backendHealthPath = lib.mkOption {
-      type = lib.types.str;
-      default = "/v1/models";
-      description = "Authenticated upstream path used by the local /health probe.";
-    };
-    upstreamBearerCredentialFile = lib.mkOption {
-      type = lib.types.nullOr lib.types.path;
-      default = null;
-      description = "Root-only upstream API key injected by the ingress.";
-    };
     models = lib.mkOption {
       type = lib.types.attrsOf modelType;
       default = { };
-      description = "Explicit client-visible model or Requesty policy registry.";
+      description = "Client-visible model registry; also read by clients on hosts that only select this ingress.";
     };
     defaultModel = lib.mkOption {
       type = lib.types.str;
       default = "";
-    };
-    bindAddress = lib.mkOption {
-      type = lib.types.str;
-      default = "127.0.0.1";
-    };
-    port = lib.mkOption {
-      type = lib.types.port;
-      default = 8080;
-    };
-    stateDirectory = lib.mkOption {
-      type = lib.types.str;
-      default = "/var/lib/llama";
-    };
-    requestLog = lib.mkOption {
-      type = lib.types.str;
-      default = "${cfg.stateDirectory}/logs/requests.jsonl";
-    };
-    operators = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = [ ];
-    };
-    logRetention = lib.mkOption {
-      type = lib.types.ints.positive;
-      default = 14;
     };
   };
 
   config = lib.mkIf cfg.enable {
     assertions = [
       {
-        assertion = cfg.upstreamBearerCredentialFile != null;
-        message = "services.remoteOpenAI.upstreamBearerCredentialFile must be configured";
+        assertion = ingress.upstreamBearerCredentialFile != null;
+        message = "services.aiIngress.upstreamBearerCredentialFile must be set for the Requesty upstream";
       }
       {
         assertion = cfg.models != { } && builtins.hasAttr cfg.defaultModel cfg.models;
         message = "services.remoteOpenAI.defaultModel must name a registered model";
-      }
-      {
-        assertion = cfg.operators != [ ];
-        message = "services.remoteOpenAI.operators must contain at least one user";
-      }
-      {
-        assertion = lib.hasPrefix "/var/lib/" cfg.stateDirectory;
-        message = "services.remoteOpenAI.stateDirectory must be below /var/lib";
       }
     ];
 
@@ -150,17 +104,6 @@ in
     # backend; this module supplies only the Requesty upstream and its catalog check.
     services.aiIngress = {
       enable = true;
-      inherit (cfg)
-        backendUrl
-        backendHealthPath
-        bindAddress
-        port
-        stateDirectory
-        requestLog
-        logRetention
-        operators
-        upstreamBearerCredentialFile
-        ;
       environmentLabel = config.networking.hostName;
       allowedModels = builtins.attrNames cfg.models;
       priceMap = lib.mapAttrs (_: model: model.cost) cfg.models;

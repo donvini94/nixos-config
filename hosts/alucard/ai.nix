@@ -29,7 +29,7 @@ in
   assertions = [
     {
       assertion = lib.all (address: address == "127.0.0.1") [
-        config.services.remoteOpenAI.bindAddress
+        config.services.aiIngress.bindAddress
         config.services.localN8n.bindAddress
         config.services.localObservability.bindAddress
       ];
@@ -118,13 +118,16 @@ in
     };
   };
 
-  services.remoteOpenAI = {
-    enable = true;
+  services.aiIngress = {
     backendUrl = "https://router.requesty.ai";
     backendHealthPath = "/v1/models";
     upstreamBearerCredentialFile = config.sops.secrets."requesty/api_key".path;
-    inherit models defaultModel;
     operators = [ username ];
+  };
+
+  services.remoteOpenAI = {
+    enable = true;
+    inherit models defaultModel;
   };
 
   # Both credentials are provisioned by n8n's own CLI so they land encrypted
