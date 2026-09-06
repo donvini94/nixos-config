@@ -101,17 +101,17 @@ buildFHSEnv {
       libdecor
       libxkbcommon
       wayland
-      xorg.libX11
-      xorg.libXScrnSaver
-      xorg.libXcursor
-      xorg.libXext
-      xorg.libXfixes
-      xorg.libXi
-      xorg.libXinerama
-      xorg.libXrandr
-      xorg.libXrender
-      xorg.libXtst
-      xorg.libXxf86vm
+      libx11
+      libxscrnsaver
+      libxcursor
+      libxext
+      libxfixes
+      libxi
+      libxinerama
+      libxrandr
+      libxrender
+      libxtst
+      libxxf86vm
 
       # Graphics. libglvnd dispatches to the driver under /run/opengl-driver,
       # which the FHS env puts on the loader path for us.
