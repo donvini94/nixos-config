@@ -23,6 +23,10 @@ let
     "18989" = 18989; # Sonarr
     "19090" = 19090; # SABnzbd
     "19696" = 19696; # Prowlarr
+    # Shell history sync (services.atuin in services/hosted-applications.nix).
+    # Plain TCP rather than `serve --https`: the atuin client is not a browser,
+    # has no origin check to satisfy, and WireGuard already encrypts the hop.
+    "28888" = 8888; # atuin
   };
   tailscaleReady = pkgs.writeShellScript "tailscale-private-services-ready" ''
     set -euo pipefail

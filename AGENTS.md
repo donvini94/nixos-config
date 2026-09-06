@@ -69,7 +69,7 @@ Then create `hosts/newhost/` with `default.nix` (imports shared modules), `hardw
 - `services/reverse-proxy.nix` — Public nginx vhosts, ACME, backend firewall guard
 - `services/identity.nix` — PostgreSQL, Keycloak, realm export and backup
 - `services/media-services.nix` — Jellyfin, Navidrome, Calibre-Web
-- `services/hosted-applications.nix` — Paperless, mailcow TLS, registry, n8n backup
+- `services/hosted-applications.nix` — Paperless, mailcow TLS, registry, atuin history sync, n8n backup
 - `media.nix` — Docker, media automation stack, mining watchdog
 - `users.nix` — User accounts and SSH keys
 - `syncthing.nix` — Syncthing devices and folders

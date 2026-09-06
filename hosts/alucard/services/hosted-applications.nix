@@ -24,6 +24,24 @@
       enable = true;
       openFirewall = false;
     };
+
+    # Shell history sync for the fish shells on alucard and dracula
+    # (hm-modules/atuin.nix). Defaults from the module are deliberately kept:
+    # host 127.0.0.1, port 8888, and a local `atuin` postgres database created
+    # via ensureDatabases/ensureDBOwnership against the cluster identity.nix
+    # already runs. Nothing here is reachable from the internet — the only way
+    # in is `tailscale serve --tcp=28888` in hosts/alucard/private-access.nix,
+    # so authentication is Tailscale's before it is atuin's.
+    #
+    # openRegistration stays true because registration is how a machine is
+    # enrolled (`atuin register` on the client), and the endpoint has no
+    # unauthenticated path from outside the tailnet. Set it to false once the
+    # last machine is enrolled if you want the account set frozen; existing
+    # logins and sync are unaffected by the flip.
+    atuin = {
+      enable = true;
+      openRegistration = true;
+    };
   };
 
   services.offsiteBackup.jobs.n8n = {
