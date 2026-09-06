@@ -41,13 +41,13 @@ in
     # Hub returns byte-identical digests for both names.
     image = lib.mkOption {
       type = lib.types.str;
-      default = "docker.io/n8nio/n8n:2.34.6@sha256:f5140088385af2d4e681e177d8264bcb41e8fe126062030c5c65cd8f3e1605e1";
+      default = "docker.io/n8nio/n8n:2.38.3@sha256:4b76b9c5a69dc1c0f26bedd21b4e281ac2c84bd88d33857487b9e63dd0a42e87";
       description = "Digest-pinned official n8n OCI image.";
     };
 
     runnerImage = lib.mkOption {
       type = lib.types.str;
-      default = "docker.io/n8nio/runners:2.34.6@sha256:57356a1d2355177e308d6df72b9cc5dff25e36b146c2339eddb4bbfd69f3dc36";
+      default = "docker.io/n8nio/runners:2.38.3@sha256:c489d0d207904a4d54a4f8c2a85e15e48d735521a98330f5862e81e181a8c207";
       description = "Digest-pinned official n8n task-runner OCI image; must match `image`.";
     };
 
