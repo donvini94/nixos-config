@@ -16,13 +16,11 @@
     };
   };
 
-  # Desktop tower: no battery, so power-profiles-daemon's balance_performance EPP
-  # is dead weight. Pin governor to performance instead.
+  # Desktop tower has no battery; power-profiles-daemon's EPP handling is dead weight here.
   services.power-profiles-daemon.enable = false;
   powerManagement.cpuFreqGovernor = "performance";
 
-  # UPower has no battery to report on, but caelestia-shell queries it for
-  # AC/idle-inhibitor state and a few widgets. Cheap to keep available.
+  # No battery to report, but caelestia-shell queries UPower for AC/idle-inhibitor state.
   services.upower.enable = true;
 
   virtualisation.docker = {
@@ -44,7 +42,6 @@
     lmstudio
     droidcam
 
-    # Hardware-specific tuning tools
     piper
     lact
     undervolt

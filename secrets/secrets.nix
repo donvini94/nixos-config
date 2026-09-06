@@ -21,9 +21,7 @@
       "mullvad/private_key" = { };
       "mullvad/addresses" = { };
       "komga/oidc_secret" = { };
-      # nginx basic-auth realm for the Docker registry and the Paperless WebDAV
-      # drop box. Read by the nginx master, which starts as root and keeps the
-      # descriptor across worker forks.
+      # Read by the nginx master before it forks; the descriptor survives into workers.
       "nginx/htpasswd" = {
         owner = config.services.nginx.user;
         group = config.services.nginx.group;

@@ -62,8 +62,7 @@ in
         sha256 = "405359214aa8bd77b1af70121bc2d7878f3395b73dea16ae362ce71fa56b248e";
         displayName = "Dirk Qwen3.8 27B UD-Q4_K_XL (dense)";
         description = "Dense Qwen3.8 default; Q4 weights; text-only serving; one 32,768-token agent slot.";
-        # Q4 releases 2.14 GiB of weight memory versus Q5. Retain the validated
-        # 32,768-token / 2 GiB KV-cache cap until this artifact is live-measured.
+        # Q4 frees 2.14 GiB versus Q5; KV cache is capped at 32,768 tokens / 2 GiB.
         contextSize = 32768;
         parallelSlots = 1;
         gpuLayers = 999;
@@ -87,9 +86,6 @@ in
     operators = [ username ];
   };
 
-  # Ingress-level tracing is the cross-client view: OMP, OpenCode, Hermes and
-  # n8n all traverse this one proxy. OpenCode's own plugin adds nested
-  # agent/tool spans on top; the two are never summed for billing.
   services.aiIngress.langfuse = {
     enable = true;
     publicKeyFile = config.sops.secrets."langfuse/project_public_key".path;
