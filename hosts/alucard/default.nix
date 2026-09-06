@@ -73,9 +73,11 @@
   # Packages
   environment.systemPackages = with pkgs; [
     yazi
-    # Multiplexer for SSH-disconnect persistence: `ssh Bereitserver`, then
-    # `zellij a` resumes work intact after a dropped connection. zellij defaults
-    # already detach-on-close and serialize sessions, so the package is enough.
+    # Multiplexer for SSH-disconnect persistence and for long-running agent
+    # sessions driven from the Mac/dracula (`zjr Bereitserver <name>`). It is a
+    # system package, not a home-manager one, because `ssh host -- zellij ...`
+    # runs a non-interactive shell that never sources the per-user profile.
+    # Its configuration lives in hosts/alucard/zellij.nix.
     # (tmux below is the incumbent — kept until the zellij workflow is proven.)
     zellij
     openssl

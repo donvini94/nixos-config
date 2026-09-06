@@ -25,7 +25,7 @@
     ./hm-modules/yazi.nix
     ./hm-modules/zathura.nix
     ./hm-modules/doom.nix
-    ./hm-modules/zellij.nix
+    ./hm-modules/zellij
     ./hm-modules/caelestia.nix
     ./hm-modules/services.nix
     ./hm-modules/email.nix

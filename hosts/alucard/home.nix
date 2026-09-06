@@ -16,6 +16,10 @@
     # inert on alucard for every language, because the servers otherwise arrive
     # only through the desktop package set in the root home.nix.
     ../../hm-modules/lsp.nix
+    # The zellij keymap has to match the workstations byte for byte: `zjr` drives
+    # a session running here, so this host's config.kdl is what interprets the
+    # keys typed on the Mac.
+    ./zellij.nix
   ];
 
   nixpkgs.config.allowUnfree = true;

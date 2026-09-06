@@ -35,14 +35,9 @@
       bereit = "ssh vincenzo@dumusstbereitsein.de";
       windows = "bash ~/nixos-config/scripts/windows.sh";
 
-      # Zellij workspace helpers. Abbreviations, not aliases, so they expand
-      # inline — you see the full command before it runs.
-      #   zj <name>   park OR resume a named session
-      #   zjl         list parked sessions = the backburner index
-      # Detach (park) from inside a session: Ctrl+o then d.
-      # Retire one: zellij delete-session <name>.
-      zj = "zellij attach -c";
-      zjl = "zellij ls";
+      # Zellij helpers (zj / zjr / zjls / zjl) live in hm-modules/zellij, next
+      # to the keymap they belong to. They are functions rather than
+      # abbreviations because they branch on whether the session already exists.
     };
     interactiveShellInit = ''
       set fish_greeting
