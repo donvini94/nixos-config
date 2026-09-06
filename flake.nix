@@ -26,9 +26,8 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     home-manager.url = "github:nix-community/home-manager/master";
 
-    # The Mac (AC-0137). `inputs.nixpkgs.follows` is what keeps the darwin closure on
-    # the same locked nixpkgs as dracula and alucard, so a package is the same build
-    # everywhere.
+    # `inputs.nixpkgs.follows` keeps the darwin closure on the same locked nixpkgs as
+    # dracula and alucard, so a package is the same build everywhere.
     nix-darwin = {
       url = "github:nix-darwin/nix-darwin/master";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -40,9 +39,9 @@
 
     hermes-agent.url = "github:NousResearch/hermes-agent/v2026.8.3";
 
-    # Pinned to the last .conf-primary release: 0.55 deprecated hyprlang in favour
-    # of Lua config, and home-manager still only emits hyprland.conf. Unpin (drop
-    # the ref) once HM can generate hyprland.lua, then migrate the config.
+    # Pinned to 0.54.3, the last .conf-primary release: 0.55 deprecated hyprlang in
+    # favour of Lua config and home-manager still only emits hyprland.conf. Unpin once
+    # HM can generate hyprland.lua.
     hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/v0.54.3";
     nil.url = "github:oxalica/nil";
 
@@ -82,9 +81,8 @@
       mail = "vincenzo.pace94@icloud.com";
       system = "x86_64-linux";
 
-      # The Mac's local account name differs from the NixOS hosts'. Its platform is set
-      # in hosts/ac-0137/default.nix via nixpkgs.hostPlatform, which is where
-      # darwinSystem reads it from.
+      # darwinSystem reads this host's platform from nixpkgs.hostPlatform in
+      # hosts/ac-0137/default.nix.
       macUsername = "vincenzopace";
 
       overlays = [ emacs-overlay.overlay ];
@@ -95,11 +93,9 @@
           inherit system;
           specialArgs = { inherit inputs username; };
           modules = [
-            # Local configuration
             ./configuration.nix
             ./hosts/${hostname}
 
-            # Flake modules
             hyprland.nixosModules.default
             sops-nix.nixosModules.sops
             lsfg-vk-flake.nixosModules.default
@@ -107,7 +103,6 @@
             home-manager.nixosModules.home-manager
             hermes-agent.nixosModules.default
 
-            # Desktop wiring
             {
               nixpkgs.overlays = overlays;
               home-manager = {
@@ -161,8 +156,6 @@
         alucard = mkServerHost "alucard";
       };
 
-      # Exactly one Mac, so this is inline rather than an mkDarwinHost factory.
-      #
       # `useUserPackages = true` is load-bearing: it routes home-manager's packages
       # through users.users.<name>.packages -> /etc/profiles/per-user/vincenzopace
       # (nix-darwin/modules/users/default.nix:336-346, which also adds that profile to
@@ -170,8 +163,7 @@
       # activation away from ~/.nix-profile, which on this machine is a flake-style
       # `nix profile`.
       #
-      # No `overlays` here on purpose: emacs-overlay is for dracula's Emacs. On the Mac,
-      # Emacs is the emacs-plus-app cask.
+      # No overlays: emacs-overlay is dracula's; the Mac's Emacs is the emacs-plus-app cask.
       darwinConfigurations."AC-0137" = nix-darwin.lib.darwinSystem {
         specialArgs = {
           inherit inputs;
@@ -194,20 +186,16 @@
         ];
       };
 
-      # The locally packaged tools that pin a content hash.
-      #
-      # They exist as outputs for two reasons, both about the hash rather than about
-      # wanting a `nix build .#lathe` shortcut. First, CI plans the host closures with
-      # `nix build --dry-run`, which never realizes a fixed-output derivation, so a
-      # stale `hash`/`vendorHash` passes every check and fails on the machine at switch
-      # time instead; .github/workflows/nix-build.yml realizes exactly this set.
-      # Second, `nix-update` addresses a flake attribute, which is how
+      # These pin a content hash, which is why they are outputs. CI plans the host
+      # closures with `nix build --dry-run`, which never realizes a fixed-output
+      # derivation, so a stale `hash`/`vendorHash` passes every check and fails on the
+      # machine at switch time instead; .github/workflows/nix-build.yml realizes exactly
+      # this set. `nix-update` also addresses a flake attribute, which is how
       # .github/workflows/package-update.yml bumps version AND hashes together —
-      # Renovate can only rewrite the version string, which is worse than nothing here.
+      # Renovate can only rewrite the version string.
       #
-      # Packages that pin nothing (pokemmo, hermes-n8n-handoff) are deliberately absent:
-      # evaluation is full coverage for them, and the host build plans already do that.
-      # omp-harness is absent because it takes per-account arguments.
+      # Packages that pin nothing (pokemmo, hermes-n8n-handoff) are absent: host
+      # evaluation is full coverage for them. omp-harness takes per-account arguments.
       packages = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-darwin" ] (
         packageSystem:
         let
@@ -222,7 +210,6 @@
         }
       );
 
-      # `nix flake check` is the local and CI gate for repository invariants.
       checks.${system} = {
         no-package-patches =
           nixpkgs.legacyPackages.${system}.runCommand "check-no-package-patches"

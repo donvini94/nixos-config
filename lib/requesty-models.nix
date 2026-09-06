@@ -1,7 +1,6 @@
 {
   defaultModel = "deepinfra/deepseek-v4-flash-0731";
 
-  # Verified against Requesty's authenticated model catalog on 2026-08-09.
   # Costs are USD per million tokens and are surfaced in OMP's model metadata.
   models = {
     "deepinfra/deepseek-v4-flash-0731" = {

@@ -1,17 +1,13 @@
-# Declarative Homebrew for AC-0137.
-#
-# The split rule, applied literally: nixpkgs provides every tool this repo already
-# declares (hm-modules/, packages/), Homebrew keeps toolchains, macOS-integrated tools,
-# GUI casks, and anything with no nixpkgs equivalent. Where both could supply a tool, the
-# nix one wins because it is the one that is version-locked and shared with dracula.
-#
-# The lists are `brew leaves` output, not `brew list`: computed dependencies of a retained
-# formula (lua for nmap, for instance) are left to Homebrew's resolver, so
-# cleanup = "uninstall" never removes something a kept formula needs.
+# nixpkgs provides every tool this repo already declares (hm-modules/, packages/) and
+# wins wherever both could supply one; Homebrew keeps toolchains, macOS-integrated tools,
+# GUI casks and anything with no nixpkgs equivalent.
 #
 # cleanup = "uninstall" makes this file the truth: an imperative `brew install` is
-# reverted on the next `darwin-rebuild switch`. That is the point. It is deliberately not
-# "zap" — zap deletes application data and configuration as well as the app.
+# reverted on the next `darwin-rebuild switch`. Deliberately not "zap", which deletes
+# application data and configuration along with the app.
+#
+# The lists are `brew leaves`, not `brew list`: a kept formula's own dependencies stay
+# with Homebrew's resolver, so cleanup never removes something still needed.
 {
   homebrew = {
     enable = true;
@@ -33,10 +29,6 @@
       "ldayton/dippy" # dippy
     ];
 
-    # Toolchains (rustup, openjdk, maven, cmake, automake, clang-format), macOS-integrated
-    # tools (pinentry-mac, pngpaste, mole), the mail stack (isync/msmtp/mu/notmuch —
-    # explicitly out of scope), the gnupg/pass stack, and the client/work CLIs.
-    #
     # pass and pinentry-mac stay on Homebrew on purpose: moving them pulls a second gnupg
     # into ~/.gnupg and agent-socket territory, and hm-modules/git.nix signs commits with
     # signing.format = "openpgp".
@@ -97,16 +89,15 @@
       "sailpoint-oss/tap/sailpoint-cli"
     ];
 
-    # Only casks Homebrew already installed are declared. Hand-downloaded apps in
-    # /Applications (Ghostty, Zed, Chrome, Slack, Firefox Developer Edition, …) are NOT
-    # adopted: `brew install --cask` fails against a pre-existing unmanaged app bundle,
-    # and their configuration is managed in ./apps.nix anyway.
+    # Hand-downloaded apps in /Applications (Ghostty, Zed, Chrome, Slack, Firefox
+    # Developer Edition, …) are not adopted: `brew install --cask` fails against a
+    # pre-existing unmanaged app bundle.
     #
-    # aerospace stays a cask by decision — the locked nixpkgs has 0.20.3-Beta against the
-    # installed 0.21.3-Beta, and an /Applications path keeps its Accessibility grant
-    # stable. emacs-plus-app likewise: Emacs on this host is not the nixpkgs build.
-    # font-iosevka is the plain `Iosevka` family (not `Iosevka Nerd Font`) and stays
-    # because Doom's font stack may reference it.
+    # aerospace stays a cask: the locked nixpkgs has 0.20.3-Beta against the installed
+    # 0.21.3-Beta, and an /Applications path keeps its Accessibility grant stable.
+    # emacs-plus-app likewise — Emacs on this host is not the nixpkgs build. font-iosevka
+    # is the plain `Iosevka` family (not `Iosevka Nerd Font`) and Doom's font stack may
+    # reference it.
     casks = [
       "aerospace"
       "copilot-cli"

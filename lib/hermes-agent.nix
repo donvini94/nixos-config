@@ -1,10 +1,6 @@
-# Hermes agent deployment data shared by both hosts.
-#
-# Plain data, like lib/requesty-models.nix — consumed by the upstream
-# `services.hermes-agent` module. Only the inference target differs per host:
-# Dracula talks to its local llama-swap ingress, Alucard to the Requesty-backed
-# one. Agent policy (toolsets, approvals, terminal shape) is deliberately
-# identical so both agents behave the same way.
+# Deployment data for the upstream `services.hermes-agent` module, shared by both hosts:
+# only the inference target differs (dracula's local llama-swap ingress, alucard's
+# Requesty-backed one) and agent policy is deliberately identical.
 {
   # Base image for the upstream module's OCI mode. Container mode is what gives
   # the agent a persistent writable layer (apt/pip/npm/uv installs survive

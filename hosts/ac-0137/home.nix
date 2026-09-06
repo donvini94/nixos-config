@@ -22,39 +22,33 @@
     ./omp.nix
   ];
 
-  # Deliberately NOT imported:
-  #   kitty.nix      — the Mac terminal is Ghostty (./apps.nix)
-  #   starship.nix   — tide owns the prompt here, via fisher
-  #   packages.nix   — Linux GUI apps
-  #   zathura.nix, gtk.nix, hyprland.nix, caelestia.nix, services.nix, pokemmo.nix,
-  #   email.nix      — Wayland/GTK/systemd, or the mail stack that stays on Homebrew
-  #   ai-clients.nix — reads osConfig.networking.hostName and osConfig.services.remoteOpenAI,
-  #                    which are NixOS options and do not exist on a darwin osConfig
+  # Deliberately NOT imported: kitty.nix, starship.nix, packages.nix, zathura.nix,
+  # gtk.nix, hyprland.nix, caelestia.nix, services.nix, pokemmo.nix and email.nix are
+  # Wayland/GTK/systemd or superseded on this host. ai-clients.nix reads
+  # osConfig.networking.hostName and osConfig.services.remoteOpenAI, NixOS options that
+  # do not exist on a darwin osConfig.
 
   home = {
     username = username;
     homeDirectory = "/Users/${username}";
-    # home-manager release at the locked input (7834e825).
+    # The home-manager release at the locked input.
     stateVersion = "26.11";
   };
 
   programs.home-manager.enable = true;
 
-  # hm-modules/ssh.nix replaces ~/.ssh/config wholesale, and this machine's current file
-  # carries host blocks that must never be committed: alucard, dracula, acGPT and
-  # probeaufgabe are named by bare IP, plus OrbStack's generated include. The Include
-  # directive is emitted ahead of every managed Host block
-  # (home-manager/modules/programs/ssh.nix:879-889) and ssh_config is first-match-wins,
-  # so a local file can both restore and override. `config.local` is resolved relative to
-  # ~/.ssh. A missing include target is not an error for OpenSSH, so this is safe before
-  # the file exists.
+  # hm-modules/ssh.nix replaces ~/.ssh/config wholesale, and this machine's file carries
+  # host blocks that must never be committed. The Include directive is emitted ahead of
+  # every managed Host block (home-manager/modules/programs/ssh.nix:879-889) and
+  # ssh_config is first-match-wins, so a local file can both restore and override.
+  # `config.local` resolves relative to ~/.ssh; a missing include target is not an error
+  # for OpenSSH.
   programs.ssh.includes = [
     "~/.orbstack/ssh/config"
     "config.local"
   ];
 
   # The system baseline that dracula gets from configuration.nix / modules/packages.nix.
-  # Everything here replaces a Homebrew formula of the same name.
   home.packages = with pkgs; [
     ripgrep
     fd

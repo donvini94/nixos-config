@@ -9,13 +9,12 @@ local paddings = {}
 local workspaces = {}
 local focused_workspace = nil
 
--- Retry on empty result: at login, sketchybar can start before AeroSpace's
--- daemon is ready to answer queries. Without retry, the workspace list is
--- empty, no items get created, and the bar stays broken until the sketchybar
--- process is fully restarted. Total worst case: 10 * 0.2s = 2s blocking.
--- AeroSpace is a Homebrew cask (hosts/ac-0137/homebrew.nix), and the launchd agent's
--- PATH is [sketchybar] ++ extraPackages ++ environment.systemPath — no brew prefix. Every
--- aerospace call in this file is therefore absolute.
+-- Retry on empty result: at login sketchybar can start before AeroSpace's daemon is
+-- ready to answer queries, and without the retry the workspace list comes back empty, no
+-- items get created, and the bar stays broken until sketchybar is restarted. Worst case
+-- 10 * 0.2s = 2s blocking.
+-- The launchd agent's PATH has no Homebrew prefix, so every aerospace call in this file
+-- is absolute.
 local function aerospace_query(args)
   for _ = 1, 10 do
     local file = io.popen("/opt/homebrew/bin/aerospace " .. args)
@@ -57,7 +56,6 @@ local function highlight(new_focused)
         border_color = is_selected and colors.grey or colors.bg2,
       },
     })
-    -- Always show focused workspace even if empty
     if is_selected then
       spaces[i]:set({ drawing = true })
       brackets[i]:set({ drawing = true })
@@ -67,7 +65,6 @@ local function highlight(new_focused)
   end
 end
 
--- Async icon + visibility refresh for a single workspace
 local function refresh_workspace(i, workspace)
   sbar.exec(
     "/opt/homebrew/bin/aerospace list-windows --workspace " .. workspace .. " --format '%{app-name}' --json",
@@ -94,7 +91,6 @@ local function refresh_workspace(i, workspace)
   )
 end
 
--- Refresh all workspace icons and visibility
 local function refresh_all()
   for i, workspace in ipairs(workspaces) do
     if workspace ~= "0" and spaces[i] then
@@ -179,25 +175,22 @@ for i, workspace in ipairs(workspaces) do
   ::continue::
 end
 
--- Initial state
 refresh_all()
 
--- Central event handler
 local observer = sbar.add("item", {
   drawing = false,
   updates = true,
 })
 
 observer:subscribe("aerospace_workspace_change", function(env)
-  highlight(env.FOCUSED_WORKSPACE)  -- instant
-  refresh_all()                      -- async icon + visibility update
+  highlight(env.FOCUSED_WORKSPACE)
+  refresh_all()
 end)
 
 observer:subscribe("space_windows_change", function(env)
   refresh_all()
 end)
 
--- Spaces/menus toggle indicator
 local spaces_indicator = sbar.add("item", {
   padding_left = -3,
   padding_right = 0,
