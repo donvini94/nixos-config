@@ -1,4 +1,12 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
+let
+  mediaDir = path: "d ${path} 0755 jellyfin jellyfin";
+in
 {
   virtualisation.docker = {
     enable = true;
@@ -17,22 +25,26 @@
 
   systemd.tmpfiles.rules = [
     "d /var/lib/media-stack 0755 root root"
-    "d /var/lib/media-stack/jellyseerr 0755 jellyfin jellyfin"
-    "d /var/lib/media-stack/sonarr 0755 jellyfin jellyfin"
-    "d /var/lib/media-stack/radarr 0755 jellyfin jellyfin"
-    "d /var/lib/media-stack/prowlarr 0755 jellyfin jellyfin"
-    "d /var/lib/media-stack/qbittorrent 0755 jellyfin jellyfin"
-    "d /var/lib/media-stack/gluetun 0755 jellyfin jellyfin"
-    "d /var/lib/media-stack/sabnzbd 0755 jellyfin jellyfin"
-    "d /mnt/hetzner/downloads 0755 jellyfin jellyfin"
-    "d /mnt/hetzner/downloads/usenet 0755 jellyfin jellyfin"
-    "d /mnt/hetzner/downloads/usenet/complete 0755 jellyfin jellyfin"
-    "d /mnt/hetzner/downloads/usenet/incomplete 0755 jellyfin jellyfin"
-    "d /mnt/hetzner/shows 0755 jellyfin jellyfin"
-    "d /mnt/hetzner/movies 0755 jellyfin jellyfin"
-    "d /mnt/hetzner/comics 0755 jellyfin jellyfin"
-    "d /var/lib/media-stack/kapowarr 0755 jellyfin jellyfin"
-    "d /var/lib/media-stack/komga 0755 jellyfin jellyfin"
+  ]
+  ++ map (app: mediaDir "/var/lib/media-stack/${app}") [
+    "jellyseerr"
+    "sonarr"
+    "radarr"
+    "prowlarr"
+    "qbittorrent"
+    "gluetun"
+    "sabnzbd"
+    "kapowarr"
+    "komga"
+  ]
+  ++ map mediaDir [
+    "/mnt/hetzner/downloads"
+    "/mnt/hetzner/downloads/usenet"
+    "/mnt/hetzner/downloads/usenet/complete"
+    "/mnt/hetzner/downloads/usenet/incomplete"
+    "/mnt/hetzner/shows"
+    "/mnt/hetzner/movies"
+    "/mnt/hetzner/comics"
   ];
 
   systemd.services.media-stack = {

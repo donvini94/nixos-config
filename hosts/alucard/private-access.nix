@@ -8,24 +8,24 @@
 let
   tailscale = lib.getExe config.services.tailscale.package;
   tailnetHost = "alucard.tailf117a1.ts.net";
+  # Tailnet listen port -> loopback target. The AI entries match dracula's
+  # ai-admin SSH forwards, the media ones media-admin's.
   privateTcpServices = {
-    # AI stack ports; these match Dracula's ai-admin SSH forwards.
-    "23000" = 13000; # Langfuse
-    "23001" = 13001; # Grafana
-    "25678" = 5678; # n8n
-    "28080" = 8080; # Requesty-backed OpenAI API
-    "29091" = 19091; # Prometheus
-    # Media administration ports; these match the media-admin SSH forwards.
-    "15656" = 15656; # Kapowarr
-    "16767" = 16767; # Bazarr
-    "17878" = 17878; # Radarr
-    "18080" = 18080; # qBittorrent
-    "18989" = 18989; # Sonarr
-    "19090" = 19090; # SABnzbd
-    "19696" = 19696; # Prowlarr
+    langfuse = { listen = 23000; target = 13000; };
+    grafana = { listen = 23001; target = 13001; };
+    n8n = { listen = 25678; target = 5678; };
+    openai-ingress = { listen = 28080; target = 8080; };
+    prometheus = { listen = 29091; target = 19091; };
+    kapowarr = { listen = 15656; target = 15656; };
+    bazarr = { listen = 16767; target = 16767; };
+    radarr = { listen = 17878; target = 17878; };
+    qbittorrent = { listen = 18080; target = 18080; };
+    sonarr = { listen = 18989; target = 18989; };
+    sabnzbd = { listen = 19090; target = 19090; };
+    prowlarr = { listen = 19696; target = 19696; };
     # Plain TCP rather than `serve --https`: the atuin client is not a browser,
     # has no origin check to satisfy, and WireGuard already encrypts the hop.
-    "28888" = 8888; # atuin
+    atuin = { listen = 28888; target = 8888; };
   };
   tailscaleReady = pkgs.writeShellScript "tailscale-private-services-ready" ''
     set -euo pipefail
@@ -37,8 +37,8 @@ let
     ${tailscale} serve reset
     ${lib.concatStringsSep "\n" (
       lib.mapAttrsToList (
-        listenPort: targetPort:
-        "${tailscale} serve --yes --bg --tcp=${listenPort} tcp://127.0.0.1:${toString targetPort}"
+        _: service:
+        "${tailscale} serve --yes --bg --tcp=${toString service.listen} tcp://127.0.0.1:${toString service.target}"
       ) privateTcpServices
     )}
     # Hermes only accepts its bound loopback Host and Origin, so nginx validates
