@@ -29,9 +29,19 @@ in
     # its task runners speak a versioned protocol and share one SQLite schema,
     # so they must move together, in a reviewed commit — never by a restart
     # happening to pull a newer `latest`. Renovate proposes digest bumps.
+    #
+    # docker.io, not the docker.n8n.io the upstream compose file advertises:
+    # that host is a pull-through proxy whose 401 hands you back to
+    # auth.docker.io, so every anonymous request through it is billed to the
+    # proxy's own egress IP and shares one rate-limit bucket with every other
+    # anonymous n8n user. That bucket sits at `x-ratelimit-remaining: 0`, which
+    # 429s the `manifests/<tag>` fetch - Renovate could read the tag list and
+    # never the digest, so this pin silently stopped being updatable, and a
+    # cold `docker pull` through it would fail too. Same repository either way:
+    # Hub returns byte-identical digests for both names.
     image = lib.mkOption {
       type = lib.types.str;
-      default = "docker.n8n.io/n8nio/n8n:2.34.6@sha256:f5140088385af2d4e681e177d8264bcb41e8fe126062030c5c65cd8f3e1605e1";
+      default = "docker.io/n8nio/n8n:2.34.6@sha256:f5140088385af2d4e681e177d8264bcb41e8fe126062030c5c65cd8f3e1605e1";
       description = "Digest-pinned official n8n OCI image.";
     };
 

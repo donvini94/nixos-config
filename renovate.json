@@ -57,7 +57,7 @@
         "docker"
       ],
       "matchPackageNames": [
-        "docker.n8n.io/n8nio/n8n",
+        "docker.io/n8nio/n8n",
         "docker.io/n8nio/runners"
       ],
       "groupName": "n8n and task runners"
