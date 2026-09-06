@@ -80,7 +80,7 @@
         > "$stage/keycloak.dump"
       test -s "$stage/keycloak.dump"
     '';
-    verifyPaths = [ "${"/var/lib/offsite-backup/keycloak/keycloak.dump"}" ];
+    verifyPaths = [ "/var/lib/offsite-backup/keycloak/keycloak.dump" ];
   };
 
   systemd.services.keycloak.serviceConfig = {

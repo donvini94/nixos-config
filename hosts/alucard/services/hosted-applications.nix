@@ -49,7 +49,7 @@
         ".backup '$stage/database.sqlite'"
       test -s "$stage/database.sqlite"
     '';
-    verifyPaths = [ "${"/var/lib/offsite-backup/n8n/database.sqlite"}" ];
+    verifyPaths = [ "/var/lib/offsite-backup/n8n/database.sqlite" ];
   };
 
   systemd.services.paperless-consumer.after = [ "var-lib-paperless.mount" ];

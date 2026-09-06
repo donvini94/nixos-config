@@ -20,6 +20,21 @@ let
       '';
     }
   );
+  tls = {
+    enableACME = true;
+    forceSSL = true;
+  };
+  proxy = port: tls // { locations."/".proxyPass = "http://127.0.0.1:${toString port}"; };
+  proxyWs =
+    port:
+    tls
+    // {
+      locations."/" = {
+        proxyPass = "http://127.0.0.1:${toString port}";
+        proxyWebsockets = true;
+      };
+    };
+  gone = tls // { locations."/".return = "404"; };
 in
 {
   assertions = [
@@ -52,14 +67,8 @@ in
       recommendedProxySettings = true;
       recommendedTlsSettings = true;
       virtualHosts = harden {
-        "${domain}" = {
-          enableACME = true;
-          forceSSL = true;
-          locations."/".return = "404";
-        };
-        "auth.${domain}" = {
-          enableACME = true;
-          forceSSL = true;
+        "${domain}" = gone;
+        "auth.${domain}" = tls // {
           # CRS scores the admin REST API's writes (`PUT
           # /admin/realms/{realm}/clients/{id}` with a full client
           # representation) as attacks and answers with nginx's HTML 403, which
@@ -81,26 +90,15 @@ in
             extraConfig = "modsecurity on;";
           };
         };
-        "git.${domain}" = {
-          enableACME = true;
-          forceSSL = true;
-          locations."/".return = "404";
-        };
-        "registry.${domain}" = {
-          enableACME = true;
-          forceSSL = true;
+        "git.${domain}" = gone;
+        "registry.${domain}" = proxy 5000 // {
           extraConfig = ''
             modsecurity off;
             client_max_body_size 0;
           '';
-          locations."/".proxyPass = "http://localhost:5000";
           basicAuthFile = config.sops.secrets."nginx/htpasswd".path;
         };
-        "stream.${domain}" = {
-          enableACME = true;
-          forceSSL = true;
-          # The server-level WAF is evaluated before a nested location can turn
-          # it off, so it is disabled here and re-enabled on the catch-all route.
+        "stream.${domain}" = tls // {
           extraConfig = "modsecurity off;";
           # CRS 4.25.1 lists `config.json` in both `restricted-files.data` and
           # `lfi-os-files.data`, so 930120/930130 score the Jellyfin web
@@ -120,70 +118,24 @@ in
             extraConfig = "modsecurity on;";
           };
         };
-        "chat.${domain}" = {
-          enableACME = true;
-          forceSSL = true;
-          locations."/".proxyPass = "http://localhost:1447";
-        };
-        "music.${domain}" = {
-          enableACME = true;
-          forceSSL = true;
-          locations."/".proxyPass = "http://localhost:4533";
-        };
-        "docs.${domain}" = {
-          enableACME = true;
-          forceSSL = true;
-          locations."/".return = "404";
-        };
-        "paperless.${domain}" = {
-          enableACME = true;
-          forceSSL = true;
-          locations."/".proxyPass = "http://127.0.0.1:58080";
-        };
-        "files.${domain}" = {
-          enableACME = true;
-          forceSSL = true;
+        "chat.${domain}" = proxy 1447;
+        "music.${domain}" = proxy 4533;
+        "docs.${domain}" = gone;
+        "paperless.${domain}" = proxy 58080;
+        "files.${domain}" = proxy 53842 // {
           extraConfig = ''
             modsecurity off;
             client_max_body_size 10g;
           '';
-          locations."/".proxyPass = "http://127.0.0.1:53842";
         };
-        "budget.${domain2}" = {
-          enableACME = true;
-          forceSSL = true;
-          locations."/".proxyPass = "http://127.0.0.1:5006";
-        };
-        "read.${domain2}" = {
-          enableACME = true;
-          forceSSL = true;
+        "budget.${domain2}" = proxy 5006;
+        "read.${domain2}" = proxy 8083 // {
           extraConfig = "client_max_body_size 2g;";
-          locations."/".proxyPass = "http://127.0.0.1:8083";
         };
-        "mail.${domain2}" = {
-          enableACME = true;
-          forceSSL = true;
-          locations."/".proxyPass = "http://127.0.0.1:880";
-        };
-        "comics.${domain2}" = {
-          enableACME = true;
-          forceSSL = true;
-          locations."/" = {
-            proxyPass = "http://127.0.0.1:25600";
-            proxyWebsockets = true;
-          };
-        };
-        "requests.${domain}" = {
-          enableACME = true;
-          forceSSL = true;
-          locations."/" = {
-            proxyPass = "http://127.0.0.1:5055";
-            proxyWebsockets = true;
-          };
-        };
-        "webdav.${domain2}" = {
-          enableACME = true;
-          forceSSL = true;
+        "mail.${domain2}" = proxy 880;
+        "comics.${domain2}" = proxyWs 25600;
+        "requests.${domain}" = proxyWs 5055;
+        "webdav.${domain2}" = tls // {
           extraConfig = "modsecurity off;";
           basicAuthFile = config.sops.secrets."nginx/htpasswd".path;
           locations."/" = {
@@ -201,9 +153,7 @@ in
             '';
           };
         };
-        "knowyourfiber.com" = {
-          enableACME = true;
-          forceSSL = true;
+        "knowyourfiber.com" = tls // {
           root = "/var/www/knowyourfiber.com";
         };
       };
