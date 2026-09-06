@@ -146,9 +146,8 @@ in
       }
     ];
 
-    # The ingress, its logging, metrics, and operator tooling are shared with
-    # the local llama backend; this module only supplies the Requesty one and
-    # the catalog check that refuses to start on a drifted model registry.
+    # Ingress, logging, metrics and operator tooling are shared with the local llama
+    # backend; this module supplies only the Requesty upstream and its catalog check.
     services.aiIngress = {
       enable = true;
       inherit (cfg)

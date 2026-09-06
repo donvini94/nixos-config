@@ -18,8 +18,8 @@ let
   privateSecret = config.sops.secrets."paperless-private".path;
   adminPasswordSecret = config.sops.secrets."paperless/password".path;
 
-  # Operator CLI. Same code path as the systemd unit, so a --dry-run here is a
-  # faithful preview of what the next rebuild will do.
+  # Operator CLI: same code path as the systemd unit, so `--dry-run` previews exactly
+  # what the next rebuild will do.
   provisionCli = pkgs.writeShellApplication {
     name = "paperless-provision";
     runtimeInputs = [ python ];
@@ -33,7 +33,6 @@ let
     '';
   };
 
-  # Backs up the exporter's output plus the one piece of state the exporter
 in
 {
   options.services.paperlessStack = {
@@ -115,9 +114,8 @@ in
       # them a mail rule can only ever consume PDF attachments.
       configureTika = true;
 
-      # Carries PAPERLESS_IGNORE_DATES. Those values are birthdates, so they
-      # cannot live in `settings` above — that ends up world-readable in the
-      # Nix store and in this public repo.
+      # Carries PAPERLESS_IGNORE_DATES. Those values are birthdates, so they cannot
+      # live in `settings`: that lands world-readable in the Nix store.
       environmentFile = config.sops.templates."paperless.env".path;
 
       settings = {
@@ -137,8 +135,7 @@ in
         PAPERLESS_NUMBER_OF_SUGGESTED_DATES = 3;
 
         PAPERLESS_CONSUMER_RECURSIVE = true;
-        # Source tags come from workflows, which know whether a document
-        # arrived by mail, WebDAV, or upload. Directory names do not.
+        # Source tags come from workflows, which know the arrival channel; dirs do not.
         PAPERLESS_CONSUMER_SUBDIRS_AS_TAGS = false;
 
         PAPERLESS_TASK_WORKERS = 2;
@@ -156,8 +153,7 @@ in
           no-color = true;
           compare-checksums = true;
           delete = true;
-          # Per-document manifests instead of one giant JSON, so an
-          # incremental off-site sync only moves what actually changed.
+          # Per-document manifests keep the incremental off-site sync to what changed.
           split-manifest = true;
         };
       };
@@ -174,8 +170,7 @@ in
         restartUnits = lib.optional cfg.provision.enable "paperless-provision.service";
       };
       # Paperless' date parser takes the first plausible date in a document, so
-      # "geboren am 14.07.1994" wins over the actual letter date. This affected
-      # 20 of the first 210 documents.
+      # "geboren am 14.07.1994" wins over the actual letter date.
       "paperless/ignore_dates" = {
         sopsFile = ../secrets/paperless.yaml;
         key = "ignore_dates";
@@ -184,12 +179,11 @@ in
       };
     };
 
-    # The exporter declares Conflicts= on the paperless units, so at 02:30
-    # systemd stops the task queue. Celery treats SIGTERM as a warm shutdown,
-    # but the default 90s stop timeout is far too short for an in-flight OCR of
-    # a large PDF -- the worker gets killed and Paperless records the mail as
-    # FAILED, which permanently suppresses a retry (the skip check matches on
-    # rule+uid+folder and ignores status). Give it room to drain instead.
+    # The exporter declares Conflicts= on the paperless units, so at 02:30 systemd
+    # stops the task queue. Celery treats SIGTERM as a warm shutdown, but the default
+    # 90s stop timeout is far too short for an in-flight OCR of a large PDF: the worker
+    # is killed and Paperless records the mail as FAILED, which permanently suppresses
+    # a retry (the skip check matches rule+uid+folder and ignores status).
     systemd.services.paperless-task-queue.serviceConfig.TimeoutStopSec = "900";
     systemd.services.paperless-consumer.serviceConfig.TimeoutStopSec = "900";
 
@@ -217,11 +211,9 @@ in
         "sops-install-secrets.service"
       ];
       requires = [ "paperless-web.service" ];
-      # A rebuild starts every paperless unit in one transaction, so ordering
-      # only guarantees launch order, not readiness. The script polls for up to
-      # three minutes; the unit timeout has to outlast that, and a genuinely
-      # slow start (migrations after a version bump) gets a few retries rather
-      # than needing a manual rerun.
+      # A rebuild starts every paperless unit in one transaction, so ordering only
+      # guarantees launch order, not readiness. The script polls for up to three
+      # minutes; the unit timeout has to outlast that, and retries cover a slow start.
       startLimitBurst = 4;
       startLimitIntervalSec = 900;
       serviceConfig = {
@@ -232,8 +224,6 @@ in
         User = paperless.user;
         Group = config.users.users.${paperless.user}.group;
         LoadCredential = [ "admin-password:${adminPasswordSecret}" ];
-        # paperless-web being "started" is not the same as it serving, so the
-        # script polls /api/ rather than trusting unit ordering.
         ExecStart = ''
           ${python}/bin/python3 ${provisionSource} \
             --base-url ${lib.escapeShellArg cfg.baseUrl} \
@@ -248,10 +238,9 @@ in
       };
     };
 
-    # The exporter already writes a consistent dump to its own directory, so the
-    # job snapshots that in place. The Django signing key is not part of the
-    # exporter's output, and a restore without it invalidates every session and
-    # signed value, so it is staged alongside.
+    # The exporter already writes a consistent dump to its own directory, so the job
+    # snapshots that in place. The Django signing key is not part of the exporter's
+    # output and a restore without it invalidates every session and signed value.
     services.offsiteBackup = lib.mkIf cfg.offsite.enable {
       enable = true;
       jobs.paperless = {

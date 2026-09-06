@@ -8,10 +8,8 @@
 let
   cfg = config.services.offsiteBackup;
 
-  # Each job stages its state into a private directory first, then restic reads
-  # only that directory. Staging is what makes the snapshot consistent: a live
-  # SQLite file or a running Postgres cluster copied byte-wise is not a backup,
-  # it is a coin flip.
+  # Each job stages its state into a private directory and restic reads only that:
+  # a live SQLite file or running Postgres cluster copied byte-wise is not consistent.
   stageRoot = "/var/lib/offsite-backup";
 
   jobStage = name: "${stageRoot}/${name}";
@@ -56,8 +54,6 @@ let
       '';
     };
 
-  # A backup nobody has restored is a hypothesis. Each job names the paths that
-  # must reappear, and the verify unit fails loudly when they do not.
   verifyScript =
     name: job:
     pkgs.writeShellApplication {
@@ -292,8 +288,8 @@ in
       };
     }) cfg.jobs;
 
-    # Persistent timers with no stamp file fire once shortly after activation,
-    # so a freshly provisioned host takes its first snapshot without an operator.
+    # Persistent timers with no stamp file fire once shortly after activation, so a
+    # freshly provisioned host takes its first snapshot without an operator.
     systemd.timers = lib.concatMapAttrs (name: job: {
       "offsite-backup-${name}" = {
         wantedBy = [ "timers.target" ];

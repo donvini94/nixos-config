@@ -25,20 +25,16 @@ in
   options.services.localN8n = {
     enable = lib.mkEnableOption "local n8n workflow service";
 
-    # Pinned by digest, with the readable version kept in front of it. n8n and
-    # its task runners speak a versioned protocol and share one SQLite schema,
-    # so they must move together, in a reviewed commit — never by a restart
-    # happening to pull a newer `latest`. Renovate proposes digest bumps.
+    # Pinned by digest, readable version in front: n8n and its task runners speak a
+    # versioned protocol and share one SQLite schema, so they must move together in a
+    # reviewed commit. Renovate proposes digest bumps.
     #
-    # docker.io, not the docker.n8n.io the upstream compose file advertises:
-    # that host is a pull-through proxy whose 401 hands you back to
-    # auth.docker.io, so every anonymous request through it is billed to the
-    # proxy's own egress IP and shares one rate-limit bucket with every other
-    # anonymous n8n user. That bucket sits at `x-ratelimit-remaining: 0`, which
-    # 429s the `manifests/<tag>` fetch - Renovate could read the tag list and
-    # never the digest, so this pin silently stopped being updatable, and a
-    # cold `docker pull` through it would fail too. Same repository either way:
-    # Hub returns byte-identical digests for both names.
+    # docker.io, not the docker.n8n.io the upstream compose file advertises: that host
+    # is a pull-through proxy whose 401 hands you back to auth.docker.io, so every
+    # anonymous request is billed to the proxy's own egress IP and shares one rate-limit
+    # bucket that sits at `x-ratelimit-remaining: 0`. That 429s the `manifests/<tag>`
+    # fetch, leaving the digest unreadable to Renovate and cold `docker pull` broken.
+    # Same repository either way: Hub returns byte-identical digests for both names.
     image = lib.mkOption {
       type = lib.types.str;
       default = "docker.io/n8nio/n8n:2.38.3@sha256:4b76b9c5a69dc1c0f26bedd21b4e281ac2c84bd88d33857487b9e63dd0a42e87";
@@ -79,10 +75,9 @@ in
       description = "Root-only environment file containing the runner authentication token.";
     };
 
-    # Workflows are host-specific: the delegate/inbox pair only makes sense
-    # where Hermes is the shared team agent, and the provisioning smoke test
-    # asserts Dracula's local model. Importing the whole tree on both hosts
-    # would install workflows whose dependencies do not exist there.
+    # Workflows are host-specific: importing the whole tree on both hosts would install
+    # workflows whose dependencies do not exist there (the delegate/inbox pair needs
+    # Hermes as the shared team agent; the smoke test asserts Dracula's local model).
     workflowDirectory = lib.mkOption {
       type = lib.types.path;
       description = "Directory of reviewed workflow JSON installed by `n8n-workflows import`.";
@@ -363,9 +358,9 @@ in
           healthy_samples=0
           for attempt in $(${pkgs.coreutils}/bin/seq 1 600); do
             container_running="$(${pkgs.docker}/bin/docker inspect --format '{{.State.Running}}' n8n 2>/dev/null || true)"
-            # With --pull=always, Docker can spend substantial time downloading
-            # before it creates the container object. An absent object is not a
-            # failed container; the main docker-run process remains authoritative.
+            # Docker can spend substantial time pulling before it creates the container
+            # object; an absent object is not a failed container, and the main docker-run
+            # process stays authoritative.
             if [ "$container_running" = false ]; then
               echo "n8n container exited before becoming healthy" >&2
               exit 1
@@ -428,9 +423,8 @@ in
             pkgs.jq
           ]
         }:"$PATH"
-        # The n8n container belongs to the system daemon. Operators may have a
-        # rootless DOCKER_HOST in their environment (Alucard does), which would
-        # otherwise make this tool report the container as missing.
+        # The n8n container belongs to the system daemon; an operator's rootless
+        # DOCKER_HOST (Alucard has one) would make this tool report it as missing.
         export DOCKER_HOST=unix:///run/docker.sock
         export N8N_WORKFLOW_DIR=${cfg.workflowDirectory}
         exec ${pkgs.bash}/bin/bash ${../n8n/bin/n8n-workflows} "$@"

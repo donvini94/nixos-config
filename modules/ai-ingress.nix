@@ -1,16 +1,9 @@
-# The single AI ingress both hosts expose at 127.0.0.1:8080.
+# The shared AI ingress on 127.0.0.1:8080: the ai-stack target, the `llama` service
+# identity, the logging proxy, log rotation, operator tooling and the polkit rule.
+# `modules/llama.nix` and `modules/remote-openai.nix` each supply only a backend.
 #
-# Dracula points it at local llama-swap, Alucard at Requesty. Everything that
-# is identical between them lives here: the systemd target, the `llama` service
-# identity, the logging proxy, log rotation, operator tooling, and the polkit
-# rule that lets operators drive the stack without root. `modules/llama.nix`
-# and `modules/remote-openai.nix` now only acquire their respective backends
-# and point this module at one.
-#
-# The proxy is the single source of truth for caller attribution, token counts,
-# latency, cost, the JSONL audit log, Prometheus metrics, and Langfuse
-# generation observations — every client (OMP, OpenCode, Hermes, n8n) is
-# covered because they all speak to this one port.
+# Every client (OMP, OpenCode, Hermes, n8n) speaks to this one port, so the proxy is
+# the only source of caller attribution, token counts, cost and the JSONL audit log.
 {
   config,
   lib,
@@ -22,10 +15,7 @@ let
   cfg = config.services.aiIngress;
   stateDirectoryName = lib.removePrefix "/var/lib/" cfg.stateDirectory;
 
-  # The proxy needs the Langfuse SDK, so it gets its own interpreter rather
-  # than the bare python3 the rest of the system uses. Keeping the SDK here
-  # instead of inside Hermes is deliberate: instrumentation belongs to the
-  # ingress, which sees every client.
+  # The proxy needs the Langfuse SDK, so it gets its own interpreter.
   python = pkgs.python3.withPackages (ps: [ ps.langfuse ]);
   proxy = pkgs.writeText "ai-ingress-proxy.py" (builtins.readFile ../ai-ingress/proxy.py);
   usageSummary = pkgs.writeText "ai-usage-summary.py" (
@@ -40,13 +30,11 @@ let
 
   ingressUrl = "http://${cfg.bindAddress}:${toString cfg.port}";
 
-  # A locally served model has no list price. Emitting a zero entry would make
-  # every local request report a $0.00 "registry-estimate" instead of the
-  # honest "unavailable", so zero-priced models are dropped from the map.
+  # A locally served model has no list price: a zero entry would make every local
+  # request report a $0.00 "registry-estimate" instead of an honest "unavailable".
   billablePrices = lib.filterAttrs (_: price: price.input != 0 || price.output != 0) cfg.priceMap;
 
-  # Shared by ai-stack-start and ai-stack-health: the target's Wants list is
-  # the authoritative membership, so tooling never hardcodes unit names.
+  # The target's Wants list is the authoritative membership; tooling never hardcodes units.
   readStackUnits = ''
     read -r -a stack_units <<< "$(${pkgs.systemd}/bin/systemctl show --property=Wants --value ai-stack.target)"
   '';
@@ -281,8 +269,8 @@ in
       };
     };
 
-    # Inert unless polkit itself runs; servers do not enable it by default,
-    # which silently made ai-stack-{start,stop} root-only.
+    # Inert unless polkit itself runs; servers do not enable it by default, which
+    # leaves ai-stack-{start,stop} root-only.
     security.polkit.enable = true;
     security.polkit.extraConfig = ''
       polkit.addRule(function(action, subject) {

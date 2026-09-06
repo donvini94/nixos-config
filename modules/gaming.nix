@@ -5,9 +5,9 @@
     steam = {
       enable = true;
       gamescopeSession.enable = true;
-      remotePlay.openFirewall = true; # Open ports in the firewall for Steam Remote Play
-      dedicatedServer.openFirewall = true; # Open ports in the firewall for Source Dedicated Server
-      localNetworkGameTransfers.openFirewall = true; # Open ports in the firewall for Steam Local Network Game Transfers
+      remotePlay.openFirewall = true;
+      dedicatedServer.openFirewall = true;
+      localNetworkGameTransfers.openFirewall = true;
 
     };
     gamescope.enable = true;
@@ -22,7 +22,7 @@
       };
     };
   };
-  hardware.xone.enable = true; # support for the xbox controller USB dongle
+  hardware.xone.enable = true; # Xbox controller USB dongle.
   environment.systemPackages = with pkgs; [
     mangohud
     protonup-ng
@@ -38,6 +38,6 @@
 
   services.lsfg-vk = {
     enable = true;
-    ui.enable = true; # installs gui for configuring lsfg-vk
+    ui.enable = true;
   };
 }

@@ -6,7 +6,6 @@
     vim
     neovim
 
-    # Search & navigation (useful on all hosts)
     ripgrep
     fd
     tree
@@ -23,7 +22,6 @@
     unar
     zstd
 
-    # Secrets
     age
     sops
 
@@ -37,7 +35,6 @@
     ipcalc
     mullvad-vpn
 
-    # Base system utilities
     file
     which
     coreutils
@@ -56,13 +53,11 @@
     cmake
     clang
 
-    # Hardware / filesystem
     btrfs-progs
     efibootmgr
     pciutils
     usbutils
 
-    # System monitoring
     sysstat
     lm_sensors
     ethtool
@@ -72,7 +67,6 @@
     lazydocker
     psmisc
 
-    # System debugging
     strace
     ltrace
     lsof
@@ -81,7 +75,6 @@
     mediainfo
     imagemagick
 
-    # XDG / dbus integration
     xdg-user-dirs
     libnotify
   ];

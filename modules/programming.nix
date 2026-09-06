@@ -16,13 +16,11 @@
         numpy
         requests
         beautifulsoup4
-        pyflakes # TODO: ruff replaces this — remove once ruff is confirmed working
         debugpy
         torchWithCuda
         transformers
         pynvml
 
-        # ML / data science
         jupyter
         jupyterlab
         matplotlib
@@ -39,7 +37,6 @@
     pipenv
     uv
 
-    # Rust (system toolchain)
     rust-analyzer
     rustup
     rustfmt
@@ -59,16 +56,13 @@
     libvterm
     editorconfig-core-c
 
-    # System runtimes
     sqlite
     nodejs_22
 
-    # Shell tooling (system scripts)
     shfmt
     bash-language-server
     shellcheck
 
-    # Nix LSP and tools from flake inputs
     inputs.nil.packages.${pkgs.stdenv.hostPlatform.system}.default
     claude-code
     codex

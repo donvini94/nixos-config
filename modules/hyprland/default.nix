@@ -1,25 +1,14 @@
 { pkgs, inputs, ... }:
 let
-  # Animated greeter background: a user-supplied Dragon Ball "Goku sunset" loop,
-  # 3840x2160 @60fps, living in-repo under wallpapers/. NOTE: this is a Nix path
-  # literal, so the file MUST be git-tracked or the flake won't see it (and it is a
-  # ~62MB binary committed to the repo — a deliberate tradeoff for using a local,
-  # curated clip instead of an external fetch). The basename keeps its .mp4
-  # extension, which the theme QML needs to pick the MediaPlayer (video) branch.
+  # Nix path literal: the clip MUST be git-tracked or the flake won't see it.
   greeterWallpaper = ../../wallpapers/goku-shadow-sunset-dragon-ball-moewalls-com.mp4;
 
-  # Poster shown for the instant before the video starts (theme hides it on play).
-  # A still frame OF the clip itself, so there is no jarring flash. Built at build
-  # time; no extra committed asset.
+  # Placeholder shown until the video starts; the theme hides it on play.
   greeterPoster = pkgs.runCommand "sddm-greeter-poster.png"
     { nativeBuildInputs = [ pkgs.ffmpeg-headless ]; } ''
       ffmpeg -ss 2 -i ${greeterWallpaper} -frames:v 1 -update 1 $out
     '';
 
-  # unixporn SDDM greeter (sddm-astronaut, Qt6). Swap `embeddedTheme` for any of:
-  #   astronaut · black_hole · cyberpunk · hyprland_kath · jake_the_dog
-  #   japanese_aesthetic · pixel_sakura · pixel_sakura_static
-  #   post-apocalyptic_hacker · purple_leaves
   sddm-astronaut = pkgs.sddm-astronaut.override {
     embeddedTheme = "black_hole";
     # themeConfig is emitted as `black_hole.conf.user`, which SDDM MERGES over the
@@ -32,29 +21,26 @@ let
       CropBackground = "true"; # region == video size (3840x2160), so this is a 1:1 no-op
       DimBackground = "0.0";
 
-      # Layout: solid panel on the LEFT, video to its right (anchored to the form).
       # The theme sizes the form at `parent.width / 2.5` with no config key for it;
       # at 5120 that is a 2048px panel and the video keeps the remaining width.
       FormPosition = "left";
       HaveFormBackground = "true";
 
-      # --- Palette adapted to the Goku-sunset wallpaper (colours sampled from the
-      # frame: dark-purple base, sun-orange accent, warm-cream text, coral warning).
-      # Re-derive these if the wallpaper changes. ---
-      FormBackgroundColor = "#211728"; # dominant dark purple → the solid left panel
+      # Palette hand-sampled from the wallpaper frame; re-derive it if the wallpaper changes.
+      FormBackgroundColor = "#211728";
       BackgroundColor = "#211728";
       DimBackgroundColor = "#211728";
       DropdownBackgroundColor = "#211728";
 
-      LoginFieldBackgroundColor = "#382342"; # mid dark purple, distinct from panel
+      LoginFieldBackgroundColor = "#382342";
       PasswordFieldBackgroundColor = "#382342";
 
-      LoginButtonBackgroundColor = "#fb5d37"; # sun orange = accent
+      LoginButtonBackgroundColor = "#fb5d37";
       HighlightBackgroundColor = "#fb5d37";
       DropdownSelectedBackgroundColor = "#fb5d37";
       HighlightBorderColor = "#ab3a51";
 
-      TimeTextColor = "#fcda89"; # warm cream = primary text (high contrast on dark)
+      TimeTextColor = "#fcda89";
       LoginFieldTextColor = "#fcda89";
       PasswordFieldTextColor = "#fcda89";
       UserIconColor = "#fcda89";
@@ -64,14 +50,14 @@ let
       VirtualKeyboardButtonTextColor = "#fcda89";
       DropdownTextColor = "#fcda89";
 
-      HeaderTextColor = "#f7a35a"; # secondary text = softer orange
+      HeaderTextColor = "#f7a35a";
       DateTextColor = "#f7a35a";
 
-      LoginButtonTextColor = "#211728"; # dark text on the orange accent (contrast)
+      LoginButtonTextColor = "#211728";
       HighlightTextColor = "#211728";
 
-      PlaceholderTextColor = "#a8746e"; # muted warm
-      WarningColor = "#f35d50"; # coral red = alert
+      PlaceholderTextColor = "#a8746e";
+      WarningColor = "#f35d50";
 
       HoverUserIconColor = "#fb5d37";
       HoverPasswordIconColor = "#fb5d37";
@@ -82,10 +68,8 @@ let
   };
 in
 {
-  # programs.hyprland.enable already registers xdg-desktop-portal-hyprland
-  # via xdg.portal.{extraPortals,configPackages}. We only need to add the gtk
-  # backend, which provides org.freedesktop.portal.Settings (used by Qt/GTK
-  # apps to read color-scheme/font-config) and the GTK file chooser.
+  # programs.hyprland.enable already registers xdg-desktop-portal-hyprland; only the
+  # gtk backend (org.freedesktop.portal.Settings, GTK file chooser) needs adding here.
   xdg.portal = {
     enable = true;
     extraPortals = with pkgs; [ xdg-desktop-portal-gtk ];
@@ -107,26 +91,25 @@ in
       xkb.layout = "us";
       xkb.options = "caps:escape, grp:alt_shift_toggle";
       # The Dell U4025QW advertises 2560x1080 as its base-EDID preferred mode and
-      # exposes native 5120x2160 only via a DisplayID extension. NVIDIA 595.84
-      # auto-selects the 2560 base mode for the X greeter (it picked 5120 before
-      # the driver bump), which squeezes the login form. SDDM runs setupCommands
-      # in its Xsetup, so force native mode there. Session is Wayland/Hyprland and
-      # unaffected (it sets its own mode via `highres`). Output name is detected so
-      # this survives NVIDIA's DP-N enumeration.
+      # exposes native 5120x2160 only via a DisplayID extension; NVIDIA 595.84
+      # auto-selects the 2560 base mode for the X greeter, squeezing the login form.
+      # SDDM runs setupCommands in its Xsetup, so force native mode there; the
+      # Wayland session sets its own mode. Output name is detected so this survives
+      # NVIDIA's DP-N enumeration.
       displayManager.setupCommands = ''
         out=$(${pkgs.xrandr}/bin/xrandr --query | ${pkgs.gnugrep}/bin/grep -m1 ' connected' | ${pkgs.coreutils}/bin/cut -d' ' -f1)
         [ -n "$out" ] && ${pkgs.xrandr}/bin/xrandr --output "$out" --mode 5120x2160 || true
       '';
     };
-    # X11-backed greeter on purpose: the Wayland greeter path (mesa/egl-wayland
-    # + nvidia) was implicated in the June-2026 GDM black screen. The Hyprland
-    # session still runs on Wayland; only the login greeter is Xorg.
+    # X11-backed greeter on purpose: the Wayland greeter path (mesa/egl-wayland +
+    # nvidia) was implicated in the June-2026 GDM black screen. The Hyprland session
+    # still runs on Wayland; only the login greeter is Xorg.
     displayManager.sddm = {
       enable = true;
       package = pkgs.kdePackages.sddm; # Qt6 — required by sddm-astronaut
-      wayland.enable = false; # X11 greeter
+      wayland.enable = false;
       theme = "sddm-astronaut-theme";
-      extraPackages = sddm-astronaut.propagatedBuildInputs; # qtsvg, qtmultimedia, qtvirtualkeyboard
+      extraPackages = sddm-astronaut.propagatedBuildInputs;
     };
   };
 
@@ -144,8 +127,8 @@ in
 
   environment.sessionVariables.NIXOS_OZONE_WL = "1";
 
-  # Caelestia-shell replaces: waybar, dunst, swww, swayidle, wlogout, wofi (launcher)
-  # Keep only tools that caelestia does NOT provide
+  # caelestia-shell already provides waybar, dunst, swww, swayidle, wlogout and the
+  # wofi launcher; only add tools it does not.
   environment.systemPackages = with pkgs; [
     sddm-astronaut # provides the themed greeter at share/sddm/themes
     wl-clipboard
@@ -157,7 +140,6 @@ in
     slurp
     yad
 
-    # Audio
     alsa-utils
     mpd
     mpc

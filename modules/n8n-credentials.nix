@@ -1,16 +1,6 @@
-# Declarative provisioning of n8n's shared Header Auth credentials.
-#
-# n8n stores credentials encrypted in its own SQLite database, so they cannot
-# be a Nix file or an env var — they must be imported through n8n's own CLI,
-# which encrypts them with the instance encryption key. This unit is the only
-# supported way to keep those two credentials in SOPS instead of in someone's
-# browser session, and it is also the rotation path: change the secret, switch,
-# and the credential is re-imported under the same fixed ID.
-#
-# Secrets never touch Nix, argv, workflow JSON, logs, or the repository. They
-# arrive via systemd LoadCredential, are rendered into a root-only runtime
-# directory, bind-mounted read-only into a throwaway container, and deleted
-# when the unit exits.
+# n8n keeps credentials encrypted in its own SQLite database, so they can only be
+# installed through n8n's CLI under the instance encryption key — never as a Nix
+# file or env var. Re-importing under the same fixed ID is also the rotation path.
 {
   config,
   lib,
@@ -23,9 +13,8 @@ let
   n8nCfg = config.services.localN8n;
   stateDirectory = "/var/lib/n8n-container";
 
-  # The container runs as uid/gid 1000 (`node`). The rendered JSON is chowned to
-  # that id so the import can read it while the runtime directory itself stays
-  # root-only; bind-mounting the file needs no traversal by the container.
+  # The container runs as uid/gid 1000 (`node`); the rendered JSON is chowned to it
+  # so the import can read the bind-mounted file while the runtime dir stays root-only.
   containerUid = 1000;
 
   syncScript = pkgs.writeShellScript "n8n-credentials-sync" ''
@@ -54,9 +43,8 @@ let
     ${pkgs.coreutils}/bin/chown ${toString containerUid} "$creds"
     ${pkgs.coreutils}/bin/chmod 0400 "$creds"
 
-    # A throwaway container: same image, same state volume, same encryption key,
-    # no network. The image's entrypoint already is `n8n`, so only the
-    # subcommand is passed. `import:credentials` upserts by id: idempotent.
+    # The image's entrypoint already is `n8n`, so only the subcommand is passed.
+    # `import:credentials` upserts by id: idempotent.
     ${pkgs.docker}/bin/docker run --rm \
       --name n8n-credentials-sync \
       --network none \
@@ -95,8 +83,7 @@ in
       description = "Import SOPS-managed n8n credentials";
       after = [ "docker.service" ];
       requires = [ "docker.service" ];
-      # n8n must be down: importing into a live SQLite database races the
-      # running instance's own writes.
+      # n8n must be down: importing into a live SQLite database races its own writes.
       before = [ "docker-n8n.service" ];
 
       serviceConfig = {
@@ -112,8 +99,7 @@ in
       };
     };
 
-    # Pull the sync into n8n's dependency graph so a restart of n8n orders
-    # itself after a fresh import, and a rotation transaction stops n8n first.
+    # Pull the sync into n8n's graph: n8n stops for a rotation and starts after the import.
     systemd.services.docker-n8n = {
       after = [ "n8n-credentials-sync.service" ];
       requires = [ "n8n-credentials-sync.service" ];

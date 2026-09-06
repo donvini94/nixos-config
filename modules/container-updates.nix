@@ -57,8 +57,7 @@ in
       wantedBy = [ "timers.target" ];
       timerConfig = {
         OnCalendar = cfg.onCalendar;
-        # Avoid starting container recreation inside a NixOS switch merely because
-        # the machine was off at the scheduled time.
+        # Persistent would trigger container recreation inside a NixOS switch after downtime.
         Persistent = false;
         RandomizedDelaySec = "30m";
         Unit = "container-update.service";
