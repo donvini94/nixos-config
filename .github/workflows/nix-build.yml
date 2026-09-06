@@ -13,6 +13,12 @@ concurrency:
   group: nix-build-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Every job resolves github: flake inputs. Unauthenticated, that is the shared
+# 60 requests/hour anonymous limit across all five jobs, and api.github.com
+# answers 429 mid-evaluation. The runner token raises it to 1000/hour.
+env:
+  NIX_CONFIG: "access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}"
+
 jobs:
   build:
     name: NixOS build plan (${{ matrix.host }})

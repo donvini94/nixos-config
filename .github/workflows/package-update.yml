@@ -22,6 +22,11 @@ permissions:
   contents: write
   pull-requests: write
 
+# See nix-build.yml: unauthenticated github: input resolution hits the anonymous
+# API rate limit and fails evaluation with 429.
+env:
+  NIX_CONFIG: "access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}"
+
 jobs:
   update:
     name: nix-update ${{ matrix.package }}
