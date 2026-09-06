@@ -120,7 +120,7 @@ Then create `hosts/newhost/` with `default.nix` (imports shared modules), `hardw
 - `cli-tools.nix` — User-level CLI tooling that builds on Linux *and* darwin; imported by every host
 - `packages.nix` — Linux-desktop-only packages (GUI apps, hledger, texlive)
 - `lsp.nix` — Language servers for the OMP `lsp` tool
-- `omp.nix` — OMP harness context (`~/.omp/agent` links, derived `mcp.json`, lathe + its skills)
+- `omp.nix` — OMP harness context (`~/.omp/agent` links, derived `mcp.json`, lathe + its skills, and the `mentor` skill and `/mentor` command linked from the `~/code/omp-mentor` checkout)
 - `zed.nix` — Zed settings + keymap (shared; JSONC copied verbatim)
 - `helix.nix`, `kitty.nix`, `mpv.nix`, `starship.nix`, `yazi.nix`, `zathura.nix`, `zellij.nix`, `doom.nix` — Per-tool configs
 
