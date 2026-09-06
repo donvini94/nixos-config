@@ -6,8 +6,7 @@
 }:
 
 let
-  # Nixpkgs still carries CRS 3.3.4, which predates the July 2026 security
-  # fixes. Pin the current v4 LTS rules independently of the nginx module.
+  # nixpkgs ships CRS 3.3.4, which predates the 2026-07 security fixes.
   coreruleset = pkgs.fetchFromGitHub {
     owner = "coreruleset";
     repo = "coreruleset";
@@ -57,12 +56,8 @@ let
   };
   crowdsecPaths = config.services.crowdsec.settings.general.config_paths;
   hubChangedMarker = "/run/crowdsec-update-hub/hub-changed";
-  # Content of every installed hub item and detection data file. `.index.json`
-  # is excluded because `hub update` rewrites the catalogue daily whether or
-  # not an item changed, and the database, its WAL sidecars, the LAPI
-  # credentials, and the GeoLite archives are excluded because CrowdSec writes
-  # those itself: including any of them would report a change on every run and
-  # turn the conditional restart below into an unconditional one.
+  # Hub content only: .index.json, the database, credentials and mmdb archives are
+  # rewritten by CrowdSec itself and would report a change on every run.
   hubFingerprint = pkgs.writeShellApplication {
     name = "crowdsec-hub-fingerprint";
     runtimeInputs = [
@@ -91,8 +86,7 @@ let
       rm -f ${lib.escapeShellArg hubChangedMarker}
       before="$(${lib.getExe hubFingerprint})"
       cscli --error hub update
-      # Deliberately not quiet: this is the only record of which detection
-      # items moved, and a new false positive is triaged against it.
+      # Not quiet: this log is the only record of which detection items moved.
       cscli hub upgrade
       after="$(${lib.getExe hubFingerprint})"
 
@@ -135,8 +129,7 @@ in
         enable = true;
         # Port 8080 belongs permanently to the AI ingress.
         listen_uri = "127.0.0.1:18082";
-        # Do not send security events off-host unless CAPI enrollment is an
-        # explicit operator decision.
+        # No security events off-host without an explicit CAPI enrollment decision.
         online_client = {
           sharing = false;
           pull = {
@@ -181,21 +174,11 @@ in
             ];
           };
         }
-        # Verified false positive, alert 1625 on 2026-08-16: the Onyx admin UI
-        # is a Next.js app whose router prefetches every route the pointer
-        # touches, so opening the admin panel emitted 55 distinct `?_rsc=`
-        # GETs in 9 seconds and tripped crowdsecurity/http-crawl-non_statics
-        # (capacity 40, distinct on file_name). Statuses are constrained so a
-        # scanner cannot append `?_rsc=` to hide 404/403 probing.
-        #
-        # The query string is matched through both field names on purpose. The
-        # NixOS module links local parsers as
-        # `s02-enrich/<store-hash>-parsers-s02-enrich.yaml`, and CrowdSec
-        # orders a stage by file name, so whether this node runs before or
-        # after `crowdsecurity/http-logs` changes with every store hash. Before
-        # that node `evt.Parsed.request` still carries `?args`; after it the
-        # query lives in `evt.Parsed.http_args`. `evt.Meta.http_status` comes
-        # from s01 and is stable either way.
+        # Next.js router prefetch (?_rsc=) trips crowdsecurity/http-crawl-non_statics.
+        # Statuses are constrained so a scanner cannot append ?_rsc= to hide 404/403
+        # probing. Both field names are matched because the parser file name carries a
+        # store hash, so this node may run before http-logs (query in .request) or
+        # after it (.http_args).
         {
           name = "alucard/nextjs-rsc-prefetch-whitelist";
           description = "Next.js router prefetch is not an aggressive crawl";
@@ -206,11 +189,9 @@ in
             ];
           };
         }
-        # Verified false positive, alert 1339 on 2026-08-15: Swiftfin on iOS
-        # POSTs session progress to /Sessions/Playing and gets 403 once the
-        # Jellyfin session is stale, ten times in 46 seconds, which reads as
-        # credential stuffing to LePresidente/http-generic-403-bf. Scoped to
-        # the session-reporting endpoints so 403s anywhere else still count.
+        # Stale client sessions POST to /Sessions/ and get 403, which reads as
+        # credential stuffing to LePresidente/http-generic-403-bf. Scoped to that path
+        # so 403s elsewhere still count.
         {
           name = "alucard/jellyfin-session-403-whitelist";
           description = "Stale Jellyfin client sessions are not a 403 brute force";
@@ -237,52 +218,31 @@ in
     };
   };
 
-  # The upstream NixOS module enables DynamicUser but does not declare its
-  # persistent state directory.  On a hardened systemd setup that makes the
-  # /var/lib/crowdsec -> /var/lib/private/crowdsec link inaccessible during
-  # setup and hub updates.
+  # Upstream enables DynamicUser without declaring the state directory, which makes
+  # /var/lib/private/crowdsec inaccessible during setup and hub updates.
   systemd.services.crowdsec.serviceConfig = {
     StateDirectory = "crowdsec";
     StateDirectoryMode = "0750";
   };
 
-  # The module publishes localConfig parsers, whitelists, and scenarios into
-  # /etc/crowdsec through systemd-tmpfiles links rather than the unit
-  # definition, so switch-to-configuration sees no reason to restart the
-  # engine: a whitelist added here lands on disk but stays unloaded until the
-  # next reboot. Verified on 2026-08-16, when two new whitelists were absent
-  # from `cs_node_hits_total` after two successive switches while the engine
-  # still reported the uptime it had since boot. Tie the unit to the local
-  # ruleset so changing it reloads the engine that enforces it.
+  # localConfig is published through systemd-tmpfiles rather than the unit, so
+  # switch-to-configuration never restarts the engine: a new whitelist lands on disk
+  # but stays unloaded. Tie the unit to the ruleset it enforces.
   systemd.services.crowdsec.restartTriggers = [
     (builtins.toJSON config.services.crowdsec.localConfig)
   ];
-  # The same tmpfiles indirection makes a whitelist unretractable: each entry
-  # is published as its own `L+` link named after its store hash, and a `L+`
-  # rule that disappears never deletes the file it created. Verified on
-  # 2026-08-17 with a probe whitelist that outlived its own deletion and kept
-  # accumulating `cs_node_hits_total`. `systemd-tmpfiles --create --remove`
-  # performs every `r` before any `L+` in one invocation, so globbing the
-  # generated names makes the published ruleset equal what this file declares
-  # instead of the union of everything it has ever declared.
+  # Each entry is published as its own `L+` link named after its store hash, and a `L+`
+  # rule that disappears never deletes its file. `systemd-tmpfiles --create --remove`
+  # runs every `r` before any `L+`, so ordering after it prunes the stale ones.
   systemd.services.crowdsec.after = [ "systemd-tmpfiles-resetup.service" ];
 
-  # `autoUpdateService` is broken twice over upstream, and had failed every
-  # night since at least 2026-08-14. Its `ExecStart` is only `cscli hub
-  # update`, which refreshes the catalogue and upgrades nothing, so detection
-  # content never advanced. Its `ExecStartPost` then ran `systemctl reload
-  # crowdsec.service` as the unit's own DynamicUser, which is denied — and
-  # `crowdsec.service` clears `ExecReload`, so that reload could not have
-  # worked even as root.
-  #
-  # Refresh the catalogue, upgrade the installed items, and restart the engine
-  # only when the upgrade actually moved something. Conditional matters: the
-  # file datasource resumes at the end of the access log rather than replaying
-  # it, so every restart is a short blind window, and it also discards every
-  # in-flight leaky bucket. `try-restart` because `ExecReload` is empty, and a
-  # `+` line because a unit's `User=` does not apply to those. The local
-  # whitelists are unaffected by an upgrade: they are local items, not hub
-  # ones.
+  # autoUpdateService is broken upstream: ExecStart is only `cscli hub update`, which
+  # refreshes the catalogue and upgrades nothing, and ExecStartPost reloads as the
+  # unit's DynamicUser, which is denied — crowdsec.service clears ExecReload anyway.
+  # Restart only when the upgrade moved something: the file datasource resumes at the
+  # end of the access log instead of replaying it, and a restart discards every
+  # in-flight bucket. `try-restart` because ExecReload is empty, `+` because a unit's
+  # User= does not apply to those lines.
   systemd.services.crowdsec-update-hub.serviceConfig = {
     StateDirectory = "crowdsec";
     StateDirectoryMode = "0750";
@@ -293,8 +253,8 @@ in
     ];
     ExecStartPost = lib.mkForce [ ];
   };
-  # Normalize nested state left behind by the module's earlier DynamicUser
-  # migration. Preserve existing file modes while repairing owner/group.
+  # `Z` repairs ownership from the module's earlier DynamicUser migration, preserving
+  # modes; the `r` globs prune the stale `L+` links described above.
   systemd.tmpfiles.rules = [
     "Z /var/lib/private/crowdsec - crowdsec crowdsec - -"
     "r /etc/crowdsec/parsers/s00-raw/*-parsers-s00-raw.yaml"
@@ -306,17 +266,16 @@ in
     "r /etc/crowdsec/notifications/*-notification.yaml"
   ];
 
-  # The upstream module requires the registration unit but does not order the
-  # bouncer after it. Without this edge the first activation races the key file.
+  # Upstream requires the registration unit but does not order the bouncer after it,
+  # so the first activation races the key file.
   systemd.services.crowdsec-firewall-bouncer.after = [
     "crowdsec-firewall-bouncer-register.service"
     "docker.service"
   ];
   systemd.services.crowdsec-firewall-bouncer.wants = [ "docker.service" ];
 
-  # NixOS' registration unit stops when CrowdSec still knows a bouncer whose
-  # local key was lost. Re-register that one exact bouncer with upstream cscli
-  # so rebuilding the machine is self-healing rather than a manual procedure.
+  # Registration stops when CrowdSec still knows a bouncer whose local key was lost.
+  # Re-register that one bouncer so rebuilding the machine is self-healing.
   systemd.services.crowdsec-firewall-bouncer-register.script = lib.mkForce ''
     cscli=${lib.getExe' config.services.crowdsec.package "cscli"}
     key=/var/lib/crowdsec-firewall-bouncer-register/api-key.cred
@@ -339,8 +298,7 @@ in
 
   users.users.crowdsec.extraGroups = lib.mkAfter [ "nginx" ];
 
-  # OWASP Core Rule Set provides request-level virtual patching while the
-  # firewall bouncer handles host and Docker traffic at layers 3/4.
+  # CRS does request-level virtual patching; the bouncer handles layers 3/4.
   services.nginx = {
     additionalModules = lib.mkAfter [ pkgs.nginxModules.modsecurity ];
     appendHttpConfig = ''
@@ -349,22 +307,12 @@ in
       modsecurity on;
       modsecurity_rules_file ${modsecurityRules};
 
-      # Every CrowdSec HTTP scenario groups by `source_ip + '/' +
-      # target_fqdn`, and `crowdsecurity/nginx-logs` can only fill
-      # `target_fqdn` from an optional leading vhost field in the access log:
-      # `(%{IPORHOST:target_fqdn}(:%{INT:port})? )?`. Stock `combined` has no
-      # such field, so the whole reverse proxy collapses into one bucket per
-      # client IP and a session that touches several of our own services sums
-      # into a single 40-distinct-path `http-crawl-non_statics` overflow.
-      # Verified on 2026-08-16: 74 distinct paths in 57.8s while demoing
-      # Jellyfin and Paperless back to back, 4h ban on the operator's address.
-      #
-      # `$host` needs no sanitising. nginx answers a syntactically invalid
-      # Host header with 400 and falls back to the matched `server_name`, so
-      # the field can never contain a space or a quote, and the grok search is
-      # unanchored: a value that is not IPORHOST-shaped (a bracketed IPv6
-      # literal, an empty default) leaves `target_fqdn` empty and parses the
-      # rest of the line exactly as it does today.
+      # CrowdSec HTTP scenarios bucket on `source_ip + '/' + target_fqdn`, and
+      # crowdsecurity/nginx-logs fills target_fqdn only from a leading vhost field that
+      # stock `combined` lacks: without it every service collapses into one bucket per
+      # client IP and ordinary browsing self-bans. $host needs no sanitising — nginx
+      # answers an invalid Host with 400 and falls back to server_name, and the grok
+      # search is unanchored.
       log_format crowdsec_vhost
         '$host $remote_addr - $remote_user [$time_local] '
         '"$request" $status $body_bytes_sent '
@@ -373,9 +321,8 @@ in
     '';
   };
 
-  # The firewall-bouncer module invokes upstream cscli, which expects this
-  # conventional path. CrowdSec itself uses the identical generated config
-  # directly from the Nix store.
+  # The firewall-bouncer module invokes upstream cscli, which expects this path;
+  # CrowdSec itself reads the same generated config from the store.
   environment.etc."crowdsec/config.yaml".source =
     (pkgs.formats.yaml { }).generate "crowdsec.yaml"
       config.services.crowdsec.settings.general;

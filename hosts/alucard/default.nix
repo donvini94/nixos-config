@@ -28,8 +28,8 @@
     ../../secrets/secrets.nix
   ];
 
-  # The flake wires home-manager for the primary user only. Kyrill drives this
-  # box from his own account, so his home configuration is named here.
+  # The flake wires home-manager for the primary user only; Kyrill's own
+  # account is named here.
   home-manager.users.kyrill = import ./home-kyrill.nix;
 
   services.containerUpdates = {
@@ -42,7 +42,6 @@
     rootlessDockerUser = username;
   };
 
-  # Boot
   boot = {
     initrd.availableKernelModules = [
       "ata_piix"
@@ -59,7 +58,7 @@
     supportedFilesystems = [ "cifs" ];
   };
 
-  # Nix settings (shared base in configuration.nix)
+  # Shared base lives in configuration.nix.
   nix = {
     settings = {
       sandbox = true;
@@ -70,15 +69,10 @@
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 
-  # Packages
   environment.systemPackages = with pkgs; [
     yazi
-    # Multiplexer for SSH-disconnect persistence and for long-running agent
-    # sessions driven from the Mac/dracula (`zjr Bereitserver <name>`). It is a
-    # system package, not a home-manager one, because `ssh host -- zellij ...`
-    # runs a non-interactive shell that never sources the per-user profile.
-    # Its configuration lives in hosts/alucard/zellij.nix.
-    # (tmux below is the incumbent — kept until the zellij workflow is proven.)
+    # System package, not home-manager: `ssh host -- zellij ...` runs a
+    # non-interactive shell that never sources the per-user profile.
     zellij
     openssl
     apacheHttpd
@@ -99,10 +93,8 @@
     lnav
   ];
 
-  # System-level fish, on top of the home-manager one. This is what generates
-  # completions from `environment.systemPackages` into /etc/fish and what makes
-  # the shell a valid entry in /etc/shells, which is the precondition for
-  # users.users.vincenzo.shell (hosts/alucard/users.nix).
+  # On top of the home-manager fish: this is what makes fish a valid entry in
+  # /etc/shells, the precondition for users.users.vincenzo.shell.
   programs.fish.enable = true;
 
   programs.tmux = {
@@ -111,7 +103,6 @@
     terminal = "screen-256color";
   };
 
-  # Hetzner storage mount
   fileSystems."/mnt/hetzner" = {
     device = "//u487137.your-storagebox.de/backup";
     fsType = "cifs";

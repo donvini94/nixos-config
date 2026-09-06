@@ -1,8 +1,6 @@
 { pkgs, ... }:
-# Keys are named once and referenced per account. Every account below keeps
-# exactly the key set it had before: the lists are assembled from these names,
-# not widened. Adding a person means adding one binding and naming it on the
-# accounts they are actually meant to reach.
+# Key lists are assembled from these names, never widened: adding a person means
+# adding one binding and naming it only on the accounts they are meant to reach.
 let
   vincenzoNixos = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDj2dxqVTVKEzFUBw4Ol8G2XBwTHEwxFquzYNIelKBOzDQLE2WNvjfBko1iQkUNHrVfr3GiAuxdsE+O3hltDvo4UsQqsEqCSu/HEWRfyXDJrcLSm7ogkOAGBZtrmIr73YfGhpzRqcfnoAqSJOkX6PFmaFJ+YgoOuJLH6KbQo3xv0r5RqFkZhfnOiD5gwMtEExP4uawycb9mrsqxOWoMANR870qYq6JERxcGZU4m0UcvnpB01EbvTuWMIACL11cCylkcCPoDnv9KD94k0nhqGOE5/UB6mxRPBBJdQk3Dd3KXe2u2s++Enpu2WKdqOFywxxvXZ2PHBh4Oy8eJpytzMWxSUcLNcNk54JgAgaUCYYN0s3CmKh2r+z6pGSo5xUuJxyl13TfsSzCTsx3dkUOAaRpQAIHDseIDKX983zDS831GZA1d4xiOOtC7ct8F8z3qMokHU+N8OB0ys2T7cS29Q9BKSgaPSBlM0YTWQwD0R2Tf+D74VQnSYPgNNGFByZwV8bc= vincenzo@nixos";
   vincenzoDracula = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCPlhh/4miDPy8MD7ckimo0ZlEyRIIQymAeNrpvbURg+H0G+kztFgr2x0muzAVwy5noz7511zQBkG9q+lJfWHzjGvVibew5HhcdlECkzpStrkRkupM0l7Ql1ILlQb/lME1v4TM+JM1nCbOgIqkjKJ/dzE3WqHz8CfJ6ilf5QedKHnAFbMu6miOGHMJxDje+0t/51QPul513d2oyIjtUBjtW0Yo77PgSuopFbhEI//cn0P7QVJArbmv7YZqGNifVzMyzQBlvXQtJC0CR/bGTJwspCCU2xIangzHrkKxRqkZJrk1zC5JyMbW1oRUZ3ah7MbUq/ivAUfjvzvkrZS5DbigMmSIbGmoK9d/k6pQjj4gyL1Q5KZRq4g2JKkV6Uhaqr2yfG2F0T6FGKnhGO6P5PK2bkAobfCfLL5IGkceK/WB0InMKfdbii971CeUY0qk+1ad7Fn9txuR5omttkEtM9Hh9Afz1kGxa4ia9+d71OV4KoXVykqr/bD284rhOooX4/mU= vincenzo@dracula";
@@ -22,16 +20,12 @@ in
   users.users = {
     vincenzo = {
       isNormalUser = true;
-      # Declared, not allocated: the rootless Docker runtime directory
-      # (/run/user/1000) is referenced at evaluation time by the vulnerability
-      # scanner's sandbox. This is the uid the account already has.
+      # Pinned, not allocated: /run/user/1000 is referenced at evaluation time
+      # by the vulnerability scanner's sandbox.
       uid = 1000;
-      # Interactive work on this host happens over SSH, so the login shell is
-      # what an agent session lands in. fish is NOT POSIX: `ssh alucard -- '...'`
-      # runs the argument through this shell, so remote one-liners that rely on
-      # bash syntax ($(), &&-chained redirections, `export FOO=bar`) must be
-      # invoked explicitly as `ssh alucard -- bash -lc '...'`. The other accounts
-      # keep bash for exactly that reason.
+      # fish is NOT POSIX: `ssh alucard -- '...'` runs the argument through this
+      # shell, so remote one-liners relying on bash syntax ($(), &&-chained
+      # redirections, `export FOO=bar`) need `ssh alucard -- bash -lc '...'`.
       shell = pkgs.fish;
       extraGroups = [
         "wheel"

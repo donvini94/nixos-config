@@ -6,10 +6,9 @@
     openDefaultPorts = true;
     dataDir = "/home/vincenzo/";
     configDir = "/home/vincenzo/.config/syncthing";
-    # No peer may introduce a folder on this host. Every device previously
-    # carried autoAcceptFolders, which silently made `overrideFolders` default
-    # to false and left the declarations below decorative: nine folders existed
-    # only in runtime state. The set below is the live state, now authoritative.
+    # No peer may introduce a folder here: autoAcceptFolders on a device
+    # silently defaults `overrideFolders` to false, which leaves the
+    # declarations below decorative.
     overrideDevices = true;
     overrideFolders = true;
     settings = {

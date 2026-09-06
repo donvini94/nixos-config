@@ -36,14 +36,12 @@ in
     }
   ];
 
-  # ACME / Let's Encrypt
   security.acme = {
     acceptTerms = true;
     defaults.email = "vincenzo.pace94@icloud.com";
   };
 
   services = {
-    # Nginx reverse proxy
     nginx = {
       enable = true;
       additionalModules = [ pkgs.nginxModules.dav ];
@@ -62,18 +60,15 @@ in
         "auth.${domain}" = {
           enableACME = true;
           forceSSL = true;
-          # CRS blocks the admin REST API's writes: a `PUT
-          # /admin/realms/{realm}/clients/{id}` carrying a full client
-          # representation returned nginx's own HTML 403, which is why the
-          # admin console reported "Client could not be updated:" with no
-          # message — it had no JSON error to render. Verified on 2026-08-16
-          # against the Onyx client; the same call to 127.0.0.1:38080 answered
-          # 204. Exempt only that API, which already demands a bearer token
-          # with realm-management rights, and keep the WAF on the login,
-          # token, and account endpoints that face the internet unauthenticated.
-          # As on the Jellyfin vhost, the connector evaluates the server-level
-          # WAF before a nested location can turn it off, so it is disabled
-          # here and re-enabled on the catch-all route.
+          # CRS scores the admin REST API's writes (`PUT
+          # /admin/realms/{realm}/clients/{id}` with a full client
+          # representation) as attacks and answers with nginx's HTML 403, which
+          # the admin console renders as an error with no message. Exempt only
+          # that API, which already demands a bearer token with
+          # realm-management rights; the unauthenticated login, token and
+          # account endpoints keep the WAF.
+          # The server-level WAF is evaluated before a nested location can turn
+          # it off, so it is disabled here and re-enabled on the catch-all route.
           extraConfig = "modsecurity off;";
           locations."^~ /admin/realms/" = {
             proxyPass = "http://127.0.0.1:38080";
@@ -104,19 +99,14 @@ in
         "stream.${domain}" = {
           enableACME = true;
           forceSSL = true;
-          # The connector evaluates a global/server WAF before a nested location
-          # can disable it. Disable it at this vhost, then re-enable it for the
-          # catch-all route so only the authenticated playback endpoint family
-          # is exempt.
+          # The server-level WAF is evaluated before a nested location can turn
+          # it off, so it is disabled here and re-enabled on the catch-all route.
           extraConfig = "modsecurity off;";
-          # CRS 4.25.1 ships `config.json` in both `restricted-files.data` and
+          # CRS 4.25.1 lists `config.json` in both `restricted-files.data` and
           # `lfi-os-files.data`, so 930120/930130 score the Jellyfin web
-          # client's own bootstrap file at CRITICAL and 949110 answers 403.
-          # The client cannot start without it: the public UI was dead while
-          # `/web/index.html` and the API both answered 200. Verified on
-          # 2026-08-16, 16 such 403s from the operator's address in 90
-          # minutes, and reproduced with a bare `curl` on 2026-08-17. An exact
-          # match outranks the `^~` and prefix routes below.
+          # client's own bootstrap file at CRITICAL and 949110 answers 403;
+          # without it the client cannot start. An exact match outranks the
+          # `^~` and prefix routes below.
           locations."= /web/config.json" = {
             proxyPass = "http://127.0.0.1:8096";
             extraConfig = "modsecurity off;";
@@ -205,7 +195,6 @@ in
               dav_access user:rw group:rw all:r;
               client_max_body_size 100m;
 
-              # Block read/delete methods, allow upload and discovery
               limit_except PUT MKCOL PROPFIND OPTIONS {
                 deny all;
               }
@@ -221,7 +210,7 @@ in
     };
   };
 
-  # Allow nginx to write to paperless consume dir (WebDAV uploads)
+  # WebDAV uploads are written into the paperless consume dir.
   systemd.services.nginx.serviceConfig = {
     ReadWritePaths = [ (config.services.paperless.dataDir + "/consume") ];
     UMask = lib.mkForce "0022";

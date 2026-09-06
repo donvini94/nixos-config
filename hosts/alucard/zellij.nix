@@ -1,29 +1,19 @@
-# zellij on alucard, for vincenzo.
-#
-# The keymap is the same bytes as the workstations (hm-modules/zellij/lib.nix)
-# and that is the point: with `zjr Bereitserver <name>` the session runs *here*,
-# so it is this file's config.kdl that interprets keystrokes typed on the Mac.
-# A keymap that drifted between the two would be worse than no keymap.
-#
-# Unlike the workstations this does not use `programs.zellij`. The binary stays
-# in `environment.systemPackages` (hosts/alucard/default.nix) because
-# `ssh host -- zellij ...` runs a non-interactive shell that never sources the
-# home-manager profile — /run/current-system/sw/bin is the only PATH entry
-# guaranteed to be there. Installing it a second time would just shadow it.
+# The keymap must stay byte-identical to the workstations': `zjr Bereitserver
+# <name>` runs the session here, so this config.kdl interprets the keys typed
+# there. Not `programs.zellij` — the binary is in environment.systemPackages
+# because `ssh host -- zellij ...` never sources the home-manager profile.
 { lib, pkgs, ... }:
 let
   zellij = import ../../hm-modules/zellij/lib.nix {
     inherit pkgs;
-    # Headless: there is no Emacs frame to pop, and neovim is already here via
-    # modules/packages.nix.
+    # Headless: there is no Emacs frame to pop.
     scrollbackEditor = "nvim";
     # copyCommand deliberately unset: OSC 52 carries the selection back out
     # through the SSH link to whichever terminal you are actually sitting at.
   };
 
-  # The `bereit` and `work` layouts SSH *into* this box and elsewhere; they only
-  # belong on a workstation. What is useful here is local project/agent work
-  # plus the host's own vitals.
+  # The `bereit` and `work` layouts SSH into this box; they belong on a
+  # workstation only.
   layouts = {
     inherit (zellij.layouts) dev agent;
   }
@@ -38,9 +28,7 @@ in
     name: text: lib.nameValuePair "zellij/layouts/${name}.kdl" { inherit text; }
   ) layouts;
 
-  # Only the local entry point. `zjr`/`zjls` drive a session on *another* host,
-  # and from here there is no other host to drive — this is the far end. `zj`
-  # matters because a session started by hand on this box has to be the same
-  # session the workstations reattach to.
+  # Only the local entry point: `zjr`/`zjls` drive a session on another host and
+  # this box is the far end.
   programs.fish.functions = { inherit (zellij.fishFunctions) zj; };
 }

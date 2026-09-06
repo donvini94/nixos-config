@@ -9,18 +9,12 @@
     };
   };
 
-  # The Onyx stack's OpenSearch container requests unlimited memlock
-  # (`ulimits.memlock: -1`, paired with `bootstrap.memory_lock=true`). A
-  # rootless daemon can only grant what its own RLIMIT_MEMLOCK allows, and the
-  # systemd *user* manager inherits PID 1's 8MB default, so container creation
-  # fails with an OCI rlimit error. Raise the ceiling for user managers only —
-  # not for every system service — and dockerd inherits it, because a systemd
-  # manager hands its own limits to the units it starts.
-  # nixpkgs already emits a drop-in for this template unit, so merge into it
-  # instead of defining systemd.units."user@.service" (which conflicts).
+  # Rootless dockerd inherits the systemd user manager's 8MB RLIMIT_MEMLOCK,
+  # too low for the Onyx OpenSearch container's `ulimits.memlock: -1`.
+  # Merge into the drop-in nixpkgs already emits for this template unit;
+  # defining systemd.units."user@.service" conflicts with it.
   systemd.services."user@".serviceConfig.LimitMEMLOCK = "infinity";
 
-  # Required directories for media automation
   systemd.tmpfiles.rules = [
     "d /var/lib/media-stack 0755 root root"
     "d /var/lib/media-stack/jellyseerr 0755 jellyfin jellyfin"
@@ -41,7 +35,6 @@
     "d /var/lib/media-stack/komga 0755 jellyfin jellyfin"
   ];
 
-  # Media automation Docker Compose stack
   systemd.services.media-stack = {
     description = "Media automation stack with VPN-isolated torrenting";
     after = [
@@ -68,7 +61,6 @@
     };
   };
 
-  # Mining detection watchdog
   systemd.services.mining-watchdog = {
     description = "Detect and stop mining containers";
     after = [ "docker.service" ];

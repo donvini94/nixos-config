@@ -9,13 +9,13 @@ let
   tailscale = lib.getExe config.services.tailscale.package;
   tailnetHost = "alucard.tailf117a1.ts.net";
   privateTcpServices = {
-    # AI stack. These match Dracula's ai-admin forwarding ports.
+    # AI stack ports; these match Dracula's ai-admin SSH forwards.
     "23000" = 13000; # Langfuse
     "23001" = 13001; # Grafana
     "25678" = 5678; # n8n
     "28080" = 8080; # Requesty-backed OpenAI API
     "29091" = 19091; # Prometheus
-    # Media administration. These match the media-admin SSH forwards.
+    # Media administration ports; these match the media-admin SSH forwards.
     "15656" = 15656; # Kapowarr
     "16767" = 16767; # Bazarr
     "17878" = 17878; # Radarr
@@ -23,7 +23,6 @@ let
     "18989" = 18989; # Sonarr
     "19090" = 19090; # SABnzbd
     "19696" = 19696; # Prowlarr
-    # Shell history sync (services.atuin in services/hosted-applications.nix).
     # Plain TCP rather than `serve --https`: the atuin client is not a browser,
     # has no origin check to satisfy, and WireGuard already encrypts the hop.
     "28888" = 8888; # atuin
@@ -42,9 +41,8 @@ let
         "${tailscale} serve --yes --bg --tcp=${listenPort} tcp://127.0.0.1:${toString targetPort}"
       ) privateTcpServices
     )}
-    # This upstream UI intentionally accepts only its bound loopback Host and
-    # Origin. nginx validates the exact tailnet origin before translating it;
-    # Tailscale remains the only listener exposed outside loopback.
+    # Hermes only accepts its bound loopback Host and Origin, so nginx validates
+    # the exact tailnet origin and rewrites them before proxying.
     ${tailscale} serve --yes --bg --https=29119 http://127.0.0.1:19119
   '';
 in
@@ -93,9 +91,8 @@ in
     };
   };
 
-  # Backends stay on loopback, and no tailnet interface is globally trusted.
-  # Hermes additionally gets a tailnet-valid HTTPS endpoint because its chat
-  # and event streams use browser WebSockets.
+  # Backends stay on loopback and no tailnet interface is globally trusted;
+  # Hermes also gets a tailnet-valid HTTPS endpoint for its browser WebSockets.
   systemd.services.tailscale-private-services = {
     description = "Publish explicit Alucard administration ports inside the tailnet";
     after = [

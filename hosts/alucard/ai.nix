@@ -11,8 +11,7 @@ let
   requesty = import ../../lib/requesty-models.nix;
   hermes = import ../../lib/hermes-agent.nix;
   hermesN8nHandoff = pkgs.callPackage ../../packages/hermes-n8n-handoff.nix { };
-  # Both founders drive the same agent from their own host accounts. The CLI is
-  # intentionally shared state, not a per-user session boundary.
+  # The CLI is shared state, not a per-user session boundary.
   hermesUsers = [
     username
     "kyrill"
@@ -121,8 +120,7 @@ in
         owner = "root";
         mode = "0400";
       };
-      # Comma-separated numeric Telegram IDs. Structurally multi-value: append
-      # the second founder's ID when it is known. Never "*", never allow-all.
+      # Comma-separated numeric Telegram IDs; never "*", never allow-all.
       "hermes/telegram_allowed_users" = {
         sopsFile = secretFile;
         owner = "root";
@@ -160,11 +158,8 @@ in
       group = "root";
     };
 
-    # Nix/SOPS is authoritative for the whole secret half of Hermes' .env: the
-    # upstream module rewrites that file on every activation instead of
-    # reconciling single keys, so anything only stored by the dashboard would be
-    # dropped. Telegram credentials were migrated out of the live container's
-    # .env on 2026-08-16. Edit SOPS, never the dashboard.
+    # SOPS owns these secrets: the upstream module rewrites the whole .env on
+    # every activation, so dashboard-only edits are dropped.
     sops.templates."hermes.env" = {
       content = ''
         HERMES_DASHBOARD_BASIC_AUTH_USERNAME=demo
@@ -243,9 +238,8 @@ in
       operators = [ username ];
     };
 
-    # Ingress-level tracing is the cross-client view: OMP, OpenCode, Hermes and
-    # n8n all traverse this one proxy. OpenCode's own plugin adds nested
-    # agent/tool spans on top; the two are never summed for billing.
+    # OMP, OpenCode, Hermes and n8n all trace through this one proxy; OpenCode's plugin
+    # adds nested spans, and the two are never summed for billing.
     services.aiIngress.langfuse = {
       enable = true;
       publicKeyFile = config.sops.secrets."langfuse/project_public_key".path;
@@ -277,10 +271,9 @@ in
       webhookTokenFile = config.sops.secrets."n8n/webhook_token".path;
     };
 
-    # One agent for the trusted founding pair. Sessions separate by chat origin;
-    # memory, skills, workspace and /org are shared on purpose. This is a
-    # two-person team boundary, not customer multi-tenancy — if that ever
-    # changes, deploy separate upstream instances instead of widening this one.
+    # One agent for the trusted founding pair: sessions separate by chat origin,
+    # but memory, skills, workspace and /org are shared. Widening this past two
+    # people means deploying separate upstream instances instead.
     services.hermes-agent = {
       enable = true;
       addToSystemPackages = true;
@@ -295,7 +288,6 @@ in
         "SOUL.md" = ../../hermes/workspace/SOUL.md;
       };
       environment = hermes.runtimeEnv // {
-        # Supported messaging adapters egress through the domain-filtered proxy.
         HTTPS_PROXY = hermesProxyUrl;
         https_proxy = hermesProxyUrl;
         TELEGRAM_PROXY = hermesProxyUrl;
@@ -311,9 +303,8 @@ in
         hostUsers = hermesUsers;
         extraVolumes = [ "/home/${username}/org:/org:rw" ];
         # extraPackages only reaches the host profile and the native unit's
-        # PATH; in container mode the agent's PATH comes from the image, so the
-        # handoff command has to be named explicitly. The store is already
-        # mounted read-only, so no extra volume is needed.
+        # PATH; in container mode PATH comes from the image, so the handoff
+        # command is named explicitly. The store is already mounted read-only.
         extraOptions = hermes.containerOptions ++ [
           "--env"
           "PATH=${hermesN8nHandoff}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
@@ -323,9 +314,9 @@ in
 
     services.hermesDashboard.enable = true;
 
-    # Supported Hermes messaging adapters use this domain-filtered proxy.
-    # Agent policy separately limits tool-driven network calls to approved
-    # localhost n8n webhooks.
+    # Supported Hermes messaging adapters egress through this domain-filtered
+    # proxy; agent policy separately limits tool-driven calls to localhost n8n
+    # webhooks.
     services.tinyproxy = {
       enable = true;
       settings = {

@@ -96,10 +96,9 @@ in
     };
   };
 
-  # Jellyfin SSO-Auth 4.x follows the provider's advertised PAR endpoint by
-  # default, but Keycloak rejects this confidential client's pushed request.
-  # Disable PAR through the plugin's supported setting before Jellyfin starts;
-  # the ordinary authorization-code flow remains protected by state and PKCE.
+  # Jellyfin SSO-Auth 4.x follows the provider's advertised PAR endpoint, but
+  # Keycloak rejects this confidential client's pushed request, so PAR is
+  # disabled here before Jellyfin starts; the code flow keeps state and PKCE.
   systemd.services.jellyfin-runtime-policy = {
     description = "Enforce Jellyfin network and SSO policy";
     before = [ "jellyfin.service" ];

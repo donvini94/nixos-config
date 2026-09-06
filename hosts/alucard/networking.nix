@@ -3,10 +3,8 @@
   networking = {
     hostName = "alucard";
     useDHCP = lib.mkDefault true;
-    # Tailscale's MagicDNS resolver still needs stable upstream resolvers for
-    # public names.  DHCP-only DNS left tailscaled forwarding to an empty
-    # upstream set after activation, so public lookups returned SERVFAIL until
-    # the machine was rebooted.
+    # DHCP-only DNS left tailscaled forwarding to an empty upstream set after
+    # activation, so public lookups returned SERVFAIL until reboot.
     nameservers = [
       "1.1.1.1"
       "9.9.9.9"
@@ -31,7 +29,7 @@
         9876 # Bereit Rising (V Rising)
         9877 # Bereit Rising (V Rising)
       ];
-      # Block outbound connections to known mining pools (SECURITY FIX)
+      # Known mining-pool ports and pool hosts, dropped outbound.
       extraCommands = ''
         iptables -A OUTPUT -p tcp --dport 3333 -j DROP
         iptables -A OUTPUT -p tcp --dport 4444 -j DROP

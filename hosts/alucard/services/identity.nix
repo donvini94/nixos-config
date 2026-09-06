@@ -27,7 +27,7 @@
     };
   };
 
-  # Keycloak realm export (manual activation only)
+  # Manual activation only.
   systemd.services.keycloakExportRealms =
     let
       p = config.systemd.services.keycloak;
@@ -63,9 +63,8 @@
       '';
     };
 
-  # Startup-critical state that a host loss would otherwise destroy. The
-  # Paperless job lives in modules/paperless.nix because its snapshot depends on
-  # that module's exporter directory and signing key.
+  # The Paperless job lives in modules/paperless.nix instead, because its
+  # snapshot depends on that module's exporter directory and signing key.
   services.offsiteBackup.jobs.keycloak = {
     # pg_dump, not a file copy: Keycloak's cluster is live during the window,
     # and the realm export alone omits users, sessions and credentials.

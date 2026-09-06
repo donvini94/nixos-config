@@ -4,8 +4,8 @@
 }:
 {
   services = {
-    # Paperless itself lives in modules/paperless.nix — taxonomy, mail rules,
-    # provisioning, and backup travel with it. Only the vhost stays here.
+    # Paperless itself lives in modules/paperless.nix: taxonomy, mail rules,
+    # provisioning and backup travel with it.
     paperlessStack = {
       enable = true;
       domain = "paperless.dumusstbereitsein.de";
@@ -25,19 +25,12 @@
       openFirewall = false;
     };
 
-    # Shell history sync for the fish shells on alucard and dracula
-    # (hm-modules/atuin.nix). Defaults from the module are deliberately kept:
-    # host 127.0.0.1, port 8888, and a local `atuin` postgres database created
-    # via ensureDatabases/ensureDBOwnership against the cluster identity.nix
-    # already runs. Nothing here is reachable from the internet — the only way
-    # in is `tailscale serve --tcp=28888` in hosts/alucard/private-access.nix,
-    # so authentication is Tailscale's before it is atuin's.
-    #
-    # openRegistration stays true because registration is how a machine is
-    # enrolled (`atuin register` on the client), and the endpoint has no
-    # unauthenticated path from outside the tailnet. Set it to false once the
-    # last machine is enrolled if you want the account set frozen; existing
-    # logins and sync are unaffected by the flip.
+    # Reachable only through `tailscale serve --tcp=28888`
+    # (hosts/alucard/private-access.nix), so authentication is Tailscale's
+    # before it is atuin's.
+    # openRegistration is how a machine enrols (`atuin register` on the client);
+    # set it to false once the last one is enrolled — logins and sync are
+    # unaffected by the flip.
     atuin = {
       enable = true;
       openRegistration = true;
@@ -47,8 +40,7 @@
   services.offsiteBackup.jobs.n8n = {
     # `.backup` takes a consistent copy of a database the container is still
     # writing to; copying database.sqlite under WAL would capture a torn page.
-    # The rows stay encrypted: n8n/encryption_key lives only in SOPS, so this
-    # snapshot is useless without the separately held key.
+    # The rows stay encrypted — n8n/encryption_key lives only in SOPS.
     runtimeInputs = [ pkgs.sqlite ];
     after = [ "docker-n8n.service" ];
     prepare = ''
@@ -60,7 +52,6 @@
     verifyPaths = [ "${"/var/lib/offsite-backup/n8n/database.sqlite"}" ];
   };
 
-  # Paperless depends on mount
   systemd.services.paperless-consumer.after = [ "var-lib-paperless.mount" ];
   systemd.services.paperless-scheduler.after = [ "var-lib-paperless.mount" ];
   systemd.services.paperless-task-queue.after = [ "var-lib-paperless.mount" ];
