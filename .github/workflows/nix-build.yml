@@ -1,10 +1,16 @@
 name: Nix checks
 
+# No push trigger. master has no protection and work lands on it directly, so a
+# push run gates nothing and a red master trains you to ignore the badge. Local
+# `nix eval` of the three hosts is the gate that actually runs before a rebuild.
+# What CI is for here is the Renovate PRs it can still block, plus a weekly run
+# that catches a nixpkgs input drifting under an unchanged flake.lock.
 on:
   pull_request:
-  push:
-    branches:
-      - master
+  schedule:
+    # Monday 04:00 UTC, after the package-update window at 03:00.
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
 
 permissions:
   contents: read
