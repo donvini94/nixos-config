@@ -70,7 +70,10 @@
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
 
-  powerManagement.enable = true;
+  powerManagement = {
+    enable = true;
+    cpuFreqGovernor = "performance";
+  };
 
   # To connect AirPods: uncomment, rebuild, pair, then re-comment
   # hardware.bluetooth.settings = { General = { ControllerMode = "bredr"; }; };

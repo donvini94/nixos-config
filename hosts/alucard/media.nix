@@ -6,6 +6,7 @@
 }:
 let
   mediaDir = path: "d ${path} 0755 jellyfin jellyfin";
+  miningPorts = lib.concatMapStringsSep "|" toString (import ./mining-pools.nix).ports;
 in
 {
   virtualisation.docker = {
@@ -91,7 +92,7 @@ in
         export XDG_RUNTIME_DIR=/run/user/1000
         while true; do
           ${pkgs.docker}/bin/docker ps -q 2>/dev/null | while read c; do
-            if ${pkgs.docker}/bin/docker exec "$c" sh -c "ss -tn 2>/dev/null | grep -E ':(3333|4444|5555|7777|8333)'" 2>/dev/null; then
+            if ${pkgs.docker}/bin/docker exec "$c" sh -c "ss -tn 2>/dev/null | grep -E ':(${miningPorts})'" 2>/dev/null; then
               ${pkgs.docker}/bin/docker stop "$c" && \
                 logger "Mining-watchdog: Stopped container $c for mining activity"
             fi

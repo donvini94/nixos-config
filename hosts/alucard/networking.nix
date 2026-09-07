@@ -1,4 +1,7 @@
 { lib, ... }:
+let
+  mining = import ./mining-pools.nix;
+in
 {
   networking = {
     hostName = "alucard";
@@ -29,17 +32,9 @@
         9876 # Bereit Rising (V Rising)
         9877 # Bereit Rising (V Rising)
       ];
-      # Known mining-pool ports and pool hosts, dropped outbound.
-      extraCommands = ''
-        iptables -A OUTPUT -p tcp --dport 3333 -j DROP
-        iptables -A OUTPUT -p tcp --dport 4444 -j DROP
-        iptables -A OUTPUT -p tcp --dport 5555 -j DROP
-        iptables -A OUTPUT -p tcp --dport 7777 -j DROP
-        iptables -A OUTPUT -p tcp --dport 8333 -j DROP
-        iptables -A OUTPUT -p tcp --dport 9333 -j DROP
-        iptables -A OUTPUT -d 141.95.72.61 -j DROP
-        iptables -A OUTPUT -d 141.95.72.59 -j DROP
-      '';
+      extraCommands =
+        lib.concatMapStrings (port: "iptables -A OUTPUT -p tcp --dport ${toString port} -j DROP\n") mining.ports
+        + lib.concatMapStrings (host: "iptables -A OUTPUT -d ${host} -j DROP\n") mining.hosts;
     };
   };
 

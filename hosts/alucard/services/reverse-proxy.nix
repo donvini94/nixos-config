@@ -35,6 +35,18 @@ let
       };
     };
   gone = tls // { locations."/".return = "404"; };
+  # nginx evaluates the server-level `modsecurity` directive before a nested
+  # location can turn it off, so the WAF is disabled for the server and
+  # re-enabled on the catch-all; `exempt` locations stay uncovered.
+  wafOffExcept =
+    { exempt, catchAll }:
+    tls
+    // {
+      extraConfig = "modsecurity off;";
+      locations = lib.mapAttrs (_: loc: loc // { extraConfig = "modsecurity off;"; }) exempt // {
+        "/" = catchAll // { extraConfig = "modsecurity on;"; };
+      };
+    };
 in
 {
   assertions = [
@@ -68,26 +80,21 @@ in
       recommendedTlsSettings = true;
       virtualHosts = harden {
         "${domain}" = gone;
-        "auth.${domain}" = tls // {
-          # CRS scores the admin REST API's writes (`PUT
-          # /admin/realms/{realm}/clients/{id}` with a full client
-          # representation) as attacks and answers with nginx's HTML 403, which
-          # the admin console renders as an error with no message. Exempt only
-          # that API, which already demands a bearer token with
-          # realm-management rights; the unauthenticated login, token and
-          # account endpoints keep the WAF.
-          # The server-level WAF is evaluated before a nested location can turn
-          # it off, so it is disabled here and re-enabled on the catch-all route.
-          extraConfig = "modsecurity off;";
-          locations."^~ /admin/realms/" = {
+        # CRS scores the admin REST API's writes (`PUT
+        # /admin/realms/{realm}/clients/{id}` with a full client
+        # representation) as attacks and answers with nginx's HTML 403, which
+        # the admin console renders as an error with no message. Exempt only
+        # that API, which already demands a bearer token with
+        # realm-management rights; the unauthenticated login, token and
+        # account endpoints keep the WAF.
+        "auth.${domain}" = wafOffExcept {
+          exempt."^~ /admin/realms/" = {
             proxyPass = "http://127.0.0.1:38080";
             proxyWebsockets = true;
-            extraConfig = "modsecurity off;";
           };
-          locations."/" = {
+          catchAll = {
             proxyPass = "http://127.0.0.1:38080/";
             proxyWebsockets = true;
-            extraConfig = "modsecurity on;";
           };
         };
         "git.${domain}" = gone;
@@ -98,25 +105,17 @@ in
           '';
           basicAuthFile = config.sops.secrets."nginx/htpasswd".path;
         };
-        "stream.${domain}" = tls // {
-          extraConfig = "modsecurity off;";
-          # CRS 4.25.1 lists `config.json` in both `restricted-files.data` and
-          # `lfi-os-files.data`, so 930120/930130 score the Jellyfin web
-          # client's own bootstrap file at CRITICAL and 949110 answers 403;
-          # without it the client cannot start. An exact match outranks the
-          # `^~` and prefix routes below.
-          locations."= /web/config.json" = {
-            proxyPass = "http://127.0.0.1:8096";
-            extraConfig = "modsecurity off;";
+        "stream.${domain}" = wafOffExcept {
+          exempt = {
+            # CRS 4.25.1 lists `config.json` in both `restricted-files.data` and
+            # `lfi-os-files.data`, so 930120/930130 score the Jellyfin web
+            # client's own bootstrap file at CRITICAL and 949110 answers 403;
+            # without it the client cannot start. An exact match outranks the
+            # `^~` and prefix routes.
+            "= /web/config.json".proxyPass = "http://127.0.0.1:8096";
+            "^~ /Sessions/Playing".proxyPass = "http://127.0.0.1:8096";
           };
-          locations."^~ /Sessions/Playing" = {
-            proxyPass = "http://127.0.0.1:8096";
-            extraConfig = "modsecurity off;";
-          };
-          locations."/" = {
-            proxyPass = "http://127.0.0.1:8096";
-            extraConfig = "modsecurity on;";
-          };
+          catchAll.proxyPass = "http://127.0.0.1:8096";
         };
         "chat.${domain}" = proxy 1447;
         "music.${domain}" = proxy 4533;
