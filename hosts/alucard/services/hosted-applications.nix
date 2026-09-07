@@ -1,4 +1,6 @@
 {
+  config,
+  lib,
   pkgs,
   ...
 }:
@@ -10,8 +12,6 @@
       enable = true;
       domain = "paperless.dumusstbereitsein.de";
       port = 58080;
-      # Nightly document_exporter at 02:30, pushed to the Hetzner box at 03:30.
-      offsite.enable = true;
     };
 
     # mailcow's own ACME cannot work behind this nginx, so hand it our cert.
@@ -50,6 +50,32 @@
       test -s "$stage/database.sqlite"
     '';
     verifyPaths = [ "/var/lib/offsite-backup/n8n/database.sqlite" ];
+  };
+
+  # The exporter already writes a consistent dump to its own directory, so the job
+  # snapshots that in place. The Django signing key is not part of the exporter's
+  # output and a restore without it invalidates every session and signed value.
+  services.offsiteBackup.jobs.paperless = {
+    # This key predates the shared backup key and must stay distinct: repointing it
+    # would orphan every snapshot already in the repository.
+    passwordSecret = "paperless/restic_password";
+    # The default 03:30 schedule has to stay after the 02:30 exporter run.
+    after = [ "paperless-exporter.service" ];
+    paths = [ config.services.paperless.exporter.directory ];
+    prepare = ''
+      install -d -m 0700 "$stage"
+      secret_key=${lib.escapeShellArg "${config.services.paperless.dataDir}/nixos-paperless-secret-key.env"}
+      if [ -r "$secret_key" ]; then
+        install -m 0400 "$secret_key" "$stage/nixos-paperless-secret-key.env"
+      else
+        echo "$secret_key is not readable; refusing to take a restore-incomplete snapshot" >&2
+        exit 1
+      fi
+    '';
+    verifyPaths = [
+      "/var/lib/offsite-backup/paperless/nixos-paperless-secret-key.env"
+      config.services.paperless.exporter.directory
+    ];
   };
 
   systemd.services.paperless-consumer.after = [ "var-lib-paperless.mount" ];

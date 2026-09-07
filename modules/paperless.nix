@@ -81,26 +81,6 @@ in
         '';
       };
     };
-
-    offsite = {
-      enable = lib.mkEnableOption "encrypted off-site restic backup of the document export";
-
-      passwordSecret = lib.mkOption {
-        type = lib.types.str;
-        default = "paperless/restic_password";
-        description = ''
-          sops key encrypting the Paperless repository. It predates the shared
-          backup key and must stay distinct: repointing it would orphan every
-          snapshot already in the repository.
-        '';
-      };
-
-      onCalendar = lib.mkOption {
-        type = lib.types.str;
-        default = "03:30";
-        description = "When to push off-site. Must be after the exporter has finished.";
-      };
-    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -235,32 +215,6 @@ in
         ProtectSystem = "strict";
         ProtectHome = true;
         NoNewPrivileges = true;
-      };
-    };
-
-    # The exporter already writes a consistent dump to its own directory, so the job
-    # snapshots that in place. The Django signing key is not part of the exporter's
-    # output and a restore without it invalidates every session and signed value.
-    services.offsiteBackup = lib.mkIf cfg.offsite.enable {
-      enable = true;
-      jobs.paperless = {
-        inherit (cfg.offsite) passwordSecret onCalendar;
-        after = [ "paperless-exporter.service" ];
-        paths = [ paperless.exporter.directory ];
-        prepare = ''
-          install -d -m 0700 "$stage"
-          secret_key=${lib.escapeShellArg "${paperless.dataDir}/nixos-paperless-secret-key.env"}
-          if [ -r "$secret_key" ]; then
-            install -m 0400 "$secret_key" "$stage/nixos-paperless-secret-key.env"
-          else
-            echo "$secret_key is not readable; refusing to take a restore-incomplete snapshot" >&2
-            exit 1
-          fi
-        '';
-        verifyPaths = [
-          "/var/lib/offsite-backup/paperless/nixos-paperless-secret-key.env"
-          paperless.exporter.directory
-        ];
       };
     };
   };
