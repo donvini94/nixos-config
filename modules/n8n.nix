@@ -7,12 +7,27 @@
 
 let
   cfg = config.services.localN8n;
-  n8nUrl = "http://${cfg.bindAddress}:${toString cfg.port}";
+  port = 5678;
+  n8nUrl = "http://${cfg.bindAddress}:${toString port}";
+  executionRetentionHours = 2160;
   stateDirectory = "/var/lib/n8n-container";
   dockerNetwork = "n8n-local";
   dockerBridge = "n8n-local0";
   dockerSubnet = "172.30.0.0/24";
   dockerGateway = "172.30.0.1";
+
+  # Mirrors API_SERVER_PORT in lib/hermes-agent.nix: the proxy must target the port
+  # Hermes listens on.
+  hermesApiPort = 8642;
+
+  hermesRouteProbe = ''
+    hermes_status="$(${pkgs.docker}/bin/docker exec n8n node -e \
+      'fetch("http://host.docker.internal:${toString hermesApiPort}/v1/models").then(r => process.stdout.write(String(r.status))).catch(() => process.exit(2))')"
+    if [ "$hermes_status" != 401 ]; then
+      echo "n8n-to-Hermes private route returned HTTP $hermes_status, expected authenticated rejection 401" >&2
+      exit 1
+    fi
+  '';
 
   containerHardening = [
     "--read-only"
@@ -41,20 +56,9 @@ in
       description = "Digest-pinned official n8n OCI image.";
     };
 
-    runnerImage = lib.mkOption {
-      type = lib.types.str;
-      default = "docker.io/n8nio/runners:2.38.3@sha256:c489d0d207904a4d54a4f8c2a85e15e48d735521a98330f5862e81e181a8c207";
-      description = "Digest-pinned official n8n task-runner OCI image; must match `image`.";
-    };
-
     bindAddress = lib.mkOption {
       type = lib.types.str;
       default = "127.0.0.1";
-    };
-
-    port = lib.mkOption {
-      type = lib.types.port;
-      default = 5678;
     };
 
     encryptionKeyFile = lib.mkOption {
@@ -64,14 +68,12 @@ in
     };
 
     runnerAuthTokenFile = lib.mkOption {
-      type = lib.types.nullOr lib.types.path;
-      default = null;
+      type = lib.types.path;
       description = "File containing the task-runner authentication token.";
     };
 
     runnerEnvironmentFile = lib.mkOption {
-      type = lib.types.nullOr lib.types.path;
-      default = null;
+      type = lib.types.path;
       description = "Root-only environment file containing the runner authentication token.";
     };
 
@@ -83,28 +85,14 @@ in
       description = "Directory of reviewed workflow JSON installed by `n8n-workflows import`.";
     };
 
-    operators = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = [ ];
-      description = "Users allowed to access n8n-created org inbox entries.";
+    orgOwner = lib.mkOption {
+      type = lib.types.str;
+      description = "User owning the shared Org tree; its `users` group gets write access.";
     };
 
     orgDirectory = lib.mkOption {
-      type = lib.types.str;
-      default = "/var/lib/ai-org";
+      type = lib.types.path;
       description = "Shared Org tree exposed read-write at /org.";
-    };
-
-    hermesApiPort = lib.mkOption {
-      type = lib.types.nullOr lib.types.port;
-      default = null;
-      description = "Hermes loopback API port to proxy into n8n's private Docker bridge.";
-    };
-
-    executionRetentionHours = lib.mkOption {
-      type = lib.types.ints.positive;
-      default = 2160;
-      description = "Hours of completed n8n execution history to retain.";
     };
   };
 
@@ -113,22 +101,6 @@ in
       {
         assertion = cfg.encryptionKeyFile != null;
         message = "services.localN8n.encryptionKeyFile must be configured";
-      }
-      {
-        assertion = cfg.runnerAuthTokenFile != null;
-        message = "services.localN8n.runnerAuthTokenFile must be configured";
-      }
-      {
-        assertion = cfg.runnerEnvironmentFile != null;
-        message = "services.localN8n.runnerEnvironmentFile must be configured";
-      }
-      {
-        assertion = lib.hasPrefix "/" cfg.orgDirectory;
-        message = "services.localN8n.orgDirectory must be an absolute path";
-      }
-      {
-        assertion = cfg.operators != [ ];
-        message = "services.localN8n.operators must contain at least one user";
       }
     ];
 
@@ -139,7 +111,7 @@ in
           image = cfg.image;
           autoStart = false;
           pull = "missing";
-          ports = [ "${cfg.bindAddress}:${toString cfg.port}:5678" ];
+          ports = [ "${cfg.bindAddress}:${toString port}:5678" ];
           networks = [ dockerNetwork ];
           volumes = [
             "${stateDirectory}:/home/node/.n8n"
@@ -172,7 +144,7 @@ in
             EXECUTIONS_DATA_SAVE_ON_PROGRESS = "false";
             EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS = "true";
             EXECUTIONS_DATA_PRUNE = "true";
-            EXECUTIONS_DATA_MAX_AGE = toString cfg.executionRetentionHours;
+            EXECUTIONS_DATA_MAX_AGE = toString executionRetentionHours;
             EXECUTIONS_DATA_PRUNE_MAX_COUNT = "50000";
             N8N_DEFAULT_BINARY_DATA_MODE = "filesystem";
 
@@ -214,7 +186,8 @@ in
         };
 
         n8n-runners = {
-          image = cfg.runnerImage;
+          # Tag must match `services.localN8n.image`; see the pinning note there.
+          image = "docker.io/n8nio/runners:2.38.3@sha256:c489d0d207904a4d54a4f8c2a85e15e48d735521a98330f5862e81e181a8c207";
           autoStart = false;
           pull = "missing";
           dependsOn = [ "n8n" ];
@@ -234,12 +207,12 @@ in
 
     networking.firewall.interfaces.${dockerBridge}.allowedTCPPorts = [
       8080
-    ]
-    ++ lib.optional (cfg.hermesApiPort != null) cfg.hermesApiPort;
+      hermesApiPort
+    ];
 
     systemd.tmpfiles.rules = [
       "d ${stateDirectory} 0750 1000 1000 -"
-      "d ${cfg.orgDirectory} 2770 ${builtins.head cfg.operators} users -"
+      "d ${cfg.orgDirectory} 2770 ${cfg.orgOwner} users -"
     ];
 
     systemd.services.n8n-docker-network = {
@@ -314,23 +287,23 @@ in
 
     # Hermes itself only listens on host loopback. This socket gives n8n a
     # route to that authenticated API without publishing it on a host NIC.
-    systemd.sockets.n8n-hermes-api = lib.mkIf (cfg.hermesApiPort != null) {
+    systemd.sockets.n8n-hermes-api = {
       description = "Container-only socket for the Hermes agent API";
       wantedBy = [ "ai-stack.target" ];
       partOf = [ "ai-stack.target" ];
       after = [ "n8n-docker-network.service" ];
       requires = [ "n8n-docker-network.service" ];
       unitConfig.DefaultDependencies = false;
-      listenStreams = [ "${dockerGateway}:${toString cfg.hermesApiPort}" ];
+      listenStreams = [ "${dockerGateway}:${toString hermesApiPort}" ];
     };
 
-    systemd.services.n8n-hermes-api = lib.mkIf (cfg.hermesApiPort != null) {
+    systemd.services.n8n-hermes-api = {
       description = "Proxy n8n container traffic to the Hermes agent API";
       partOf = [ "ai-stack.target" ];
       after = [ "hermes-agent.service" ];
       requires = [ "hermes-agent.service" ];
       serviceConfig = {
-        ExecStart = "${pkgs.systemd}/lib/systemd/systemd-socket-proxyd 127.0.0.1:${toString cfg.hermesApiPort}";
+        ExecStart = "${pkgs.systemd}/lib/systemd/systemd-socket-proxyd 127.0.0.1:${toString hermesApiPort}";
         DynamicUser = true;
         NoNewPrivileges = true;
         PrivateDevices = true;
@@ -376,14 +349,7 @@ in
                 fi
                 ${pkgs.docker}/bin/docker exec n8n sh -c \
                   'probe=/org/.n8n-write-probe; : > "$probe"; rm "$probe"'
-                ${lib.optionalString (cfg.hermesApiPort != null) ''
-                  hermes_status="$(${pkgs.docker}/bin/docker exec n8n node -e \
-                    'fetch("http://host.docker.internal:${toString cfg.hermesApiPort}/v1/models").then(r => process.stdout.write(String(r.status))).catch(() => process.exit(2))')"
-                  if [ "$hermes_status" != 401 ]; then
-                    echo "n8n-to-Hermes private route returned HTTP $hermes_status, expected authenticated rejection 401" >&2
-                    exit 1
-                  fi
-                ''}
+                ${hermesRouteProbe}
                 exit 0
               fi
             else

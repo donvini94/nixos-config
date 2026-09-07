@@ -7,7 +7,11 @@
 
 let
   cfg = config.services.localLlama;
-  stateDirectoryName = lib.removePrefix "/var/lib/" cfg.stateDirectory;
+  stateDirectory = "/var/lib/llama";
+  bindAddress = "127.0.0.1";
+  backendPort = 18080;
+  # First dynamic llama-server port; llama-swap assigns upwards from here.
+  modelStartPort = 18100;
   yaml = pkgs.formats.yaml { };
 
   modelType = lib.types.submodule (
@@ -37,11 +41,6 @@ let
         description = lib.mkOption {
           type = lib.types.str;
           default = "";
-        };
-        aliases = lib.mkOption {
-          type = lib.types.listOf lib.types.str;
-          default = [ ];
-          description = "Additional request model IDs routed to ${name}.";
         };
         contextSize = lib.mkOption {
           type = lib.types.ints.positive;
@@ -80,15 +79,11 @@ let
           default = null;
           description = "Layers to offload to GPU, or null for llama.cpp automatic selection.";
         };
-        extraArgs = lib.mkOption {
-          type = lib.types.listOf lib.types.str;
-          default = [ ];
-        };
       };
     }
   );
 
-  modelPath = model: "${cfg.stateDirectory}/models/${model.file}";
+  modelPath = model: "${stateDirectory}/models/${model.file}";
   modelUrl = model: "https://huggingface.co/${model.repo}/resolve/${model.revision}/${model.file}";
   safeName = name: lib.replaceStrings [ "." "/" ] [ "-" "-" ] name;
 
@@ -128,11 +123,11 @@ let
     name: model:
     let
       args = [
-        "${cfg.package}/bin/llama-server"
+        "${pkgs.llama-cpp}/bin/llama-server"
         "--model"
         (modelPath model)
         "--host"
-        cfg.bindAddress
+        bindAddress
         "--ctx-size"
         (toString model.contextSize)
         "--parallel"
@@ -148,8 +143,7 @@ let
       ++ lib.optionals (model.gpuLayers != null) [
         "--n-gpu-layers"
         (toString model.gpuLayers)
-      ]
-      ++ model.extraArgs;
+      ];
     in
     pkgs.writeShellScript "run-local-llama-${safeName name}" ''
       set -euo pipefail
@@ -160,8 +154,9 @@ let
   ) cfg.models;
 
   swapConfig = yaml.generate "llama-swap.yaml" {
-    startPort = cfg.modelStartPort;
-    healthCheckTimeout = cfg.healthCheckTimeout;
+    startPort = modelStartPort;
+    # A first run downloads the weights before llama-server answers /health.
+    healthCheckTimeout = 7200;
     globalTTL = 0;
     unloadTimeout = 5;
     includeAliasesInList = true;
@@ -169,7 +164,8 @@ let
     logToStdout = "both";
     models = lib.mapAttrs (name: model: {
       cmd = "${modelRunners.${name}} \${PORT}";
-      inherit (model) aliases description;
+      aliases = [ ];
+      inherit (model) description;
       name = model.displayName;
       checkEndpoint = "/health";
       useModelName = name;
@@ -182,98 +178,27 @@ let
     }) cfg.models;
   };
 
-  modelNames = builtins.attrNames cfg.models;
-  allModelIds = modelNames ++ lib.concatMap (name: cfg.models.${name}.aliases) modelNames;
-  modelFiles = map (name: cfg.models.${name}.file) modelNames;
-  dynamicPorts = lib.range cfg.modelStartPort (cfg.modelStartPort + builtins.length modelNames - 1);
+  modelFiles = lib.mapAttrsToList (_name: model: model.file) cfg.models;
 in
 {
   options.services.localLlama = {
     enable = lib.mkEnableOption "local OpenAI-compatible llama.cpp inference";
-    package = lib.mkPackageOption pkgs "llama-cpp" { };
-    swapPackage = lib.mkPackageOption pkgs "llama-swap" { };
     models = lib.mkOption {
       type = lib.types.attrsOf modelType;
       default = { };
       description = "Pinned model registry keyed by the primary request model ID.";
-    };
-    defaultModel = lib.mkOption {
-      type = lib.types.str;
-      description = "Default model ID selected by clients; llama-swap still routes every request explicitly.";
-    };
-    bindAddress = lib.mkOption {
-      type = lib.types.str;
-      default = "127.0.0.1";
-    };
-    port = lib.mkOption {
-      type = lib.types.port;
-      default = 8080;
-      description = "Stable logging proxy/API port.";
-    };
-    backendPort = lib.mkOption {
-      type = lib.types.port;
-      default = 18080;
-      description = "llama-swap listen port behind the logging proxy.";
-    };
-    modelStartPort = lib.mkOption {
-      type = lib.types.port;
-      default = 18100;
-      description = "First dynamic llama-server port assigned by llama-swap.";
-    };
-    healthCheckTimeout = lib.mkOption {
-      type = lib.types.ints.positive;
-      default = 7200;
-      description = "Seconds llama-swap waits for a downloaded model to become ready.";
-    };
-    stateDirectory = lib.mkOption {
-      type = lib.types.str;
-      default = "/var/lib/llama";
-    };
-    operators = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = [ ];
-      description = "Users allowed to inspect local model state and request logs.";
-    };
-    requestLog = lib.mkOption {
-      type = lib.types.str;
-      default = "/var/lib/llama/logs/requests.jsonl";
-    };
-    logRetention = lib.mkOption {
-      type = lib.types.ints.positive;
-      default = 14;
-      description = "Rotated log files retained.";
     };
   };
 
   config = lib.mkIf cfg.enable {
     assertions = [
       {
-        assertion = cfg.port != cfg.backendPort;
-        message = "services.localLlama.port and backendPort must differ";
-      }
-      {
         assertion = cfg.models != { };
         message = "services.localLlama.models must contain at least one model";
       }
       {
-        assertion = builtins.hasAttr cfg.defaultModel cfg.models;
-        message = "services.localLlama.defaultModel must name a registered model";
-      }
-      {
-        assertion = builtins.length allModelIds == builtins.length (lib.unique allModelIds);
-        message = "services.localLlama model IDs and aliases must be globally unique";
-      }
-      {
         assertion = builtins.length modelFiles == builtins.length (lib.unique modelFiles);
         message = "services.localLlama model filenames must be unique";
-      }
-      {
-        assertion = !(builtins.elem cfg.port dynamicPorts) && !(builtins.elem cfg.backendPort dynamicPorts);
-        message = "services.localLlama dynamic model ports must not overlap ingress ports";
-      }
-      {
-        assertion = lib.hasPrefix "/var/lib/" cfg.stateDirectory;
-        message = "services.localLlama.stateDirectory must be below /var/lib";
       }
     ];
 
@@ -285,16 +210,16 @@ in
         Type = "simple";
         User = "llama";
         Group = "llama";
-        StateDirectory = stateDirectoryName;
+        StateDirectory = "llama";
         StateDirectoryMode = "0750";
-        WorkingDirectory = cfg.stateDirectory;
+        WorkingDirectory = stateDirectory;
         ExecStartPre = downloadAllModels;
         ExecStart = lib.escapeShellArgs [
-          "${cfg.swapPackage}/bin/llama-swap"
+          "${pkgs.llama-swap}/bin/llama-swap"
           "-config"
           swapConfig
           "-listen"
-          "${cfg.bindAddress}:${toString cfg.backendPort}"
+          "${bindAddress}:${toString backendPort}"
         ];
         Restart = "on-failure";
         RestartSec = "5s";
@@ -321,11 +246,7 @@ in
     # the Requesty backend; this module only supplies the local one.
     services.aiIngress = {
       enable = true;
-      backendUrl = "http://${cfg.bindAddress}:${toString cfg.backendPort}";
-      bindAddress = cfg.bindAddress;
-      port = cfg.port;
-      inherit (cfg) stateDirectory requestLog logRetention operators;
-      environmentLabel = config.networking.hostName;
+      backendUrl = "http://${bindAddress}:${toString backendPort}";
       priceMap = lib.mapAttrs (_: model: model.cost) cfg.models;
       lifecycleUnits = [
         "ai-stack.target"

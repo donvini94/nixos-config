@@ -29,7 +29,6 @@ in
   assertions = [
     {
       assertion = lib.all (address: address == "127.0.0.1") [
-        config.services.aiIngress.bindAddress
         config.services.localN8n.bindAddress
         config.services.localObservability.bindAddress
       ];
@@ -111,10 +110,6 @@ in
       providerName = "alucard-requesty";
       inherit defaultModel;
       contextLength = models.${defaultModel}.context;
-    };
-    observability = {
-      gpuMetrics = false;
-      hostLabel = "alucard";
     };
   };
 

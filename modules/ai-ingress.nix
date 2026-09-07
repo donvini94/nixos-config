@@ -13,7 +13,12 @@
 
 let
   cfg = config.services.aiIngress;
-  stateDirectoryName = lib.removePrefix "/var/lib/" cfg.stateDirectory;
+  # The ingress binds loopback only; it is published with Tailscale Serve.
+  bindAddress = "127.0.0.1";
+  port = 8080;
+  stateDirectory = "/var/lib/llama";
+  requestLog = "${stateDirectory}/logs/requests.jsonl";
+  logRetention = 14;
 
   # The proxy needs the Langfuse SDK, so it gets its own interpreter.
   python = pkgs.python3.withPackages (ps: [ ps.langfuse ]);
@@ -23,12 +28,12 @@ let
   );
 
   prepareLogs = pkgs.writeShellScript "prepare-ai-ingress-logs" ''
-    ${pkgs.coreutils}/bin/install -d -m 0750 ${lib.escapeShellArg (builtins.dirOf cfg.requestLog)}
-    ${pkgs.coreutils}/bin/touch ${lib.escapeShellArg cfg.requestLog}
-    ${pkgs.coreutils}/bin/chmod 0640 ${lib.escapeShellArg cfg.requestLog}
+    ${pkgs.coreutils}/bin/install -d -m 0750 ${lib.escapeShellArg (builtins.dirOf requestLog)}
+    ${pkgs.coreutils}/bin/touch ${lib.escapeShellArg requestLog}
+    ${pkgs.coreutils}/bin/chmod 0640 ${lib.escapeShellArg requestLog}
   '';
 
-  ingressUrl = "http://${cfg.bindAddress}:${toString cfg.port}";
+  ingressUrl = "http://${bindAddress}:${toString port}";
 
   # A locally served model has no list price: a zero entry would make every local
   # request report a $0.00 "registry-estimate" instead of an honest "unavailable".
@@ -52,34 +57,6 @@ in
       type = lib.types.str;
       default = "/health";
       description = "Upstream path used by the local /health probe.";
-    };
-
-    bindAddress = lib.mkOption {
-      type = lib.types.str;
-      default = "127.0.0.1";
-      description = "Ingress bind address; loopback is a hard requirement.";
-    };
-
-    port = lib.mkOption {
-      type = lib.types.port;
-      default = 8080;
-      description = "Stable ingress port every AI client is configured against.";
-    };
-
-    stateDirectory = lib.mkOption {
-      type = lib.types.str;
-      default = "/var/lib/llama";
-    };
-
-    requestLog = lib.mkOption {
-      type = lib.types.str;
-      default = "${cfg.stateDirectory}/logs/requests.jsonl";
-    };
-
-    logRetention = lib.mkOption {
-      type = lib.types.ints.positive;
-      default = 14;
-      description = "Rotated request-log files retained.";
     };
 
     operators = lib.mkOption {
@@ -120,11 +97,6 @@ in
       '';
     };
 
-    environmentLabel = lib.mkOption {
-      type = lib.types.str;
-      description = "Host label recorded on every request and Langfuse observation.";
-    };
-
     upstreamBearerCredentialFile = lib.mkOption {
       type = lib.types.nullOr lib.types.path;
       default = null;
@@ -156,12 +128,6 @@ in
     langfuse = {
       enable = lib.mkEnableOption "Langfuse generation observations from the ingress";
 
-      baseUrl = lib.mkOption {
-        type = lib.types.str;
-        default = "http://127.0.0.1:13000";
-        description = "Self-hosted Langfuse ingestion endpoint.";
-      };
-
       publicKeyFile = lib.mkOption {
         type = lib.types.path;
         description = "File containing the Langfuse project public key.";
@@ -177,16 +143,8 @@ in
   config = lib.mkIf cfg.enable {
     assertions = [
       {
-        assertion = cfg.bindAddress == "127.0.0.1";
-        message = "services.aiIngress must stay on loopback; publish it with Tailscale Serve";
-      }
-      {
         assertion = cfg.operators != [ ];
         message = "services.aiIngress.operators must contain at least one user";
-      }
-      {
-        assertion = lib.hasPrefix "/var/lib/" cfg.stateDirectory;
-        message = "services.aiIngress.stateDirectory must be below /var/lib";
       }
     ];
 
@@ -201,7 +159,7 @@ in
         llama = {
           isSystemUser = true;
           group = "llama";
-          home = cfg.stateDirectory;
+          home = stateDirectory;
         };
       }
       // lib.genAttrs cfg.operators (_: {
@@ -218,10 +176,10 @@ in
       environment = {
         LLAMA_BACKEND = cfg.backendUrl;
         LLAMA_BACKEND_HEALTH_PATH = cfg.backendHealthPath;
-        LLAMA_PROXY_HOST = cfg.bindAddress;
-        LLAMA_PROXY_PORT = toString cfg.port;
-        LLAMA_REQUEST_LOG = cfg.requestLog;
-        LLAMA_ENVIRONMENT = cfg.environmentLabel;
+        LLAMA_PROXY_HOST = bindAddress;
+        LLAMA_PROXY_PORT = toString port;
+        LLAMA_REQUEST_LOG = requestLog;
+        LLAMA_ENVIRONMENT = config.networking.hostName;
         LLAMA_PRICE_MAP = builtins.toJSON billablePrices;
       }
       // lib.optionalAttrs (cfg.allowedModels != [ ]) {
@@ -231,7 +189,7 @@ in
         LLAMA_UPSTREAM_BEARER_CREDENTIAL = "upstream-bearer-token";
       }
       // lib.optionalAttrs cfg.langfuse.enable {
-        LANGFUSE_BASE_URL = cfg.langfuse.baseUrl;
+        LANGFUSE_BASE_URL = "http://127.0.0.1:13000";
         LANGFUSE_PUBLIC_KEY_CREDENTIAL = "langfuse-public-key";
         LANGFUSE_SECRET_KEY_CREDENTIAL = "langfuse-secret-key";
       };
@@ -239,7 +197,7 @@ in
       serviceConfig = {
         User = "llama";
         Group = "llama";
-        StateDirectory = stateDirectoryName;
+        StateDirectory = "llama";
         StateDirectoryMode = "0750";
         ExecStartPre = cfg.extraPreStart ++ [ prepareLogs ];
         ExecStart = "${python}/bin/python3 ${proxy}";
@@ -285,10 +243,10 @@ in
       });
     '';
 
-    services.logrotate.settings.${cfg.requestLog} = {
+    services.logrotate.settings.${requestLog} = {
       daily = true;
       size = "1G";
-      rotate = cfg.logRetention;
+      rotate = logRetention;
       compress = true;
       missingok = true;
       notifempty = true;
@@ -338,7 +296,7 @@ in
         exec ${pkgs.curl}/bin/curl --fail --silent --show-error ${ingressUrl}/health
       '')
       (pkgs.writeShellScriptBin "ai-usage-summary" ''
-        export LLAMA_REQUEST_LOG=${lib.escapeShellArg cfg.requestLog}
+        export LLAMA_REQUEST_LOG=${lib.escapeShellArg requestLog}
         exec ${python}/bin/python3 ${usageSummary} "$@"
       '')
     ];

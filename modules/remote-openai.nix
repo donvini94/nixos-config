@@ -104,7 +104,6 @@ in
     # backend; this module supplies only the Requesty upstream and its catalog check.
     services.aiIngress = {
       enable = true;
-      environmentLabel = config.networking.hostName;
       allowedModels = builtins.attrNames cfg.models;
       priceMap = lib.mapAttrs (_: model: model.cost) cfg.models;
       extraPreStart = [ validateUpstream ];

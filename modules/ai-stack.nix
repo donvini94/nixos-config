@@ -56,12 +56,6 @@ in
         default = false;
         description = "Scrape GPU metrics through the DCGM exporter.";
       };
-
-      hostLabel = lib.mkOption {
-        type = lib.types.nullOr lib.types.str;
-        default = null;
-        description = "Prometheus host label; null keeps the observability module's own default.";
-      };
     };
   };
 
@@ -154,9 +148,8 @@ in
       encryptionKeyFile = config.sops.secrets."n8n/encryption_key".path;
       runnerAuthTokenFile = config.sops.secrets."n8n/runner_auth_token".path;
       runnerEnvironmentFile = config.sops.templates."n8n-runner.env".path;
-      operators = [ username ];
+      orgOwner = username;
       orgDirectory = "/home/${username}/org";
-      hermesApiPort = 8642;
       inherit (cfg) workflowDirectory;
     };
 
@@ -201,9 +194,6 @@ in
       inherit (cfg.observability) gpuMetrics;
       inferencePort = 8080;
       n8nPort = 5678;
-    }
-    // lib.optionalAttrs (cfg.observability.hostLabel != null) {
-      inherit (cfg.observability) hostLabel;
     };
 
     services.containerUpdates.units = [

@@ -49,7 +49,6 @@ in
 
   services.localLlama = {
     enable = true;
-    defaultModel = "dirk-qwen3.8-27b-local";
     models = {
       "dirk-qwen3.8-27b-local" = {
         repo = "peculiar-ragdoll/Dirk-Qwen3.8-27B-GGUF";
@@ -75,12 +74,9 @@ in
         gpuLayers = 999;
       };
     };
-    bindAddress = "127.0.0.1";
-    port = 8080;
-    backendPort = 18080;
-    modelStartPort = 18100;
-    operators = [ username ];
   };
+
+  services.aiIngress.operators = [ username ];
 
   # No Requesty credential is copied to Dracula. Interactive clients reach the
   # authenticated Alucard ingress privately over Tailscale.
