@@ -24,6 +24,7 @@
     ../../modules/observability.nix
     ../../modules/container-updates.nix
     ../../modules/vulnerability-scan.nix
+    ../../modules/host-vulnerability-scan.nix
     ../../modules/offsite-backup.nix
     ../../secrets/secrets.nix
   ];
@@ -41,6 +42,8 @@
     enable = true;
     rootlessDockerUser = username;
   };
+
+  services.hostVulnerabilityScan.enable = true;
 
   boot = {
     initrd.availableKernelModules = [

@@ -1,0 +1,8 @@
+# Entries are added only after a finding is triaged and judged inapplicable to
+# this closure; vulnix matches NVD product names against Nix pname/version, which
+# produces false positives that a comment alone cannot suppress.
+#
+# [nix-package-pname]
+# cve = [ "CVE-2025-00000" ]
+# comment = "why this does not apply here"
+# until = "2026-12-31"

@@ -27,6 +27,7 @@ in
     ../../modules/ai-stack.nix
     ../../modules/llama.nix
     ../../modules/remote-openai.nix
+    ../../modules/host-vulnerability-scan.nix
     ./hardware.nix
     ./services.nix
   ];
@@ -112,6 +113,7 @@ in
   };
 
   services.containerUpdates.enable = true;
+  services.hostVulnerabilityScan.enable = true;
 
   nix = {
     settings = {
