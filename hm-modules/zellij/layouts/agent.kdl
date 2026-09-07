@@ -1,0 +1,13 @@
+layout {
+    @uiTemplate@
+    tab name="agent" focus=true {
+        pane split_direction="vertical" {
+            pane size="65%" name="agent"
+            pane size="35%" name="inspect"
+        }
+    }
+    tab name="review" split_direction="vertical" {
+        pane name="git"
+        pane name="tests"
+    }
+}

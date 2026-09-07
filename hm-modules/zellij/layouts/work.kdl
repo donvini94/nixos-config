@@ -1,0 +1,13 @@
+layout {
+    @uiTemplate@
+    tab name="acGPT" focus=true {
+        pane split_direction="vertical" {
+            pane size="60%" name="lazydocker" command="ssh" {
+                args "-t" "acGPT" "cd ~/onyx_v3/deployment/docker_compose; lazydocker; exec $SHELL -l"
+            }
+            pane size="40%" name="btop" command="ssh" {
+                args "-t" "acGPT" "btop; exec $SHELL -l"
+            }
+        }
+    }
+}

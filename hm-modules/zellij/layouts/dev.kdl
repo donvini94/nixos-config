@@ -1,0 +1,12 @@
+layout {
+    @uiTemplate@
+    tab name="dev" focus=true {
+        pane split_direction="vertical" {
+            pane size="60%" name="shell"
+            pane size="40%" split_direction="horizontal" {
+                pane name="watch"
+                pane name="scratch"
+            }
+        }
+    }
+}

@@ -1,0 +1,16 @@
+layout {
+    @uiTemplate@
+    tab name="sys" focus=true {
+        pane split_direction="vertical" {
+            pane size="60%" name="journal" command="journalctl" {
+                args "-f" "-n" "200"
+            }
+            pane size="40%" split_direction="horizontal" {
+                pane name="units" command="watch" {
+                    args "-n" "10" "systemctl --failed --no-legend"
+                }
+                pane name="shell"
+            }
+        }
+    }
+}

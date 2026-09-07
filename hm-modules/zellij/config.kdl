@@ -1,3 +1,156 @@
+// Generated from hm-modules/zellij/lib.nix — do not edit in place.
+
+// The bars live in the "default" layout; "compact" swaps them for a single top line
+// with no keybind hints.
+default_layout "default"
+
+// Kitty launches fish while the login shell can remain bash; pin panes to the
+// interactive shell so fish abbreviations and integrations are available.
+default_shell "fish"
+
+// Start every pane pass-through; Ctrl g is the only key zellij owns.
+default_mode "locked"
+
+theme "modus-vivendi-tinted"
+themes {
+    modus-vivendi-tinted {
+        fg "#ffffff"
+        bg "#0d0e1c"
+        black "#0d0e1c"
+        red "#ff5f59"
+        green "#44bc44"
+        yellow "#d0bc00"
+        blue "#2fafff"
+        magenta "#feacd0"
+        cyan "#00d3d0"
+        white "#ffffff"
+        orange "#fec43f"
+    }
+}
+
+
+// Tell every pane that the surface it is drawn on is dark. A TUI asking the terminal
+// for its background with OSC 11 is talking to the multiplexer, not the terminal, so
+// that answer is not trustworthy; vim's `background`, ncurses apps and OMP read
+// COLORFGBG instead. "15;0" is xterm's convention for white on black, which is what
+// the theme above pins.
+env {
+    COLORFGBG "15;0"
+}
+
+// "titles" is a one-line pane header rather than a full box: pane names, focus
+// indicator and the floating-pane PIN control, without the chrome of a full frame.
+pane_frames true
+pane_frame_style "titles"
+
+mouse_mode true
+copy_on_select true
+@copyCommand@
+copy_clipboard "system"
+scrollback_editor "@scrollbackEditor@"
+scroll_buffer_size 50000
+
+on_force_close "detach"
+session_serialization true
+serialize_pane_viewport true
+scrollback_lines_to_serialize 10000
+
+// Driving a zellij on alucard from a zellij here is the normal case. Without "descend"
+// the outer session eats Ctrl g and the inner one is unreachable; `Ctrl g o ]`
+// (FocusHostSession, below) climbs back out. Both ends run this config.
+nested_session_handling "descend"
+
+show_release_notes false
+
+// `Ctrl g` is the only key zellij owns while locked: it turns the zellij layer on and
+// `Esc` turns it off. Any action that hands the keyboard to something else — a plugin,
+// an editor, the cheatsheet, another session — relocks.
+keybinds clear-defaults=true {
+    locked {
+        bind "Ctrl g" { SwitchToMode "Normal"; }
+    }
+
+    // Single-action binds are what the status bar's tip line looks for, so `n` and
+    // `=`/`-` must stay free of a trailing SwitchToMode or the tip renders
+    // "UNBOUND => new pane".
+    normal {
+        // Sticky sub-modes.
+        bind "p" { SwitchToMode "Pane"; }
+        bind "t" { SwitchToMode "Tab"; }
+        bind "r" { SwitchToMode "Resize"; }
+        bind "m" { SwitchToMode "Move"; }
+        bind "s" { SwitchToMode "Scroll"; }
+        bind "o" { SwitchToMode "Session"; }
+
+        bind "h" "Left" { MoveFocusOrTab "Left"; }
+        bind "l" "Right" { MoveFocusOrTab "Right"; }
+        bind "j" "Down" { MoveFocus "Down"; }
+        bind "k" "Up" { MoveFocus "Up"; }
+
+        bind "H" { MovePane "Left"; }
+        bind "J" { MovePane "Down"; }
+        bind "K" { MovePane "Up"; }
+        bind "L" { MovePane "Right"; }
+
+        bind "n" { NewPane; }
+        bind "d" { NewPane "Down"; }
+        bind "v" { NewPane "Right"; }
+        bind "x" { CloseFocus; }
+        bind "z" { ToggleFocusFullscreen; }
+        bind "f" { ToggleFloatingPanes; }
+        bind "e" { TogglePaneEmbedOrFloating; }
+        bind "i" { TogglePanePinned; }
+        bind "=" "+" { Resize "Increase"; }
+        bind "-" { Resize "Decrease"; }
+        bind "Space" { NextSwapLayout; }
+
+        bind "c" { NewTab; }
+        bind "Tab" { ToggleTab; }
+        bind "[" { GoToPreviousTab; }
+        bind "]" { GoToNextTab; }
+        bind "1" { GoToTab 1; }
+        bind "2" { GoToTab 2; }
+        bind "3" { GoToTab 3; }
+        bind "4" { GoToTab 4; }
+        bind "5" { GoToTab 5; }
+        bind "6" { GoToTab 6; }
+        bind "7" { GoToTab 7; }
+        bind "8" { GoToTab 8; }
+        bind "9" { GoToTab 9; }
+
+        bind "/" { SwitchToMode "EnterSearch"; SearchInput 0; }
+        bind "E" { EditScrollback; SwitchToMode "Locked"; }
+
+        bind "w" {
+            LaunchOrFocusPlugin "session-manager" {
+                floating true
+                move_to_focused_tab true
+            };
+            SwitchToMode "Locked"
+        }
+        bind "F" {
+            LaunchOrFocusPlugin "filepicker" {
+                floating true
+                move_to_focused_tab true
+            };
+            SwitchToMode "Locked"
+        }
+        bind "D" { Detach; }
+
+        bind "?" {
+            Run "@glow@/bin/glow" "-p" "@cheatsheet@" {
+                floating true
+                x "8%"
+                y "6%"
+                width "84%"
+                height "88%"
+                name "zellij cheatsheet"
+                close_on_exit true
+            };
+            SwitchToMode "Locked"
+        }
+    }
+
     pane {
         bind "h" "Left" { MoveFocus "Left"; }
         bind "l" "Right" { MoveFocus "Right"; }

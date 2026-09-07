@@ -13,6 +13,9 @@
 # The shape is zellij's "Unlock-First (non-colliding)" model, pinned declaratively here
 # rather than clicked into the Configuration screen:
 # https://zellij.dev/tutorials/colliding-keybindings/
+#
+# The KDL and fish live in files next to this one so an editor can highlight them; this
+# module only substitutes the four @tokens@ that differ between a workstation and the server.
 {
   pkgs,
   # Editor for `EditScrollback`. A server has no frame to open, so there it must be a
@@ -24,188 +27,35 @@
   copyCommand ? null,
 }:
 let
-  cheatsheet = ./cheatsheet.md;
-
-  # Modus Vivendi TINTED, mirrored from the kitty themeFile
-  # (kitty-themes/Modus_Vivendi_Tinted.conf); the bg is the tinted #0d0e1c, not pure black.
-  theme = ''
-    themes {
-        modus-vivendi-tinted {
-            fg "#ffffff"
-            bg "#0d0e1c"
-            black "#0d0e1c"
-            red "#ff5f59"
-            green "#44bc44"
-            yellow "#d0bc00"
-            blue "#2fafff"
-            magenta "#feacd0"
-            cyan "#00d3d0"
-            white "#ffffff"
-            orange "#fec43f"
-        }
-    }
-  '';
+  # Every custom layout must open with layouts/ui-template.kdl, or the session comes up with
+  # no tab bar and no hint bar at all; `@uiTemplate@` is where a layout pulls it in.
+  uiTemplate = builtins.readFile ./layouts/ui-template.kdl;
+  layout = file: builtins.replaceStrings [ "@uiTemplate@" ] [ uiTemplate ] (builtins.readFile file);
 in
-rec {
-  # Every custom layout must open with this, or the session comes up with no tab
-  # bar and no hint bar at all.
-  uiTemplate = ''
-    default_tab_template {
-        pane size=1 borderless=true {
-            plugin location="zellij:tab-bar"
-        }
-        children
-        pane size=2 borderless=true {
-            plugin location="zellij:status-bar"
-        }
-    }
-  '';
-
-  configText = ''
-    // Generated from hm-modules/zellij/lib.nix — do not edit in place.
-
-    // The bars live in the "default" layout; "compact" swaps them for a single top line
-    // with no keybind hints.
-    default_layout "default"
-
-    // Kitty launches fish while the login shell can remain bash; pin panes to the
-    // interactive shell so fish abbreviations and integrations are available.
-    default_shell "fish"
-
-    // Start every pane pass-through; Ctrl g is the only key zellij owns.
-    default_mode "locked"
-
-    theme "modus-vivendi-tinted"
-    ${theme}
-
-    // Tell every pane that the surface it is drawn on is dark. A TUI asking the terminal
-    // for its background with OSC 11 is talking to the multiplexer, not the terminal, so
-    // that answer is not trustworthy; vim's `background`, ncurses apps and OMP read
-    // COLORFGBG instead. "15;0" is xterm's convention for white on black, which is what
-    // the theme above pins.
-    env {
-        COLORFGBG "15;0"
-    }
-
-    // "titles" is a one-line pane header rather than a full box: pane names, focus
-    // indicator and the floating-pane PIN control, without the chrome of a full frame.
-    pane_frames true
-    pane_frame_style "titles"
-
-    mouse_mode true
-    copy_on_select true
-    ${
-      if copyCommand == null then
-        "// no copy_command: selections travel out over OSC 52"
-      else
-        ''copy_command "${copyCommand}"''
-    }
-    copy_clipboard "system"
-    scrollback_editor "${scrollbackEditor}"
-    scroll_buffer_size 50000
-
-    on_force_close "detach"
-    session_serialization true
-    serialize_pane_viewport true
-    scrollback_lines_to_serialize 10000
-
-    // Driving a zellij on alucard from a zellij here is the normal case. Without "descend"
-    // the outer session eats Ctrl g and the inner one is unreachable; `Ctrl g o ]`
-    // (FocusHostSession, below) climbs back out. Both ends run this config.
-    nested_session_handling "descend"
-
-    show_release_notes false
-
-    // `Ctrl g` is the only key zellij owns while locked: it turns the zellij layer on and
-    // `Esc` turns it off. Any action that hands the keyboard to something else — a plugin,
-    // an editor, the cheatsheet, another session — relocks.
-    keybinds clear-defaults=true {
-        locked {
-            bind "Ctrl g" { SwitchToMode "Normal"; }
-        }
-
-        // Single-action binds are what the status bar's tip line looks for, so `n` and
-        // `=`/`-` must stay free of a trailing SwitchToMode or the tip renders
-        // "UNBOUND => new pane".
-        normal {
-            // Sticky sub-modes.
-            bind "p" { SwitchToMode "Pane"; }
-            bind "t" { SwitchToMode "Tab"; }
-            bind "r" { SwitchToMode "Resize"; }
-            bind "m" { SwitchToMode "Move"; }
-            bind "s" { SwitchToMode "Scroll"; }
-            bind "o" { SwitchToMode "Session"; }
-
-            bind "h" "Left" { MoveFocusOrTab "Left"; }
-            bind "l" "Right" { MoveFocusOrTab "Right"; }
-            bind "j" "Down" { MoveFocus "Down"; }
-            bind "k" "Up" { MoveFocus "Up"; }
-
-            bind "H" { MovePane "Left"; }
-            bind "J" { MovePane "Down"; }
-            bind "K" { MovePane "Up"; }
-            bind "L" { MovePane "Right"; }
-
-            bind "n" { NewPane; }
-            bind "d" { NewPane "Down"; }
-            bind "v" { NewPane "Right"; }
-            bind "x" { CloseFocus; }
-            bind "z" { ToggleFocusFullscreen; }
-            bind "f" { ToggleFloatingPanes; }
-            bind "e" { TogglePaneEmbedOrFloating; }
-            bind "i" { TogglePanePinned; }
-            bind "=" "+" { Resize "Increase"; }
-            bind "-" { Resize "Decrease"; }
-            bind "Space" { NextSwapLayout; }
-
-            bind "c" { NewTab; }
-            bind "Tab" { ToggleTab; }
-            bind "[" { GoToPreviousTab; }
-            bind "]" { GoToNextTab; }
-            bind "1" { GoToTab 1; }
-            bind "2" { GoToTab 2; }
-            bind "3" { GoToTab 3; }
-            bind "4" { GoToTab 4; }
-            bind "5" { GoToTab 5; }
-            bind "6" { GoToTab 6; }
-            bind "7" { GoToTab 7; }
-            bind "8" { GoToTab 8; }
-            bind "9" { GoToTab 9; }
-
-            bind "/" { SwitchToMode "EnterSearch"; SearchInput 0; }
-            bind "E" { EditScrollback; SwitchToMode "Locked"; }
-
-            bind "w" {
-                LaunchOrFocusPlugin "session-manager" {
-                    floating true
-                    move_to_focused_tab true
-                };
-                SwitchToMode "Locked"
-            }
-            bind "F" {
-                LaunchOrFocusPlugin "filepicker" {
-                    floating true
-                    move_to_focused_tab true
-                };
-                SwitchToMode "Locked"
-            }
-            bind "D" { Detach; }
-
-            bind "?" {
-                Run "${pkgs.glow}/bin/glow" "-p" "${cheatsheet}" {
-                    floating true
-                    x "8%"
-                    y "6%"
-                    width "84%"
-                    height "88%"
-                    name "zellij cheatsheet"
-                    close_on_exit true
-                };
-                SwitchToMode "Locked"
-            }
-        }
-
-    ${builtins.readFile ./keybinds.kdl}'';
+{
+  # config.kdl carries the whole config, keybinds included. Its `themes` block is mirrored
+  # from the kitty themeFile (kitty-themes/Modus_Vivendi_Tinted.conf); the bg is the tinted
+  # #0d0e1c, not pure black.
+  configText =
+    builtins.replaceStrings
+      [
+        "@copyCommand@"
+        "@scrollbackEditor@"
+        "@glow@"
+        "@cheatsheet@"
+      ]
+      [
+        (
+          if copyCommand == null then
+            "// no copy_command: selections travel out over OSC 52"
+          else
+            ''copy_command "${copyCommand}"''
+        )
+        scrollbackEditor
+        "${pkgs.glow}"
+        "${./cheatsheet.md}"
+      ]
+      (builtins.readFile ./config.kdl);
 
   # SSH panes use `ssh -t <host> "<cmd>; exec $SHELL -l"`: -t forces a remote TTY so TUIs
   # render, and `exec $SHELL` leaves a usable login shell when you quit the app instead of a
@@ -216,105 +66,28 @@ rec {
   # re-execute nothing.
   layouts = {
     # Local project work: `cd ~/proj && zj proj dev`. Panes inherit the cwd you launched from.
-    dev = ''
-      layout {
-          ${uiTemplate}
-          tab name="dev" focus=true {
-              pane split_direction="vertical" {
-                  pane size="60%" name="shell"
-                  pane size="40%" split_direction="horizontal" {
-                      pane name="watch"
-                      pane name="scratch"
-                  }
-              }
-          }
-      }
-    '';
+    dev = layout ./layouts/dev.kdl;
 
     # Long-running agent work: `zj myjob agent`, or `zjr Bereitserver myjob` on the server.
-    agent = ''
-      layout {
-          ${uiTemplate}
-          tab name="agent" focus=true {
-              pane split_direction="vertical" {
-                  pane size="65%" name="agent"
-                  pane size="35%" name="inspect"
-              }
-          }
-          tab name="review" split_direction="vertical" {
-              pane name="git"
-              pane name="tests"
-          }
-      }
-    '';
+    agent = layout ./layouts/agent.kdl;
 
     # Bereitserver/alucard from a workstation: `zellij -l bereit`.
     # The lazydocker pane goes through the `media-admin` alias, whose ssh config carries the
     # *arr-stack LocalForwards, so opening this layout also binds those ports. It is the only
     # pane with forwards, which avoids duplicate-bind races. TERM is forced there because
     # media-admin otherwise sends TERM=xterm (8-colour), which washes lazydocker out.
-    bereit = ''
-      layout {
-          ${uiTemplate}
-          tab name="bereit" focus=true {
-              pane split_direction="vertical" {
-                  pane size="50%" name="btop" command="ssh" {
-                      args "-t" "Bereitserver" "btop; exec $SHELL -l"
-                  }
-                  pane size="50%" split_direction="horizontal" {
-                      pane name="yazi (downloads)" command="ssh" {
-                          args "-t" "Bereitserver" "cd /media/hetzner/downloads 2>/dev/null; yazi; exec $SHELL -l"
-                      }
-                      pane name="lazydocker (arr tunnels)" command="ssh" {
-                          args "-t" "media-admin" "env TERM=xterm-256color lazydocker; exec $SHELL -l"
-                      }
-                  }
-              }
-          }
-      }
-    '';
+    bereit = layout ./layouts/bereit.kdl;
 
     # Work host: `zellij -l work`. Requires an `acGPT` Host entry in ssh.nix, which is
     # currently a commented stub.
-    work = ''
-      layout {
-          ${uiTemplate}
-          tab name="acGPT" focus=true {
-              pane split_direction="vertical" {
-                  pane size="60%" name="lazydocker" command="ssh" {
-                      args "-t" "acGPT" "cd ~/onyx_v3/deployment/docker_compose; lazydocker; exec $SHELL -l"
-                  }
-                  pane size="40%" name="btop" command="ssh" {
-                      args "-t" "acGPT" "btop; exec $SHELL -l"
-                  }
-              }
-          }
-      }
-    '';
+    work = layout ./layouts/work.kdl;
   };
 
   # Layouts that only make sense on the server itself (alucard). Kept to binaries guaranteed
   # present there, so the layout cannot come up with dead panes.
   serverLayouts = {
     # `zjr Bereitserver ops` after `zellij --session ops --layout sys` once.
-    sys = ''
-      layout {
-          ${uiTemplate}
-          tab name="sys" focus=true {
-              pane split_direction="vertical" {
-                  pane size="60%" name="journal" command="journalctl" {
-                      args "-f" "-n" "200"
-                  }
-                  pane size="40%" split_direction="horizontal" {
-                      pane name="units" command="watch" {
-                          args "-n" "10" "systemctl --failed --no-legend"
-                      }
-                      pane name="shell"
-                  }
-              }
-          }
-      }
-    '';
+    sys = layout ./layouts/sys.kdl;
   };
 
   # These live here rather than in default.nix because alucard has fish too and does not use
@@ -322,52 +95,17 @@ rec {
   fishFunctions = {
     zj = {
       description = "Attach to (or create) a persistent local zellij session";
-      body = ''
-        set -l name $argv[1]
-        test -z "$name"; and set name (basename $PWD)
-        set -l layout $argv[2]
-
-        # list-sessions includes EXITED sessions, and attaching to one
-        # resurrects it — which is exactly what we want here.
-        if contains -- $name (zellij list-sessions --short --no-formatting 2>/dev/null)
-            zellij attach $name
-        else if test -n "$layout"
-            # -n, not --layout: with --session, --layout means "add these tabs to a session
-            # that already exists" and errors out when it does not.
-            zellij --session $name --new-session-with-layout $layout
-        else
-            zellij --session $name
-        end
-      '';
+      body = builtins.readFile ./fish/zj.fish;
     };
 
     zjr = {
       description = "Attach to (or create) a persistent zellij session on a remote host";
-      body = ''
-        if test (count $argv) -lt 1
-            echo "usage: zjr <ssh-host> [session]" >&2
-            return 2
-        end
-        set -l host $argv[1]
-        set -l name $argv[2]
-        test -z "$name"; and set name main
-
-        # -t forces a remote TTY; the keepalives make a dead link fail fast instead of
-        # hanging on a half-open socket.
-        ssh -t -o ServerAliveInterval=30 -o ServerAliveCountMax=3 $host -- \
-            zellij attach --create $name
-      '';
+      body = builtins.readFile ./fish/zjr.fish;
     };
 
     zjls = {
       description = "List zellij sessions on a remote host";
-      body = ''
-        if test (count $argv) -lt 1
-            echo "usage: zjls <ssh-host>" >&2
-            return 2
-        end
-        ssh $argv[1] -- zellij list-sessions --no-formatting
-      '';
+      body = builtins.readFile ./fish/zjls.fish;
     };
   };
 }
