@@ -1,8 +1,50 @@
-# Entries are added only after a finding is triaged and judged inapplicable to
-# this closure; vulnix matches NVD product names against Nix pname/version, which
-# produces false positives that a comment alone cannot suppress.
+# Triaged vulnix findings that do not apply to this closure.
 #
-# [nix-package-pname]
-# cve = [ "CVE-2025-00000" ]
-# comment = "why this does not apply here"
-# until = "2026-12-31"
+# vulnix matches an NVD product name against a Nix pname and version, with no
+# notion of which project the name belongs to. Every entry below is a confirmed
+# name collision or a version string vulnix cannot compare, checked against the
+# CVE text on 2026-09-07. Nothing here is a judgement that a real flaw is
+# acceptable; those stay in the report.
+
+# --- Different product entirely ------------------------------------------------
+
+[ranger]
+comment = "The terminal file manager. All 13 CVEs are Apache Ranger, the Hadoop authorization service."
+
+[cargo]
+comment = "Rust's package manager. The CVEs are the MediaWiki Cargo extension (SQL injection, stored XSS)."
+
+[jmespath]
+comment = "The Python package. The CVEs are jmespath.rb (JSON.load) and jmespath.php."
+
+[snappy]
+comment = "Google's compression library. The CVEs are knplabs/knp-snappy, a PHP HTML-to-PDF wrapper."
+
+[shellcheck]
+comment = "The linter. CVE-2021-28794 is an unofficial VS Code extension mishandling shellcheck.executablePath."
+
+[orc]
+comment = "GStreamer's Oil Runtime Compiler. CVE-2025-47436 is Apache ORC's C++ LZO decompressor."
+
+[markdown]
+comment = "Python-Markdown. CVE-2026-40890 is github.com/gomarkdown/markdown, a Go library."
+
+[tabulate]
+comment = "The Python table formatter. CVE-2024-13223 is a WordPress plugin called Tabulate."
+
+[ada]
+comment = "The URL parser. CVE-2024-9410 is ada.cx, a SaaS product with an SSRF in its Sentry config."
+
+[web]
+comment = "A store path named web-0.0.0. The CVEs are Engeman Web and Centreon Open Tickets."
+
+[zlib]
+comment = "Upstream zlib. CVE-2023-6992 is Cloudflare's zlib fork, CVE-2026-27820 the Ruby zlib gem."
+
+# --- Version string vulnix cannot compare --------------------------------------
+
+[dbus]
+comment = "Store path dbus-1 parses as version 1, so every fixed-before-1.14.4 CVE matches. The closure carries dbus 1.16."
+
+[lapack]
+comment = "Store path lapack-3 parses as version 3. CVE-2021-4048 is fixed in 3.10.1 and the closure is past it."
