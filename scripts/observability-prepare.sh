@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+install -d -m 0755 "$OBSERVABILITY_STATE_DIR/textfile"
+cp -R "$OBSERVABILITY_ASSETS/." "$OBSERVABILITY_STATE_DIR/"
+cp "$OBSERVABILITY_PROMETHEUS_CONFIG" "$OBSERVABILITY_STATE_DIR/prometheus.yml"

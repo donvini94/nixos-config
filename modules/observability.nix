@@ -32,12 +32,16 @@ let
     ++ lib.optional (cfg.n8nPort != null) (scrape "n8n" cfg.n8nPort)
     ++ lib.mapAttrsToList scrape cfg.extraScrapeTargets;
   };
-  prepare = pkgs.writeShellScript "observability-prepare" ''
-    set -euo pipefail
-    ${pkgs.coreutils}/bin/install -d -m 0755 ${stateDirectory}/textfile
-    ${pkgs.coreutils}/bin/cp -R ${../observability}/. ${stateDirectory}/
-    ${pkgs.coreutils}/bin/cp ${prometheusConfig} ${stateDirectory}/prometheus.yml
-  '';
+  prepare = pkgs.writeShellApplication {
+    name = "observability-prepare";
+    runtimeInputs = [ pkgs.coreutils ];
+    runtimeEnv = {
+      OBSERVABILITY_STATE_DIR = stateDirectory;
+      OBSERVABILITY_ASSETS = "${../observability}";
+      OBSERVABILITY_PROMETHEUS_CONFIG = "${prometheusConfig}";
+    };
+    text = builtins.readFile ../scripts/observability-prepare.sh;
+  };
 in
 {
   options.services.localObservability = {
@@ -160,7 +164,7 @@ in
         TimeoutStopSec = "10min";
         WorkingDirectory = stateDirectory;
         EnvironmentFile = cfg.environmentFile;
-        ExecStartPre = [ prepare ];
+        ExecStartPre = [ (lib.getExe prepare) ];
         ExecStart = "${pkgs.docker}/bin/docker compose up -d --pull always --remove-orphans --wait";
         ExecStop = "${pkgs.docker}/bin/docker compose down";
       };
