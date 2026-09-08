@@ -54,7 +54,8 @@
 
   # Jellyfin has no exporter, so every .db is copied with sqlite3 `.backup` while the
   # server keeps writing. config/ carries the encryption key, the users and the library
-  # definitions; cache/ and metadata/ are omitted because a library scan rebuilds them.
+  # definitions, and data/playlists holds .m3u files the database only points at.
+  # cache/, metadata/ and data/subtitles are omitted: a library scan rebuilds them.
   #
   # This exists because the 12.0 upgrade rewrites the schema on first boot with no
   # downgrade path: a backup is the only way back to 10.11.
@@ -75,6 +76,11 @@
         exit 1
       fi
       cp -a ${lib.escapeShellArg "${config.services.jellyfin.configDir}/."} "$stage/config/"
+      # Playlists are user-authored files; the database only references them.
+      playlists=${lib.escapeShellArg "${config.services.jellyfin.dataDir}/data/playlists"}
+      if [ -d "$playlists" ]; then
+        cp -a "$playlists" "$stage/data/playlists"
+      fi
     '';
     verifyPaths = [
       "/var/lib/offsite-backup/jellyfin/data"
