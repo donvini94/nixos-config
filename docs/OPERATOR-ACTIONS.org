@@ -117,6 +117,41 @@ layers. Mailcow is not managed by this repo and has its own updater:
 ssh -t Bereitserver 'cd /opt/mailcow-dockerized && sudo ./update.sh'
 #+end_src
 
+** TODO Upgrade Jellyfin to 12.0 — blocked on SSO-Auth and nixpkgs
+:PROPERTIES:
+:ADDED: 2026-09-08
+:EVIDENCE: jellyfin.org/posts/jellyfin-release-12.0; 9p4/jellyfin-plugin-sso build.yaml on main
+:END:
+
+Jellyfin 12.0 shipped 2026-09-08 (a renumbering: what would have been 10.12).
+This host runs 10.11.11. Do not upgrade until *both* gates clear:
+
+1. =9p4/jellyfin-plugin-sso= publishes a build with =targetAbi= 12.x and
+   =framework: net10.0=. Today =main= declares =targetAbi: "10.11.0.0"= and
+   =net9.0=, and 12.0 removed =IAuthenticationProvider.HasPassword=, which that
+   plugin implements. Upgrading first locks every Keycloak user out.
+2. nixpkgs merges the bump. Both PRs opened 2026-09-08 (#561130, #561207) are
+   incomplete; =jellyfin-ffmpeg= needs its own 7.1.4-3 -> 8.1.2-4 bump (#560953).
+
+Before upgrading, in this order:
+
+- Check for usernames differing only in capitalization. 12.0 adds a
+  case-insensitive unique index and the migration *fails* if two collide:
+  #+begin_src bash
+  ssh -t Bereitserver 'sudo sqlite3 /home/jellyfin/data/jellyfin.db \
+    "select lower(Username), count(*) from Users group by 1 having count(*) > 1;"'
+  #+end_src
+- Confirm =offsite-backup-jellyfin.service= has a recent snapshot. The 12.0
+  migration rewrites the schema on first boot and there is no downgrade; the
+  backup is the only way back.
+- Remove third-party plugins before the upgrade — the server moved to .NET 10 and
+  10.11 plugins cannot load.
+- Expect a mandatory full library scan afterwards: auto-resolved alternate
+  versions are dropped and every item is path-checked against disk. Over the
+  CIFS mount that pass is slow.
+- =X-Emby-Authorization= and the =/emby/*= and =/mediabrowser/*= route prefixes
+  are gone; check the nginx vhost and any script that used them.
+
 ** TODO Upgrade Onyx
 :PROPERTIES:
 :ADDED: 2026-08-29

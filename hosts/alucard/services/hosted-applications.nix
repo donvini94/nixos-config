@@ -52,6 +52,36 @@
     verifyPaths = [ "/var/lib/offsite-backup/n8n/database.sqlite" ];
   };
 
+  # Jellyfin has no exporter, so every .db is copied with sqlite3 `.backup` while the
+  # server keeps writing. config/ carries the encryption key, the users and the library
+  # definitions; cache/ and metadata/ are omitted because a library scan rebuilds them.
+  #
+  # This exists because the 12.0 upgrade rewrites the schema on first boot with no
+  # downgrade path: a backup is the only way back to 10.11.
+  services.offsiteBackup.jobs.jellyfin = {
+    runtimeInputs = [ pkgs.sqlite ];
+    prepare = ''
+      install -d -m 0700 "$stage" "$stage/data" "$stage/config"
+      data=${lib.escapeShellArg "${config.services.jellyfin.dataDir}/data"}
+      found=0
+      for db in "$data"/*.db; do
+        [ -e "$db" ] || continue
+        sqlite3 "$db" ".backup '$stage/data/$(basename "$db")'"
+        test -s "$stage/data/$(basename "$db")"
+        found=1
+      done
+      if [ "$found" -eq 0 ]; then
+        echo "no Jellyfin database found under $data; refusing an empty snapshot" >&2
+        exit 1
+      fi
+      cp -a ${lib.escapeShellArg "${config.services.jellyfin.configDir}/."} "$stage/config/"
+    '';
+    verifyPaths = [
+      "/var/lib/offsite-backup/jellyfin/data"
+      "/var/lib/offsite-backup/jellyfin/config"
+    ];
+  };
+
   # The exporter already writes a consistent dump to its own directory, so the job
   # snapshots that in place. The Django signing key is not part of the exporter's
   # output and a restore without it invalidates every session and signed value.
