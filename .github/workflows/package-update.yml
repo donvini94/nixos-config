@@ -34,9 +34,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Every attribute of packages.x86_64-linux in flake.nix. lathe is built
-        # for both systems but its hashes are platform-independent, so bumping it
-        # here covers the Mac as well.
+        # Every attribute of packages.x86_64-linux in flake.nix except tika. lathe is
+        # built for both systems but its hashes are platform-independent, so bumping
+        # it here covers the Mac as well. tika is excluded because nix-update would
+        # take it to 4.x, which stopped shipping runnable jars; that line needs a
+        # different derivation, not a version bump.
         package:
           - lathe
           - omp

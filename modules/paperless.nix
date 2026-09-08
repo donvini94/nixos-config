@@ -139,6 +139,11 @@ in
       };
     };
 
+    # nixpkgs' tika is 2.9.3, inside the CVE-2025-66516 XXE range, and this parses
+    # documents that arrive by email. The module overrides enableOcr/enableGui on
+    # whatever package it is given, so this stays a plain package swap.
+    services.tika.package = pkgs.callPackage ../packages/tika.nix { };
+
     sops.secrets = {
       "paperless-private" = {
         sopsFile = ../secrets/paperless.yaml;
