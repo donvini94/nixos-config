@@ -6,7 +6,7 @@
   # the agent a persistent writable layer (apt/pip/npm/uv installs survive
   # restarts); native mode would take that capability away. Pinned by digest so
   # no activation ever silently adopts a new base — Renovate proposes bumps.
-  image = "ubuntu:24.04@sha256:561618e2c15bf2397621dd04f96926663a3b5616c189cf7e38db7e82f5c538ea";
+  image = "ubuntu:24.04@sha256:33ceb71981b602c1a7443a53469e4dba065f7503eab3078a2d7a57a2ab987517";
 
   # Passed to `docker create`. Part of the module's container identity hash, so
   # changing any of these recreates the container.

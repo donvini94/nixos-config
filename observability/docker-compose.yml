@@ -46,13 +46,13 @@ x-langfuse-dependencies: &langfuse-dependencies
 
 services:
   langfuse-worker:
-    image: docker.io/langfuse/langfuse-worker:4@sha256:e11bbafc9e0b68c7dd9ae819ed8b1f21e0cf05fe89b9dda0c72e2c6a233145b3
+    image: docker.io/langfuse/langfuse-worker:4@sha256:4acdaa4417ba67ddf893143cd08012cec7dde268fa10fcabf0016dab9629c420
     restart: always
     depends_on: *langfuse-dependencies
     environment: *langfuse-environment
 
   langfuse-web:
-    image: docker.io/langfuse/langfuse:4@sha256:f24c8b1c987a5dc78e3a75ad3e5d9f87ebcadafbd91d8674a739c43fad451905
+    image: docker.io/langfuse/langfuse:4@sha256:f07cb9a35db654c4215317d67c2fe7febc1a6a1b73759c5e8d40c2fd2680519d
     restart: always
     depends_on: *langfuse-dependencies
     ports:
@@ -91,7 +91,7 @@ services:
       start_period: 1s
 
   minio:
-    image: cgr.dev/chainguard/minio:latest@sha256:617ff93bf711edab967765dcb8002bea6dc31e8584627cbd11008198466e0ae8
+    image: cgr.dev/chainguard/minio:latest@sha256:2a30e1a6d9e024631e9fed795773c40de5f819db80875f23dc00f7a4ca4f2246
     restart: always
     entrypoint: sh
     command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" --console-address ":9001" /data'
@@ -110,7 +110,7 @@ services:
       start_period: 1s
 
   redis:
-    image: docker.io/redis:7@sha256:e9b2e45ecd47fbb69b877cf8d045d5cccaaaed52524b6e098b4abe8212994f73
+    image: docker.io/redis:7@sha256:71da9275c5f3fcb97d0fa0c8c5b36cc995327265420f17a04bfd544f458059f7
     restart: always
     command: --requirepass ${REDIS_AUTH} --maxmemory-policy noeviction
     volumes:
@@ -124,7 +124,7 @@ services:
       REDIS_AUTH: ${REDIS_AUTH}
 
   postgres:
-    image: docker.io/postgres:17@sha256:e38411452a464af89e5adadb8d223bf53b898d47d6ef918b2d58c08707350449
+    image: docker.io/postgres:17@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675
     restart: always
     environment:
       POSTGRES_USER: postgres
@@ -141,7 +141,7 @@ services:
       retries: 10
 
   prometheus:
-    image: docker.io/prom/prometheus:latest@sha256:508729e0e2d18e11fd742a5a5ca70e557b940a93948c3c95fd0123a6fd538b69
+    image: docker.io/prom/prometheus:latest@sha256:5ce7540c3c00ef4ab0c9d2c995c6a5b9c421f44b4a115d97a2c7af3b1c21cbb0
     restart: always
     network_mode: host
     command:
@@ -156,7 +156,7 @@ services:
       - prometheus_data:/prometheus
 
   grafana:
-    image: docker.io/grafana/grafana:latest@sha256:ab5cb380e3ff3172d6c8bd2e7cfd31cce977d2881b260e1f5bc089bf0b759b43
+    image: docker.io/grafana/grafana:latest@sha256:f772d434e8fab0049deb2b1b30abd43342bcfca1537614aa8d36080232cf4283
     restart: always
     network_mode: host
     depends_on:
