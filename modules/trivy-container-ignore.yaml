@@ -1,0 +1,60 @@
+# Container findings that no upstream release will ever fix, and that are not in a
+# code path anything reaches. Everything else stays visible, including findings whose
+# only fix is upstream rebuilding an image: those clear on their own and the count
+# should keep saying so.
+#
+# Nothing here is suppressed silently. The scan runs with --show-suppressed and
+# publishes security_container_image_vulnerabilities_suppressed beside the real
+# count, so the dashboard shows both.
+#
+# Every entry is scoped by path or package, never by bare CVE id: CVE-2025-68121 is
+# the same Go stdlib flaw that legitimately affects minio's server binary, and a
+# bare id would hide it there too.
+#
+# expired_at forces a re-read. When one lapses, check whether the image still ships
+# the binary before extending it. The key is snake_case: trivy 0.74 silently accepts
+# an `expiredAt` entry and suppresses forever, verified by setting a past date under
+# both spellings and watching only the snake_case one start reporting again.
+vulnerabilities:
+  # kepubify and pebble are ebook/ACME side-car binaries in komga, built against Go
+  # 1.17.8; gosu is a start-up privilege-drop shim that execs the real entrypoint and
+  # exits. gosu was archived upstream in 2024, so its Go 1.18 stdlib is frozen. None
+  # of the three serves traffic, and no rebuild is coming for any of them.
+  - id: CVE-2023-24538
+    paths:
+      - usr/bin/kepubify
+      - usr/bin/pebble
+      - usr/local/bin/gosu
+    statement: Go stdlib in a side-car binary that serves no traffic; upstream binaries are unmaintained.
+    expired_at: 2026-12-31
+  - id: CVE-2023-24540
+    paths:
+      - usr/bin/kepubify
+      - usr/bin/pebble
+      - usr/local/bin/gosu
+    statement: Go stdlib in a side-car binary that serves no traffic; upstream binaries are unmaintained.
+    expired_at: 2026-12-31
+  - id: CVE-2024-24790
+    paths:
+      - usr/bin/kepubify
+      - usr/bin/pebble
+      - usr/local/bin/gosu
+    statement: Go stdlib in a side-car binary that serves no traffic; upstream binaries are unmaintained.
+    expired_at: 2026-12-31
+  - id: CVE-2025-68121
+    paths:
+      - usr/bin/kepubify
+      - usr/bin/pebble
+      - usr/local/bin/gosu
+    statement: Go stdlib in a side-car binary that serves no traffic; upstream binaries are unmaintained.
+    expired_at: 2026-12-31
+
+  # linux-libc-dev is the kernel header package. It ships .h files, no executable
+  # code, and the CVE is in the kernel these headers describe - not in the image,
+  # which runs on this host's kernel. The host closure is scanned separately by
+  # services.hostVulnerabilityScan.
+  - id: CVE-2026-53398
+    purls:
+      - pkg:deb/ubuntu/linux-libc-dev
+    statement: Kernel headers, not a running kernel; the host's own kernel is covered by the host scan.
+    expired_at: 2026-12-31

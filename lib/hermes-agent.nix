@@ -1,5 +1,5 @@
 # Deployment data for the upstream `services.hermes-agent` module, shared by both hosts:
-# only the inference target differs (dracula's local llama-swap ingress, alucard's
+# only the inference target differs (dracula's local TabbyAPI ingress, alucard's
 # Requesty-backed one) and agent policy is deliberately identical.
 {
   # Base image for the upstream module's OCI mode. Container mode is what gives

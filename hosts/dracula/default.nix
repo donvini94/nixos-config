@@ -49,30 +49,72 @@ in
 
   services.localLlama = {
     enable = true;
-    models = {
-      "dirk-qwen3.8-27b-local" = {
-        repo = "peculiar-ragdoll/Dirk-Qwen3.8-27B-GGUF";
-        revision = "027902e9811019480b8b074aed93fa6084f782a9";
-        file = "Dirk-Qwen3.8-27B-UD-Q4_K_XL.gguf";
-        sha256 = "405359214aa8bd77b1af70121bc2d7878f3395b73dea16ae362ce71fa56b248e";
-        displayName = "Dirk Qwen3.8 27B UD-Q4_K_XL (dense)";
-        description = "Dense Qwen3.8 default; Q4 weights; text-only serving; one 32,768-token agent slot.";
-        # Q4 frees 2.14 GiB versus Q5; KV cache is capped at 32,768 tokens / 2 GiB.
-        contextSize = 32768;
-        parallelSlots = 1;
-        gpuLayers = 999;
-      };
-      "qwen3.6-35b-a3b" = {
-        repo = "unsloth/Qwen3.6-35B-A3B-GGUF";
-        revision = "a483e9e6cbd595906af30beda3187c2663a1118c";
-        file = "Qwen3.6-35B-A3B-UD-Q3_K_M.gguf";
-        sha256 = "1b715841683f960bd9a49f008181bd910ee169b78d4cf465b6fde7f4d929ff99";
-        displayName = "Qwen3.6 35B-A3B UD-Q3_K_M (MoE)";
-        description = "35B-total MoE baseline; no vision projector; one 65,536-token agent slot.";
-        contextSize = 65536;
-        parallelSlots = 1;
-        gpuLayers = 999;
-      };
+    defaultModel = "qwen3.8-27b-exl3-3.5bpw";
+    models."qwen3.8-27b-exl3-3.5bpw" = {
+      repo = "Mia-AiLab/Qwen3.8-27B-EXL3-3.5bpw";
+      revision = "19441ac874c4018295da848e250f23511361cda4";
+      files = [
+        {
+          path = "chat_template.jinja";
+          sourceUrl = "https://huggingface.co/froggeric/Qwen-Fixed-Chat-Templates/resolve/855bffc49448e299789730ff92c9b8d834d6cc14/chat_template.jinja";
+          sha256 = "e57684bae4156211a55473c5a63be976a405a37ab5be5ae0e5abf1df5349c4b2";
+        }
+        {
+          path = "config.json";
+          sha256 = "153407dcf65483b121759efc6bdd0e41e124e1e297496a9ba979936689a4b9d2";
+        }
+        {
+          path = "generation_config.json";
+          sha256 = "e70c136c1b78ddc1fb0905bac8e733a4dc448d4f852a5dd75143fffc70be550e";
+        }
+        {
+          path = "merges.txt";
+          sha256 = "a9d356d7bdf1ef4949e3e748e95b8e10ad9d4e2e838eddc38a0a7b6b94d1db8d";
+        }
+        {
+          path = "model-00001-of-00002.safetensors";
+          sha256 = "7b77214fe58ff15fed0b4af55e3cd92f38842b8711886d68954e8071ff8270c6";
+        }
+        {
+          path = "model-00002-of-00002.safetensors";
+          sha256 = "411c83bb1070b27f3d670fc93e38dca0f17eb66429f64b5706901b12613188b2";
+        }
+        {
+          path = "model.safetensors.index.json";
+          sha256 = "ee2d5e73b5f8311ad331ce3c94a29d1143225064b278a18fa9966cba54d2802e";
+        }
+        {
+          path = "preprocessor_config.json";
+          sha256 = "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516";
+        }
+        {
+          path = "quantization_config.json";
+          sha256 = "d5e7e4c411084ef898b470e35a20181093bf3adbb1282e9d81674ce7b3d9069d";
+        }
+        {
+          path = "tokenizer.json";
+          sha256 = "0997f410c57a1f4e53b09e4be8f4a172d90edd9564368fb0847030937229b9f3";
+        }
+        {
+          path = "tokenizer_config.json";
+          sha256 = "b11349aafa7cdc6a320767cf7ceb29ed82f7eda5d65e8e0819e76f0ce947bf27";
+        }
+        {
+          path = "video_preprocessor_config.json";
+          sha256 = "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13";
+        }
+        {
+          path = "vocab.json";
+          sha256 = "ce99b4cb2983d118806ce0a8b777a35b093e2000a503ebde25853284c9dfa003";
+        }
+      ];
+      displayName = "Qwen3.8 27B EXL3 3.5bpw (dense)";
+      description = "Dense Qwen3.8 default; EXL3 3.5bpw weights; text-only serving; one 32,768-token agent slot.";
+      # CEILING: keep one 32,768-token FP16 cache within Dracula's 24 GiB GPU; raise it only after measuring TabbyAPI's live footprint.
+      contextSize = 32768;
+      parallelSlots = 1;
+      reasoning = true;
+      toolFormat = "qwen3_5";
     };
   };
 
@@ -102,8 +144,9 @@ in
     workflowDirectory = ../../n8n/workflows/dracula;
     hermes = {
       providerName = "dracula-local";
-      defaultModel = "dirk-qwen3.8-27b-local";
-      contextLength = config.services.localLlama.models."dirk-qwen3.8-27b-local".contextSize;
+      defaultModel = config.services.localLlama.defaultModel;
+      contextLength =
+        config.services.localLlama.models.${config.services.localLlama.defaultModel}.contextSize;
     };
     observability.gpuMetrics = true;
   };

@@ -76,7 +76,7 @@ let
   yaml = pkgs.formats.yaml { };
   # `smol` backs session titles and prewalk, so both hosts point it at the Requesty
   # ingress's cheap default rather than dracula's local model: the role must not break
-  # whenever llama-server is down.
+  # whenever TabbyAPI is down.
   smolModel = modelSelector requestyProfile requestyProfile.defaultModel;
   omp = pkgs.callPackage ../packages/omp-harness.nix {
     extraEnabledModels = profileModels;

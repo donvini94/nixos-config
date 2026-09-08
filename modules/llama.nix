@@ -8,11 +8,28 @@
 let
   cfg = config.services.localLlama;
   stateDirectory = "/var/lib/llama";
+  modelRoot = "${stateDirectory}/models";
   bindAddress = "127.0.0.1";
   backendPort = 18080;
-  # First dynamic llama-server port; llama-swap assigns upwards from here.
-  modelStartPort = 18100;
   yaml = pkgs.formats.yaml { };
+
+  modelFileType = lib.types.submodule {
+    options = {
+      path = lib.mkOption {
+        type = lib.types.str;
+        description = "Repository-relative model file path.";
+      };
+      sourceUrl = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "Pinned source URL when the file does not come from the model repository.";
+      };
+      sha256 = lib.mkOption {
+        type = lib.types.strMatching "[0-9a-f]{64}";
+        description = "SHA-256 of the model file.";
+      };
+    };
+  };
 
   modelType = lib.types.submodule (
     { name, ... }:
@@ -26,13 +43,9 @@ let
           type = lib.types.str;
           description = "Pinned Hugging Face revision for ${name}.";
         };
-        file = lib.mkOption {
-          type = lib.types.str;
-          description = "GGUF filename for ${name}.";
-        };
-        sha256 = lib.mkOption {
-          type = lib.types.strMatching "[0-9a-f]{64}";
-          description = "GGUF SHA-256 for ${name}.";
+        files = lib.mkOption {
+          type = lib.types.nonEmptyListOf modelFileType;
+          description = "All files required to load ${name}, each pinned by SHA-256.";
         };
         displayName = lib.mkOption {
           type = lib.types.str;
@@ -45,7 +58,7 @@ let
         contextSize = lib.mkOption {
           type = lib.types.ints.positive;
           default = 65536;
-          description = "Total llama-server context across every parallel slot.";
+          description = "Total TabbyAPI context across every parallel slot.";
         };
         output = lib.mkOption {
           type = lib.types.ints.positive;
@@ -72,138 +85,136 @@ let
         };
         parallelSlots = lib.mkOption {
           type = lib.types.ints.positive;
-          default = 2;
+          default = 1;
+          description = "Maximum concurrent TabbyAPI generation jobs.";
         };
-        gpuLayers = lib.mkOption {
-          type = lib.types.nullOr lib.types.ints.unsigned;
+        toolFormat = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
           default = null;
-          description = "Layers to offload to GPU, or null for llama.cpp automatic selection.";
+          description = "TabbyAPI tool-call parser format, or null to disable parsing.";
         };
       };
     }
   );
 
-  modelPath = model: "${stateDirectory}/models/${model.file}";
-  modelUrl = model: "https://huggingface.co/${model.repo}/resolve/${model.revision}/${model.file}";
-  safeName = name: lib.replaceStrings [ "." "/" ] [ "-" "-" ] name;
+  modelDirectory = name: "${modelRoot}/${name}";
+  modelFilePaths = model: map (file: file.path) model.files;
+  hasUniqueFiles =
+    model:
+    builtins.length (modelFilePaths model) == builtins.length (lib.unique (modelFilePaths model));
+  modelFileUrl =
+    model: file:
+    if file.sourceUrl == null then
+      "https://huggingface.co/${model.repo}/resolve/${model.revision}/${file.path}"
+    else
+      file.sourceUrl;
+  model = cfg.models.${cfg.defaultModel};
 
-  modelDownloads = lib.mapAttrs (
+  modelManifest =
     name: model:
-    pkgs.writeShellScript "download-local-llama-${safeName name}" ''
-      set -euo pipefail
-      model=${lib.escapeShellArg (modelPath model)}
-      partial="$model.partial"
-      marker="$model.verified-sha256"
-      if [ -f "$model" ] && [ -f "$marker" ] && [ "$(< "$marker")" = ${lib.escapeShellArg model.sha256} ]; then
-        exit 0
-      fi
-      if [ -f "$model" ] && ${pkgs.coreutils}/bin/printf '%s  %s\n' ${lib.escapeShellArg model.sha256} "$model" \
-        | ${pkgs.coreutils}/bin/sha256sum --check --status; then
-        ${pkgs.coreutils}/bin/printf '%s\n' ${lib.escapeShellArg model.sha256} > "$marker"
-        exit 0
-      fi
-      ${pkgs.coreutils}/bin/mkdir -p "$(dirname "$model")"
-      ${pkgs.curl}/bin/curl --fail --location --retry 5 --continue-at - \
-        --output "$partial" ${lib.escapeShellArg (modelUrl model)}
-      ${pkgs.coreutils}/bin/printf '%s  %s\n' ${lib.escapeShellArg model.sha256} "$partial" \
-        | ${pkgs.coreutils}/bin/sha256sum --check
-      ${pkgs.coreutils}/bin/mv "$partial" "$model"
-      ${pkgs.coreutils}/bin/printf '%s\n' ${lib.escapeShellArg model.sha256} > "$marker"
-    ''
-  ) cfg.models;
+    pkgs.writeText "${name}-sha256-manifest" (
+      lib.concatMapStringsSep "\n" (file: "${file.sha256}  ${file.path}") model.files + "\n"
+    );
 
-  downloadAllModels = pkgs.writeShellScript "download-all-local-llama-models" ''
-    set -euo pipefail
-    ${lib.concatStringsSep "\n" (
-      lib.mapAttrsToList (_name: downloader: lib.escapeShellArg downloader) modelDownloads
-    )}
+  downloadModel =
+    name: model:
+    pkgs.writeShellScript "download-local-exl3-${name}" ''
+      set -euo pipefail
+      model_dir=${lib.escapeShellArg (modelDirectory name)}
+      marker="$model_dir/.verified-sha256"
+      manifest=${lib.escapeShellArg (modelManifest name model)}
+
+      if [ -f "$marker" ] && ${pkgs.diffutils}/bin/cmp --silent "$marker" "$manifest"; then
+        exit 0
+      fi
+
+      download_file() {
+        relative_path="$1"
+        expected_sha256="$2"
+        source_url="$3"
+        destination="$model_dir/$relative_path"
+        partial="$destination.partial"
+
+        ${pkgs.coreutils}/bin/mkdir -p "$(dirname "$destination")"
+        if [ -f "$destination" ] && ${pkgs.coreutils}/bin/printf '%s  %s\n' "$expected_sha256" "$destination" \
+          | ${pkgs.coreutils}/bin/sha256sum --check --status; then
+          return
+        fi
+
+        ${pkgs.curl}/bin/curl --fail --location --retry 5 --continue-at - \
+          --output "$partial" "$source_url"
+        ${pkgs.coreutils}/bin/printf '%s  %s\n' "$expected_sha256" "$partial" \
+          | ${pkgs.coreutils}/bin/sha256sum --check
+        ${pkgs.coreutils}/bin/mv "$partial" "$destination"
+      }
+
+      ${lib.concatMapStringsSep "\n" (
+        file:
+        "download_file ${lib.escapeShellArg file.path} ${lib.escapeShellArg file.sha256} ${lib.escapeShellArg (modelFileUrl model file)}"
+      ) model.files}
+      ${pkgs.coreutils}/bin/cp "$manifest" "$marker"
+    '';
+
+  waitForTabby = pkgs.writeShellScript "wait-for-local-tabbyapi" ''
+    set -eu
+    for attempt in $(${pkgs.coreutils}/bin/seq 1 7200); do
+      if ${pkgs.curl}/bin/curl --fail --silent --show-error "http://${bindAddress}:${toString backendPort}/health" > /dev/null; then
+        exit 0
+      fi
+      ${pkgs.coreutils}/bin/sleep 1
+    done
+    echo "TabbyAPI did not become healthy within two hours" >&2
+    exit 1
   '';
 
-  modelRunners = lib.mapAttrs (
-    name: model:
-    let
-      args = [
-        "${pkgs.llama-cpp}/bin/llama-server"
-        "--model"
-        (modelPath model)
-        "--host"
-        bindAddress
-        "--ctx-size"
-        (toString model.contextSize)
-        "--parallel"
-        (toString model.parallelSlots)
-        "--alias"
-        name
-        "--metrics"
-        "--no-webui"
-        "--log-timestamps"
-        "--log-colors"
-        "off"
-      ]
-      ++ lib.optionals (model.gpuLayers != null) [
-        "--n-gpu-layers"
-        (toString model.gpuLayers)
-      ];
-    in
-    pkgs.writeShellScript "run-local-llama-${safeName name}" ''
-      set -euo pipefail
-      port="''${1:?llama-swap did not provide a dynamic port}"
-      ${modelDownloads.${name}}
-      exec ${lib.escapeShellArgs args} --port "$port"
-    ''
-  ) cfg.models;
-
-  swapConfig = yaml.generate "llama-swap.yaml" {
-    startPort = modelStartPort;
-    # A first run downloads the weights before llama-server answers /health.
-    healthCheckTimeout = 7200;
-    globalTTL = 0;
-    unloadTimeout = 5;
-    includeAliasesInList = true;
-    sendLoadingState = false;
-    logToStdout = "both";
-    models = lib.mapAttrs (name: model: {
-      cmd = "${modelRunners.${name}} \${PORT}";
-      aliases = [ ];
-      inherit (model) description;
-      name = model.displayName;
-      checkEndpoint = "/health";
-      useModelName = name;
-      concurrencyLimit = model.parallelSlots;
-      metadata = {
-        context_length = builtins.div model.contextSize model.parallelSlots;
-        total_context = model.contextSize;
-        parallel_slots = model.parallelSlots;
-      };
-    }) cfg.models;
+  tabbyConfig = yaml.generate "tabbyapi.yml" {
+    network = {
+      host = bindAddress;
+      port = backendPort;
+      disable_auth = true;
+    };
+    model = {
+      model_dir = modelRoot;
+      model_name = cfg.defaultModel;
+      backend = "exllamav3";
+      max_seq_len = model.contextSize;
+      cache_size = model.contextSize;
+      max_batch_size = model.parallelSlots;
+      reasoning = model.reasoning;
+    }
+    // lib.optionalAttrs (model.toolFormat != null) {
+      tool_format = model.toolFormat;
+    };
   };
-
-  modelFiles = lib.mapAttrsToList (_name: model: model.file) cfg.models;
 in
 {
   options.services.localLlama = {
-    enable = lib.mkEnableOption "local OpenAI-compatible llama.cpp inference";
+    enable = lib.mkEnableOption "local OpenAI-compatible EXL3 inference";
+    defaultModel = lib.mkOption {
+      type = lib.types.str;
+      description = "Primary local model ID, loaded by TabbyAPI at service start.";
+    };
     models = lib.mkOption {
       type = lib.types.attrsOf modelType;
       default = { };
-      description = "Pinned model registry keyed by the primary request model ID.";
+      description = "Pinned EXL3 model registry keyed by the OpenAI request model ID.";
     };
   };
 
   config = lib.mkIf cfg.enable {
     assertions = [
       {
-        assertion = cfg.models != { };
-        message = "services.localLlama.models must contain at least one model";
+        assertion = cfg.models != { } && builtins.hasAttr cfg.defaultModel cfg.models;
+        message = "services.localLlama.defaultModel must name a registered model";
       }
       {
-        assertion = builtins.length modelFiles == builtins.length (lib.unique modelFiles);
-        message = "services.localLlama model filenames must be unique";
+        assertion = lib.all hasUniqueFiles (lib.attrValues cfg.models);
+        message = "services.localLlama model file paths must be unique within each model";
       }
     ];
 
-    systemd.services.local-llama-swap = {
-      description = "llama-swap local model router";
+    systemd.services.local-tabbyapi = {
+      description = "TabbyAPI local EXL3 inference server";
       wantedBy = [ "ai-stack.target" ];
       partOf = [ "ai-stack.target" ];
       serviceConfig = {
@@ -213,14 +224,13 @@ in
         StateDirectory = "llama";
         StateDirectoryMode = "0750";
         WorkingDirectory = stateDirectory;
-        ExecStartPre = downloadAllModels;
+        ExecStartPre = downloadModel cfg.defaultModel model;
         ExecStart = lib.escapeShellArgs [
-          "${pkgs.llama-swap}/bin/llama-swap"
-          "-config"
-          swapConfig
-          "-listen"
-          "${bindAddress}:${toString backendPort}"
+          "${pkgs.tabbyapi}/bin/tabbyapi"
+          "--config"
+          tabbyConfig
         ];
+        ExecStartPost = waitForTabby;
         Restart = "on-failure";
         RestartSec = "5s";
         TimeoutStartSec = "infinity";
@@ -247,16 +257,13 @@ in
     services.aiIngress = {
       enable = true;
       backendUrl = "http://${bindAddress}:${toString backendPort}";
-      priceMap = lib.mapAttrs (_: model: model.cost) cfg.models;
+      priceMap = lib.mapAttrs (_: localModel: localModel.cost) cfg.models;
       lifecycleUnits = [
         "ai-stack.target"
-        "local-llama-swap.service"
+        "local-tabbyapi.service"
         "local-llama-logger.service"
       ];
-      # Model downloads and the llama-swap handoff need paths the confined
-      # filesystem view would hide.
-      hardened = false;
-      extraAfter = [ "local-llama-swap.service" ];
+      extraAfter = [ "local-tabbyapi.service" ];
     };
   };
 }

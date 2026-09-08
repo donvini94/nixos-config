@@ -79,7 +79,7 @@
             }
           ]
         },
-        "jsonBody": "={{ { model: 'dirk-qwen3.8-27b-local', messages: [{ role: 'user', content: 'Reply with exactly N8N_INGRESS_OK and nothing else.' }], temperature: 0, max_tokens: 32 } }}",
+        "jsonBody": "={{ { model: 'qwen3.8-27b-exl3-3.5bpw', messages: [{ role: 'user', content: 'Reply with exactly N8N_INGRESS_OK and nothing else.' }], temperature: 0, max_tokens: 32 } }}",
         "method": "POST",
         "options": {
           "timeout": 180000

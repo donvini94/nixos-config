@@ -119,9 +119,7 @@ in
       type = lib.types.bool;
       default = true;
       description = ''
-        Apply filesystem/namespace confinement to the proxy. Disabled for the
-        local backend, whose model downloads and llama-swap handoff need paths
-        outside the confined view.
+        Apply filesystem/namespace confinement to the proxy.
       '';
     };
 

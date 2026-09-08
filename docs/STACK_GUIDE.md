@@ -46,32 +46,30 @@ OMP / n8n / Hermes / curl
        logging ingress 127.0.0.1:8080
                     │
                     ▼
-          llama-swap 127.0.0.1:18080
-                    │
-                    ▼
-     selected llama-server on a dynamic port
+          TabbyAPI 127.0.0.1:18080
 ```
 
-Always point clients at port `8080`. Port `18080` and the dynamic model ports are internal
-implementation details. The request's `model` field selects the model; llama-swap changes
-which server occupies the GPU.
+Always point clients at port `8080`; port `18080` is an internal implementation detail.
+TabbyAPI keeps Dracula's sole EXL3 model resident, so its request `model` field must be
+`qwen3.8-27b-exl3-3.5bpw`.
 
 Examples:
 
 ```console
-omp --model dracula-local/qwen3.6-35b-a3b
+omp --model dracula-local/qwen3.8-27b-exl3-3.5bpw
 
 curl http://127.0.0.1:8080/v1/chat/completions \
   -H 'Content-Type: application/json' \
   -H 'X-AI-Caller: manual' \
-  -d '{"model":"dirk-qwen3.8-27b-local","messages":[{"role":"user","content":"Say hello"}]}'
+  -d '{"model":"qwen3.8-27b-exl3-3.5bpw","messages":[{"role":"user","content":"Say hello"}]}'
 ```
 
-Available model IDs are `dirk-qwen3.8-27b-local` and `qwen3.6-35b-a3b`. Only one is resident
-at a time. Dirk is the text-only default: its optional `mmproj-F16.gguf` vision projector is not
-downloaded or loaded. The pinned Q4 artifact releases 2.14 GiB of model-weight VRAM compared
-with the former Q5 one. Its one-slot, 32,768-token context retains the 2 GiB Qwen3.8 F16
-KV-cache budget; keep that cap until this artifact has been measured live.
+The only local model is Mia-AiLab's text-only Qwen3.8 27B EXL3 3.5bpw checkpoint.
+All weights and support files are pinned by Hugging Face revision and SHA-256 before TabbyAPI
+starts. Froggeric's pinned v22.5 template replaces Qwen's stock template: it defaults to
+medium reasoning and safely renders reasoning history and OpenAI-style tool arguments from
+OMP, n8n, and Hermes. Its one-slot, 32,768-token FP16 cache remains capped until TabbyAPI's
+live GPU footprint has been measured on Dracula.
 
 ## What each AI component is for
 
@@ -334,9 +332,9 @@ docker ps --filter name=hermes-agent
 docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'
 ```
 
-Models load on demand, so the first request after a boot or a model swap pays the full GGUF
-read from disk—tens of seconds cold against seconds warm. Never quote a first-request
-latency as steady-state throughput.
+TabbyAPI loads the model when `ai-stack.target` starts. The initial EXL3 load reads roughly
+14 GiB from disk, so wait for the backend health check before treating the first successful
+request as steady-state throughput.
 
 `ai-stack-stop` is also the recovery path: every stop/start exercises the same code as a
 cold boot, and no service may need a manual post-boot step. Confirm the GPU actually came

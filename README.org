@@ -40,7 +40,7 @@ Detailed operator documentation lives in [[file:docs/][docs/]]; module conventio
 │   ├── fonts.nix               #   Font definitions
 │   ├── ai-stack.nix            #   SHARED: the AI stack both hosts run identically
 │   ├── ai-ingress.nix          #   SHARED: OpenAI-compatible logging proxy, `ai-stack.target`
-│   ├── llama.nix               #   dracula: llama-swap + pinned GGUF model registry
+│   ├── llama.nix               #   dracula: TabbyAPI + pinned EXL3 model registry
 │   ├── remote-openai.nix       #   alucard: Requesty upstream behind the same ingress
 │   ├── n8n.nix                 #   n8n + task runners (containerised, private bridge)
 │   ├── n8n-credentials.nix     #   alucard: sops → n8n credential import
@@ -66,7 +66,7 @@ Detailed operator documentation lives in [[file:docs/][docs/]]; module conventio
 │   └── helix, kitty, mpv, pokemmo, starship, yazi, zathura, zellij, doom
 ├── hosts/
 │   ├── dracula/                # Desktop workstation
-│   │   ├── default.nix         #   Imports + local LLM registry + AI stack wiring + sops
+│   │   ├── default.nix         #   Imports + local EXL3 registry + AI stack wiring + sops
 │   │   ├── hardware.nix        #   Boot, filesystems, CPU (AMD), peripherals
 │   │   └── services.nix        #   Docker + CDI, NVIDIA container toolkit, host packages
 │   └── alucard/                # Home server
@@ -126,8 +126,7 @@ loopback. Only the backend behind it differs per host.
 #+begin_src
 dracula:  omp / Hermes / n8n
               → local-llama-logger  127.0.0.1:8080
-              → local-llama-swap    127.0.0.1:18080
-              → llama-server        127.0.0.1:18100+   (loaded on demand)
+              → local-tabbyapi      127.0.0.1:18080
 
 alucard:  omp / Hermes / n8n
               → local-llama-logger  127.0.0.1:8080
@@ -136,13 +135,12 @@ alucard:  omp / Hermes / n8n
 
 ** Models
 
-Dracula serves two pinned GGUFs (HF revision + sha256, auto-downloaded and verified into
-=/var/lib/llama/models=), swapped on demand by llama-swap:
+Dracula serves one pinned EXL3 model (HF revision + SHA-256 for every required file,
+auto-downloaded and verified into =/var/lib/llama/models=) through TabbyAPI:
 
-| Model ID                 | Context | Default |
-|--------------------------+---------+---------|
-| =dirk-qwen3.8-27b-local= |   32768 | yes     |
-| =qwen3.6-35b-a3b=        |   65536 | no      |
+| Model ID                       | Context | Default |
+|--------------------------------+---------+---------|
+| =qwen3.8-27b-exl3-3.5bpw=      |   32768 | yes     |
 
 Alucard carries the only server-side upstream credential (Requesty). Its model allowlist and
 price map come from =lib/requesty-models.nix=, and =modules/remote-openai.nix= refuses to start
@@ -412,7 +410,7 @@ sudo nixos-rebuild switch --flake .#newhost
 3. Enable/disable opt-in modules (=nvidia.nix=, =gaming.nix=) as needed
 4. For a server: adapt =hosts/alucard/= — each file is self-contained
 5. For the AI stack: import =modules/ai-ingress.nix= plus exactly one backend
-   (=llama.nix= for local GGUFs, =remote-openai.nix= for a hosted router)
+   (=llama.nix= for a local EXL3 model, =remote-openai.nix= for a hosted router)
 6. Set up your own sops-nix age keys in =.sops.yaml= and re-encrypt secrets
 
 See [[file:AGENTS.md][AGENTS.md]] for module conventions and [[file:docs/STACK_GUIDE.md][docs/STACK_GUIDE.md]] for the full operator map.
