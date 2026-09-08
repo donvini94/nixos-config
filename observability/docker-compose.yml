@@ -152,6 +152,7 @@ services:
       - --web.listen-address=${OBSERVABILITY_BIND_ADDRESS:-127.0.0.1}:${PROMETHEUS_PORT:-19091}
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alerts.yml:/etc/prometheus/alerts.yml:ro
       - prometheus_data:/prometheus
 
   grafana:

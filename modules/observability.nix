@@ -16,12 +16,40 @@ let
     inherit job_name;
     static_configs = [ { targets = [ "127.0.0.1:${toString port}" ]; } ];
   };
+  # Only real, writable mounts. /nix and /nix/store are bind mounts of / and would
+  # alert three times for one full disk.
+  watchedMounts = ''mountpoint=~"/|/home|/boot|/mnt/.*"'';
+  ratioFree = ''node_filesystem_avail_bytes{${watchedMounts}} / node_filesystem_size_bytes{${watchedMounts}}'';
+  alertRules = (pkgs.formats.yaml { }).generate "prometheus-alerts.yml" {
+    groups = [
+      {
+        name = "storage";
+        rules = [
+          {
+            alert = "FilesystemFillingUp";
+            expr = "${ratioFree} < 0.10";
+            for = "30m";
+            labels.severity = "warning";
+            annotations.summary = "{{ $labels.mountpoint }} is below 10% free ({{ $value | humanizePercentage }})";
+          }
+          {
+            alert = "FilesystemAlmostFull";
+            expr = "${ratioFree} < 0.03";
+            for = "10m";
+            labels.severity = "critical";
+            annotations.summary = "{{ $labels.mountpoint }} is below 3% free ({{ $value | humanizePercentage }}); backups to it will start failing";
+          }
+        ];
+      }
+    ];
+  };
   prometheusConfig = (pkgs.formats.yaml { }).generate "prometheus.yml" {
     global = {
       scrape_interval = "15s";
       evaluation_interval = "15s";
       external_labels.host = cfg.hostLabel;
     };
+    rule_files = [ "/etc/prometheus/alerts.yml" ];
     scrape_configs = [
       (scrape "prometheus" cfg.prometheusPort)
       (scrape "node" cfg.nodeExporterPort)
@@ -39,6 +67,7 @@ let
       OBSERVABILITY_STATE_DIR = stateDirectory;
       OBSERVABILITY_ASSETS = "${../observability}";
       OBSERVABILITY_PROMETHEUS_CONFIG = "${prometheusConfig}";
+      OBSERVABILITY_PROMETHEUS_ALERTS = "${alertRules}";
     };
     text = builtins.readFile ../scripts/observability-prepare.sh;
   };
@@ -145,6 +174,13 @@ in
       path = [
         pkgs.docker
         pkgs.docker-compose
+      ];
+      # The compose mounts are bind mounts of files in the state dir, so a changed
+      # prometheus.yml or alerts.yml is invisible to a running container. The restart
+      # goes through `docker compose down`, which recreates it.
+      restartTriggers = [
+        prometheusConfig
+        alertRules
       ];
       environment = {
         OBSERVABILITY_BIND_ADDRESS = cfg.bindAddress;
