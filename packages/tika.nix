@@ -35,9 +35,14 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   installPhase = ''
     runHook preInstall
     install -Dm444 "$src" "$out/share/tika/tika-server.jar"
+    # jdk on PATH, not just as the exec target: TikaServerWatchDog forks the actual
+    # parser process with ProcessBuilder("java"), so a bare absolute exec starts and
+    # then dies with "Cannot run program java".
     makeWrapper ${lib.getExe' jdk17_headless "java"} "$out/bin/tika-server" \
       --add-flags "-jar $out/share/tika/tika-server.jar" \
-      ${lib.optionalString enableOcr "--prefix PATH : ${lib.makeBinPath [ tesseract ]}"}
+      --prefix PATH : ${
+        lib.makeBinPath ([ jdk17_headless ] ++ lib.optional enableOcr tesseract)
+      }
     runHook postInstall
   '';
 
