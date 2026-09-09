@@ -41,6 +41,39 @@ let
           }
         ];
       }
+      {
+        name = "security-scans";
+        rules = [
+          {
+            # A scan that cannot read an image reports nothing for it, which looks
+            # identical to a clean image on the dashboard. This is the alert that was
+            # missing when ten rootless images failed for a night unnoticed.
+            alert = "ContainerScanIncomplete";
+            expr = "security_container_scan_failures > 0";
+            for = "15m";
+            labels.severity = "warning";
+            annotations.summary = "{{ $value }} running image(s) could not be scanned; the vulnerability counts are incomplete";
+          }
+          {
+            # Daily timer with up to 2h of jitter, so a legitimate gap never exceeds
+            # ~26h. 36h means two runs were missed or the unit is failing outright.
+            alert = "ContainerScanStale";
+            expr = "time() - security_container_scan_timestamp_seconds > 36 * 3600";
+            for = "30m";
+            labels.severity = "warning";
+            annotations.summary = "No container scan completed for {{ $value | humanizeDuration }}";
+          }
+          {
+            # Weekly timer. Both staleness rules compare a published value rather than
+            # using absent(), so they stay quiet until a scanner has run at least once.
+            alert = "HostScanStale";
+            expr = "time() - security_host_scan_timestamp_seconds > 9 * 24 * 3600";
+            for = "30m";
+            labels.severity = "warning";
+            annotations.summary = "No host closure scan completed for {{ $value | humanizeDuration }}";
+          }
+        ];
+      }
     ];
   };
   prometheusConfig = (pkgs.formats.yaml { }).generate "prometheus.yml" {
