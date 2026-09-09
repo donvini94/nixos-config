@@ -23,8 +23,12 @@
 
   nixpkgs.config.allowUnfree = true;
 
-  # NOPASSWD is scoped to this exact command and host; a switch from a user-writable
+  # NOPASSWD is scoped to these exact commands and host; a switch from a user-writable
   # checkout is still root-equivalent, so this is no boundary against repository code.
+  #
+  # The two scan units are here so a scan can be run and verified on demand rather than
+  # only when its timer fires. Both are oneshot units that read images and publish
+  # metrics; `start --wait` cannot pass them arguments.
   security.sudo.extraRules = [
     {
       users = [ username ];
@@ -32,6 +36,14 @@
       commands = [
         {
           command = "/run/current-system/sw/bin/nixos-rebuild switch --flake /home/${username}/nixos-config\\#${config.networking.hostName}";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/run/current-system/sw/bin/systemctl start --wait container-vulnerability-scan.service";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/run/current-system/sw/bin/systemctl start --wait host-vulnerability-scan.service";
           options = [ "NOPASSWD" ];
         }
       ];
