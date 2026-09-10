@@ -52,7 +52,7 @@
     jdk21
 
     # Emacs (system service in modules/services.nix)
-    emacs30-pgtk
+    emacs-pgtk
     libvterm
     editorconfig-core-c
 

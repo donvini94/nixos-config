@@ -420,6 +420,17 @@
 
 (setq modus-themes-to-toggle '(modus-operandi-tinted modus-vivendi-tinted))
 (map! "<f5>" #'modus-themes-toggle)
+
+;; modus-themes 5.x declares all eight themes as soon as modus-themes.el is loaded, so
+;; `custom-theme-p' is already true before any theme file has been read. Doom's
+;; `doom-init-theme-h' prefers `enable-theme' over `load-theme' in that case, and a
+;; declared-but-unloaded theme carries no settings: the frame comes up unstyled and the
+;; theme's own `modus-vivendi-tinted-palette-user' stays void, which breaks
+;; `modus-themes-with-colors'. Loading the theme file here registers its faces and
+;; palette without enabling it (`custom--inhibit-theme-enable'), so both branches of
+;; Doom's theme init are correct. Must come after the options above, which the theme
+;; reads as it builds its face specs.
+(require 'modus-vivendi-tinted-theme)
 ;; Theming:1 ends here
 
 ;; [[file:config.org::*Modeline][Modeline:1]]
@@ -809,21 +820,27 @@
 ;; (`:style flat-button` doesn't render on PGTK, so we fake it with bg + box color)
 (defun my/org-agenda-style-super-agenda-headers ()
   "Apply box styling to org-super-agenda group headers after theme loads."
-  (modus-themes-with-colors
-    (set-face-attribute 'org-super-agenda-header nil
-                        :inherit nil
-                        :weight 'bold
-                        :foreground fg-main
-                        :background bg-dim
-                        :box `(:line-width (2 . 6) :color ,bg-dim)
-                        :overline nil
-                        :underline nil)))
-;; Apply on theme load/toggle (modus themes reset faces)
-(add-hook 'modus-themes-after-load-theme-hook #'my/org-agenda-style-super-agenda-headers)
-;; Also apply now if theme is already loaded
+  ;; Both guards matter in a daemon, where this can be reached before org-super-agenda
+  ;; defines the face and before any theme is enabled. `modus-themes-with-colors' is a
+  ;; macro, so it is only expanded once the guard has passed and modus-themes is loaded.
+  (when (and (facep 'org-super-agenda-header)
+             (modus-themes-get-current-theme))
+    (modus-themes-with-colors
+      (set-face-attribute 'org-super-agenda-header nil
+                          :inherit nil
+                          :weight 'bold
+                          :foreground fg-main
+                          :background bg-dim
+                          :box `(:line-width (2 . 6) :color ,bg-dim)
+                          :overline nil
+                          :underline nil))))
+;; Every theme load and toggle resets faces. `doom-load-theme-hook' covers both of Doom's
+;; paths (`load-theme' and `enable-theme'); `modus-themes-after-load-theme-hook' would
+;; only fire for modus' own commands, not for the theme Doom loads with the first frame.
+(add-hook 'doom-load-theme-hook #'my/org-agenda-style-super-agenda-headers)
+;; And once more when the face itself appears, in case the theme was already up.
 (with-eval-after-load 'org-super-agenda
-  (when (facep 'org-super-agenda-header)
-    (my/org-agenda-style-super-agenda-headers)))
+  (my/org-agenda-style-super-agenda-headers))
 
 ;; Agenda buffer styling — clean and focused
 (defun my/org-agenda-open-hook ()

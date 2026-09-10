@@ -13,6 +13,9 @@
     };
     emacs = {
       enable = true;
+      # Same derivation as the emacs-pgtk in modules/programming.nix, so the daemon and
+      # the emacsclient on PATH are one build. The option default is pkgs.emacs (X11/GTK).
+      package = pkgs.emacs-pgtk;
       startWithGraphical = true;
     };
     printing.enable = true;
