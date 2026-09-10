@@ -56,6 +56,8 @@ TabbyAPI keeps Dracula's sole EXL3 model resident, so its request `model` field 
 Examples:
 
 ```console
+omp-local
+omp-chat
 omp --model dracula-local/qwen3.8-27b-exl3-3.5bpw
 
 curl http://127.0.0.1:8080/v1/chat/completions \
@@ -93,6 +95,20 @@ upstream's setup flow.
 A Claude or ChatGPT login taken through `/providers` inside a running session reports the
 account as signed in, but its models stay out of the picker until OMP restarts: the model list
 is built once at startup. Restart before suspecting the scope or the credential.
+
+Dracula also installs two launchers backed by an isolated `local` OMP profile:
+
+- `omp-local` is the coding client. It fixes the model to local Qwen at low reasoning,
+  loads global and repository `AGENTS.md`, and exposes only `read`, `grep`, `glob`, `bash`,
+  `edit`, `write`, and LSP.
+- `omp-chat` is bare chat. It starts in `/tmp` with no system prompt, tools, context, or
+  model reasoning.
+
+Both save sessions under `~/.omp/profiles/local`, disable automatic titles, memory,
+autolearn, MCP, skills, rules, external configuration providers, and every remote model
+route. The coding profile compacts at 24,576 tokens, shakes tool output before asking local
+Qwen for a summary, and never runs speculative compaction in TabbyAPI's sole inference slot.
+The ordinary `omp` command retains the full harness and its cloud-capable configuration.
 
 Alucard runs the harness for both founder accounts. `hosts/alucard/home.nix` is Vincenzo's and
 carries the authored context plus the Requesty profile; `hosts/alucard/home-kyrill.nix` installs

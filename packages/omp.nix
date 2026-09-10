@@ -1,7 +1,17 @@
+# Upstream's pinned single-file release binary.
+#
+# The interpreter is patched into the binary with autoPatchelfHook rather than launched
+# through a `ld-linux --library-path … $out/libexec/omp` wrapper. OMP is a Bun standalone
+# executable and its own worker host: every worker (mnemopi embeddings, stats activity,
+# tiny inference, js eval) re-enters the CLI entrypoint by spawning `Bun.main` with a
+# hidden `__omp_worker_*` argv selector. Under a loader wrapper `Bun.main` is the loader's
+# argv[0], so every spawn died with "cannot open shared object file" and memory,
+# statistics and local inference silently degraded. A patched ELF makes the binary its own
+# valid re-entry point; `omp --smoke-test` is upstream's probe for exactly this contract.
 {
   fetchurl,
+  autoPatchelfHook,
   lib,
-  makeWrapper,
   stdenv,
 }:
 
@@ -15,16 +25,13 @@ stdenv.mkDerivation (finalAttrs: {
   };
 
   dontUnpack = true;
-  dontPatchELF = true;
   dontStrip = true;
-  nativeBuildInputs = [ makeWrapper ];
+  nativeBuildInputs = [ autoPatchelfHook ];
+  buildInputs = [ stdenv.cc.cc.lib ];
 
   installPhase = ''
     runHook preInstall
-    install -Dm755 "$src" "$out/libexec/omp"
-    makeWrapper ${stdenv.cc.bintools.dynamicLinker} "$out/bin/omp" \
-      --add-flags "--library-path ${lib.makeLibraryPath [ stdenv.cc.cc.lib ]}" \
-      --add-flags "$out/libexec/omp"
+    install -Dm755 "$src" "$out/bin/omp"
     runHook postInstall
   '';
 

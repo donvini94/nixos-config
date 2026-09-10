@@ -55,11 +55,11 @@ Detailed operator documentation lives in [[file:docs/][docs/]]; module conventio
 │   └── requesty-models.nix     #   Requesty model catalog + per-Mtok costs (plain data)
 ├── packages/
 │   ├── omp.nix                 #   Pinned oh-my-pi (`omp`) release binary
-│   ├── omp-harness.nix         #   Wrapped `omp`: pinned binary + managed config overlay
+│   ├── omp-harness.nix         #   `omp` + dracula's `omp-local`/`omp-chat` local launchers
 │   ├── pokemmo.nix             #   dracula: FHS-sandboxed PokeMMO launcher (self-updating client)
 │   └── hermes-n8n-handoff.nix  #   `hermes-n8n-handoff` webhook CLI (Hermes container only)
 ├── hm-modules/                 # Home-manager user-level modules (one file per tool)
-│   ├── ai-clients.nix          #   SHARED: wrapped `omp` pinned to the ingress
+│   ├── ai-clients.nix          #   SHARED: wrapped `omp` pinned to the ingress + local profile
 │   ├── claude.nix              #   dracula: ~/.claude pointer + memory-only Syncthing whitelist
 │   ├── omp.nix                 #   SHARED: writable out-of-store symlinks into ~/.omp/agent
 │   ├── git, ssh, fish, shell, hyprland, caelestia, services, packages, email, gtk
