@@ -1,36 +1,26 @@
 {
-  defaultModel = "deepinfra/deepseek-v4-flash-0731";
+  defaultModel = "deepseek/deepseek-v4.1-flash";
 
   # Costs are USD per million tokens and are surfaced in OMP's model metadata.
   models = {
-    "deepinfra/deepseek-v4-flash-0731" = {
-      name = "DeepSeek V4 Flash 0731 — cheap default";
-      context = 1048576;
-      output = 65536;
-      reasoning = true;
-      cost = {
-        input = 0.09;
-        output = 0.18;
-      };
-    };
-    "alibaba/qwen3.7-plus" = {
-      name = "Qwen 3.7 Plus — cheap general agent";
-      context = 1048576;
-      output = 65536;
-      reasoning = true;
-      cost = {
-        input = 0.32;
-        output = 1.28;
-      };
-    };
-    "deepinfra/deepseek-ai/DeepSeek-V4-Pro" = {
-      name = "DeepSeek V4 Pro — stronger open model";
-      context = 1048576;
-      output = 65536;
+    "deepseek/deepseek-v4.1-flash" = {
+      name = "DeepSeek V4.1 Flash — cheap default";
+      context = 1000000;
+      output = 384000;
       reasoning = false;
       cost = {
-        input = 1.30;
-        output = 2.60;
+        input = 0.30;
+        output = 1.20;
+      };
+    };
+    "alibaba/qwen3.8-flash" = {
+      name = "Qwen 3.8 Flash — cheap general agent";
+      context = 1048576;
+      output = 131072;
+      reasoning = true;
+      cost = {
+        input = 0.16;
+        output = 0.47;
       };
     };
     "sference/kimi-k3" = {
@@ -53,24 +43,24 @@
         output = 12.00;
       };
     };
-    "anthropic/claude-sonnet-5" = {
-      name = "Claude Sonnet 5 — frontier comparison";
+    "zai/glm-5.3" = {
+      name = "GLM-5.3 — flagship coding/agent model";
       context = 1000000;
       output = 128000;
       reasoning = true;
       cost = {
-        input = 2.00;
-        output = 10.00;
+        input = 1.40;
+        output = 4.40;
       };
     };
-    "openai/gpt-5.6-terra" = {
-      name = "GPT-5.6 Terra — balanced frontier comparison";
-      context = 1050000;
+    "zai/glm-5.3-flash" = {
+      name = "GLM-5.3 Flash — cheap coding/agent model";
+      context = 1000000;
       output = 128000;
       reasoning = true;
       cost = {
-        input = 2.00;
-        output = 12.00;
+        input = 0.15;
+        output = 0.50;
       };
     };
   };

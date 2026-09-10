@@ -213,24 +213,22 @@ electricity, not billing.
 
 ## The curated model list
 
-`/v1/models` exposes exactly seven IDs. Anything else is rejected locally before it can create
+`/v1/models` exposes exactly six IDs. Anything else is rejected locally before it can create
 upstream cost.
 
 | Use | Model |
 | --- | --- |
-| Cheapest default | `deepinfra/deepseek-v4-flash-0731` |
-| Cheap Qwen comparison | `alibaba/qwen3.7-plus` |
-| Stronger open DeepSeek | `deepinfra/deepseek-ai/DeepSeek-V4-Pro` |
+| Cheapest default | `deepseek/deepseek-v4.1-flash` |
+| Cheap Qwen comparison | `alibaba/qwen3.8-flash` |
+| GLM coding/agent (flagship + cheap) | `zai/glm-5.3`, `zai/glm-5.3-flash` |
 | Open frontier comparison | `sference/kimi-k3` |
-| Closed frontier comparisons | Gemini 3.1 Pro, Claude Sonnet 5, GPT-5.6 Terra |
+| Closed frontier comparison | Gemini 3.1 Pro |
 
-The selected Claude and OpenAI routes report 30-day provider retention. **Do not put sensitive
-customer data through those two without an agreed policy.** The DeepSeek, Qwen, Kimi, and Gemini
-routes report no provider retention.
+All six routes report no provider retention.
 
 ```console
 curl http://alucard.tailf117a1.ts.net:28080/v1/models
-omp --model alucard-requesty/alibaba/qwen3.7-plus
+omp --model alucard-requesty/alibaba/qwen3.8-flash
 ```
 
 ## Hermes Desktop

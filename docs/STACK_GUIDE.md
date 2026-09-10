@@ -490,12 +490,12 @@ models and the local dense default. No Requesty credential is installed on Dracu
 Use the initial model through the unchanged ingress:
 
 ```console
-omp --model alucard-requesty/deepinfra/deepseek-v4-flash-0731
+omp --model alucard-requesty/deepseek/deepseek-v4.1-flash
 
 curl http://127.0.0.1:8080/v1/chat/completions \
   -H 'Content-Type: application/json' \
   -H 'X-AI-Caller: manual' \
-  -d '{"model":"deepinfra/deepseek-v4-flash-0731","messages":[{"role":"user","content":"Say hello"}]}'
+  -d '{"model":"deepseek/deepseek-v4.1-flash","messages":[{"role":"user","content":"Say hello"}]}'
 ```
 
 ### Messaging transport
