@@ -52,7 +52,7 @@ in
     # Same repository either way: Hub returns byte-identical digests for both names.
     image = lib.mkOption {
       type = lib.types.str;
-      default = "docker.io/n8nio/n8n:2.39.1@sha256:02c4d8c466ad62e254d0d6d28eb5e76bfb031b686d8499112025b187435b2d58";
+      default = "docker.io/n8nio/n8n:2.39.4@sha256:5fa13ec66b5703f3ae0189eb979940baec35add43fa828e2313b1fe5190e7d25";
       description = "Digest-pinned official n8n OCI image.";
     };
 
@@ -187,7 +187,7 @@ in
 
         n8n-runners = {
           # Tag must match `services.localN8n.image`; see the pinning note there.
-          image = "docker.io/n8nio/runners:2.39.1@sha256:ee31e7482f23ebb1157410351826383dc0b81c021a1c52a2bab87dc73cd5a4c2";
+          image = "docker.io/n8nio/runners:2.39.4@sha256:6af63a7b0c0cde47993f66e46307528be44f36135d9c7a0fb7cfa38798a85a2f";
           autoStart = false;
           pull = "missing";
           dependsOn = [ "n8n" ];
