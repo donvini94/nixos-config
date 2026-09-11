@@ -69,6 +69,7 @@
       max-jobs = 2;
       cores = 4;
       download-buffer-size = lib.mkForce 1048576;
+      trusted-users = [ username ];
     };
     gc.dates = "23:00";
     optimise.automatic = lib.mkForce false;
