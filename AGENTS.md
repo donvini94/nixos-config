@@ -17,10 +17,10 @@ sudo nixos-rebuild switch --flake .#dracula
 # Server (Netcup KVM; Hetzner Storage Box)
 sudo nixos-rebuild switch --flake .#alucard
 
-# Server, build on Dracula and deploy to Alucard (run on Dracula)
-nixos-rebuild switch --flake ~/nixos-config#alucard \
-  --target-host vincenzo@alucard \
-  --elevate=sudo --ask-elevate-password
+# Server, build on Dracula and deploy to Alucard (run from Dracula's repo)
+nixos-rebuild build --flake .#alucard
+nix copy --to ssh-ng://vincenzo@alucard "$(readlink -f result)"
+ssh alucard sudo nixos-rebuild switch --flake /home/vincenzo/nixos-config#alucard
 
 # Mac (nix-darwin + home-manager)
 sudo darwin-rebuild switch --flake .#AC-0137
