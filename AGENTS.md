@@ -14,8 +14,13 @@ This is a Nix configuration repository managing three systems: a NixOS desktop (
 # Desktop (AMD + NVIDIA)
 sudo nixos-rebuild switch --flake .#dracula
 
-# Server (Hetzner QEMU)
+# Server (Netcup KVM; Hetzner Storage Box)
 sudo nixos-rebuild switch --flake .#alucard
+
+# Server, build on Dracula and deploy to Alucard (run on Dracula)
+nixos-rebuild switch --flake ~/nixos-config#alucard \
+  --target-host vincenzo@alucard \
+  --elevate=sudo --ask-elevate-password
 
 # Mac (nix-darwin + home-manager)
 sudo darwin-rebuild switch --flake .#AC-0137
@@ -79,7 +84,7 @@ Then create `hosts/newhost/` with `default.nix` (imports shared modules), `hardw
 - `services.nix` — Host-specific: Jellyfin, Docker, OBS, ausweisapp, host-specific packages
 
 **Server (`hosts/alucard/`):**
-- `default.nix` — Base system, boot, nix settings, Hetzner mount, scheduled tasks
+- `default.nix` — Netcup system, boot, nix settings, Hetzner Storage Box mount, scheduled tasks
 - `networking.nix` — Firewall, SSH, fail2ban, mining pool blocks
 - `services/default.nix` — Service import manifest + shared off-site backup enable
 - `services/reverse-proxy.nix` — Public nginx vhosts, ACME, backend firewall guard

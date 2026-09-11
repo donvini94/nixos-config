@@ -264,6 +264,7 @@ in
           TimeoutStartSec = "2h";
           Nice = 10;
           IOSchedulingClass = "idle";
+          OOMScoreAdjust = 500;
         };
       };
 
@@ -284,6 +285,7 @@ in
           TimeoutStartSec = "2h";
           Nice = 10;
           IOSchedulingClass = "idle";
+          OOMScoreAdjust = 500;
         };
       };
     }) cfg.jobs;

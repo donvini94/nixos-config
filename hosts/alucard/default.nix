@@ -62,12 +62,87 @@
   };
 
   # Shared base lives in configuration.nix.
+  # Keep local rebuilds below the host's steady-state service demand.
   nix = {
     settings = {
       sandbox = true;
-      max-jobs = 10;
+      max-jobs = 2;
+      cores = 4;
+      download-buffer-size = lib.mkForce 1048576;
     };
     gc.dates = "23:00";
+    optimise.automatic = lib.mkForce false;
+  };
+
+  zramSwap = {
+    enable = true;
+    algorithm = "zstd";
+    memoryPercent = 50;
+    priority = 100;
+  };
+
+  systemd = {
+    oomd = {
+      enableSystemSlice = true;
+    };
+
+    slices = {
+      "user-1000".sliceConfig = {
+        ManagedOOMMemoryPressure = "kill";
+        ManagedOOMMemoryPressureLimit = "80%";
+        ManagedOOMSwap = "kill";
+      };
+    };
+
+    services = {
+      nix-daemon.serviceConfig = {
+        CPUWeight = 25;
+        IOWeight = 25;
+        OOMScoreAdjust = 500;
+      };
+      nix-gc.serviceConfig = {
+        Nice = 10;
+        IOSchedulingClass = "idle";
+        OOMScoreAdjust = 500;
+      };
+    }
+    //
+      lib.genAttrs
+        [
+          "atuin"
+          "calibre-web"
+          "docker-n8n"
+          "docker-n8n-runners"
+          "docker-registry"
+          "gotenberg"
+          "hermes-agent"
+          "hermes-dashboard"
+          "jellyfin"
+          "keycloak"
+          "navidrome"
+          "nginx"
+          "paperless-consumer"
+          "paperless-scheduler"
+          "paperless-task-queue"
+          "paperless-web"
+          "postgresql"
+          "redis-paperless"
+          "tika"
+        ]
+        (_: {
+          serviceConfig.ManagedOOMPreference = "avoid";
+        });
+
+    # Docker scopes are transient siblings of docker.service, not children of
+    # the compose wrapper units. This prefix drop-in protects rootful workloads
+    # such as mailcow when systemd-oomd selects within system.slice.
+    units."docker-.scope" = {
+      overrideStrategy = "asDropin";
+      text = ''
+        [Scope]
+        ManagedOOMPreference=avoid
+      '';
+    };
   };
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
