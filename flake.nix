@@ -66,7 +66,32 @@
       # hosts/ac-0137/default.nix.
       macUsername = "vincenzopace";
 
-      overlays = [ emacs-overlay.overlay ];
+      overlays = [
+        emacs-overlay.overlay
+        # nixpkgs.config.cudaSupport = true (set on dracula for tabbyapi/exllamav3) makes
+        # every consumer of the plain `opencv`/`opencv4` attributes compile CUDA kernels
+        # from source, even though nothing here needs a CUDA-accelerated OpenCV. Route it
+        # to CPU-only OpenCV instead of paying for that build.
+        #
+        # torch itself is a separate, unresolved problem: this nixpkgs revision's
+        # `torch-bin`/`torchvision-bin`/`triton-bin` (official prebuilt CUDA wheels) are
+        # marked broken here — they require cuda-bindings>=13.0.3, but `python313Packages
+        # .cuda-bindings` still resolves to 12.9.7 even when `cudaPackages` is overridden
+        # on torch-bin alone, because cuda-bindings is a separate ambient attribute, not
+        # derived from that override. Fixing it needs either overriding cuda-bindings too
+        # (untested chain of overrides) or moving the whole system to cudaPackages_13
+        # (bigger, riskier change: tabbyapi/exllamav3 CUDA-13 compatibility unverified).
+        # cuda-maintainers.cachix.org (the community CUDA cache) is also now private
+        # (401 on every endpoint, including its own metadata API), and Hydra never builds
+        # unfree packages, so there is currently no working binary path for torch itself.
+        (
+          final: prev:
+          nixpkgs.lib.optionalAttrs prev.config.cudaSupport {
+            opencv4 = prev.opencv4.override { enableCuda = false; };
+            opencv = final.opencv4;
+          }
+        )
+      ];
 
       mkDesktopHost =
         hostname:
