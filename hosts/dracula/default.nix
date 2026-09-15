@@ -186,20 +186,26 @@ in
       cores = 0;
       # Cache trust belongs to the daemon, not to flake-supplied client settings. Keep the
       # list host-specific: these caches serve Dracula's desktop, CUDA, Emacs and Hermes.
+      #
+      # cuda-maintainers.cachix.org went private (401 on every endpoint, including its own
+      # metadata API) and cache.nixos-cuda.org no longer resolves to a valid cache (404 on
+      # nix-cache-info). Nixpkgs' own Hydra cache never builds unfree packages, so there is
+      # no official substituter for cudaPackages. cuda.cachix.org is an unofficial cache run
+      # by a third party (GitHub user Silent-Mercenary); trusting it means running its
+      # binaries with system privileges. Accepted as a deliberate tradeoff over building
+      # CUDA locally — see the 2026-09 nixos-config session that added this.
       extra-substituters = [
         "https://hyprland.cachix.org"
         "https://nix-community.cachix.org"
         "https://nixpkgs-wayland.cachix.org"
-        "https://cache.nixos-cuda.org"
-        "https://cuda-maintainers.cachix.org"
+        "https://cuda.cachix.org"
         "https://hermes-agent.cachix.org"
       ];
       extra-trusted-public-keys = [
         "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
         "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
-        "cache.nixos-cuda.org:74DUi4Ye579gUqzH4ziL9IyiJBlDpMRn9MBN8oNan9M="
-        "cuda-maintainers.cachix.org-1:0dq3bujKpuEPMCX6U4WylrUDZ9JyUG0VpVZa7CNfq5E="
+        "cuda.cachix.org-1:oF5HhrlMH2gjBQat0LPulr0+fwjh1eQKglWMm8F7a2Q="
         "hermes-agent.cachix.org-1:jN3pjR50Mxi4SESKC/FIMNM6/LCosvPk2VUwzVvebzU="
       ];
     };
