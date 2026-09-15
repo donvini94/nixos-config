@@ -21,6 +21,7 @@ let
 in
 {
   imports = [
+    inputs.determinate.nixosModules.default
     ../../modules/desktop.nix
     ../../modules/nvidia.nix
     ../../modules/gaming.nix
@@ -164,20 +165,38 @@ in
 
   services.containerUpdates.enable = true;
   services.hostVulnerabilityScan.enable = true;
+  determinate.enable = true;
+
+  # Determinate Nixd owns garbage collection on this pilot. Keep its policy explicit and
+  # disable Sentry crash reports; ordinary aggregate telemetry remains at the vendor default.
+  environment.etc."determinate/config.json".text = builtins.toJSON {
+    garbageCollector.strategy = "automatic";
+    telemetry.sentry.endpoint = null;
+  };
 
   nix = {
+    registry.nixpkgs.flake = inputs.nixpkgs;
     settings = {
-      trusted-users = [ "${username}" ];
-      substituters = [
+      # Cache trust belongs to the daemon, not to flake-supplied client settings. Keep the
+      # list host-specific: these caches serve Dracula's desktop, CUDA, Emacs and Hermes.
+      extra-substituters = [
+        "https://hyprland.cachix.org"
+        "https://nix-community.cachix.org"
+        "https://nixpkgs-wayland.cachix.org"
+        "https://cache.nixos-cuda.org"
         "https://cuda-maintainers.cachix.org"
         "https://hermes-agent.cachix.org"
       ];
-      trusted-public-keys = [
+      extra-trusted-public-keys = [
+        "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
+        "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+        "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
+        "cache.nixos-cuda.org:74DUi4Ye579gUqzH4ziL9IyiJBlDpMRn9MBN8oNan9M="
         "cuda-maintainers.cachix.org-1:0dq3bujKpuEPMCX6U4WylrUDZ9JyUG0VpVZa7CNfq5E="
         "hermes-agent.cachix.org-1:jN3pjR50Mxi4SESKC/FIMNM6/LCosvPk2VUwzVvebzU="
       ];
     };
-    gc.dates = "weekly";
+    gc.automatic = lib.mkForce false;
   };
 
   sops.age.keyFile = "/home/${username}/.config/sops/age/keys.txt";

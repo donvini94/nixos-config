@@ -1,27 +1,6 @@
 {
   description = "NixOS Configuration of Vincenzo Pace";
 
-  nixConfig = {
-    substituters = [
-      "https://cache.nixos.org/"
-      "https://hyprland.cachix.org"
-      "https://helix.cachix.org"
-      "https://nix-community.cachix.org"
-      "https://nixpkgs-wayland.cachix.org"
-      "https://cache.nixos-cuda.org"
-      "https://hermes-agent.cachix.org"
-    ];
-    trusted-public-keys = [
-      "helix.cachix.org-1:ejp9KQpR1FBI2onstMQ34yogDm4OgU2ru6lIwPvuCVs="
-      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
-      "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
-      "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
-      "cache.nixos-cuda.org:74DUi4Ye579gUqzH4ziL9IyiJBlDpMRn9MBN8oNan9M="
-      "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
-      "hermes-agent.cachix.org-1:jN3pjR50Mxi4SESKC/FIMNM6/LCosvPk2VUwzVvebzU="
-    ];
-  };
-
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     home-manager.url = "github:nix-community/home-manager/master";
@@ -32,6 +11,7 @@
       url = "github:nix-darwin/nix-darwin/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/3";
 
     sops-nix.url = "github:Mic92/sops-nix";
     disko.url = "github:nix-community/disko";
@@ -64,6 +44,7 @@
       nixpkgs,
       home-manager,
       nix-darwin,
+      determinate,
       hyprland,
       disko,
       hosts,
@@ -170,6 +151,7 @@
           username = macUsername;
         };
         modules = [
+          determinate.darwinModules.default
           ./hosts/ac-0137
           home-manager.darwinModules.home-manager
           {

@@ -20,10 +20,16 @@
     home = "/Users/vincenzopace";
   };
 
-  # Determinate Nix owns /etc/nix, nix.custom.conf and the daemon
-  # (docs.determinate.systems/guides/nix-darwin); home-manager forwards this flag, so its
-  # activation does not manage Nix either.
-  nix.enable = false;
+  # The installer still owns the Determinate Nix runtime and main nix.conf. This module
+  # makes its supported custom and daemon policy files declarative through nix-darwin.
+  determinateNix = {
+    enable = true;
+    determinateNixd = {
+      garbageCollector.strategy = "automatic";
+      builder.state = "disabled";
+      telemetry.sentry.endpoint = null;
+    };
+  };
 
   # environment.shells is what lands the nix fish in /etc/shells as
   # /run/current-system/sw/bin/fish, so `chsh` will accept it.
