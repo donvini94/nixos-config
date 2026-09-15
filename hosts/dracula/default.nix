@@ -18,6 +18,16 @@ let
     icon = "${hermesDesktop}/share/hermes-desktop/dist/hermes.png";
     categories = [ "Development" ];
   };
+  # See lib/cuda-torch.nix: a fully independent nixpkgs evaluation, not a
+  # host-wide overlay, so this never touches the ambient pkgs.tabbyapi/
+  # pkgs.python3Packages/pkgs.cudaPackages used by the rest of the system.
+  cudaTorch = import ../../lib/cuda-torch.nix {
+    nixpkgsFlake = inputs.nixpkgs;
+    system = pkgs.stdenv.hostPlatform.system;
+  };
+  tabbyapiCuda = cudaTorch.pkgs.tabbyapi.override {
+    python3Packages = (cudaTorch.pythonFor "python314").pkgs;
+  };
 in
 {
   imports = [
@@ -57,20 +67,21 @@ in
     };
   };
 
-  # Disabled: nixpkgs.config.cudaSupport = true cascaded CUDA compilation into torch,
-  # opencv, openvino, cudnn and more — none of which have a working binary cache
-  # (cuda-maintainers.cachix.org is now private; Hydra never builds unfree packages).
-  # Re-enable only alongside a real plan for getting those binaries without building
-  # them here (e.g. a scoped `pkgsCuda` used just for tabbyapi, not this global flag).
+  # nixpkgs.config.cudaSupport = true stays off: it cascades CUDA compilation
+  # into torch, opencv, openvino, cudnn and more, none of which have a working
+  # public binary cache (cuda-maintainers.cachix.org is deprecated; Hydra
+  # never builds unfree packages; cache.nixos-cuda.org is the CUDA team's
+  # non-public internal cache, not for redistribution — see lib/cuda-torch.nix
+  # for sourcing). tabbyapiCuda above is the scoped alternative: it sources
+  # torch from PyPI's official CUDA wheel instead of building it. It still
+  # compiles `nccl`, `libnvshmem` (open source, no prebuilt alternative;
+  # constrained to this GPU's one architecture — see lib/cuda-torch.nix) and
+  # exllamav3's own small CUDA extension — a single real `nixos-rebuild build`
+  # measured ~15-20 minutes of that, against an otherwise all-cache closure.
 
   services.localLlama = {
-    # Disabled alongside cudaSupport above: tabbyapi's exllamav3 backend needs CUDA and
-    # would otherwise be compiled from source locally. ai-stack already has
-    # autoStart = false, so Hermes/n8n/observability are already dormant by default;
-    # this only removes the (currently unused) local-tabbyapi backend from what a
-    # rebuild has to build. The model metadata below stays so hermes.defaultModel/
-    # contextLength keep resolving.
-    enable = false;
+    enable = true;
+    package = tabbyapiCuda;
     defaultModel = "qwen3.8-27b-exl3-3.5bpw";
     models."qwen3.8-27b-exl3-3.5bpw" = {
       repo = "Mia-AiLab/Qwen3.8-27B-EXL3-3.5bpw";
@@ -188,34 +199,36 @@ in
   nix = {
     registry.nixpkgs.flake = inputs.nixpkgs;
     settings = {
-      # Measured: max-jobs=2 with cores=0 still pushed two concurrent heavy C++/CUDA
-      # derivations (torch, opencv, magma) to 44GiB RAM + 15GiB swap before either
-      # finished. One derivation at a time, using every core, uses the CPU fully without
-      # multiplying peak memory across simultaneous heavy builds.
-      max-jobs = 1;
-      cores = 0;
+      # Was max-jobs=1/cores=0: two concurrent heavy C++/CUDA derivations
+      # (torch, opencv, magma under a *global* cudaSupport=true) pushed 44GiB
+      # RAM + 15GiB swap before either finished. That path is gone — CUDA
+      # support is scoped through lib/cuda-torch.nix's prebuilt torch wheel
+      # instead (see above), so the system no longer compiles torch/opencv/
+      # magma from source at all. Two concurrent ordinary builds (e.g.
+      # Hyprland from git + some other C++ package), each capped to half the
+      # machine's cores, is a safe amount of parallelism on 12 cores / 46GiB.
+      max-jobs = 2;
+      cores = 6;
       # Cache trust belongs to the daemon, not to flake-supplied client settings. Keep the
-      # list host-specific: these caches serve Dracula's desktop, CUDA, Emacs and Hermes.
+      # list host-specific: these caches serve Dracula's desktop, Emacs and Hermes.
       #
-      # cuda-maintainers.cachix.org went private (401 on every endpoint, including its own
-      # metadata API) and cache.nixos-cuda.org no longer resolves to a valid cache (404 on
-      # nix-cache-info). Nixpkgs' own Hydra cache never builds unfree packages, so there is
-      # no official substituter for cudaPackages. cuda.cachix.org is an unofficial cache run
-      # by a third party (GitHub user Silent-Mercenary); trusting it means running its
-      # binaries with system privileges. Accepted as a deliberate tradeoff over building
-      # CUDA locally — see the 2026-09 nixos-config session that added this.
+      # No CUDA-specific substituter here on purpose: cuda-maintainers.cachix.org is
+      # deprecated, cache.nixos-cuda.org is the CUDA team's non-public internal cache
+      # (NixOS/nixpkgs#561684), and cache.flox.dev doesn't carry this nixpkgs revision's
+      # hashes. lib/cuda-torch.nix sources CUDA torch from PyPI's official wheel instead,
+      # so none of that is needed. cuda.cachix.org (an unofficial third-party cache) was
+      # trusted here previously as a tradeoff for building CUDA locally; removed now that
+      # nothing on this host needs it.
       extra-substituters = [
         "https://hyprland.cachix.org"
         "https://nix-community.cachix.org"
         "https://nixpkgs-wayland.cachix.org"
-        "https://cuda.cachix.org"
         "https://hermes-agent.cachix.org"
       ];
       extra-trusted-public-keys = [
         "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
         "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
-        "cuda.cachix.org-1:oF5HhrlMH2gjBQat0LPulr0+fwjh1eQKglWMm8F7a2Q="
         "hermes-agent.cachix.org-1:jN3pjR50Mxi4SESKC/FIMNM6/LCosvPk2VUwzVvebzU="
       ];
     };

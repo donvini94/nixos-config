@@ -190,6 +190,16 @@ in
 {
   options.services.localLlama = {
     enable = lib.mkEnableOption "local OpenAI-compatible EXL3 inference";
+    package = lib.mkOption {
+      type = lib.types.package;
+      default = pkgs.tabbyapi;
+      defaultText = lib.literalExpression "pkgs.tabbyapi";
+      description = ''
+        TabbyAPI package to run. Override with a CUDA-enabled build (e.g. one
+        wired to a prebuilt torch/exllamav3 closure) without touching the
+        host's ambient `pkgs.tabbyapi`.
+      '';
+    };
     defaultModel = lib.mkOption {
       type = lib.types.str;
       description = "Primary local model ID, loaded by TabbyAPI at service start.";
@@ -217,6 +227,11 @@ in
       description = "TabbyAPI local EXL3 inference server";
       wantedBy = [ "ai-stack.target" ];
       partOf = [ "ai-stack.target" ];
+      # exllamav3 itself is ahead-of-time compiled and needs nothing here, but
+      # a model that exercises flash-linear-attention's Triton kernels would
+      # JIT-link against `-lcuda` at runtime — see modules/nvidia.nix for why
+      # this path (not RPATH/LD_LIBRARY_PATH) is what `ld` needs for that.
+      environment.LIBRARY_PATH = "/run/opengl-driver/lib";
       serviceConfig = {
         Type = "simple";
         User = "llama";
@@ -226,7 +241,7 @@ in
         WorkingDirectory = stateDirectory;
         ExecStartPre = downloadModel cfg.defaultModel model;
         ExecStart = lib.escapeShellArgs [
-          "${pkgs.tabbyapi}/bin/tabbyapi"
+          "${cfg.package}/bin/tabbyapi"
           "--config"
           tabbyConfig
         ];

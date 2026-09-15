@@ -29,7 +29,10 @@
   };
 
   environment.systemPackages = with pkgs; [
-    cudatoolkit
+    # Matches lib/cuda-torch.nix's cudaPackages_13 (torch-bin is cu130): a
+    # user compiling a CUDA extension against that torch's headers here needs
+    # nvcc from the same major version, not the ambient default (12.9).
+    cudaPackages_13.cudatoolkit
     mesa
     libva
     nvitop
