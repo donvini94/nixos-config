@@ -178,11 +178,11 @@ in
   nix = {
     registry.nixpkgs.flake = inputs.nixpkgs;
     settings = {
-      # The OOM risk is concurrent derivations (max-jobs), not per-derivation thread count:
-      # the unrestricted rebuild ran a dozen simultaneous heavy builds (CUDA/torch/wine)
-      # and exhausted RAM+swap. Keep max-jobs low; cores=0 lets each of those few
-      # derivations use every core.
-      max-jobs = 2;
+      # Measured: max-jobs=2 with cores=0 still pushed two concurrent heavy C++/CUDA
+      # derivations (torch, opencv, magma) to 44GiB RAM + 15GiB swap before either
+      # finished. One derivation at a time, using every core, uses the CPU fully without
+      # multiplying peak memory across simultaneous heavy builds.
+      max-jobs = 1;
       cores = 0;
       # Cache trust belongs to the daemon, not to flake-supplied client settings. Keep the
       # list host-specific: these caches serve Dracula's desktop, CUDA, Emacs and Hermes.
