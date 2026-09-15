@@ -17,7 +17,7 @@
         requests
         beautifulsoup4
         debugpy
-        torchWithCuda
+        torch
         transformers
         pynvml
 

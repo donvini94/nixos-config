@@ -57,10 +57,20 @@ in
     };
   };
 
-  nixpkgs.config.cudaSupport = true;
+  # Disabled: nixpkgs.config.cudaSupport = true cascaded CUDA compilation into torch,
+  # opencv, openvino, cudnn and more — none of which have a working binary cache
+  # (cuda-maintainers.cachix.org is now private; Hydra never builds unfree packages).
+  # Re-enable only alongside a real plan for getting those binaries without building
+  # them here (e.g. a scoped `pkgsCuda` used just for tabbyapi, not this global flag).
 
   services.localLlama = {
-    enable = true;
+    # Disabled alongside cudaSupport above: tabbyapi's exllamav3 backend needs CUDA and
+    # would otherwise be compiled from source locally. ai-stack already has
+    # autoStart = false, so Hermes/n8n/observability are already dormant by default;
+    # this only removes the (currently unused) local-tabbyapi backend from what a
+    # rebuild has to build. The model metadata below stays so hermes.defaultModel/
+    # contextLength keep resolving.
+    enable = false;
     defaultModel = "qwen3.8-27b-exl3-3.5bpw";
     models."qwen3.8-27b-exl3-3.5bpw" = {
       repo = "Mia-AiLab/Qwen3.8-27B-EXL3-3.5bpw";
