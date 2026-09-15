@@ -178,11 +178,12 @@ in
   nix = {
     registry.nixpkgs.flake = inputs.nixpkgs;
     settings = {
-      # The AI stack occupies most RAM under load. More concurrent derivations can exhaust
-      # RAM and swap, triggering the kernel OOM killer and terminating the desktop session.
-      # Raise this only after measuring a full rebuild with the AI stack running.
+      # The OOM risk is concurrent derivations (max-jobs), not per-derivation thread count:
+      # the unrestricted rebuild ran a dozen simultaneous heavy builds (CUDA/torch/wine)
+      # and exhausted RAM+swap. Keep max-jobs low; cores=0 lets each of those few
+      # derivations use every core.
       max-jobs = 2;
-      cores = 4;
+      cores = 0;
       # Cache trust belongs to the daemon, not to flake-supplied client settings. Keep the
       # list host-specific: these caches serve Dracula's desktop, CUDA, Emacs and Hermes.
       extra-substituters = [
