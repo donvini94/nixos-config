@@ -241,12 +241,16 @@ in
     };
 
     systemd.services.ai-stack-resume = {
-      description = "Recover the local AI stack after suspend";
+      description = "Recover an active local AI stack after suspend";
       wantedBy = [ "suspend.target" ];
       after = [ "suspend.target" ];
       serviceConfig = {
         Type = "oneshot";
-        ExecStart = "${pkgs.systemd}/bin/systemctl restart ai-stack.target";
+        ExecStart = pkgs.writeShellScript "restart-active-ai-stack-after-suspend" ''
+          if ${pkgs.systemd}/bin/systemctl is-active --quiet ai-stack.target; then
+            ${pkgs.systemd}/bin/systemctl restart ai-stack.target
+          fi
+        '';
       };
     };
 

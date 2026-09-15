@@ -48,6 +48,12 @@ in
   options.services.aiIngress = {
     enable = lib.mkEnableOption "the shared loopback AI ingress";
 
+    autoStart = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Whether ai-stack.target starts automatically at boot.";
+    };
+
     backendUrl = lib.mkOption {
       type = lib.types.str;
       description = "Upstream origin without the /v1 request path.";
@@ -148,7 +154,7 @@ in
 
     systemd.targets.ai-stack = {
       description = "AI application stack";
-      wantedBy = [ "multi-user.target" ];
+      wantedBy = lib.optional cfg.autoStart "multi-user.target";
     };
 
     users = {

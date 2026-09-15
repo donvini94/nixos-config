@@ -19,7 +19,7 @@ let
   # Only real, writable mounts. /nix and /nix/store are bind mounts of / and would
   # alert three times for one full disk.
   watchedMounts = ''mountpoint=~"/|/home|/boot|/mnt/.*"'';
-  ratioFree = ''node_filesystem_avail_bytes{${watchedMounts}} / node_filesystem_size_bytes{${watchedMounts}}'';
+  ratioFree = "node_filesystem_avail_bytes{${watchedMounts}} / node_filesystem_size_bytes{${watchedMounts}}";
   alertRules = (pkgs.formats.yaml { }).generate "prometheus-alerts.yml" {
     groups = [
       {
@@ -201,7 +201,8 @@ in
 
     systemd.services.observability-stack = {
       description = "Langfuse and machine/container observability stack";
-      wantedBy = [ "multi-user.target" ];
+      wantedBy = [ "ai-stack.target" ];
+      partOf = [ "ai-stack.target" ];
       after = [ "docker.service" ];
       requires = [ "docker.service" ];
       path = [

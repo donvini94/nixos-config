@@ -151,6 +151,7 @@ in
   # Personal, single-operator agent. Alucard runs a separate shared instance;
   # the two never share state.
   services.aiStack = {
+    autoStart = false;
     enable = true;
     secretsFile = ../../secrets/dracula-ai.yaml;
     workflowDirectory = ../../n8n/workflows/dracula;

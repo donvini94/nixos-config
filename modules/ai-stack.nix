@@ -23,6 +23,12 @@ in
   options.services.aiStack = {
     enable = lib.mkEnableOption "the shared AI stack: ingress tracing, n8n, Hermes and observability";
 
+    autoStart = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Whether the AI stack starts automatically at boot.";
+    };
+
     secretsFile = lib.mkOption {
       type = lib.types.path;
       description = "Host SOPS file holding the n8n, Hermes, Langfuse and Grafana secrets.";
@@ -131,6 +137,8 @@ in
     };
 
     # OMP, Hermes and n8n all trace through this one proxy.
+    services.aiIngress.autoStart = cfg.autoStart;
+
     services.aiIngress.langfuse = {
       enable = true;
       publicKeyFile = config.sops.secrets."langfuse/project_public_key".path;
