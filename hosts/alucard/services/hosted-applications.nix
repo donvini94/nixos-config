@@ -27,8 +27,12 @@
 
     # Team chat, Slack replacement. Peer auth against the local postgres
     # instance (identity.nix) instead of a password, so there is no secret
-    # to manage. mutableConfig lets Kyrill/Vincenzo configure it from the
-    # System Console like a normal SaaS admin panel instead of editing Nix.
+    # to manage. mutableConfig lets Kyrill/Vincenzo configure most things
+    # from the System Console like a normal SaaS admin panel instead of
+    # editing Nix. preferNixConfig makes the two keys below the exception:
+    # they're re-applied from Nix on every switch, overriding whatever the
+    # System Console UI has stored, because access-domain and the default
+    # theme are policy, not per-admin taste.
     mattermost = {
       enable = true;
       siteName = "Bereit Chat";
@@ -36,6 +40,16 @@
       host = "127.0.0.1";
       port = 8065;
       mutableConfig = true;
+      preferNixConfig = true;
+      settings = {
+        TeamSettings = {
+          # Signup stays open (no invite needed) but only istbereit.de
+          # addresses can create an account.
+          EnableOpenServer = true;
+          RestrictCreationToDomains = "istbereit.de";
+        };
+        ThemeSettings.DefaultTheme = "onyx";
+      };
       database = {
         create = true;
         peerAuth = true;
