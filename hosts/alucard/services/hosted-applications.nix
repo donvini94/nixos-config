@@ -25,6 +25,23 @@
       openFirewall = false;
     };
 
+    # Team chat, Slack replacement. Peer auth against the local postgres
+    # instance (identity.nix) instead of a password, so there is no secret
+    # to manage. mutableConfig lets Kyrill/Vincenzo configure it from the
+    # System Console like a normal SaaS admin panel instead of editing Nix.
+    mattermost = {
+      enable = true;
+      siteName = "Bereit Chat";
+      siteUrl = "https://chat.istbereit.de";
+      host = "127.0.0.1";
+      port = 8065;
+      mutableConfig = true;
+      database = {
+        create = true;
+        peerAuth = true;
+      };
+    };
+
     # Reachable only through `tailscale serve --tcp=28888`
     # (hosts/alucard/private-access.nix), so authentication is Tailscale's
     # before it is atuin's.

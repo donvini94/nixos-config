@@ -132,6 +132,7 @@ in
           extraConfig = "client_max_body_size 2g;";
         };
         "mail.${domain2}" = proxy 880;
+        "chat.${domain2}" = proxyWs 8065;
         "comics.${domain2}" = proxyWs 25600;
         "requests.${domain}" = proxyWs 5055;
         "webdav.${domain2}" = tls // {
