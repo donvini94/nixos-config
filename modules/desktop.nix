@@ -9,10 +9,12 @@
     ./services.nix
   ];
 
-  security = {
-    pam.services.swaylock = { };
-    pam.services.login.enableKwallet = true;
+  security.pam.services = {
+    swaylock = { };
+    sddm.enableGnomeKeyring = true;
   };
+
+  services.gnome.gnome-keyring.enable = true;
 
   networking.stevenBlackHosts = {
     enable = true;
@@ -36,6 +38,7 @@
     linux-firmware
     wofi-pass
     powertop
+    libsecret
     picard
   ];
 }
