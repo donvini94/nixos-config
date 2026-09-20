@@ -47,6 +47,7 @@ in
     ../../modules/llama.nix
     ../../modules/remote-openai.nix
     ../../modules/transcription.nix
+    ../../modules/gpu-mode.nix
     ../../modules/host-vulnerability-scan.nix
     ./hardware.nix
     ./services.nix
@@ -224,6 +225,21 @@ in
   services.localTranscription = {
     enable = true;
     operators = [ username ];
+  };
+
+  # The ASR engine and the LLM backend each want most of the 24 GiB card, and
+  # games want all of it: `gpu-mode gaming` clears both.
+  services.gpuMode.modes = {
+    transcription = {
+      unit = "local-transcription.service";
+      start = "transcription-start";
+      stop = "transcription-stop";
+    };
+    ai = {
+      unit = "ai-stack.target";
+      start = "ai-stack-start";
+      stop = "ai-stack-stop";
+    };
   };
 
   services.aiIngress.operators = [ username ];

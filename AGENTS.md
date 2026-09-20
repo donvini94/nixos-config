@@ -113,6 +113,7 @@ Then create `hosts/newhost/` with `default.nix` (imports shared modules), `hardw
 - `fonts.nix` — Font definitions
 - `gaming.nix` — Opt-in: Steam, Proton, Wine, lossless scaling
 - `transcription.nix` — Opt-in: local Confucius4-R2T2 speech-to-text service (`services.localTranscription`)
+- `gpu-mode.nix` — Opt-in: `gpu-mode`/`gaming-mode` switcher between exclusive GPU workloads
 
 ### Home-Manager Modules (`hm-modules/`)
 - `git.nix` — Git identity
@@ -145,8 +146,8 @@ the upstream `qwenllm/qwen3-asr` container. The pieces:
   `local-transcription/server.py` into the container, and serves a WebSocket on
   `127.0.0.1:8272`. The unit `conflicts` with `ai-stack.target`: both want the whole GPU.
   Commands: `transcription-start` (blocks until ready), `transcription-stop`,
-  `transcription-health`. The `transcription` group gets polkit rights for those verbs, so
-  they need no sudo.
+  `transcription-health`. The polkit rule matches `operators` by username, not by group, so
+  those verbs need neither sudo nor a re-login.
 - `local-transcription/server.py` — the streaming WebSocket server we own. Upstream's
   `ws_server.py` hardcodes `gpu_memory_utilization=0.95` and a fake secret key, and pulls in
   Sanic and FireRedVAD, none of which are in the image. Ours is `websockets` + `pydantic`
@@ -164,6 +165,25 @@ the upstream `qwenllm/qwen3-asr` container. The pieces:
 
 Forcing a language matters: left to auto-detect, the model translates non-English speech into
 English instead of transcribing it.
+
+### GPU arbitration on dracula
+
+Three workloads want the 24 GiB card and only one can have it: the ASR engine (~8.4 GiB),
+the AI stack (~20 GiB on top of a ~3 GiB desktop, measured 23.0 of 24.6 GiB), and games.
+`modules/gpu-mode.nix` declares them as named modes in `hosts/dracula/default.nix`:
+
+```bash
+gpu-mode status          # which mode holds the card, plus nvidia-smi memory
+gpu-mode transcription   # stops the AI stack, then starts the ASR (~64 s from the other mode)
+gpu-mode ai              # stops the ASR, then starts the AI stack (~15 s from idle)
+gpu-mode gaming          # stops whatever runs; `gaming-mode` is the alias (~5 s)
+```
+
+Each mode reuses that workload's own `*-start`/`*-stop` wrapper, which already blocks until
+the GPU memory is taken or released. Nothing auto-restores: after `gaming-mode` the card
+stays free until you pick a mode, and only a reboot brings transcription back on its own.
+`local-transcription.service` also declares `Conflicts=ai-stack.target`, so starting either
+one directly still evicts the other — `gpu-mode` adds the deterministic wait and the report.
 
 ### Secret Management
 Uses sops-nix with age encryption. `secrets/secrets.nix` imports sops-nix internally and defines all secrets. Keys in `.sops.yaml`, secrets in `secrets/dmbs.yaml`.
