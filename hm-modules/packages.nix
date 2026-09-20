@@ -17,6 +17,13 @@ let
         --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [ pkgs.stdenv.cc.cc.lib ]}
     '';
   });
+
+  # linear-cli's binary is a `deno compile` standalone executable: it locates its own
+  # bundled JS via /proc/self/exe plus a trailer appended past the ELF image, so it
+  # can't be patchelf'd (see packages/linear-cli.nix for what that breaks and why).
+  # hosts/dracula/services.nix enables nix-ld so the raw, untouched binary below runs as
+  # a normal kernel-exec'd ELF with no wrapper needed here.
+  linear-cli = pkgs.callPackage ../packages/linear-cli.nix { };
 in
 {
   home.packages = with pkgs; [
@@ -37,6 +44,7 @@ in
     warp-terminal
     claude-agent-acp
     chromium
+    linear-cli
 
     texliveMedium
 

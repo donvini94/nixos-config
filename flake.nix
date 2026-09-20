@@ -189,6 +189,7 @@
         // nixpkgs.lib.optionalAttrs (packageSystem == "x86_64-linux") {
           omp = pkgs.callPackage ./packages/omp.nix { };
           tika = pkgs.callPackage ./packages/tika.nix { };
+          linear-cli = pkgs.callPackage ./packages/linear-cli.nix { };
         }
       );
 

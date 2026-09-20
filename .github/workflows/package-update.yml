@@ -42,6 +42,7 @@ jobs:
         package:
           - lathe
           - omp
+          - linear-cli
     concurrency:
       group: package-update-${{ matrix.package }}
       cancel-in-progress: true
