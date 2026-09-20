@@ -43,9 +43,22 @@ let
           type = lib.types.str;
           description = "Pinned Hugging Face revision for ${name}.";
         };
+        backend = lib.mkOption {
+          type = lib.types.enum [
+            "tabbyapi"
+            "llamacpp"
+          ];
+          default = "tabbyapi";
+          description = "Inference server backend for ${name}: TabbyAPI (EXL3) or llama.cpp (GGUF).";
+        };
         files = lib.mkOption {
           type = lib.types.nonEmptyListOf modelFileType;
           description = "All files required to load ${name}, each pinned by SHA-256.";
+        };
+        modelFile = lib.mkOption {
+          type = lib.types.nullOr lib.types.str;
+          default = null;
+          description = "Relative path, from among ${name}'s files, of the GGUF file to load. Required for the llamacpp backend.";
         };
         displayName = lib.mkOption {
           type = lib.types.str;
@@ -58,7 +71,7 @@ let
         contextSize = lib.mkOption {
           type = lib.types.ints.positive;
           default = 65536;
-          description = "Total TabbyAPI context across every parallel slot.";
+          description = "Total context the backend loads ${name} with, across every parallel slot.";
         };
         output = lib.mkOption {
           type = lib.types.ints.positive;
@@ -86,12 +99,17 @@ let
         parallelSlots = lib.mkOption {
           type = lib.types.ints.positive;
           default = 1;
-          description = "Maximum concurrent TabbyAPI generation jobs.";
+          description = "Maximum concurrent generation jobs the backend serves for ${name}.";
         };
         toolFormat = lib.mkOption {
           type = lib.types.nullOr lib.types.str;
           default = null;
           description = "TabbyAPI tool-call parser format, or null to disable parsing.";
+        };
+        serverArgs = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [ ];
+          description = "Extra llama-server CLI flags for the llamacpp backend (cache quantization, flash attention, GPU offload, MoE placement, tokenizer overrides, ...).";
         };
       };
     }
@@ -118,7 +136,7 @@ let
 
   downloadModel =
     name: model:
-    pkgs.writeShellScript "download-local-exl3-${name}" ''
+    pkgs.writeShellScript "download-local-model-${name}" ''
       set -euo pipefail
       model_dir=${lib.escapeShellArg (modelDirectory name)}
       marker="$model_dir/.verified-sha256"
@@ -155,7 +173,7 @@ let
       ${pkgs.coreutils}/bin/cp "$manifest" "$marker"
     '';
 
-  waitForTabby = pkgs.writeShellScript "wait-for-local-tabbyapi" ''
+  waitForBackend = pkgs.writeShellScript "wait-for-local-llama-backend" ''
     set -eu
     for attempt in $(${pkgs.coreutils}/bin/seq 1 7200); do
       if ${pkgs.curl}/bin/curl --fail --silent --show-error "http://${bindAddress}:${toString backendPort}/health" > /dev/null; then
@@ -163,7 +181,7 @@ let
       fi
       ${pkgs.coreutils}/bin/sleep 1
     done
-    echo "TabbyAPI did not become healthy within two hours" >&2
+    echo "Local inference backend did not become healthy within two hours" >&2
     exit 1
   '';
 
@@ -186,28 +204,46 @@ let
       tool_format = model.toolFormat;
     };
   };
+
+  llamaCppArgv =
+    m:
+    [
+      "${cfg.package}/bin/llama-server"
+      "--host"
+      bindAddress
+      "--port"
+      (toString backendPort)
+      "-m"
+      "${modelDirectory cfg.defaultModel}/${m.modelFile}"
+      "-c"
+      (toString m.contextSize)
+      "--parallel"
+      (toString m.parallelSlots)
+    ]
+    ++ m.serverArgs;
 in
 {
   options.services.localLlama = {
-    enable = lib.mkEnableOption "local OpenAI-compatible EXL3 inference";
+    enable = lib.mkEnableOption "local OpenAI-compatible inference (TabbyAPI/EXL3 or llama.cpp/GGUF)";
     package = lib.mkOption {
       type = lib.types.package;
       default = pkgs.tabbyapi;
       defaultText = lib.literalExpression "pkgs.tabbyapi";
       description = ''
-        TabbyAPI package to run. Override with a CUDA-enabled build (e.g. one
-        wired to a prebuilt torch/exllamav3 closure) without touching the
-        host's ambient `pkgs.tabbyapi`.
+        Inference server package matching the active model's backend: a
+        TabbyAPI build for a "tabbyapi" model, or a CUDA-enabled llama.cpp
+        build (providing `llama-server`) for a "llamacpp" model. Override
+        without touching the host's ambient `pkgs.tabbyapi`/`pkgs.llama-cpp`.
       '';
     };
     defaultModel = lib.mkOption {
       type = lib.types.str;
-      description = "Primary local model ID, loaded by TabbyAPI at service start.";
+      description = "Primary local model ID, loaded by its backend at service start.";
     };
     models = lib.mkOption {
       type = lib.types.attrsOf modelType;
       default = { };
-      description = "Pinned EXL3 model registry keyed by the OpenAI request model ID.";
+      description = "Pinned local model registry (EXL3 via TabbyAPI or GGUF via llama.cpp) keyed by the OpenAI request model ID.";
     };
   };
 
@@ -221,17 +257,29 @@ in
         assertion = lib.all hasUniqueFiles (lib.attrValues cfg.models);
         message = "services.localLlama model file paths must be unique within each model";
       }
+      {
+        assertion =
+          model.backend != "llamacpp" || (model.modelFile != null && builtins.elem model.modelFile (modelFilePaths model));
+        message = "services.localLlama.defaultModel's llamacpp backend requires modelFile to name one of its files";
+      }
     ];
 
-    systemd.services.local-tabbyapi = {
-      description = "TabbyAPI local EXL3 inference server";
+    systemd.services.local-llama-backend = {
+      description =
+        if model.backend == "llamacpp" then
+          "llama.cpp local GGUF inference server"
+        else
+          "TabbyAPI local EXL3 inference server";
       wantedBy = [ "ai-stack.target" ];
       partOf = [ "ai-stack.target" ];
       # exllamav3 itself is ahead-of-time compiled and needs nothing here, but
       # a model that exercises flash-linear-attention's Triton kernels would
       # JIT-link against `-lcuda` at runtime — see modules/nvidia.nix for why
       # this path (not RPATH/LD_LIBRARY_PATH) is what `ld` needs for that.
-      environment.LIBRARY_PATH = "/run/opengl-driver/lib";
+      # llama.cpp is ahead-of-time compiled against CUDA and needs none of this.
+      environment = lib.optionalAttrs (model.backend == "tabbyapi") {
+        LIBRARY_PATH = "/run/opengl-driver/lib";
+      };
       serviceConfig = {
         Type = "simple";
         User = "llama";
@@ -240,12 +288,16 @@ in
         StateDirectoryMode = "0750";
         WorkingDirectory = stateDirectory;
         ExecStartPre = downloadModel cfg.defaultModel model;
-        ExecStart = lib.escapeShellArgs [
-          "${cfg.package}/bin/tabbyapi"
-          "--config"
-          tabbyConfig
-        ];
-        ExecStartPost = waitForTabby;
+        ExecStart =
+          if model.backend == "llamacpp" then
+            lib.escapeShellArgs (llamaCppArgv model)
+          else
+            lib.escapeShellArgs [
+              "${cfg.package}/bin/tabbyapi"
+              "--config"
+              tabbyConfig
+            ];
+        ExecStartPost = waitForBackend;
         Restart = "on-failure";
         RestartSec = "5s";
         TimeoutStartSec = "infinity";
@@ -279,10 +331,10 @@ in
       priceMap = lib.mapAttrs (_: localModel: localModel.cost) cfg.models;
       lifecycleUnits = [
         "ai-stack.target"
-        "local-tabbyapi.service"
+        "local-llama-backend.service"
         "local-llama-logger.service"
       ];
-      extraAfter = [ "local-tabbyapi.service" ];
+      extraAfter = [ "local-llama-backend.service" ];
     };
   };
 }

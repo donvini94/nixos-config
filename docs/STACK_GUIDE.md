@@ -46,32 +46,41 @@ OMP / n8n / Hermes / curl
        logging ingress 127.0.0.1:8080
                     │
                     ▼
-          TabbyAPI 127.0.0.1:18080
+   local-llama-backend 127.0.0.1:18080
 ```
 
 Always point clients at port `8080`; port `18080` is an internal implementation detail.
-TabbyAPI keeps Dracula's sole EXL3 model resident, so its request `model` field must be
-`qwen3.8-27b-exl3-3.5bpw`.
+The backend (`services.localLlama.package`/`.defaultModel`, TabbyAPI/EXL3 or
+llama.cpp/GGUF depending on the registered model's `backend`) keeps Dracula's sole local
+model resident, so its request `model` field must match the current `defaultModel` —
+`occamy-1.0-iq4_xs` as of this writing.
 
 Examples:
 
 ```console
 omp-local
 omp-chat
-omp --model dracula-local/qwen3.8-27b-exl3-3.5bpw
+omp --model dracula-local/occamy-1.0-iq4_xs
 
 curl http://127.0.0.1:8080/v1/chat/completions \
   -H 'Content-Type: application/json' \
   -H 'X-AI-Caller: manual' \
-  -d '{"model":"qwen3.8-27b-exl3-3.5bpw","messages":[{"role":"user","content":"Say hello"}]}'
+  -d '{"model":"occamy-1.0-iq4_xs","messages":[{"role":"user","content":"Say hello"}]}'
 ```
 
-The only local model is Mia-AiLab's text-only Qwen3.8 27B EXL3 3.5bpw checkpoint.
-All weights and support files are pinned by Hugging Face revision and SHA-256 before TabbyAPI
-starts. Froggeric's pinned v22.5 template replaces Qwen's stock template: it defaults to
-medium reasoning and safely renders reasoning history and OpenAI-style tool arguments from
-OMP, n8n, and Hermes. Its one-slot, 32,768-token FP16 cache remains capped until TabbyAPI's
-live GPU footprint has been measured on Dracula.
+`omp-local`/`omp-chat` and the harness's `dracula-local/*` provider both follow
+`services.localLlama.defaultModel` automatically, so they never need editing when the
+default model changes.
+
+The current local model is Accio-Lab's Occamy-1.0, a Qwen3.5-35B-A3B MoE tool-use/coding
+fine-tune, served as an IQ4_XS GGUF quant by llama.cpp (`llama-server`, native chat
+template via `--jinja`). All weights are pinned by Hugging Face revision and SHA-256
+before the backend starts. Its one-slot, 131,072-token q8_0 KV cache was sized by
+measuring `llama-server`'s live GPU footprint on Dracula (RTX 3090, 24576 MiB): IQ4_XS at
+`-ngl 99` leaves roughly 1.7 GiB of headroom against the desktop compositor's typical
+2.5-2.8 GiB usage. See `hosts/dracula/default.nix`'s `occamy-1.0-iq4_xs` model entry for
+the full measurement writeup and the CEILING/CORRECTNESS comments before changing quant,
+context, or offload flags.
 
 ## What each AI component is for
 
@@ -98,7 +107,7 @@ is built once at startup. Restart before suspecting the scope or the credential.
 
 Dracula also installs two launchers backed by an isolated `local` OMP profile:
 
-- `omp-local` is the coding client. It fixes the model to local Qwen at low reasoning,
+- `omp-local` is the coding client. It fixes the model to the local backend at low reasoning,
   loads global and repository `AGENTS.md`, and exposes only `read`, `grep`, `glob`, `bash`,
   `edit`, `write`, and LSP.
 - `omp-chat` is bare chat. It starts in `/tmp` with no system prompt, tools, context, or
@@ -106,8 +115,9 @@ Dracula also installs two launchers backed by an isolated `local` OMP profile:
 
 Both save sessions under `~/.omp/profiles/local`, disable automatic titles, memory,
 autolearn, MCP, skills, rules, external configuration providers, and every remote model
-route. The coding profile compacts at 24,576 tokens, shakes tool output before asking local
-Qwen for a summary, and never runs speculative compaction in TabbyAPI's sole inference slot.
+route. The coding profile compacts at 24,576 tokens, shakes tool output before asking the
+local model for a summary, and never runs speculative compaction in the local backend's sole
+inference slot.
 The ordinary `omp` command retains the full harness and its cloud-capable configuration.
 
 Alucard runs the harness for both founder accounts. `hosts/alucard/home.nix` is Vincenzo's and
@@ -348,9 +358,11 @@ docker ps --filter name=hermes-agent
 docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'
 ```
 
-TabbyAPI loads the model when `ai-stack.target` starts. The initial EXL3 load reads roughly
-14 GiB from disk, so wait for the backend health check before treating the first successful
-request as steady-state throughput.
+The local backend (TabbyAPI/EXL3 or llama.cpp/GGUF, per `services.localLlama.defaultModel`'s
+`backend`) loads the model when `ai-stack.target` starts. A dense EXL3 load reads roughly
+14 GiB from disk; a GGUF load reads the full quant file (dracula's default as of this
+writing is a ~17 GiB IQ4_XS quant). Wait for the backend health check before treating the
+first successful request as steady-state throughput.
 
 `ai-stack-stop` is also the recovery path: every stop/start exercises the same code as a
 cold boot, and no service may need a manual post-boot step. Confirm the GPU actually came

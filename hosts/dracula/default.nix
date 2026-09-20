@@ -20,7 +20,8 @@ let
   };
   # See lib/cuda-torch.nix: a fully independent nixpkgs evaluation, not a
   # host-wide overlay, so this never touches the ambient pkgs.tabbyapi/
-  # pkgs.python3Packages/pkgs.cudaPackages used by the rest of the system.
+  # pkgs.llama-cpp/pkgs.python3Packages/pkgs.cudaPackages used by the rest of
+  # the system.
   cudaTorch = import ../../lib/cuda-torch.nix {
     nixpkgsFlake = inputs.nixpkgs;
     system = pkgs.stdenv.hostPlatform.system;
@@ -28,6 +29,13 @@ let
   tabbyapiCuda = cudaTorch.pkgs.tabbyapi.override {
     python3Packages = (cudaTorch.pythonFor "python314").pkgs;
   };
+  # llama.cpp's CUDA backend is a real from-source compile (ggml-cuda has no
+  # prebuilt-wheel escape hatch the way torch-bin does), but cudaTorch's scoped
+  # `cudaCapabilities = [ "8.6" ]` still applies to it: it cuts the build down
+  # to this GPU's one architecture instead of nixpkgs' default 9-architecture
+  # list (confirmed via `nix derivation show`: CMAKE_CUDA_ARCHITECTURES goes
+  # from "75;80;86;89;90;100;103;120;121" to "86").
+  llamaCppCuda = cudaTorch.pkgs.llama-cpp.override { cudaSupport = true; };
 in
 {
   imports = [
@@ -78,11 +86,10 @@ in
   # constrained to this GPU's one architecture — see lib/cuda-torch.nix) and
   # exllamav3's own small CUDA extension — a single real `nixos-rebuild build`
   # measured ~15-20 minutes of that, against an otherwise all-cache closure.
-
   services.localLlama = {
     enable = true;
-    package = tabbyapiCuda;
-    defaultModel = "qwen3.8-27b-exl3-3.5bpw";
+    package = llamaCppCuda;
+    defaultModel = "occamy-1.0-iq4_xs";
     models."qwen3.8-27b-exl3-3.5bpw" = {
       repo = "Mia-AiLab/Qwen3.8-27B-EXL3-3.5bpw";
       revision = "19441ac874c4018295da848e250f23511361cda4";
@@ -148,6 +155,68 @@ in
       parallelSlots = 1;
       reasoning = true;
       toolFormat = "qwen3_5";
+    };
+    models."occamy-1.0-iq4_xs" = {
+      backend = "llamacpp";
+      repo = "Accio-Lab/occamy-1.0-GGUF";
+      revision = "e8fe5e28e1b1c1f0cd0a39b85b16b631f17ca14e";
+      files = [
+        {
+          path = "occamy-1.0-IQ4_XS.gguf";
+          sha256 = "b587e40f11bda45e3a3f150e03dae0af9069eaa3036a43e8c34a0e6122858225";
+        }
+      ];
+      modelFile = "occamy-1.0-IQ4_XS.gguf";
+      displayName = "Occamy-1.0 IQ4_XS (GGUF, MoE)";
+      description = "Qwen3.5-35B-A3B tool-use/coding MoE fine-tune; hybrid linear+full attention (only 10/40 layers grow a KV cache), 3B active params/token; one long-context agent slot.";
+      # CORRECTNESS (measured, not the GGUF repo's prose): fetched each
+      # candidate quant's raw GGUF header directly (HTTP range requests, no
+      # gguf tooling needed) and read `tokenizer.ggml.pre` at this exact
+      # pinned revision. Q4_K_M, Q8_0, Q4_K_S, Q3_K_M and IQ4_XS all store
+      # `qwen2` right now — none need `--override-kv`. TOKENIZER.md's body
+      # text describing the ten new quants as "currently qwen35" is stale,
+      # preserved pre-correction wording; its own "Release update" note at
+      # the top says they "now store qwen2", which is what the live files
+      # actually contain. IQ2_M/Q2_K/IQ3_M/IQ3_XS/IQ4_NL/Q5_K_M/Q6_K were not
+      # individually re-checked but share the same corrected metadata batch
+      # per that release note.
+      #
+      # QUANT CHOICE (measured on this GPU, RTX 3090 24576 MiB, llama.cpp
+      # build 5266f24/10809, desktop compositor using 2.5-2.8 GiB
+      # concurrently): Q4_K_M at -ngl 99/-c 131072/q8_0 KV needs ~1.36 GiB for
+      # the KV cache alone (10 full-attention layers of 40; the rest are
+      # linear-attention with a fixed-size state) and does not fit — cudaMalloc
+      # OOM on the KV buffer with 0 other GPU load. `-ncmoe` fits it but costs
+      # real throughput (pp512 2803->1141 t/s, tg128 158->105 t/s at ncmoe=6,
+      # the smallest offload leaving >2 GiB headroom). Q4_K_S fits natively
+      # (ncmoe=0) with full speed (pp512 3311, tg128 176 t/s) but only ~630
+      # MiB headroom — too tight against that desktop fluctuation. IQ4_XS
+      # fits natively with ~1.7-1.75 GiB headroom (matching Q4_K_M+ncmoe's
+      # margin) at pp512 3544 t/s / tg128 165 t/s short-context and 2935 t/s
+      # / 89 t/s at a real cold 75K-token turn — both well above Q4_K_M+ncmoe.
+      # Quality cost is small and inside this validation's own noise floor:
+      # wikitext-2 PPL 6.3147 vs Q4_K_M's 6.2429 (BF16 reference 6.2385);
+      # 24-question code/math/json/tool subsets are tied or within one
+      # question. No CPU-offload flag needed at this quant.
+      #
+      # CEILING: 131072 context is the ceiling for this quant on this GPU
+      # while the desktop compositor is also running — do not raise it or
+      # switch back to a bigger quant without re-measuring headroom the same
+      # way (nvidia-smi under a real ~75-100K-token load, not idle-after-load).
+      contextSize = 131072;
+      parallelSlots = 1;
+      reasoning = true;
+      serverArgs = [
+        "--cache-type-k"
+        "q8_0"
+        "--cache-type-v"
+        "q8_0"
+        "-fa"
+        "on"
+        "-ngl"
+        "99"
+        "--jinja"
+      ];
     };
   };
 
