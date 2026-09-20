@@ -112,6 +112,7 @@ Then create `hosts/newhost/` with `default.nix` (imports shared modules), `hardw
 - `services.nix` — Desktop services (pipewire, rtkit, emacs, printing, mullvad)
 - `fonts.nix` — Font definitions
 - `gaming.nix` — Opt-in: Steam, Proton, Wine, lossless scaling
+- `transcription.nix` — Opt-in: local Confucius4-R2T2 speech-to-text service (`services.localTranscription`)
 
 ### Home-Manager Modules (`hm-modules/`)
 - `git.nix` — Git identity
@@ -128,9 +129,41 @@ Then create `hosts/newhost/` with `default.nix` (imports shared modules), `hardw
 - `omp.nix` — OMP harness context (`~/.omp/agent` links, derived `mcp.json`, lathe + its skills, and the `mentor` skill and `/mentor` command linked from the `~/code/omp-mentor` checkout)
 - `zed.nix` — Zed settings + keymap (shared; JSONC copied verbatim)
 - `helix.nix`, `kitty.nix`, `mpv.nix`, `starship.nix`, `yazi.nix`, `zathura.nix`, `zellij.nix`, `doom.nix` — Per-tool configs
+- `transcription.nix` — Dictation keybind scripts, meeting recorder, templated user units
 
 ### Desktop Shell
 Caelestia-shell (Quickshell-based) provides: bar, notifications, lock screen, wallpaper, launcher, OSD, session management. It starts as a systemd service on `graphical-session.target`. The Hyprland config in `hm-modules/hyprland.nix` only handles core WM behavior (keybinds, layouts, window rules) — all shell/theming is delegated to caelestia.
+
+### Local transcription
+
+Confucius4-R2T2 (Qwen3-ASR architecture) runs locally on the RTX 3090 through vLLM inside
+the upstream `qwenllm/qwen3-asr` container. The pieces:
+
+- `modules/transcription.nix` — `local-transcription.service`, started at boot. It downloads
+  the checkpoint into `/var/lib/local-transcription/model` (sha256-pinned, so a corrupted or
+  swapped file fails the unit), mounts the pinned upstream checkout plus
+  `local-transcription/server.py` into the container, and serves a WebSocket on
+  `127.0.0.1:8272`. The unit `conflicts` with `ai-stack.target`: both want the whole GPU.
+  Commands: `transcription-start` (blocks until ready), `transcription-stop`,
+  `transcription-health`. The `transcription` group gets polkit rights for those verbs, so
+  they need no sudo.
+- `local-transcription/server.py` — the streaming WebSocket server we own. Upstream's
+  `ws_server.py` hardcodes `gpu_memory_utilization=0.95` and a fake secret key, and pulls in
+  Sanic and FireRedVAD, none of which are in the image. Ours is `websockets` + `pydantic`
+  only, caps the engine at 40% VRAM and 8k context, and speaks the same 160 ms int16 frame
+  protocol.
+- `local-transcription/` (Rust, `packages/local-transcription-client.nix`) — captures
+  PipeWire audio via `parec`, streams frames, appends recognized text to a transcript file.
+  `--source microphone` for dictation, `--source meeting` to mix the default source with the
+  default sink's monitor, `--audio-output` to also keep a WAV.
+- `hm-modules/transcription.nix` — templated user units `transcription-dictation@<language>`
+  and `transcription-meeting@<language>`, plus `transcription-dictate-toggle`,
+  `transcription-meeting-{start,stop,status}`. Super+grave dictates English, Super+Shift+grave
+  German; pressing the same shortcut again stops the capture and types the text into the
+  focused field with `wtype`. Meetings land in `~/.local/state/transcription/`.
+
+Forcing a language matters: left to auto-detect, the model translates non-English speech into
+English instead of transcribing it.
 
 ### Secret Management
 Uses sops-nix with age encryption. `secrets/secrets.nix` imports sops-nix internally and defines all secrets. Keys in `.sops.yaml`, secrets in `secrets/dmbs.yaml`.

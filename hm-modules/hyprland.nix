@@ -158,6 +158,8 @@
         "$mod SHIFT, S, exec, signal-desktop"
         "$mod, P, exec, wofi-pass -i -s -c"
         "$mod SHIFT, P, exec, pavucontrol"
+        "$mod, grave, exec, transcription-dictate-toggle English"
+        "$mod SHIFT, grave, exec, transcription-dictate-toggle German"
         "$mod SHIFT, H, exec, kitty -e btop"
 
         "$mod, 1, workspace, 1"

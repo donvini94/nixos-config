@@ -1,6 +1,7 @@
 .DS_Store
 .idea
 /result
+/local-transcription/target/
 __pycache__/
 *.log
 # Local AI state may contain prompts, responses, mail, and client material.

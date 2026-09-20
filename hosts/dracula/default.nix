@@ -46,6 +46,7 @@ in
     ../../modules/ai-stack.nix
     ../../modules/llama.nix
     ../../modules/remote-openai.nix
+    ../../modules/transcription.nix
     ../../modules/host-vulnerability-scan.nix
     ./hardware.nix
     ./services.nix
@@ -218,6 +219,11 @@ in
         "--jinja"
       ];
     };
+  };
+
+  services.localTranscription = {
+    enable = true;
+    operators = [ username ];
   };
 
   services.aiIngress.operators = [ username ];
