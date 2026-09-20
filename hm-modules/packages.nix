@@ -1,7 +1,23 @@
 # Linux-desktop package set: Wayland/GTK-bound, GUI-only, or deliberately Linux-only.
 # Cross-platform CLI tooling lives in cli-tools.nix, which the Mac imports too.
-{ pkgs, ... }:
+{ pkgs, lib, ... }:
 
+let
+  # mattermost-desktop's bundled koffi.node (native tray/badge FFI, under
+  # app.asar.unpacked/node_modules/@koromix) links against libstdc++.so.6 with
+  # no runpath to it: nixpkgs' fixup only autoPatchelfs paths outside the
+  # asar, so this native module is missed and the app dies on load with
+  # "libstdc++.so.6: cannot open shared object file". Wrap the launcher with
+  # LD_LIBRARY_PATH instead of patching the store output by hand.
+  mattermost-desktop = pkgs.mattermost-desktop.overrideAttrs (old: {
+    nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ pkgs.makeWrapper ];
+    postFixup = ''
+      ${old.postFixup or ""}
+      wrapProgram $out/bin/mattermost-desktop \
+        --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [ pkgs.stdenv.cc.cc.lib ]}
+    '';
+  });
+in
 {
   home.packages = with pkgs; [
     mupdf
@@ -38,5 +54,6 @@
     slack
     signal-desktop
     teams-for-linux
+    mattermost-desktop
   ];
 }

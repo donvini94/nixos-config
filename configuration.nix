@@ -29,6 +29,13 @@
   # The two scan units are here so a scan can be run and verified on demand rather than
   # only when its timer fires. Both are oneshot units that read images and publish
   # metrics; `start --wait` cannot pass them arguments.
+  #
+  # crowdsec-admin (alucard only) is itself a hardened wrapper -- it re-execs `cscli`
+  # under systemd-run with DynamicUser, NoNewPrivileges, PrivateTmp/Users and
+  # ProtectSystem=strict (hosts/alucard/security.nix), not a raw shell -- so NOPASSWD
+  # on the whole wrapper doesn't hand out general root, only CrowdSec's own admin
+  # surface (decisions/bouncers/alerts/etc). Needed to check ban/decision state (e.g.
+  # after a WAF change causes a burst of blocked requests) without a TTY for sudo.
   security.sudo.extraRules = [
     {
       users = [ username ];
@@ -44,6 +51,10 @@
         }
         {
           command = "/run/current-system/sw/bin/systemctl start --wait host-vulnerability-scan.service";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/run/current-system/sw/bin/crowdsec-admin *";
           options = [ "NOPASSWD" ];
         }
       ];
