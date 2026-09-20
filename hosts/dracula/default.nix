@@ -19,15 +19,11 @@ let
     categories = [ "Development" ];
   };
   # See lib/cuda-torch.nix: a fully independent nixpkgs evaluation, not a
-  # host-wide overlay, so this never touches the ambient pkgs.tabbyapi/
-  # pkgs.llama-cpp/pkgs.python3Packages/pkgs.cudaPackages used by the rest of
-  # the system.
+  # host-wide overlay, so this never touches the ambient pkgs.llama-cpp/
+  # pkgs.python3Packages/pkgs.cudaPackages used by the rest of the system.
   cudaTorch = import ../../lib/cuda-torch.nix {
     nixpkgsFlake = inputs.nixpkgs;
     system = pkgs.stdenv.hostPlatform.system;
-  };
-  tabbyapiCuda = cudaTorch.pkgs.tabbyapi.override {
-    python3Packages = (cudaTorch.pythonFor "python314").pkgs;
   };
   # llama.cpp's CUDA backend is a real from-source compile (ggml-cuda has no
   # prebuilt-wheel escape hatch the way torch-bin does), but cudaTorch's scoped
@@ -82,84 +78,33 @@ in
   # public binary cache (cuda-maintainers.cachix.org is deprecated; Hydra
   # never builds unfree packages; cache.nixos-cuda.org is the CUDA team's
   # non-public internal cache, not for redistribution — see lib/cuda-torch.nix
-  # for sourcing). tabbyapiCuda above is the scoped alternative: it sources
-  # torch from PyPI's official CUDA wheel instead of building it. It still
-  # compiles `nccl`, `libnvshmem` (open source, no prebuilt alternative;
-  # constrained to this GPU's one architecture — see lib/cuda-torch.nix) and
-  # exllamav3's own small CUDA extension — a single real `nixos-rebuild build`
-  # measured ~15-20 minutes of that, against an otherwise all-cache closure.
+  # for sourcing). The scoped evaluation above keeps the CUDA build surface to
+  # llama.cpp's own ggml-cuda, for this GPU's single architecture.
   services.localLlama = {
     enable = true;
     package = llamaCppCuda;
     defaultModel = "occamy-1.0-iq4_xs";
-    models."qwen3.8-27b-exl3-3.5bpw" = {
-      repo = "Mia-AiLab/Qwen3.8-27B-EXL3-3.5bpw";
-      revision = "19441ac874c4018295da848e250f23511361cda4";
-      files = [
-        {
-          path = "chat_template.jinja";
-          sourceUrl = "https://huggingface.co/froggeric/Qwen-Fixed-Chat-Templates/resolve/855bffc49448e299789730ff92c9b8d834d6cc14/chat_template.jinja";
-          sha256 = "e57684bae4156211a55473c5a63be976a405a37ab5be5ae0e5abf1df5349c4b2";
-        }
-        {
-          path = "config.json";
-          sha256 = "153407dcf65483b121759efc6bdd0e41e124e1e297496a9ba979936689a4b9d2";
-        }
-        {
-          path = "generation_config.json";
-          sha256 = "e70c136c1b78ddc1fb0905bac8e733a4dc448d4f852a5dd75143fffc70be550e";
-        }
-        {
-          path = "merges.txt";
-          sha256 = "a9d356d7bdf1ef4949e3e748e95b8e10ad9d4e2e838eddc38a0a7b6b94d1db8d";
-        }
-        {
-          path = "model-00001-of-00002.safetensors";
-          sha256 = "7b77214fe58ff15fed0b4af55e3cd92f38842b8711886d68954e8071ff8270c6";
-        }
-        {
-          path = "model-00002-of-00002.safetensors";
-          sha256 = "411c83bb1070b27f3d670fc93e38dca0f17eb66429f64b5706901b12613188b2";
-        }
-        {
-          path = "model.safetensors.index.json";
-          sha256 = "ee2d5e73b5f8311ad331ce3c94a29d1143225064b278a18fa9966cba54d2802e";
-        }
-        {
-          path = "preprocessor_config.json";
-          sha256 = "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516";
-        }
-        {
-          path = "quantization_config.json";
-          sha256 = "d5e7e4c411084ef898b470e35a20181093bf3adbb1282e9d81674ce7b3d9069d";
-        }
-        {
-          path = "tokenizer.json";
-          sha256 = "0997f410c57a1f4e53b09e4be8f4a172d90edd9564368fb0847030937229b9f3";
-        }
-        {
-          path = "tokenizer_config.json";
-          sha256 = "b11349aafa7cdc6a320767cf7ceb29ed82f7eda5d65e8e0819e76f0ce947bf27";
-        }
-        {
-          path = "video_preprocessor_config.json";
-          sha256 = "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13";
-        }
-        {
-          path = "vocab.json";
-          sha256 = "ce99b4cb2983d118806ce0a8b777a35b093e2000a503ebde25853284c9dfa003";
-        }
-      ];
-      displayName = "Qwen3.8 27B EXL3 3.5bpw (dense)";
-      description = "Dense Qwen3.8 default; EXL3 3.5bpw weights; text-only serving; one 32,768-token agent slot.";
-      # CEILING: keep one 32,768-token FP16 cache within Dracula's 24 GiB GPU; raise it only after measuring TabbyAPI's live footprint.
-      contextSize = 32768;
-      parallelSlots = 1;
-      reasoning = true;
-      toolFormat = "qwen3_5";
-    };
+    # MODEL CHOICE (measured 2026-09-20, this GPU, both models served by the
+    # same llama.cpp build with identical flags -c 131072/q8_0 KV/-fa on/-ngl
+    # 99): Occamy-1.0 IQ4_XS against Qwen3.8-27B UD-Q4_K_M, which replaced the
+    # EXL3 3.5bpw weights this host used to serve through TabbyAPI.
+    #   decode  128/116/92 t/s at 1k/9.5k/37k prompt, vs 42/40/34
+    #   prefill 4.1s/17.6s/75.3s at 9.5k/37k/124k, vs 8.0s/34.3s/156.1s
+    #   VRAM    23.09 GiB vs 23.36 GiB at 131k context
+    #   needle-in-haystack 16k/30k/100k: 3/3 both
+    #   single tool call 5/5 both; JSON-shape 3/3 both
+    #   isolated coding tasks 5/6 and 6/8 — identical scores, same two failures
+    #   four-step agent loop (read, patch, re-run tests, report): Occamy 3/3 in
+    #   ~5s per run; Qwen3.8 0/2, exhausting ten turns on shell probing without
+    #   ever writing the fix
+    # Published benchmarks favour Qwen3.8-27B on non-agentic coding
+    # (LiveCodeBench v6 90.3 vs 80.4 for Occamy's base, SWE-bench Pro 61.7 vs
+    # 49.5); that advantage did not survive contact with this harness's tool
+    # loop, and it costs 3x the decode latency. The EXL3 path is also dead at
+    # this nixpkgs pin: exllamav3 1.4.8 + torch 2.13.0+cu130 segfault on the
+    # first CUDA allocation made after `import exllamav3` (cuBLAS, no current
+    # context), both under the service and standalone.
     models."occamy-1.0-iq4_xs" = {
-      backend = "llamacpp";
       repo = "Accio-Lab/occamy-1.0-GGUF";
       revision = "e8fe5e28e1b1c1f0cd0a39b85b16b631f17ca14e";
       files = [
@@ -170,7 +115,7 @@ in
       ];
       modelFile = "occamy-1.0-IQ4_XS.gguf";
       displayName = "Occamy-1.0 IQ4_XS (GGUF, MoE)";
-      description = "Qwen3.5-35B-A3B tool-use/coding MoE fine-tune; hybrid linear+full attention (only 10/40 layers grow a KV cache), 3B active params/token; one long-context agent slot.";
+      description = "Qwen3.6-35B-A3B tool-use/coding MoE fine-tune; hybrid linear+full attention (only 10/40 layers grow a KV cache), 3B active params/token; one long-context agent slot.";
       # CORRECTNESS (measured, not the GGUF repo's prose): fetched each
       # candidate quant's raw GGUF header directly (HTTP range requests, no
       # gguf tooling needed) and read `tokenizer.ggml.pre` at this exact
