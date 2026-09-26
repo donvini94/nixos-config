@@ -36,6 +36,14 @@ let
 
   lathe = pkgs.callPackage ../packages/lathe.nix { };
 
+  # zotero-mcp-server is a `uv tool install`, not a nix package: `zotero-mcp update`
+  # upgrades it in place, and the skill link follows the upgrade without a rebuild.
+  # Skill only, no MCP server: the CLI costs context only when used.
+  # CEILING: the packaged skill path embeds the tool venv's Python minor version. A
+  # reinstall on a newer Python dangles the link (OMP startup warning); bump the version
+  # here, or package zotero-mcp-server in nix to get a stable store path.
+  zoteroSkill = "${config.home.homeDirectory}/.local/share/uv/tools/zotero-mcp-server/lib/python3.14/site-packages/zotero_mcp/skills/zotero-cli";
+
   # The skill loader readdirs the skills root and follows symlinked directory entries,
   # so a skill is linked as one directory.
   latheSkills = lib.listToAttrs (
@@ -83,6 +91,8 @@ in
     # startup warning.
     ".omp/agent/skills/mentor".source = link "${mentorRepo}/skills/mentor";
     ".omp/agent/commands/mentor.md".source = link "${mentorRepo}/commands/mentor.md";
+    # Installed here rather than by `zotero-mcp install-skill`, which has no OMP target.
+    ".omp/agent/skills/zotero-cli".source = link zoteroSkill;
   }
   // linkEach "rules" ruleNames
   // linkEach "agents" agentNames
