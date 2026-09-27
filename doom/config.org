@@ -520,6 +520,12 @@ ty is Astral's Rust-based Python type checker and language server (from the Ruff
   (expand-file-name "~/.local/share/calendars/bereit.org")
   "Org file synced with the Bereit SOGo calendar on this host.")
 
+;; org-id's location cache is derived per host (org-caldav refreshes it every
+;; sync); Doom's default ~/org/.orgids is Syncthing-shared and two Emacs daemons
+;; rewriting it produced sync conflicts. Must be set before Doom's org module
+;; picks its default.
+(setq org-id-locations-file (expand-file-name "org-id-locations" doom-cache-dir))
+
 ;; Agenda files — GTD always, roam only if modified in last 90 days (performance)
 (after! org
   (defun my/recent-org-files (dir &optional days)
