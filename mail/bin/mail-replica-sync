@@ -23,9 +23,11 @@ log() { printf '[mail-replica-sync %s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"
 
 log "muchsync $HUB"
 # -r: the hub side takes the lock its mail-sync pipeline holds, so a replica sync
-# waits out a tagging pass instead of racing it for the Xapian write lock.
+# waits out a tagging pass instead of racing it for the Xapian write lock. The
+# path is relative (ssh starts in the hub's home): muchsync hands this string to
+# the local /bin/sh first, which would expand a `~` to *this* host's home.
 # --nonew (server option): the hub indexes its own new files in mail-sync.
-muchsync -r 'flock -w 300 ~/.local/state/mail-hub.lock muchsync' "$HUB" --nonew || exit $?
+muchsync -r 'flock -w 300 .local/state/mail-hub.lock muchsync' "$HUB" --nonew || exit $?
 
 # Read by the notmuch hello dashboard's "last sync" field.
 mkdir -p "$HOME/.local/state"

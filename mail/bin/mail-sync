@@ -28,7 +28,8 @@ export PATH
 
 log() { printf '[mail-sync %s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
 
-mkdir -p "$HOME/.local/state"
+# mbsync creates folders inside an account directory, not the directory itself.
+mkdir -p "$HOME/.local/state" "$HOME/Maildir/bereit"
 exec 9>"$HOME/.local/state/mail-hub.lock"
 if ! flock -w 600 9; then
     log "lock busy for 10 minutes, skipping this run"
