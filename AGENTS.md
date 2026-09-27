@@ -249,6 +249,18 @@ Still deliberately stateful on that host, each for a stated reason:
 
 ## Working practices for this repo
 
+**Pull before starting work; leave every checkout on the same commit.** Three checkouts
+exist: the Mac (`~/nixos-config`), alucard and dracula (`/home/vincenzo/nixos-config`).
+Run `git pull --rebase` on the checkout you work in before the first edit, and pull on any
+other checkout before editing or deploying from it. When work is done, commit everything
+(including pending changes you did not author, unless told otherwise), push, then
+fast-forward the other checkouts to the pushed commit. Precedent: 2026-09-27 the Mac sat
+17 commits behind with an uncommitted TabbyAPI→llama.cpp draft that dracula had already
+committed differently, and a hotfix was edited directly in alucard's checkout.
+
+Deploying alucard is yours to run: `ssh -t alucard 'cd /home/vincenzo/nixos-config &&
+sudo nixos-rebuild switch --flake .#alucard'` with a PTY — sudo prompts interactively.
+
 **Answer questions; don't edit unasked.** When Vincenzo asks "how do I…", "what's the right
 way to…", "should I…", "why does X…", answer in prose with trade-offs and then **stop**.
 Wait for an explicit "do it" / "change it" / "apply that". This holds even when the answer
