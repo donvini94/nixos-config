@@ -1,28 +1,39 @@
 #!/bin/sh
-# Mail sync + tagging pipeline.
-#
-# Triggered every 5 minutes by:
-#   - macOS:  ~/Library/LaunchAgents/de.istbereit.mail-sync.plist
-#   - NixOS:  systemd user timer (see hm-modules/email.nix)
+# Mail hub pipeline. Runs on alucard only, every 5 minutes, from the systemd user
+# timer in hm-modules/mail-hub.nix. The Mac and dracula never talk IMAP: they are
+# muchsync replicas of this host's Maildir + notmuch database (mail-replica-sync).
 #
 # Pipeline:
-#   1. mbsync -a    — fetch new mail from all IMAP accounts
+#   1. mbsync -a    — two-way IMAP sync; pushes flags and Fcc'd sent mail that
+#                     replicas uploaded, pulls new mail
 #   2. notmuch new  — index new files; tags them +new +unread per ~/.notmuch-config
 #   3. tag rules    — sequential `notmuch tag` invocations, top-to-bottom.
 #                     Each rule scopes itself to `tag:new` and either:
-#                       - adds a persistent tag (customer/leadership/reading)
+#                       - adds a persistent tag (reading)
 #                       - strips :new + assigns a terminal state (bulk/sent/inbox/...)
 #                     The final rule catches whatever's still :new and tags it inbox.
 #   4. compute-state — derive owed/reply + age/* dashboard tags.
-#   5. emit-followups — regenerate ~/org/mail-followups.org.
+#   5. emit-followups — regenerate ~/org/mail-followups.org. This host is the only
+#                     writer of mail-derived files in the Syncthing-shared ~/org.
+#
+# Invariant: one writer at a time on this database. The whole run holds the lock
+# that replicas' `muchsync --server` also takes (see mail-replica-sync's -r), so a
+# replica sync waits for a tagging pass instead of racing it for the Xapian lock.
 
 set -u
-# /opt/homebrew/bin (macOS) and /run/current-system/sw/bin (NixOS) are both
-# listed; PATH search tolerates non-existent dirs, so this works on either.
-PATH=$HOME/.local/bin:/opt/homebrew/bin:/run/current-system/sw/bin:/usr/bin:/bin
+# Linux: home-manager puts packages in the user profile (useUserPackages is off), so
+# ~/.nix-profile/bin must be listed; /etc/profiles/per-user covers useUserPackages hosts.
+PATH=$HOME/.local/bin:$HOME/.nix-profile/bin:/etc/profiles/per-user/$USER/bin:/opt/homebrew/bin:/run/current-system/sw/bin:/usr/bin:/bin
 export PATH
 
 log() { printf '[mail-sync %s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
+
+mkdir -p "$HOME/.local/state"
+exec 9>"$HOME/.local/state/mail-hub.lock"
+if ! flock -w 600 9; then
+    log "lock busy for 10 minutes, skipping this run"
+    exit 1
+fi
 
 log "mbsync"
 mbsync -a || exit $?

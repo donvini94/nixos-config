@@ -26,6 +26,7 @@
     ../../modules/vulnerability-scan.nix
     ../../modules/host-vulnerability-scan.nix
     ../../modules/offsite-backup.nix
+    ../../modules/mail-credentials.nix
     ../../secrets/secrets.nix
   ];
 

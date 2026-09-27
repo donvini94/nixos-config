@@ -36,6 +36,9 @@
     # Adds the config, the `y` wrapper and shell integration for vincenzo; yazi
     # itself is already in environment.systemPackages for the other accounts.
     ../../hm-modules/yazi.nix
+    # The one notmuch mail hub: IMAP sync, tagging, and the mail-derived ~/org files.
+    # The workstations are muchsync replicas of it (hm-modules/email.nix).
+    ../../hm-modules/mail-hub.nix
   ];
 
   # Deliberately NOT imported:
@@ -46,7 +49,8 @@
   #                    that author context; here OMP is driven, not configured.
   #   packages.nix, gtk.nix, hyprland.nix, caelestia.nix, kitty.nix, zathura.nix,
   #   mpv.nix, services.nix, email.nix, zed.nix, doom.nix, pokemmo.nix
-  #                  — GUI, Wayland/GTK, or user-session desktop services.
+  #                  — GUI, Wayland/GTK, or user-session desktop services;
+  #                    email.nix is the replica role, this host is the hub.
 
   nixpkgs.config.allowUnfree = true;
   home = {

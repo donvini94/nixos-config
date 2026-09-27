@@ -1,0 +1,33 @@
+#!/bin/sh
+# Mail replica sync: keep this host's Maildir + notmuch database identical to the
+# alucard mail hub's, via muchsync over SSH. Pulls new mail and tags; pushes local
+# tag changes and Fcc'd sent mail (the hub's mbsync then uploads those to IMAP).
+#
+# Triggered every 5 minutes by:
+#   - macOS:   ~/Library/LaunchAgents/de.istbereit.mail-sync.plist
+#   - dracula: systemd user timer (hm-modules/email.nix)
+#
+# Tag conflicts (both sides changed one message between syncs) merge per
+# muchsync(1): tags in muchsync.and_tags (default new.tags = new;unread) survive
+# only if both sides have them, every other tag survives if either side has it.
+# So reading a message anywhere marks it read everywhere.
+
+set -u
+: "${USER:=$(id -un)}"
+PATH=$HOME/.local/bin:$HOME/.nix-profile/bin:/etc/profiles/per-user/$USER/bin:/opt/homebrew/bin:/run/current-system/sw/bin:/usr/bin:/bin
+export PATH
+
+HUB=${MAIL_HUB:-alucard}
+
+log() { printf '[mail-replica-sync %s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
+
+log "muchsync $HUB"
+# -r: the hub side takes the lock its mail-sync pipeline holds, so a replica sync
+# waits out a tagging pass instead of racing it for the Xapian write lock.
+# --nonew (server option): the hub indexes its own new files in mail-sync.
+muchsync -r 'flock -w 300 ~/.local/state/mail-hub.lock muchsync' "$HUB" --nonew || exit $?
+
+# Read by the notmuch hello dashboard's "last sync" field.
+mkdir -p "$HOME/.local/state"
+touch "$HOME/.local/state/mail-sync.stamp"
+log "done"

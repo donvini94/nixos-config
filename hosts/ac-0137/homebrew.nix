@@ -55,7 +55,6 @@
       "hf"
       "imagemagick"
       "isort"
-      "isync"
       "libxft"
       "maven"
       "media-info"

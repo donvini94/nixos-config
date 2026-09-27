@@ -1,9 +1,9 @@
-# notmuch configuration.
+# notmuch configuration, shared by the mail hub (alucard) and its muchsync replicas
+# (Mac, dracula) so the three databases index and query identically.
 #
 # Path is absolute (notmuch doesn't expand $HOME). On macOS this file is
-# symlinked from ~/.notmuch-config directly. On NixOS the email home-manager
-# module rewrites `database.path` to `/home/<user>/Maildir` before placing
-# the file (see hm-modules/email.nix).
+# symlinked from ~/.notmuch-config directly. On NixOS, hm-modules/email.nix and
+# hm-modules/mail-hub.nix rewrite `database.path` to `/home/<user>/Maildir`.
 #
 # The database root contains separate Maildir account directories. Initially
 # only ~/Maildir/bereit/ is synchronized.
@@ -30,9 +30,11 @@ ignore=.mbsyncstate;.uidvalidity;.notmuch;.mbsyncstate.lock;.mbsyncstate.new;.mb
 exclude_tags=bulk;deleted;spam;trash
 
 [maildir]
-# Sync maildir flags (S=seen, F=flagged, R=replied, T=trashed) with notmuch
-# tags so the standard IMAP flags round-trip through mbsync.
-synchronize_flags=true
+# Replicas: off. muchsync replicates tags directly, and flag sync would only rename
+# files for nothing (muchsync(1) recommends disabling it). The hub turns it on
+# (hm-modules/mail-hub.nix): there tags must become maildir flags so mbsync carries
+# read/flagged/replied state to IMAP, and flags set elsewhere (webmail) come back.
+synchronize_flags=false
 
 [index]
 # Make the List-Unsubscribe header queryable. Required by the bulk-mail

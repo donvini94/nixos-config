@@ -41,6 +41,7 @@ in
     ../../modules/gaming.nix
     ../../modules/ai-stack.nix
     ../../modules/llama.nix
+    ../../modules/mail-credentials.nix
     ../../modules/remote-openai.nix
     ../../modules/transcription.nix
     ../../modules/gpu-mode.nix
