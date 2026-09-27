@@ -89,7 +89,7 @@ let
   #
   # The full harness starts a 32k-context local model at ~24k tokens — above OMP's default
   # 16k-reserve compaction threshold — so its first successful turn is already eligible for
-  # compaction and its handoff/summarization requests overflow TabbyAPI's single slot. This
+  # compaction and its handoff/summarization requests overflow llama.cpp's single slot. This
   # config trades tools for headroom: ~11k tokens of prompt, a 24,576-token threshold
   # (32768 - 8192), deterministic `shake` before any summarization model, and no
   # speculative compaction competing for the one inference slot.

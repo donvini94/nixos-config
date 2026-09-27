@@ -86,11 +86,9 @@ in
 
   # `pythonAttr` is e.g. "python313" or "python314". Returns that interpreter
   # with `torch` swapped for the CUDA wheel everywhere within its own package
-  # set (so anything depending on `torch` inside that scope, like
-  # `exllamav3`, resolves the CUDA-enabled one automatically). `torchvision`/
-  # `torchaudio` are redirected to their own `-bin` wheel builds too — the
-  # from-source `torchvision` needs `torch.cxxdev`, a dev-output split that
-  # only the from-source `torch` has, and would otherwise drag in a real
+  # set. `torchvision`/`torchaudio` are redirected to their own `-bin` wheel
+  # builds — from-source `torchvision` needs `torch.cxxdev`, a dev-output split
+  # that only the from-source `torch` has, and would otherwise drag in a real
   # C++/CUDA compile the moment anything (e.g. `accelerate`'s build inputs)
   # pulls it in transitively.
   pythonFor =

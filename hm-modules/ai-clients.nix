@@ -75,13 +75,10 @@ let
               supportsReasoningEffort = false;
               maxTokensField = "max_tokens";
             }
-            # Froggeric's v22.5 template reads thinking from the request body, not from
-            # `reasoning_effort`: without `thinkingFormat = "qwen"` every level below the
-            # template's own default still generated at that default, and `--thinking off`
-            # produced a full reasoning block. `requiresEffort = false` is what lets `off`
-            # send `enable_thinking: false` instead of being clamped to the lowest effort.
-            # The ladder stops at `high` because this template maps OMP's `high` onto its
-            # internal xhigh; `xhigh`/`max` would only be slower, not deeper.
+            # Swift's embedded template reads `enable_thinking` and `reasoning_effort`
+            # directly from the request body. `thinkingFormat = "qwen"` sends those fields;
+            # `requiresEffort = false` keeps `--thinking off` as `enable_thinking: false`
+            # instead of clamping it to the lowest reasoning level.
             // lib.optionalAttrs (profile.provider == localProfile.provider) {
               thinkingFormat = "qwen";
               qwenTemplateReasoningEffort = true;
@@ -107,7 +104,7 @@ let
   yaml = pkgs.formats.yaml { };
   # `smol` backs session titles and prewalk, so both hosts point it at the Requesty
   # ingress's cheap default rather than dracula's local model: the role must not break
-  # whenever TabbyAPI is down.
+  # whenever llama.cpp is down.
   smolModel = modelSelector requestyProfile requestyProfile.defaultModel;
   omp = pkgs.callPackage ../packages/omp-harness.nix {
     extraEnabledModels = profileModels;
