@@ -131,6 +131,8 @@ Then create `hosts/newhost/` with `default.nix` (imports shared modules), `hardw
 - `zed.nix` — Zed settings + keymap (shared; JSONC copied verbatim)
 - `helix.nix`, `kitty.nix`, `mpv.nix`, `starship.nix`, `yazi.nix`, `zathura.nix`, `zellij.nix`, `doom.nix` — Per-tool configs
 - `transcription.nix` — Dictation keybind scripts, meeting recorder, templated user units
+- `mail-hub.nix` — alucard only: the one notmuch mail hub (mbsync, tagging, mail-derived `~/org` files)
+- `email.nix` — Desktop notmuch replica: `muchsync` with alucard every 5 min + msmtp (see `mail/README.md`)
 
 ### Desktop Shell
 Caelestia-shell (Quickshell-based) provides: bar, notifications, lock screen, wallpaper, launcher, OSD, session management. It starts as a systemd service on `graphical-session.target`. The Hyprland config in `hm-modules/hyprland.nix` only handles core WM behavior (keybinds, layouts, window rules) — all shell/theming is delegated to caelestia.
@@ -244,8 +246,9 @@ Still deliberately stateful on that host, each for a stated reason:
 - **`~/.gnupg` and the `pass` store** — `pass` and `pinentry-mac` stay Homebrew formulae;
   moving them pulls a second gnupg into agent-socket territory and `hm-modules/git.nix`
   signs with `signing.format = "openpgp"`.
-- **The mail stack** (`isync`/`msmtp`/`mu`/`notmuch` + `mail/mac/`) and Doom's
-  `~/.config/emacs` checkout.
+- **The mail stack** (`msmtp`/`mu`/`notmuch` + `mail/mac/`) and Doom's
+  `~/.config/emacs` checkout. The Mac is a muchsync replica of the alucard mail hub;
+  only `muchsync` itself comes from nix. See `mail/README.md`.
 
 ## Working practices for this repo
 

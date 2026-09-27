@@ -1491,10 +1491,10 @@ Replaces pdf-tools with a modern reader supporting PDF, EPUB, MOBI, FB2, XPS, CB
 
 * Email (notmuch)
 
-Stack: mbsync (IMAP sync) → ~/Maildir → notmuch (Xapian index) → notmuch.el (Emacs UI) → msmtp (send).
-Tagging pipeline lives in ~~/.local/bin/mail-sync~ — a pure-shell script that
-runs ~mbsync -a → notmuch new → notmuch tag (one invocation per rule)~. See
-that script for the rule chain and order; rules are intentionally explicit
+Stack: the alucard mail hub runs mbsync (IMAP) → notmuch → tag pipeline; this host is a
+muchsync replica of the hub's Maildir + notmuch database (identical mail and tags) and
+sends with msmtp. Architecture and invariants: ~nixos-config/mail/README.md~. The tag
+rules live in ~mail/bin/mail-sync~ (hub only); they are intentionally explicit shell
 rather than declarative-via-framework.
 
 Tag taxonomy and triage workflow are documented in
