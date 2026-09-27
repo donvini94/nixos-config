@@ -107,7 +107,7 @@
       // ── AI / Agent (SPC l) — Zed-native ──────────────────────
       "space l l": "agent::ToggleFocus",              // open/focus agent panel
       "space l n": "agent::NewThread",                // new conversation
-      "space l h": "agent::OpenHistory",              // thread history
+      "space l h": "agents_sidebar::ToggleThreadSwitcher", // thread history
       "space l m": "agent::CycleFavoriteModels",      // switch model
       "space l t": "agent::ToggleThinkingMode",       // thinking mode on/off
       "space l e": "agent::CycleThinkingEffort",      // thinking effort level
@@ -178,7 +178,7 @@
     "context": "AgentPanel",
     "bindings": {
       "ctrl-n": "agent::NewThread",
-      "ctrl-h": "agent::OpenHistory",
+      "ctrl-h": "agents_sidebar::ToggleThreadSwitcher",
       "ctrl-m": "agent::CycleFavoriteModels",
     },
   },

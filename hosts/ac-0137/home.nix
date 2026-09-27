@@ -1,5 +1,21 @@
 { pkgs, username, ... }:
 
+let
+  linear-cli = pkgs.stdenvNoCC.mkDerivation {
+    pname = "linear-cli";
+    version = "2.6.0";
+    src = pkgs.fetchurl {
+      url = "https://github.com/schpet/linear-cli/releases/download/v2.6.0/linear-aarch64-apple-darwin.tar.xz";
+      hash = "sha256-uavdS1rsFEWeQ0oomSA3V96K6EfwVerk8frue7H7wHg=";
+    };
+    installPhase = ''
+      runHook preInstall
+      install -Dm755 linear "$out/bin/linear"
+      runHook postInstall
+    '';
+  };
+in
+
 {
   imports = [
     ../../hm-modules/git.nix
@@ -50,6 +66,7 @@
 
   # The system baseline that dracula gets from configuration.nix / modules/packages.nix.
   home.packages = with pkgs; [
+    linear-cli
     ripgrep
     fd
     bat

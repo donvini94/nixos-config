@@ -36,12 +36,12 @@ parent session before the child's first prompt.
 
 ** How it differs from the two things it gets confused with
 
-| Layer | Fires when | Resident cost | Gives you |
-|-------+------------+---------------+-----------|
-| Template / linter | every build | zero tokens | mechanical enforcement, no judgment |
-| Rule | a matching file is touched, or a pattern is typed | one prompt line | judgment, inside my context |
-| Skill | I read it on demand | one metadata line | procedure, inside my context |
-| Agent | I dispatch it | a subprocess | judgment from *outside* my context |
+| Layer             | Fires when                                        | Resident cost     | Gives you                           |
+|-------------------+---------------------------------------------------+-------------------+-------------------------------------|
+| Template / linter | every build                                       | zero tokens       | mechanical enforcement, no judgment |
+| Rule              | a matching file is touched, or a pattern is typed | one prompt line   | judgment, inside my context         |
+| Skill             | I read it on demand                               | one metadata line | procedure, inside my context        |
+| Agent             | I dispatch it                                     | a subprocess      | judgment from *outside* my context    |
 
 The decision test follows from the table. *Use an agent when fresh context or isolation is
 the point.* If the value you want is domain knowledge, that is a rule or a skill, and an

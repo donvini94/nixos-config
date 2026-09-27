@@ -68,10 +68,20 @@ let
   mcpConfig = {
     "$schema" =
       "https://raw.githubusercontent.com/can1357/oh-my-pi/main/packages/coding-agent/src/config/mcp-schema.json";
-    mcpServers.nixos = {
-      type = "stdio";
-      command = lib.getExe pkgs.mcp-nixos;
-      args = [ ];
+    mcpServers = {
+      nixos = {
+        type = "stdio";
+        command = lib.getExe pkgs.mcp-nixos;
+        args = [ ];
+      };
+      # Linear's own hosted remote server (linear.app/docs/mcp), not a local
+      # process: streamable HTTP + OAuth 2.1 with dynamic client registration.
+      # First connection from any OMP session prompts an interactive login;
+      # the resulting token is stored by OMP's own auth storage, not here.
+      linear = {
+        type = "http";
+        url = "https://mcp.linear.app/mcp";
+      };
     };
   };
 in
