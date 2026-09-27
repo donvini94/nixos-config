@@ -131,7 +131,12 @@ in
         "read.${domain2}" = proxy 8083 // {
           extraConfig = "client_max_body_size 2g;";
         };
-        "mail.${domain2}" = proxy 880;
+        # CRS treats CalDAV verbs (PROPFIND/REPORT/PUT) as attacks. Exempt only
+        # SOGo's authenticated DAV subtree; keep the web UI behind the WAF.
+        "mail.${domain2}" = wafOffExcept {
+          exempt."^~ /SOGo/dav/".proxyPass = "http://127.0.0.1:880";
+          catchAll.proxyPass = "http://127.0.0.1:880";
+        };
         "chat.${domain2}" = proxyWs 8065 // {
           extraConfig = ''
             # CRS default tx.allowed_methods (GET HEAD POST OPTIONS) has no

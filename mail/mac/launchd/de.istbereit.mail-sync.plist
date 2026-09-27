@@ -5,15 +5,14 @@
     <!--
       Mail sync + indexing pipeline. Runs every 5 minutes and at login.
       Invokes ~/.local/bin/mail-sync which does:
-        mbsync -a → notmuch new → bulk-killer → afew --tag --new
-      See that script for the rationale on why bulk-killer runs outside afew.
+        mbsync -a → notmuch new → tagging → dashboard follow-ups
 
       First run will trigger a pinentry-mac dialog for the GPG passphrase
       (because PassCmd in ~/.mbsyncrc decrypts ~/.authinfo.gpg). Once entered,
       gpg-agent caches it for 2h (configured in ~/.gnupg/gpg-agent.conf).
     -->
     <key>Label</key>
-    <string>de.amiconsult.mbsync</string>
+    <string>de.istbereit.mail-sync</string>
 
     <key>ProgramArguments</key>
     <array>
@@ -40,7 +39,7 @@
 
     <key>EnvironmentVariables</key>
     <dict>
-        <!-- mbsync calls gpg (PassCmd) and possibly pizauth — both need to be on PATH -->
+        <!-- mbsync calls gpg (PassCmd) to decrypt ~/.authinfo.gpg -->
         <key>PATH</key>
         <string>/Users/vincenzopace/.cargo/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
         <key>HOME</key>

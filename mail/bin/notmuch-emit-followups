@@ -41,10 +41,10 @@ emit_thread() {
     # *their* last message; waiting ages by *my* last outbound.
     if [ "$queue" = "owed" ]; then
         msg=$(notmuch search --output=messages --sort=newest-first --limit=1 \
-              "$tid AND NOT (from:vincenzo.pace94@icloud.com OR from:pace@amiconsult.de)")
+              "$tid AND NOT from:vincenzo@istbereit.de")
     else
         msg=$(notmuch search --output=messages --sort=newest-first --limit=1 \
-              "$tid AND (from:vincenzo.pace94@icloud.com OR from:pace@amiconsult.de)")
+              "$tid AND from:vincenzo@istbereit.de")
         [ -z "$msg" ] && msg=$(notmuch search --output=messages --sort=newest-first --limit=1 "$tid")
     fi
     [ -z "$msg" ] && return

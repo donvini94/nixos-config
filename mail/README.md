@@ -5,9 +5,8 @@ configuration on both macOS and NixOS (see *Deploy* below).
 
 The Emacs-side configuration (notmuch UI, dashboard, agenda integration)
 lives in `../doom/config.org` under the `Email (notmuch)` section. The
-tag taxonomy, query syntax, keybindings, and work-account activation
-checklist live in the org-roam reference doc at
-`~/org/roam/reference/<date>-notmuch.org`.
+tag taxonomy and query syntax live in the org-roam reference note
+`~/org/roam/reference/20260604093000-notmuch.org`.
 
 ## Layout
 
@@ -20,38 +19,35 @@ mail/
 │   └── notmuch-snapshot-counts           # daily count baseline for the dashboard
 ├── config/                               # dotfiles ($HOME)
 │   ├── notmuch-config                    # notmuch DB + LISTUNSUB index
-│   ├── mbsyncrc                          # iCloud + (commented) M365
-│   └── msmtprc                           # iCloud + (commented) M365
-└── mac/                                  # macOS-only assets
-    ├── launchd/                          # ~/Library/LaunchAgents/
-    │   ├── de.amiconsult.mbsync.plist             # 5-min mail-sync trigger
-    │   └── de.amiconsult.notmuch-tag-dump.plist   # 03:00 daily dump+snapshot
-    └── IT-CONSENT-REQUEST.md             # M365 admin-consent request template
+│   ├── mbsyncrc                          # Bereit Mailcow IMAP; add channels for future accounts
+│   └── msmtprc                           # Bereit Mailcow SMTP; add sending identities alongside channels
+└── mac/                                  # macOS-only launchd assets
+    └── launchd/
+        ├── de.istbereit.mail-sync.plist          # 5-min mail-sync trigger
+        └── de.istbereit.notmuch-daily.plist      # 03:00 daily dump+snapshot
 ```
 
 ## Pipeline
 
 ```
 launchd/timer → mail-sync
-    ├── mbsync -a                # IMAP fetch (both accounts when active)
+    ├── mbsync -a                # IMAP fetch (Bereit; future business accounts)
     ├── notmuch new              # index; tags everything +new
-    ├── tag rules (top→bottom)   # customer/leadership (if ~/Maildir/work)
-    │                              + reading allowlist + personal noise
-    │                              + bulk killer + sent + inbox catch-all
+    ├── tag rules (top→bottom)   # reading allowlist + bulk + sent + inbox
     ├── notmuch-compute-state    # owed/reply + age buckets (clear+recompute)
     └── notmuch-emit-followups   # regenerate ~/org/mail-followups.org
 ```
 
-Work-specific tag rules (customers, leadership) are gated on the
-existence of `~/Maildir/work/`. They're inert on NixOS and on any Mac
-that hasn't yet activated the work account. See the activation
-checklist in the org-roam doc.
+Only `vincenzo@istbereit.de` is active. The Maildir and index contain business
+mail only. For each future business mailbox add an mbsync
+IMAPAccount/Store/Channel, msmtp account, and Emacs identity/Fcc mapping;
+then turn `notmuch-always-prompt-for-sender` back on for new messages.
 
 ## Deploy
 
 ### macOS
 
-Already deployed. Repo files are referenced via symlinks:
+Repo files are referenced via symlinks:
 
 | Location                                                | → repo path                       |
 |---------------------------------------------------------|-----------------------------------|
@@ -59,8 +55,27 @@ Already deployed. Repo files are referenced via symlinks:
 | `~/.notmuch-config`                                     | `mail/config/notmuch-config`      |
 | `~/.mbsyncrc`                                           | `mail/config/mbsyncrc`            |
 | `~/.msmtprc`                                            | `mail/config/msmtprc`             |
-| `~/Library/LaunchAgents/de.amiconsult.mbsync.plist`     | `mail/mac/launchd/...`            |
-| `~/Library/LaunchAgents/de.amiconsult.notmuch-tag-dump.plist` | `mail/mac/launchd/...`      |
+| `~/Library/LaunchAgents/de.istbereit.mail-sync.plist` | `mail/mac/launchd/...` |
+| `~/Library/LaunchAgents/de.istbereit.notmuch-daily.plist` | `mail/mac/launchd/...` |
+
+Before enabling the timer, edit the existing `~/.authinfo.gpg` in Emacs
+(EasyPG decrypts it on open and re-encrypts on save). Remove the iCloud
+`imap.mail.me.com` and `smtp.mail.me.com` entries, preserving unrelated
+credentials, and add:
+
+```text
+machine mail.istbereit.de login vincenzo@istbereit.de password YOUR_MAILBOX_PASSWORD
+```
+
+Use the Mailcow **mailbox password**, or a mailbox app password if one is
+configured for IMAP and SMTP. This is not a Mailcow API token. Both mbsync
+and msmtp read the same entry; keep the password on one line without spaces.
+Never put it in this repo or send it in chat. The old sync agents have been
+unloaded and their symlinks removed on this Mac. After saving the credential,
+run `mbsync bereit` to fetch the mailbox and inspect its Sent folder name
+(Fcc currently expects `Sent`). Run `~/.local/bin/mail-sync` to index and tag
+the messages; then load `~/Library/LaunchAgents/de.istbereit.mail-sync.plist`
+with `launchctl load`. The daily maintenance agent is already loaded.
 
 If a clean Mac ever needs setting up:
 
@@ -68,18 +83,18 @@ If a clean Mac ever needs setting up:
 REPO=$HOME/nixos-config
 ln -sf $REPO/mail/bin/mail-sync             $HOME/.local/bin/mail-sync
 ln -sf $REPO/mail/bin/notmuch-compute-state $HOME/.local/bin/notmuch-compute-state
-ln -sf $REPO/mail/bin/notmuch-emit-followups$HOME/.local/bin/notmuch-emit-followups
+ln -sf $REPO/mail/bin/notmuch-emit-followups $HOME/.local/bin/notmuch-emit-followups
 ln -sf $REPO/mail/bin/notmuch-snapshot-counts $HOME/.local/bin/notmuch-snapshot-counts
 
 ln -sf $REPO/mail/config/notmuch-config $HOME/.notmuch-config
 ln -sf $REPO/mail/config/mbsyncrc       $HOME/.mbsyncrc
 ln -sf $REPO/mail/config/msmtprc        $HOME/.msmtprc
 
-ln -sf $REPO/mail/mac/launchd/de.amiconsult.mbsync.plist           $HOME/Library/LaunchAgents/
-ln -sf $REPO/mail/mac/launchd/de.amiconsult.notmuch-tag-dump.plist $HOME/Library/LaunchAgents/
+ln -sf $REPO/mail/mac/launchd/de.istbereit.mail-sync.plist $HOME/Library/LaunchAgents/
+ln -sf $REPO/mail/mac/launchd/de.istbereit.notmuch-daily.plist $HOME/Library/LaunchAgents/
 
-launchctl load $HOME/Library/LaunchAgents/de.amiconsult.mbsync.plist
-launchctl load $HOME/Library/LaunchAgents/de.amiconsult.notmuch-tag-dump.plist
+launchctl load $HOME/Library/LaunchAgents/de.istbereit.mail-sync.plist
+launchctl load $HOME/Library/LaunchAgents/de.istbereit.notmuch-daily.plist
 ```
 
 ### NixOS — routine deploy
@@ -166,28 +181,10 @@ headless first runs.
 
 #### 3. `~/.authinfo.gpg`
 
-Generate an iCloud **app-specific password** at
-[appleid.apple.com](https://appleid.apple.com/) →
-*Sign-in and Security → App-Specific Passwords → Generate* (label it
-e.g. `notmuch on <host>`). Apple will only show it once.
-
-Then encrypt it:
-
-```sh
-cat > /tmp/authinfo <<'EOF'
-machine imap.mail.me.com login vincenzo.pace94@icloud.com password xxxx-xxxx-xxxx-xxxx
-EOF
-gpg --encrypt --recipient <your-keyid> --output ~/.authinfo.gpg /tmp/authinfo
-shred -u /tmp/authinfo
-
-# Verify:
-gpg --decrypt ~/.authinfo.gpg
-```
-
-**Why:** Apple ID passwords don't work over IMAP since 2017 — you must
-use an app-specific password. Encrypting it means no plaintext
-credential on disk, and the `PassCmd` in `mbsyncrc` pulls it through
-gpg-agent on every sync.
+Follow the macOS credential instructions above on each host. Edit
+`~/.authinfo.gpg` with Emacs EasyPG; keep only credentials you still use,
+including the `mail.istbereit.de` mailbox entry. The `PassCmd` and
+`passwordeval` read that entry without saving a plaintext copy to disk.
 
 #### 4. Apply the email module
 
@@ -207,7 +204,7 @@ which notmuch mbsync msmtp jq
 #### 5. Create the maildir + org parents
 
 ```sh
-mkdir -p ~/Maildir/personal ~/org
+mkdir -p ~/Maildir/bereit ~/org
 ```
 
 **Why:** mbsync's `Create Both` creates folders *inside* a maildir
@@ -219,21 +216,16 @@ classes of silent first-run failures.
 #### 6. First mbsync (interactive)
 
 ```sh
-mbsync personal
+mbsync bereit
 ```
 
 First invocation triggers gpg-agent which will prompt (via pinentry)
 for your GPG key passphrase. The passphrase is then cached for the
 session, so subsequent syncs are silent.
 
-**Verify:**
-
-```sh
-ls ~/Maildir/personal/INBOX/cur/ | head -5      # message files present
-```
-
-If it hangs on pinentry: `gpg --decrypt ~/.authinfo.gpg` directly to
-unstick the prompt and prime the cache.
+**Verify:** Check `~/Maildir/bereit/INBOX/cur/` or `new/` for fetched messages.
+If pinentry blocks, unlock the GPG key in Emacs and retry; do not print the
+decrypted credentials in the terminal.
 
 #### 7. Initialize notmuch
 
@@ -285,7 +277,7 @@ is local-only (and can't help if this machine's notmuch DB is wiped).
 
 ## Where things live operationally
 
-- Maildir root: `~/Maildir/` (subdirs `personal/`, optionally `work/`)
+- Maildir root: `~/Maildir/` (`bereit/` initially; one directory per future business account)
 - Notmuch xapian DB: `~/Maildir/.notmuch/`
 - Daily tag backup: `~/org/notmuch-tags.dump` (syncthing-replicated)
 - Daily count snapshots: `~/org/notmuch-counts/YYYY-MM-DD.csv`

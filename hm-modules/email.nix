@@ -4,9 +4,8 @@
 # this module installs them under $HOME, rewrites macOS paths for Linux, and replicates
 # the macOS launchd jobs as systemd user timers.
 #
-# The `Work` block in ~/.mbsyncrc and ~/.msmtprc stays commented out here, and mail-sync's
-# customer/leadership tag rules are gated on `[ -d ~/Maildir/work ]`, so no conditional is
-# needed in the nix.
+# All enabled accounts in ../mail/config/mbsyncrc are synchronized on NixOS too;
+# initially only the Bereit mailbox is configured.
 
 let
   mailDir  = ../mail;

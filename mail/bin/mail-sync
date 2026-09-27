@@ -2,7 +2,7 @@
 # Mail sync + tagging pipeline.
 #
 # Triggered every 5 minutes by:
-#   - macOS:  ~/Library/LaunchAgents/de.amiconsult.mbsync.plist
+#   - macOS:  ~/Library/LaunchAgents/de.istbereit.mail-sync.plist
 #   - NixOS:  systemd user timer (see hm-modules/email.nix)
 #
 # Pipeline:
@@ -25,35 +25,14 @@ export PATH
 log() { printf '[mail-sync %s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*"; }
 
 log "mbsync"
-mbsync -a
+mbsync -a || exit $?
 
 log "notmuch new"
 notmuch new
 
 log "tagging"
 
-# ============================================================================
-# Work / amiconsult rules — only fire when work mail is configured.
-#
-# Gate: existence of ~/Maildir/work/ (created by `mkdir -p` during work-account
-# activation; see the activation checklist in the org-roam reference doc).
-# Until then these rules don't exist for the pipeline, so the same script runs
-# unchanged on NixOS and on a Mac that hasn't activated work mail yet.
-# ============================================================================
-if [ -d "$HOME/Maildir/work" ]; then
-
-    # Customers — currently VAC + Metro. Add more as engagements come up.
-    notmuch tag +c/VAC -- \
-        'from:vacuumschmelze.com AND tag:new'
-
-    notmuch tag +c/Metro -- \
-        '(from:metro.de OR from:pwc.com) AND tag:new'
-
-    # Leadership = C-level communication at amiconsult (both directions).
-    notmuch tag +f/leadership -- \
-        '(from:uhrig@amiconsult.de OR from:weiler@amiconsult.de OR from:thurm@amiconsult.de OR from:hoerl@amiconsult.de OR from:lipphardt@amiconsult.de OR to:uhrig@amiconsult.de OR to:weiler@amiconsult.de OR to:thurm@amiconsult.de OR to:hoerl@amiconsult.de OR to:lipphardt@amiconsult.de) AND tag:new'
-
-fi
+# Mailbox-specific classification can be added here as business accounts grow.
 
 # ============================================================================
 # Universal terminal-state rules (run on both platforms).
@@ -66,22 +45,15 @@ fi
 notmuch tag +reading -new -- \
     '(from:compass@sailpoint.com OR from:brighttalk.com OR from:kuppingercole.com OR from:gartner.com) AND tag:new'
 
-# Personal noise — auto-emails I never want to triage. Kept findable via
-# search, just out of the way. Add new senders/subjects here as they emerge.
-notmuch tag -new -- \
-    '(subject:stadtmobil-Buchung OR from:no-reply@premiumsim.de) AND tag:new'
-
 # Bulk mail killer (List-Unsubscribe header carriers). The custom-indexed
 # LISTUNSUB prefix is defined in ~/.notmuch-config. Query matches on tokens
 # inside the unsubscribe URL/mailto — covers ~96% of real bulk mail.
 notmuch tag +bulk -new -- \
     '(LISTUNSUB:https OR LISTUNSUB:http OR LISTUNSUB:mailto) AND tag:new'
 
-# Sent-by-me: mail where I am in From: but not in To:. Tagged for the
-# "Sent (30d)" view, kept out of the inbox. The work address is harmless to
-# include here even when work mail isn't active — the query just matches 0.
+# Sent-by-me: mail where I am in From: but not in To:.
 notmuch tag +sent -new -- \
-    '(from:vincenzo.pace94@icloud.com OR from:pace@amiconsult.de) AND NOT (to:vincenzo.pace94@icloud.com OR to:pace@amiconsult.de) AND tag:new'
+    'from:vincenzo@istbereit.de AND NOT to:vincenzo@istbereit.de AND tag:new'
 
 # --- Default inbox: everything still tagged :new lands in :inbox -------------
 

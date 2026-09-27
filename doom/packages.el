@@ -9,6 +9,9 @@
   :recipe (:host github :repo "minad/org-modern"))
 (package! org-super-agenda)
 
+;; Two-way SOGo calendar sync for the dedicated Bereit Org agenda file.
+(package! org-caldav)
+
 ;; macOS: pull real PATH from the login shell (daemon launched by launchd gets
 ;; only the bare /usr/bin:/bin:... PATH, missing /opt/homebrew/bin etc.)
 (package! exec-path-from-shell)

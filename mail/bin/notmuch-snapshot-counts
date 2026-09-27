@@ -6,7 +6,7 @@
 # against "today's baseline" (this file) to surface "what arrived since the
 # start of the day".
 #
-# Invoked once per day at 03:00 by ~/Library/LaunchAgents/de.amiconsult.notmuch-tag-dump.plist.
+# Invoked once per day at 03:00 by ~/Library/LaunchAgents/de.istbereit.notmuch-daily.plist.
 # Safe to re-run: writes only if today's file doesn't already exist.
 
 set -u
@@ -29,7 +29,7 @@ fi
 
 # Tags worth tracking on the dashboard. Order shown left-to-right in the
 # delta line. Add tags here as they earn the dashboard real estate.
-TAGS="inbox owed/reply s/waiting s/follow-up reading sent bulk c/VAC c/Metro f/leadership f/partner f/sales t/IGA t/AI"
+TAGS="inbox owed/reply s/waiting s/follow-up reading sent bulk f/partner f/sales t/IGA t/AI"
 
 {
     printf 'tag,count\n'

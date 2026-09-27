@@ -21,7 +21,7 @@ set -u
 PATH=$HOME/.local/bin:/opt/homebrew/bin:/run/current-system/sw/bin:/usr/bin:/bin
 export PATH
 
-ME='(from:vincenzo.pace94@icloud.com OR from:pace@amiconsult.de)'
+ME='from:vincenzo@istbereit.de'
 NOW=$(date +%s)
 
 log() { printf '[compute-state %s] %s\n' "$(date '+%H:%M:%S')" "$*"; }
