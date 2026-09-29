@@ -60,10 +60,27 @@ let
       inherit cudaCapabilities;
     };
     overlays = [
+      # UPSTREAM DEFECT: nixpkgs' default cudaPackages is 12.x and torch-bin asserts
+      # CUDA >= 13. Remove once the default cudaPackages is 13 or newer.
       (_final: prev: {
         # torch-bin's wheel is built against CUDA >=13.0; this nixpkgs
         # revision's default cudaPackages is still 12.9.
-        cudaPackages = prev.cudaPackages_13;
+        cudaPackages = prev.cudaPackages_13.overrideScope (
+          _cfinal: cprev: {
+            # nixpkgs builds NVSHMEM's tests, examples and perftest (88 MiB of
+            # bin/, most of the compile). torch only links lib/; nvshmem-info
+            # lives in src/ and is still built, so postFixup's references hold.
+            # Later -D wins in CMake, so appending overrides nixpkgs' `true`.
+            # UPSTREAM DEFECT: libnvshmem.nix hardcodes both flags to true. Remove once
+            # nixpkgs gates tests/examples behind an argument.
+            libnvshmem = cprev.libnvshmem.overrideAttrs (old: {
+              cmakeFlags = old.cmakeFlags ++ [
+                (prev.lib.cmakeBool "NVSHMEM_BUILD_TESTS" false)
+                (prev.lib.cmakeBool "NVSHMEM_BUILD_EXAMPLES" false)
+              ];
+            });
+          }
+        );
       })
     ];
   };
@@ -73,6 +90,8 @@ let
   # through the new fixpoint for anything other than itself.
   cudaTorch =
     pythonPackages:
+    # UPSTREAM DEFECT: torch-bin exposes no passthru.cudaSupport, so consumers treat the
+    # CUDA wheel as CPU-only. Remove once nixpkgs' torch-bin passthru carries it.
     pythonPackages.torch-bin.overrideAttrs (old: {
       passthru = (old.passthru or { }) // {
         cudaSupport = true;
