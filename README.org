@@ -332,7 +332,10 @@ nix flake show
   script's =EXCEPTIONS= table (currently bun for omp-learn, mattermost-desktop's
   =koffi.node=, and the CUDA-13 torch wheel in =lib/cuda-torch.nix=). Listing a file exempts
   only mutations carrying an =# UPSTREAM DEFECT= comment in the three lines above them,
-  naming the failure and the removal condition.
+  naming the failure and the removal condition. Where that condition is visible at eval
+  time, the mutation sits behind a probe that emits =lib.warn= and falls back to the stock
+  package once upstream is fixed (bun, and all three in =lib/cuda-torch.nix=).
+  mattermost-desktop has no probe: its defect only shows at runtime.
 - =renovate.json= is configured to pin container digests and GitHub Action SHAs with
   =automerge: false=, so a reviewed Git commit is the only path a container image changes.
   Renovate is installed and [[https://github.com/donvini94/nixos-config/issues/1][Dependency Dashboard issue #1]] exists.

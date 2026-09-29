@@ -9,7 +9,8 @@ let
   # asar, so this native module is missed and the app dies on load with
   # "libstdc++.so.6: cannot open shared object file". Wrap the launcher with
   # LD_LIBRARY_PATH instead of patching the store output by hand.
-  # UPSTREAM DEFECT: remove once nixpkgs' mattermost-desktop patchelfs koffi.node.
+  # UPSTREAM DEFECT: remove once nixpkgs' mattermost-desktop patchelfs koffi.node. No
+  # eval-time probe: the missing runpath only shows when the app loads the module.
   mattermost-desktop = pkgs.mattermost-desktop.overrideAttrs (old: {
     nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ pkgs.makeWrapper ];
     postFixup = ''

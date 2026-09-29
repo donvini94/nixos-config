@@ -13,6 +13,12 @@
 #     `# UPSTREAM DEFECT` comment in the three lines above them, naming the live
 #     failure and the condition for removing it. Listing a file does not exempt
 #     the whole file: an unmarked mutation in it still fails.
+#
+# Where the removal condition is observable at eval time, the exception also carries
+# a probe: `if <upstream fixed> then lib.warn "…delete the override…" stock else
+# <mutation>`. The rebuild that picks up the upstream fix then says so and already
+# uses the stock package. This grep cannot check that the probe exists; it only
+# stops unmarked mutations.
 set -euo pipefail
 
 root=${1:-.}
