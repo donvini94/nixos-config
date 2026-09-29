@@ -21,6 +21,8 @@ status=0
 # path -> one-line justification. Keep this list empty whenever upstream allows.
 declare -A EXCEPTIONS=(
   ["hm-modules/cli-tools.nix"]="omp-learn needs bun >= 1.3.14; nixpkgs ships 1.3.13"
+  ["hm-modules/packages.nix"]="mattermost-desktop's koffi.node has no runpath to libstdc++"
+  ["lib/cuda-torch.nix"]="torch-bin needs cudaPackages_13; its passthru lacks cudaSupport; libnvshmem builds tests"
 )
 
 fail() {
