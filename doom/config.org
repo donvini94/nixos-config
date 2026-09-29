@@ -599,6 +599,60 @@ ty is Astral's Rust-based Python type checker and language server (from the Ruff
       '((sequence "TODO(t)" "NEXT(n)" "HOLD(h)" "WAITING(w)" "|" "DONE(d)")))
 #+end_src
 
+** Org Crypt
+Body text under any heading tagged =:crypt:= is GPG-encrypted on every save
+(the =+crypt= flag on =:lang org= in =init.el= installs the before-save hook and
+stops =crypt= inheriting to child headings). The headline, its tags and its
+property drawer stay plaintext, so a secret never goes there.
+
+Workflow: create the heading with =:crypt:= first, save, then type the secret
+and save again. Decrypt with =M-x org-decrypt-entry= (or =org-decrypt-entries=
+for the whole buffer); after each save the entry is ciphertext in the buffer too.
+
+The Mac and dracula have the same unprotected GPG secret key; neither needs
+a passphrase prompt. alucard is not an editing host and has no secret key, so
+it cannot decrypt entries synced there. Protect device access and backups:
+possession of that secret key is sufficient to read every encrypted entry.
+
+Plaintext has two ways onto disk besides the file itself: undo-tree persists the
+undo history (which holds every typed character) to =undo-tree-hist/= on save
+and on buffer kill, and auto-save writes the live buffer. Both are switched off
+per buffer as soon as it contains a =:crypt:= heading — on open, and again at
+every save so a newly tagged heading is covered before the first write.
+#+begin_src emacs-lisp
+(after! org-crypt
+  ;; Doom defaults this to nil, which forces symmetric (passphrase-per-entry)
+  ;; encryption. Encrypt to the main key instead; a heading can still override
+  ;; it with a CRYPTKEY property.
+  (setq org-crypt-key "4475AC365BEA2ADCFCB6D334E380C2D2C6ABD84F"
+        ;; Decrypting with auto-save on leaks plaintext to the auto-save file;
+        ;; switch it off for that buffer instead of asking every time.
+        org-crypt-disable-auto-save t))
+
+(defun my/org-crypt-buffer-p ()
+  "Non-nil if the current buffer has a heading tagged :crypt:."
+  (save-excursion
+    (save-restriction
+      (widen)
+      (goto-char (point-min))
+      (let ((case-fold-search nil))
+        (re-search-forward "^\\*+ .*:crypt:" nil t)))))
+
+(defun my/org-crypt-harden-buffer ()
+  "Keep the plaintext of :crypt: entries out of undo-tree history and auto-save files."
+  (when (and buffer-file-name (my/org-crypt-buffer-p))
+    (setq-local undo-tree-auto-save-history nil)
+    (when buffer-auto-save-file-name
+      (auto-save-mode -1))))
+
+;; org-mode-hook runs before find-file-hook, so undo-tree never loads a stale
+;; history file for these buffers either.
+(add-hook 'org-mode-hook
+          (lambda ()
+            (my/org-crypt-harden-buffer)
+            (add-hook 'before-save-hook #'my/org-crypt-harden-buffer nil t)))
+#+end_src
+
 ** Org Roam
 #+begin_src emacs-lisp
 (use-package! org-roam

@@ -76,7 +76,7 @@
  (latex +cdlatex)                      ; fast math/environment input with cdlatex
  markdown
  (nix +lsp +tree-sitter)                  ; Nix with nixd LSP and tree-sitter
- (org +dragndrop +pomodoro +roam)      ; organize your plain life in plain text
+ (org +crypt +dragndrop +pomodoro +roam) ; organize your plain life in plain text
  (python +lsp +tree-sitter)            ; Python with ty (Astral's Rust-based LSP)
  (rust +lsp +tree-sitter)              ; Fe2O3.unwrap().unwrap().unwrap().unwrap()
  (sh +lsp +tree-sitter)                ; she sells {ba,z,fi}sh shells on the C xor

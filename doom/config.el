@@ -530,6 +530,40 @@
       '((sequence "TODO(t)" "NEXT(n)" "HOLD(h)" "WAITING(w)" "|" "DONE(d)")))
 ;; General Settings:1 ends here
 
+;; [[file:config.org::*Org Crypt][Org Crypt:1]]
+(after! org-crypt
+  ;; Doom defaults this to nil, which forces symmetric (passphrase-per-entry)
+  ;; encryption. Encrypt to the main key instead; a heading can still override
+  ;; it with a CRYPTKEY property.
+  (setq org-crypt-key "4475AC365BEA2ADCFCB6D334E380C2D2C6ABD84F"
+        ;; Decrypting with auto-save on leaks plaintext to the auto-save file;
+        ;; switch it off for that buffer instead of asking every time.
+        org-crypt-disable-auto-save t))
+
+(defun my/org-crypt-buffer-p ()
+  "Non-nil if the current buffer has a heading tagged :crypt:."
+  (save-excursion
+    (save-restriction
+      (widen)
+      (goto-char (point-min))
+      (let ((case-fold-search nil))
+        (re-search-forward "^\\*+ .*:crypt:" nil t)))))
+
+(defun my/org-crypt-harden-buffer ()
+  "Keep the plaintext of :crypt: entries out of undo-tree history and auto-save files."
+  (when (and buffer-file-name (my/org-crypt-buffer-p))
+    (setq-local undo-tree-auto-save-history nil)
+    (when buffer-auto-save-file-name
+      (auto-save-mode -1))))
+
+;; org-mode-hook runs before find-file-hook, so undo-tree never loads a stale
+;; history file for these buffers either.
+(add-hook 'org-mode-hook
+          (lambda ()
+            (my/org-crypt-harden-buffer)
+            (add-hook 'before-save-hook #'my/org-crypt-harden-buffer nil t)))
+;; Org Crypt:1 ends here
+
 ;; [[file:config.org::*Org Roam][Org Roam:1]]
 (use-package! org-roam
   :after org
