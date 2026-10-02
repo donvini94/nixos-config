@@ -7,9 +7,7 @@
 let
   isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
 
-  # mpv's wrapper loads $out/share/mpv/scripts/<passthru.scriptName>. A fresh derivation
-  # rather than a mutation of a nixpkgs package, which check-no-package-patches.sh forbids
-  # repository-wide.
+  # mpv's wrapper loads $out/share/mpv/scripts/<passthru.scriptName>.
   keepawake =
     pkgs.runCommandLocal "mpv-keepawake-caffeinate"
       {

@@ -1,7 +1,7 @@
 {
   defaultModel = "deepseek/deepseek-v4.1-flash";
 
-  # Costs are USD per million tokens and are surfaced in OMP's model metadata.
+  # Costs are USD per million tokens.
   models = {
     "deepseek/deepseek-v4.1-flash" = {
       name = "DeepSeek V4.1 Flash — cheap default";

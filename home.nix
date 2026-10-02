@@ -33,7 +33,6 @@
     ./hm-modules/claude.nix
     ./hm-modules/omp.nix
     ./hm-modules/lsp.nix
-    ./hm-modules/ai-clients.nix
     ./hm-modules/pi.nix
     ./hm-modules/agent-skills.nix
     ./hm-modules/zotero-cli.nix
@@ -57,6 +56,8 @@
 
   fonts.fontconfig.enable = true;
   programs.home-manager.enable = true;
+  programs.ompClient.enable = true;
+  programs.piClient.enable = true;
 
   xdg.mimeApps.defaultApplications = {
     "application/pdf" = [ "zathura.desktop" ];

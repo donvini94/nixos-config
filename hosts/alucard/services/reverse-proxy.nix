@@ -139,16 +139,8 @@ in
         };
         "chat.${domain2}" = proxyWs 8065 // {
           extraConfig = ''
-            # CRS default tx.allowed_methods (GET HEAD POST OPTIONS) has no
-            # PUT/DELETE/PATCH. Mattermost's REST API needs all three for
-            # per-user writes (theme/preferences, profile patch, drafts) --
-            # every one scored a single CRITICAL 911100 hit ("Method is not
-            # allowed by policy") and got 403'd before reaching Mattermost.
-            # A setvar override here would run too late: modsecurity_rules at
-            # server/location scope merges in *after* the inherited http-level
-            # ruleset, so it can't set tx.allowed_methods before 911100
-            # (rules/*.conf, loaded at http level) already evaluated it. Rule
-            # removal is config-time and order-independent, so this works.
+            # Mattermost needs PUT/DELETE/PATCH. A server-level setvar runs after
+            # the inherited method check; removing that check is order-independent.
             modsecurity_rules 'SecRuleRemoveById 911100';
           '';
         };

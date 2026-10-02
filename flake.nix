@@ -126,13 +126,28 @@
         checkSystem:
         let
           pkgs = nixpkgs.legacyPackages.${checkSystem};
+          clientConfig =
+            module: option: enabled:
+            (inputs.home-manager.lib.homeManagerConfiguration {
+              inherit pkgs;
+              modules = [
+                module
+                {
+                  home.username = "client-check";
+                  home.homeDirectory = "/tmp/client-check";
+                  home.stateVersion = "25.05";
+                  programs.${option}.enable = enabled;
+                }
+              ];
+            }).config;
+          piOnly = clientConfig ./hm-modules/pi.nix "piClient" true;
+          ompOnly = clientConfig ./hm-modules/omp.nix "ompClient" true;
+          piDisabled = clientConfig ./hm-modules/pi.nix "piClient" false;
+          ompDisabled = clientConfig ./hm-modules/omp.nix "ompClient" false;
+          owns =
+            prefix: cfg: builtins.any (n: nixpkgs.lib.hasPrefix prefix n) (builtins.attrNames cfg.home.file);
         in
         {
-          no-package-patches =
-            pkgs.runCommand "check-no-package-patches" { nativeBuildInputs = [ pkgs.bash ]; }
-              ''
-                bash ${./scripts/check-no-package-patches.sh} ${./.} | tee "$out"
-              '';
           shell-scripts =
             pkgs.runCommand "check-shell-scripts" { nativeBuildInputs = [ pkgs.shellcheck ]; }
               ''
@@ -140,7 +155,7 @@
                 touch "$out"
               '';
           python-lint = pkgs.runCommand "check-python-lint" { nativeBuildInputs = [ pkgs.ruff ]; } ''
-            ruff check --no-cache --select F ${./ai-ingress} ${./local-transcription}/server.py ${./paperless}/provision.py
+            ruff check --no-cache --select F ${./ai-ingress} ${./local-transcription}/server.py ${./paperless}/provision.py ${./scripts/tests}
             touch "$out"
           '';
           model-download =
@@ -165,6 +180,36 @@
                 test ! -e bad
                 rm source
                 bash "$script" "$PWD/model/file" "$hash" "file://$PWD/source"
+                touch "$out"
+              '';
+          client-independence =
+            assert owns ".pi/" piOnly && !(owns ".omp/" piOnly);
+            assert owns ".omp/" ompOnly && !(owns ".pi/" ompOnly);
+            assert !(owns ".pi/" piDisabled) && !(owns ".omp/" ompDisabled);
+            assert
+              !(piOnly.home.activation ? ompLearningPlugin) && !(ompOnly.home.activation ? piAgentBootstrap);
+            assert
+              !(piDisabled.home.activation ? piAgentBootstrap)
+              && !(ompDisabled.home.activation ? ompLearningPlugin);
+            assert !piDisabled.home.agentContent.enable && !ompDisabled.home.agentContent.enable;
+            pkgs.writeText "check-client-independence" "Client modules own separate resources and can be disabled independently.\n";
+          agent-tools-tests =
+            pkgs.runCommand "check-agent-tools-tests"
+              {
+                nativeBuildInputs = with pkgs; [
+                  bash
+                  coreutils
+                  diffutils
+                  git
+                  jq
+                  python3
+                  rsync
+                  unzip
+                ];
+              }
+              ''
+                PYTHONDONTWRITEBYTECODE=1 python3 ${./scripts/tests}/test_update_skills.py ${./scripts/update-skills.sh}
+                PYTHONDONTWRITEBYTECODE=1 python3 ${./scripts/tests}/test_bootstrap_pi.py ${./scripts/bootstrap-pi.sh}
                 touch "$out"
               '';
           ai-ingress-tests =

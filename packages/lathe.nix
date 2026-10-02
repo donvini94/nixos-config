@@ -1,14 +1,5 @@
-# Not in nixpkgs, and upstream ships a Homebrew *cask* for macOS plus a `curl | sh`
-# script for Linux; neither is usable here. It is plain Go with CGO off and no asset
-# pipeline (upstream .goreleaser.yaml), so buildGoModule reproduces the release binary
-# exactly, including the version stamp the UI shows.
-#
-# The skills are embedded in the binary and written out by `lathe skills install`, whose
-# targets are agent-specific directories — there is no OMP target. So the build asks the
-# binary for its own skills and stages them under share/, and hm-modules/omp.nix links
-# each one into ~/.omp/agent/skills/<name>/. Running the binary rather than copying
-# .claude/skills/ out of the source tree keeps this correct if upstream changes where the
-# embedded copies live.
+# Stage the binary's embedded skills under share/ for agent-skills.nix.
+# Extracting them with the release binary keeps their content aligned with the CLI.
 {
   buildGoModule,
   fetchFromGitHub,
@@ -67,7 +58,7 @@ buildGoModule (finalAttrs: {
       echo "lathe skills changed upstream:" >&2
       echo "  binary ships: $installed" >&2
       echo "  packages/lathe.nix declares: $declared" >&2
-      echo "Update passthru.skillNames (hm-modules/omp.nix links each name)." >&2
+      echo "Update passthru.skillNames (agent-skills.nix links each name)." >&2
       exit 1
     fi
     mkdir -p "$out/share/lathe"

@@ -7,10 +7,11 @@
 }:
 
 let
-  hostname = osConfig.networking.hostName;
-  isDracula = hostname == "dracula";
-  isRemote = osConfig.services.remoteOpenAI.enable;
-  active = isDracula || isRemote;
+  hostname = osConfig.networking.hostName or "";
+  isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
+  isDracula = !isDarwin && hostname == "dracula";
+  isRemote = !isDarwin && (osConfig.services.remoteOpenAI.enable or false);
+  active = config.programs.ompClient.enable && (isDracula || isRemote);
   localProfile = {
     endpoint = "http://127.0.0.1:8080/v1";
     provider = "dracula-local";

@@ -7,7 +7,7 @@ globs:
 ---
 # Python
 
-Sourced from `omp/research/PythonCraft.md` — Schlawack, Cannon, Willison, Ronacher,
+Sourced from `guidance/research/PythonCraft.md` — Schlawack, Cannon, Willison, Ronacher,
 Hettinger, plus the PEP, `ruff`, `uv`, stdlib and OWASP primaries. Deliberate overrides of
 those sources are marked below.
 
@@ -47,7 +47,7 @@ anything with a fixed set of fields. Not `dict`, not `tuple`, not `dataclasses.d
 not `attrs`. Config via `pydantic-settings`. One library, so there is never a per-file
 "which one here" decision to get wrong.
 
-Schlawack argues in `omp/research/PythonCraft.md` that pydantic is a validation and
+Schlawack argues in `guidance/research/PythonCraft.md` that pydantic is a validation and
 coercion library, and that modelling domain objects with it means re-validating trusted data
 and letting the wire shape apply design pressure to business logic. His objection is
 correct, and it is answered by mechanism rather than by a second library:
@@ -152,7 +152,7 @@ does — the types carry that.
 
 ## Scaffolding a new project
 
-**Copy `omp/templates/python/`. Do not hand-roll the config.** It is verified end to end
+**Copy `templates/python/`. Do not hand-roll the config.** It is verified end to end
 against uv 0.12, ruff 0.16, mypy strict and Python 3.14: `uv sync`, `ruff check`,
 `ruff format --check`, `mypy src tests` and `pytest` all pass on a fresh copy, and the lint
 selection was confirmed to reject a bare `except`, a hardcoded secret, `subprocess.run`

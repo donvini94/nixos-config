@@ -6,7 +6,7 @@
 }:
 
 # Shared skills are writable repo links; sources.json records vendored origins.
-# Use agent-update, not npx skills update (which would write through the links).
+# update-skills refreshes only vendored sources; native client package managers own plugins.
 # Pi opts out of this tree in its own settings.
 let
   repo = "${config.home.homeDirectory}/nixos-config/skills";
@@ -28,30 +28,26 @@ let
     "linear-cli"
     "zotero-cli"
   ];
-  agentUpdate = pkgs.writeShellApplication {
-    name = "agent-update";
+  updateSkills = pkgs.writeShellApplication {
+    name = "update-skills";
     runtimeInputs = with pkgs; [
       coreutils
       curl
       diffutils
       git
-      gnugrep
-      gnused
       jq
-      nodejs
+      nix
       rsync
       unzip
     ];
-    text = builtins.readFile ../scripts/agent-update.sh;
+    text = builtins.readFile ../scripts/update-skills.sh;
   };
-
-  managedNames = [
-    "calendar-to-org-agenda"
-    "meeting-minutes"
-  ];
 in
 {
-  home.packages = [ agentUpdate ];
+  home.packages = [
+    updateSkills
+    lathe
+  ];
 
   home.file =
     lib.listToAttrs (
@@ -65,11 +61,5 @@ in
         name = ".agents/skills/${name}";
         value.source = "${lathe}/share/lathe/skills/${name}";
       }) lathe.skillNames
-    )
-    // lib.listToAttrs (
-      map (name: {
-        name = ".omp/agent/managed-skills/${name}";
-        value.source = link "${repo}/managed/${name}";
-      }) managedNames
     );
 }

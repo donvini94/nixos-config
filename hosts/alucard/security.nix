@@ -253,8 +253,7 @@ in
     ];
     ExecStartPost = lib.mkForce [ ];
   };
-  # `Z` repairs ownership from the module's earlier DynamicUser migration, preserving
-  # modes; the `r` globs prune the stale `L+` links described above.
+  # Preserve file modes while enforcing ownership; remove links to immutable hub entries.
   systemd.tmpfiles.rules = [
     "Z /var/lib/private/crowdsec - crowdsec crowdsec - -"
     "r /etc/crowdsec/parsers/s00-raw/*-parsers-s00-raw.yaml"

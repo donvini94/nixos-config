@@ -1,29 +1,6 @@
-# Host-independent OMP settings — the single source of truth for every device.
-#
-# This file exists because "set it by hand on each box" is what produced the drift it
-# replaced: dracula and alucard got a generated overlay, the Mac got hand-typed values,
-# and the two silently diverged.
-#
-# It is consumed twice:
-#   * dracula, alucard — packages/omp-harness.nix imports this attrset and merges it into
-#     the generated `PI_CONFIG_FILES` overlay.
-#   * AC-0137 — hosts/ac-0137/omp.nix renders it to YAML and points `PI_CONFIG_FILES` at
-#     the result. The harness binary there is the self-updating bun install, so only the
-#     config overlay is declared, not a wrapper.
-#
-# Nix, not YAML, is the authored form: nix is the only reader that cannot be taught a new
-# format, and rendering nix -> YAML/JSON is a one-liner while parsing YAML in nix needs IFD.
-#
-# ONLY genuinely universal settings belong here. Anything that names a provider-scoped
-# model id, or that legitimately differs per host, stays out:
-#   * `modelRoles`  — model ids differ per host (Requesty ingress vs Anthropic direct)
-#   * `cycleOrder`  — depends on which roles that account actually has
-#   * `tools.approvalMode`   — dracula/alucard run `always-ask`, the Mac runs `yolo`
-#   * `startup.checkUpdate`  — false where nix owns the binary, true on the Mac where
-#                              `omp update` does
+# Shared OMP defaults; provider models, approvals and update policy are host-specific.
 {
-  # Retired or unreachable discovery/model sources. `claude` is a discovery source, not
-  # the Anthropic model provider; see packages/omp-harness.nix for why it is off.
+  # Disable automatic discovery; configured local models use the managed providers.
   disabledProviders = [
     "llama.cpp"
     "lm-studio"
@@ -33,46 +10,20 @@
 
   # Client tenant credentials pass through these sessions.
   secrets.enabled = true;
-
-  # A second model reviewing every turn is a cost decision, not a default.
   advisor.enabled = false;
-
-  # Keep installed marketplace plugins updated automatically at startup.
   marketplace.autoUpdate = "auto";
 
-  # Memory. `mnemopi` is the only backend that exposes the full tool set — `recall`,
-  # `retain`, `reflect` and `memory_edit` — without standing up a server; the `local`
-  # backend offers `learn` alone. Storage is a local SQLite bank per device under the
-  # agent memories directory, so memory accumulates per host and is NOT synced: SQLite
-  # under a file-sync tool corrupts, and per-project banks are keyed by a hash of the
-  # absolute working directory, which differs between /Users/vincenzopace and
-  # /home/vincenzo anyway. Shared cross-device memory needs the `hindsight` backend
-  # against a server, which is a separate decision.
+  # Mnemopi provides recall and explicit retention in per-device SQLite banks.
+  # Do not file-sync these databases; project identities contain absolute paths.
   memory.backend = "mnemopi";
-
   mnemopi = {
-    # Project work writes to its own bank; recall additionally sees the shared global
-    # bank, so durable general lessons surface everywhere without leaking client
-    # specifics between projects.
     scoping = "per-project-tagged";
-    # Resolve the `tiny` role then `smol` for Mnemopi's own LLM work, rather than
-    # billing consolidation at the session model.
     llmMode = "smol";
-    # No automatic transcript retention. Raw conversation chunks and the facts distilled
-    # from them were mostly task history and noise; memory grows only through deliberate
-    # `retain`/`learn` saves. Recall of those saves stays automatic. Past conversations
-    # are therefore not searchable; flip to true to get that back, at the cost of
-    # periodic bank cleanups.
+    # Save only deliberately retained facts, not raw conversation chunks.
     autoRetain = false;
   };
-
-  # Makes the `learn` tool available so a lesson can be captured deliberately instead of
-  # only being inferred from the transcript.
   autolearn.enabled = true;
 
-  # Interface. The same look and editing behaviour on every host, so a session feels
-  # identical on the Mac, dracula and alucard. These override the per-host user files
-  # (~/.omp/agent/config.yml), which is where the earlier drift came from.
   theme.dark = "titanium";
   symbolPreset = "unicode";
   statusLine = {

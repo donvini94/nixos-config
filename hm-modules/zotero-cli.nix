@@ -9,13 +9,12 @@
 # is vendored in skills/shared/zotero-cli and reaches every host through agent-skills.nix.
 #
 # The package is a `uv tool`, not a nix package, so the pinned version is installed idempotently.
-# `agent-update` bumps `version` together with the vendored skill.
 #
 # Per-host step Home Manager cannot do: approve the CLI once in the Zotero app with
 # `zotero-mcp authorize-local`. The granted key is stored in ~/.config/zotero-mcp and is never copied
 # between hosts.
 let
-  version = "0.13.1";
+  version = (builtins.fromJSON (builtins.readFile ../skills/sources.json)).skills.zotero-cli.version;
 in
 {
   home.activation.zoteroCli = lib.hm.dag.entryAfter [ "writeBoundary" ] ''

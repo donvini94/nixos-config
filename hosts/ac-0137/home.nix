@@ -22,7 +22,6 @@
     ../../hm-modules/zotero-cli.nix
     ./fish.nix
     ./apps.nix
-    ./omp.nix
   ];
 
   home = {
@@ -33,6 +32,8 @@
   };
 
   programs.home-manager.enable = true;
+  programs.ompClient.enable = true;
+  programs.piClient.enable = true;
 
   # Private host blocks stay outside Git; earlier SSH options win.
   programs.ssh.includes = [

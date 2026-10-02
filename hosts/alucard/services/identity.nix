@@ -1,6 +1,5 @@
 {
   config,
-  lib,
   pkgs,
   ...
 }:
@@ -26,42 +25,6 @@
       };
     };
   };
-
-  # Manual activation only.
-  systemd.services.keycloakExportRealms =
-    let
-      p = config.systemd.services.keycloak;
-    in
-    lib.mkIf config.services.keycloak.enable {
-      after = p.after;
-      before = [ "keycloak.service" ];
-      wantedBy = [ ];
-      environment = lib.mkForce p.environment;
-      serviceConfig =
-        let
-          origin = p.serviceConfig;
-        in
-        {
-          Type = "oneshot";
-          RemainAfterExit = true;
-          User = origin.User;
-          Group = origin.Group;
-          LoadCredential = origin.LoadCredential;
-          DynamicUser = origin.DynamicUser;
-          RuntimeDirectory = origin.RuntimeDirectory;
-          RuntimeDirectoryMode = origin.RuntimeDirectoryMode;
-          AmbientCapabilities = origin.AmbientCapabilities;
-          StateDirectory = "keycloak";
-          StateDirectoryMode = "0750";
-        };
-      script = ''
-        set -euo pipefail
-        export_dir="/var/lib/keycloak/$(date '+%Y-%m-%d_%H-%M-%S')"
-        mkdir -p "$export_dir"
-        kc.sh export --dir="$export_dir"
-        echo "Keycloak export completed successfully to: $export_dir"
-      '';
-    };
 
   services.offsiteBackup.jobs.keycloak = {
     # Use a consistent database dump; realm exports do not preserve all database state.

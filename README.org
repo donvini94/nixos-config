@@ -29,12 +29,42 @@ sudo darwin-rebuild switch --flake .#AC-0137
 The agent commits, pushes, synchronizes the checkouts and switches affected Linux hosts.
 The exact commands above are passwordless; relative flake paths do not match sudo policy.
 =nix flake check= runs shell lint, Python undefined/unused-name checks, ingress tests,
-model-download tests and the package-patch guard on Linux or macOS.
+model-download, agent-tool and client-independence checks on Linux or macOS.
 CI runs these checks, evaluates host build plans and builds exposed local packages;
 a plan is not a full build.
 Renovate owns flake inputs, OCI digests and action pins. =package-update.yml= owns
-=packages/= version/hash updates. =agent-update check|apply= handles vendored skills
-and agent pins; it neither commits nor deploys.
+=packages/= version/hash updates, including OMP on Linux.
+=update-skills check|apply [SKILL...]= refreshes vendored skill files from
+=skills/sources.json=; it changes neither package versions nor client state.
+Linear's skill follows its flake package version; Zotero's version is declared in
+=skills/sources.json= and used by =hm-modules/zotero-cli.nix=.
+Locally authored skills are not updater targets.
+
+* Agent clients
+
+=programs.ompClient.enable= and =programs.piClient.enable= independently select
+OMP and Pi in each host's home configuration. OMP remains available for research.
+=hm-modules/omp.nix= and =hm-modules/omp-clients.nix= own OMP configuration;
+=hm-modules/pi.nix= owns Pi configuration. Neither launches the other.
+Settings, authentication, sessions and memory remain in each client's own directory
+(=~/.omp/agent/= or =~/.pi/agent/=). Pi's MCP configuration and writable
+=AGENTS.md=/=MEMORY.md= are not replaced by activation.
+
+Mentor, learning and prompt-snippet source packages live under
+=~/.local/share/agent-content/=, managed by =hm-modules/agent-content.nix=.
+Their Pi and OMP entry points use separate client state. Activation fast-forwards
+clean source checkouts and leaves dirty or diverged ones untouched.
+Shared engineering/research instructions are in =guidance/=; project templates
+are in =templates/=. OMP links these rules for automatic loading. Other clients
+read the same files directly through the shared skills, without OMP rule URLs.
+Pi deliberately excludes the automatic =~/.agents/skills/= tree.
+
+Pi settings are seeded as defaults; existing native selections win on activation.
+Declared model definitions are refreshed without removing extra user providers.
+Use =pi install/remove= and =pi update --extensions= for Pi packages, and OMP's
+native plugin manager for OMP plugins. =update-skills= manages neither client.
+Pi's binary version is pinned in =hm-modules/pi.nix=. The Mac's OMP binary is its native
+Bun installation; its wrapper scopes the managed settings to OMP invocations.
 
 * Dracula
 

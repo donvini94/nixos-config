@@ -7,7 +7,7 @@ globs:
 ---
 # Rust
 
-Sourced from `omp/research/RustCraft.md` — Gjengset, dtolnay, matklad, Ryhl, Nethercote,
+Sourced from `guidance/research/RustCraft.md` — Gjengset, dtolnay, matklad, Ryhl, Nethercote,
 the Rust API Guidelines and the std-dev-guide. Where those disagree, the choice made here
 is noted as a choice.
 
@@ -67,7 +67,7 @@ means reproducing the incident first. `tracing` with `#[instrument]` on the oper
 can fail or block, spans carrying the identifiers you will search by, structured fields
 rather than formatted strings, and JSON output in production. A log line that cannot be
 correlated to a request is a line you will not use at 3am. *(Crate choice is my read —
-`omp/research/RustCraft.md` covers async and error discipline but not instrumentation.)*
+`guidance/research/RustCraft.md` covers async and error discipline but not instrumentation.)*
 
 Never log a token, credential, or secret-bearing struct. If a type can hold one, give it a
 `Debug` impl that redacts, so a stray `{:?}` cannot leak it.
@@ -86,7 +86,7 @@ Never log a token, credential, or secret-bearing struct. If a type can hold one,
 ## Lints live in `Cargo.toml`, not in crate-root attributes
 
 A `[lints.rust]` / `[lints.clippy]` table is declarative, workspace-inheritable, and keeps
-`lib.rs` about the code. The exact table is in `omp/templates/rust/Cargo.toml`; do not
+`lib.rs` about the code. The exact table is in `templates/rust/Cargo.toml`; do not
 retype it from memory. It sets `unsafe_code = "forbid"`, `unused_must_use = "deny"`,
 `unwrap_used = "deny"`, the five clippy gate groups at explicit `priority = -1` so specific
 lints can override them, and `dbg_macro`/`todo` as warnings.
@@ -149,7 +149,7 @@ carry that. Silence everywhere else.
 
 ## Scaffolding a new crate
 
-**Copy `omp/templates/rust/`. Do not hand-roll the manifest.** Verified against cargo 1.96
+**Copy `templates/rust/`. Do not hand-roll the manifest.** Verified against cargo 1.96
 and clippy 0.1.96: `cargo check --all-targets`, `cargo clippy --all-targets` and
 `cargo test` are clean on a fresh copy, and the gate was confirmed to reject code — adding a
 bare `unwrap()` fails clippy with exit 101, and adding an `unsafe` block fails on

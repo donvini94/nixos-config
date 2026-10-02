@@ -20,9 +20,7 @@ scope:
   - "tool:write"
 ---
 Apply these prose constraints to AI-security research deliverables and AISec sessions.
-Native TTSR path gates enforce them on the named research sources; the
-`aisec-session` rulebook entry supplies the same context when the session topic is
-AISec. Do not apply them to unrelated Org or Markdown work.
+Do not apply them to unrelated Org or Markdown work.
 
 Rewrite this. These constructions make a written deliverable read as machine-generated:
 

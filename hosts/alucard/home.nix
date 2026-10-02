@@ -5,7 +5,6 @@
 
 {
   imports = [
-    ../../hm-modules/ai-clients.nix
     ../../hm-modules/omp.nix
     ../../hm-modules/pi.nix
     ../../hm-modules/agent-skills.nix
@@ -31,4 +30,6 @@
     stateVersion = "23.05";
   };
   programs.home-manager.enable = true;
+  programs.ompClient.enable = true;
+  programs.piClient.enable = true;
 }

@@ -32,6 +32,9 @@ current packages, services, ports and paths. Do not duplicate those inventories 
   `hm-modules/packages.nix`. System packages are for integration/toolchains.
 - Darwin-only configuration stays in `hosts/ac-0137/`; shared modules branch on
   `pkgs.stdenv.hostPlatform.isDarwin`, rather than acquiring a Mac copy.
+- OMP and Pi are independently enabled with `programs.ompClient.enable` and
+  `programs.piClient.enable`. Client modules own their settings and state; shared
+  source packages live in `hm-modules/agent-content.nix`, guidance in `guidance/`.
 - Hash-pinned packages must be exposed under `packages.<system>` for CI builds.
   Renovate does not update `packages/`; the package-update workflow owns hashes too.
 - Keep comments for non-obvious constraints and deliberate exceptions. No AI audit
@@ -43,8 +46,7 @@ current packages, services, ports and paths. Do not duplicate those inventories 
 ## Boundaries
 
 - Never patch installed third-party files in venvs/site-packages. Fix the environment
-  reproducibly. Package overrides need a concrete defect and removal condition;
-  `scripts/check-no-package-patches.sh` enforces reviewed exceptions.
+  reproducibly. Use conventional Nix overrides when needed; test the resulting package.
 - Mac Homebrew is declarative (`cleanup = "uninstall"`); imperative installs disappear
   on rebuild. Existing GnuPG/pass and the mail setup remain stateful.
 - Determinate owns the Mac Nix runtime; configure its supported module, not `nix.settings`.
