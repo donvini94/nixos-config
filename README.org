@@ -341,6 +341,14 @@ nix flake show
   Renovate is installed and [[https://github.com/donvini94/nixos-config/issues/1][Dependency Dashboard issue #1]] exists.
   Updates remain non-automerge and use the configured weekday 22:00–23:00 Europe/Berlin
   schedule; see =docs/OPERATOR-ACTIONS.org=.
+- Hermes stable releases are tracked explicitly from GitHub Releases in =renovate.json=.
+  Only =vYYYY.M.D= tags are accepted; RC and canary tags are excluded. The native Nix
+  manager is disabled for this input because it follows the pinned tag's commit rather
+  than selecting newer releases. =.github/workflows/hermes-update.yml= refreshes
+  =flake.lock= on the same-repository =renovate/hermes-agent-stable= PR, runs flake
+  checks and both Linux host build plans, then commits the lock. Review, merge and
+  rebuild each host to deploy; neither merging nor updating the Ubuntu base image
+  upgrades a running Hermes instance by itself.
 
 * Secret Management
 
