@@ -33,6 +33,9 @@ in
     ../../hm-modules/omp.nix
     ../../hm-modules/lsp.nix
     ../../hm-modules/cli-tools.nix
+    ../../hm-modules/pi.nix
+    ../../hm-modules/agent-skills.nix
+    ../../hm-modules/zotero-cli.nix
     ./fish.nix
     ./apps.nix
     ./omp.nix

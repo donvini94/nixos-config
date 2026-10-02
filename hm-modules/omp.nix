@@ -17,10 +17,12 @@ let
     "python-silent-failure"
     "isc-rule"
     "isc-rule-divergence"
-    # The aisec-* rules are user-scope on purpose: project rule directories are read
-    # from the process working directory only, with no ancestor walk, so a project-scoped
-    # copy is dropped whenever omp starts in a subdirectory. Their globs are path-gated.
+    # AISec rules are user-scope because project rule directories are read from the
+    # process working directory only. aisec-session supplies topical context on demand;
+    # native TTSR globs gate prose and safeguards to named AI-security research files,
+    # matrix data and generated sources, never arbitrary Markdown.
     "aisec-generated-region"
+    "aisec-session"
     "aisec-prose"
     "aisec-ratification"
     "aisec-zero-vs-dash"
@@ -35,23 +37,6 @@ let
   mentorRepo = "${config.home.homeDirectory}/code/omp-mentor";
 
   lathe = pkgs.callPackage ../packages/lathe.nix { };
-
-  # zotero-mcp-server is a `uv tool install`, not a nix package: `zotero-mcp update`
-  # upgrades it in place, and the skill link follows the upgrade without a rebuild.
-  # Skill only, no MCP server: the CLI costs context only when used.
-  # CEILING: the packaged skill path embeds the tool venv's Python minor version. A
-  # reinstall on a newer Python dangles the link (OMP startup warning); bump the version
-  # here, or package zotero-mcp-server in nix to get a stable store path.
-  zoteroSkill = "${config.home.homeDirectory}/.local/share/uv/tools/zotero-mcp-server/lib/python3.14/site-packages/zotero_mcp/skills/zotero-cli";
-
-  # The skill loader readdirs the skills root and follows symlinked directory entries,
-  # so a skill is linked as one directory.
-  latheSkills = lib.listToAttrs (
-    map (name: {
-      name = ".omp/agent/skills/${name}";
-      value.source = "${lathe}/share/lathe/skills/${name}";
-    }) lathe.skillNames
-  );
 
   # Rules and commands are linked file by file, never as a directory: OMP enumerates
   # <agent-dir>/rules/*.md and commands/*.md with a glob, and a glob does not traverse
@@ -101,10 +86,22 @@ in
     # startup warning.
     ".omp/agent/skills/mentor".source = link "${mentorRepo}/skills/mentor";
     ".omp/agent/commands/mentor.md".source = link "${mentorRepo}/commands/mentor.md";
-    # Installed here rather than by `zotero-mcp install-skill`, which has no OMP target.
-    ".omp/agent/skills/zotero-cli".source = link zoteroSkill;
   }
   // linkEach "rules" ruleNames
-  // linkEach "agents" agentNames
-  // latheSkills;
+  // linkEach "agents" agentNames;
+
+  # OMP keeps installed plugins in ~/.omp/plugins, outside anything Home Manager can own, so
+  # the learning plugin is declared as an idempotent install. All hosts take it from the same
+  # marketplace catalog, which also gives them the same auto-update path (marketplace.autoUpdate
+  # in omp/config-common.nix). A host that is offline or lacks omp logs the failure and moves on.
+  home.activation.ompLearningPlugin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    export PATH="$HOME/.bun/bin:$HOME/.nix-profile/bin:/etc/profiles/per-user/$USER/bin:/run/current-system/sw/bin:$PATH"
+    if [ -z "''${DRY_RUN:-}" ] && command -v omp >/dev/null 2>&1; then
+      if ! omp plugin list 2>/dev/null | grep -q 'omp-learn-org@omp-learn'; then
+        omp plugin marketplace add donvini94/omp-learn >/dev/null 2>&1 || true
+        omp plugin install omp-learn-org@omp-learn \
+          || echo "ompLearningPlugin: installing omp-learn-org failed (offline?)" >&2
+      fi
+    fi
+  '';
 }

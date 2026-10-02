@@ -1,11 +1,13 @@
 ---
 name: aisec-ratification
 description: Only a human promotes a score — ratified dates are written by ratify.mjs, never by hand
+globs:
+  - "**/reports/ai_security_matrix/data/ratification.json"
 condition:
   - "\"ratified\":\\s*\"\\d{4}"
 scope:
-  - "tool:edit(**/ratification.json)"
-  - "tool:write(**/ratification.json)"
+  - "tool:edit(**/reports/ai_security_matrix/data/ratification.json)"
+  - "tool:write(**/reports/ai_security_matrix/data/ratification.json)"
 ---
 You are writing a ratified date. Stop unless a human in this conversation told you to.
 

@@ -1,11 +1,13 @@
 ---
 name: aisec-zero-vs-dash
 description: A score of 0 is a finding about the vendor; absence of the key is an admission about us
+globs:
+  - "**/reports/ai_security_matrix/data/vendors.json"
 condition:
   - "\"score\":\\s*\"0\""
 scope:
-  - "tool:edit(**/vendors.json)"
-  - "tool:write(**/vendors.json)"
+  - "tool:edit(**/reports/ai_security_matrix/data/vendors.json)"
+  - "tool:write(**/reports/ai_security_matrix/data/vendors.json)"
 ---
 You are writing a `0`. Confirm it is the right symbol before continuing.
 

@@ -37,8 +37,8 @@
   # A second model reviewing every turn is a cost decision, not a default.
   advisor.enabled = false;
 
-  # No marketplace plugins are installed on any host; startup checks are noise.
-  marketplace.autoUpdate = "off";
+  # Keep installed marketplace plugins updated automatically at startup.
+  marketplace.autoUpdate = "auto";
 
   # Memory. `mnemopi` is the only backend that exposes the full tool set — `recall`,
   # `retain`, `reflect` and `memory_edit` — without standing up a server; the `local`
@@ -58,9 +58,29 @@
     # Resolve the `tiny` role then `smol` for Mnemopi's own LLM work, rather than
     # billing consolidation at the session model.
     llmMode = "smol";
+    # No automatic transcript retention. Raw conversation chunks and the facts distilled
+    # from them were mostly task history and noise; memory grows only through deliberate
+    # `retain`/`learn` saves. Recall of those saves stays automatic. Past conversations
+    # are therefore not searchable; flip to true to get that back, at the cost of
+    # periodic bank cleanups.
+    autoRetain = false;
   };
 
   # Makes the `learn` tool available so a lesson can be captured deliberately instead of
   # only being inferred from the transcript.
   autolearn.enabled = true;
+
+  # Interface. The same look and editing behaviour on every host, so a session feels
+  # identical on the Mac, dracula and alucard. These override the per-host user files
+  # (~/.omp/agent/config.yml), which is where the earlier drift came from.
+  theme.dark = "titanium";
+  symbolPreset = "unicode";
+  statusLine = {
+    preset = "default";
+    separator = "powerline";
+  };
+  composer.shape = "box";
+  edit.mode = "hashline";
+  startup.showSplash = false;
+  hideThinkingBlock = false;
 }

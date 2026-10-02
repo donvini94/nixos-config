@@ -33,10 +33,14 @@ Communication rules live in RULES.md.
 
 ## Memory
 
-- Durable knowledge about me, my projects and my workflow lives in `~/.claude/memory/`.
-  `MEMORY.md` is an index of one-topic files — open only the entries that bear on the task.
-  Write new durable facts there and add the index entry; remove what goes stale.
-- Project-specific knowledge belongs in that project's `.omp/AGENTS.md` or `.omp/rules/`,
-  never here.
-- A correction that recurs is a config bug: when the same mistake needs correcting twice,
-  promote it to a standing rule in `~/nixos-config/omp/RULES.md`.
+- Durable knowledge lives in OMP memory. Use `recall` to look things up.
+- Retain (`retain`, `learn`) only facts that change a future answer or action, stated
+  as current, specific and self-contained. Never retain personality or psychological
+  interpretations, test results, gaming or other off-topic activity, or generic
+  troubleshooting recipes that the live configuration already encodes.
+- Cross-project facts about me go to global scope; project facts stay project-scoped.
+- Do not delete or rewrite existing memories without my explicit approval.
+- Project-specific knowledge belongs in that project's `.omp/AGENTS.md` or
+  `.omp/rules/`, never here.
+- A correction that recurs is a config bug: when the same mistake needs correcting
+  twice, promote it to a standing rule in `~/nixos-config/omp/RULES.md`.

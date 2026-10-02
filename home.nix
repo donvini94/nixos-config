@@ -34,6 +34,9 @@
     ./hm-modules/omp.nix
     ./hm-modules/lsp.nix
     ./hm-modules/ai-clients.nix
+    ./hm-modules/pi.nix
+    ./hm-modules/agent-skills.nix
+    ./hm-modules/zotero-cli.nix
     inputs.caelestia-shell.homeManagerModules.default
   ];
 

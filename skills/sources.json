@@ -1,0 +1,11 @@
+{
+  "_comment": "Upstream of every vendored skill in skills/shared, read by `agent-update`. Skills not listed here (aisec, isc-rules, python, rust, debt-ledger, delete-list) are authored locally and never overwritten. ref: a git ref, or \"nix:<file>\" to track the version pinned in that nix file so the skill matches the CLI it documents.",
+  "skills": {
+    "grill-me": { "type": "git", "repo": "https://github.com/mattpocock/skills.git", "path": "skills/productivity/grill-me" },
+    "grill-with-docs": { "type": "git", "repo": "https://github.com/mattpocock/skills.git", "path": "skills/engineering/grill-with-docs" },
+    "handoff": { "type": "git", "repo": "https://github.com/mattpocock/skills.git", "path": "skills/productivity/handoff" },
+    "find-skills": { "type": "git", "repo": "https://github.com/vercel-labs/skills.git", "path": "skills/find-skills" },
+    "linear-cli": { "type": "git", "repo": "https://github.com/schpet/linear-cli.git", "path": "skills/linear-cli", "ref": "nix:packages/linear-cli.nix" },
+    "zotero-cli": { "type": "pypi", "package": "zotero-mcp-server", "path": "zotero_mcp/skills/zotero-cli", "pin": "hm-modules/zotero-cli.nix" }
+  }
+}

@@ -11,6 +11,8 @@
     # explicitly or this host silently has no AGENTS.md, RULES.md or language
     # rules.
     ../../hm-modules/omp.nix
+    ../../hm-modules/pi.nix
+    ../../hm-modules/agent-skills.nix
     # Same for the language servers: without this the `lsp` tool is inert here,
     # since they otherwise arrive only via the desktop set in the root home.nix.
     ../../hm-modules/lsp.nix

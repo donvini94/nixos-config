@@ -1,6 +1,14 @@
 ---
 name: aisec-prose
-description: Banned constructions that make written deliverables read as machine-generated
+description: Banned prose constructions in AI-security research deliverables; also read for AISec sessions
+globs:
+  - "**/reports/ai_security_matrix/**"
+  - "**/reports/ai_agent_security_whitepaper_2026/**"
+  - "**/reports/ai_security_partner_review_2026/**"
+  - "**/reports/agentic_identity_reference_architecture_2026/**"
+  - "**/reports/agentic_identity_market_comparison_2026/**"
+  - "**/roam/main/ai_security*.org"
+  - "**/roam/main/agentic_identity.org"
 condition:
   - "\\bstructurally\\b"
   - "It['’]s not (about )?[a-z]+, it['’]s"
@@ -8,15 +16,15 @@ condition:
   - "[Nn]ot [a-z]+ — [a-z]+\\."
   - "(?m)^[-*+\\s]*[A-Z][^.!?\\n]{0,60}, not [^.!?\\n]{1,40}\\.\\s*$"
 scope:
-  - "tool:edit(**/*.org)"
-  - "tool:write(**/*.org)"
-  - "tool:edit(**/*.typ)"
-  - "tool:write(**/*.typ)"
-  - "tool:edit(**/*.md)"
-  - "tool:write(**/*.md)"
+  - "tool:edit"
+  - "tool:write"
 ---
-Rewrite this. These constructions mark a deliverable as machine-written and V rejects
-them on sight:
+Apply these prose constraints to AI-security research deliverables and AISec sessions.
+Native TTSR path gates enforce them on the named research sources; the
+`aisec-session` rulebook entry supplies the same context when the session topic is
+AISec. Do not apply them to unrelated Org or Markdown work.
+
+Rewrite this. These constructions make a written deliverable read as machine-generated:
 
 - the "X, not Y" antithesis used as a headline, a refrain, or a closing line
 - "structurally" as a filler intensifier
