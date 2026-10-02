@@ -206,7 +206,7 @@ in
     models = lib.mkOption {
       type = lib.types.attrsOf modelType;
       default = { };
-      description = "Pinned local model registry (EXL3 via TabbyAPI or GGUF via llama.cpp) keyed by the OpenAI request model ID.";
+      description = "Pinned GGUF model registry keyed by the OpenAI request model ID.";
     };
   };
 

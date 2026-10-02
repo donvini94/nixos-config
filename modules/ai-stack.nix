@@ -1,5 +1,4 @@
-# The AI stack both dracula and alucard run identically. Host deltas are additional
-# definitions in the host files, merged by NixOS, never restatements of what is here.
+# Alucard's agent and workflow services, backed by the AI ingress.
 {
   config,
   lib,
@@ -16,12 +15,11 @@ in
     ./ai-ingress.nix
     ./n8n.nix
     ./hermes-dashboard.nix
-    ./observability.nix
     ./container-updates.nix
   ];
 
   options.services.aiStack = {
-    enable = lib.mkEnableOption "the shared AI stack: ingress tracing, n8n, Hermes and observability";
+    enable = lib.mkEnableOption "AI ingress, n8n and Hermes";
 
     autoStart = lib.mkOption {
       type = lib.types.bool;
@@ -31,7 +29,7 @@ in
 
     secretsFile = lib.mkOption {
       type = lib.types.path;
-      description = "Host SOPS file holding the n8n, Hermes, Langfuse and Grafana secrets.";
+      description = "SOPS file holding n8n and Hermes secrets.";
     };
 
     workflowDirectory = lib.mkOption {
@@ -55,14 +53,6 @@ in
         description = "Context window Hermes assumes for the default model.";
       };
     };
-
-    observability = {
-      gpuMetrics = lib.mkOption {
-        type = lib.types.bool;
-        default = false;
-        description = "Scrape GPU metrics through the DCGM exporter.";
-      };
-    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -82,55 +72,13 @@ in
         owner = "root";
         mode = "0400";
       };
-    }
-    //
-      lib.genAttrs
-        [
-          "langfuse/postgres_password"
-          "langfuse/clickhouse_password"
-          "langfuse/redis_auth"
-          "langfuse/minio_root_password"
-          "langfuse/salt"
-          "langfuse/encryption_key"
-          "langfuse/nextauth_secret"
-          "langfuse/project_public_key"
-          "langfuse/project_secret_key"
-          "langfuse/admin_password"
-          "grafana/admin_password"
-        ]
-        (_: {
-          sopsFile = cfg.secretsFile;
-          owner = "root";
-          mode = "0400";
-        });
+    };
 
     sops.templates."n8n-runner.env" = {
       content = ''
         N8N_RUNNERS_AUTH_TOKEN=${config.sops.placeholder."n8n/runner_auth_token"}
       '';
       restartUnits = [ "docker-n8n-runners.service" ];
-      mode = "0400";
-      owner = "root";
-      group = "root";
-    };
-
-    sops.templates."observability.env" = {
-      content = ''
-        POSTGRES_PASSWORD=${config.sops.placeholder."langfuse/postgres_password"}
-        CLICKHOUSE_PASSWORD=${config.sops.placeholder."langfuse/clickhouse_password"}
-        REDIS_AUTH=${config.sops.placeholder."langfuse/redis_auth"}
-        MINIO_ROOT_PASSWORD=${config.sops.placeholder."langfuse/minio_root_password"}
-        LANGFUSE_SALT=${config.sops.placeholder."langfuse/salt"}
-        LANGFUSE_ENCRYPTION_KEY=${config.sops.placeholder."langfuse/encryption_key"}
-        NEXTAUTH_SECRET=${config.sops.placeholder."langfuse/nextauth_secret"}
-        LANGFUSE_PROJECT_PUBLIC_KEY=${config.sops.placeholder."langfuse/project_public_key"}
-        LANGFUSE_PROJECT_SECRET_KEY=${config.sops.placeholder."langfuse/project_secret_key"}
-        LANGFUSE_INIT_USER_EMAIL=vincenzo@istbereit.de
-        LANGFUSE_INIT_USER_NAME=Vincenzo
-        LANGFUSE_INIT_USER_PASSWORD=${config.sops.placeholder."langfuse/admin_password"}
-        GRAFANA_ADMIN_PASSWORD=${config.sops.placeholder."grafana/admin_password"}
-      '';
-      restartUnits = [ "observability-stack.service" ];
       mode = "0400";
       owner = "root";
       group = "root";
@@ -197,14 +145,6 @@ in
       partOf = [ "ai-stack.target" ];
       after = [ "local-llama-logger.service" ];
       requires = [ "local-llama-logger.service" ];
-    };
-
-    services.localObservability = {
-      enable = true;
-      environmentFile = config.sops.templates."observability.env".path;
-      inherit (cfg.observability) gpuMetrics;
-      inferencePort = 8080;
-      n8nPort = 5678;
     };
 
     services.containerUpdates.units = [

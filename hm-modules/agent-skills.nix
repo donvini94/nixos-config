@@ -5,19 +5,9 @@
   ...
 }:
 
-# One skill set for every harness and host. ~/.agents/skills is read by OMP, Pi and Codex, so
-# a skill linked there reaches all three on AC-0137, dracula and alucard identically.
-#
-# Sources, all version-controlled here rather than installed per machine:
-#   skills/shared  authored and vendored skills; edited in place, no rebuild needed.
-#   skills/managed skills OMP's manage_skill tool maintains; linked into OMP's managed-skills
-#                  directory so the tool still writes, and Pi reads the same directory.
-#   lathe          embedded in the pinned lathe binary (packages/lathe.nix).
-#
-# Third-party skills in skills/shared (grill-me, grill-with-docs, handoff: mattpocock/skills;
-# find-skills: vercel-labs/skills; linear-cli: schpet/linear-cli; zotero-cli: the zotero-mcp-server
-# package) are vendored copies listed in skills/sources.json. `agent-update` refreshes them; do not
-# use `npx skills update`, which would now write through these links.
+# Shared skills are writable repo links; sources.json records vendored origins.
+# Use agent-update, not npx skills update (which would write through the links).
+# Pi opts out of this tree in its own settings.
 let
   repo = "${config.home.homeDirectory}/nixos-config/skills";
   # Out-of-store links keep every authored file writable and editable without a rebuild.
@@ -38,8 +28,6 @@ let
     "linear-cli"
     "zotero-cli"
   ];
-  # One command to refresh everything declared in this repo that has an upstream: vendored skills,
-  # OMP plugins, and the Pi / OMP / extension pins. See scripts/agent-update.sh and docs/PI.md.
   agentUpdate = pkgs.writeShellApplication {
     name = "agent-update";
     runtimeInputs = with pkgs; [
@@ -51,7 +39,6 @@ let
       gnused
       jq
       nodejs
-      openssh
       rsync
       unzip
     ];

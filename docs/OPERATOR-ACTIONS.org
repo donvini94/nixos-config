@@ -1,241 +1,37 @@
-#+TITLE: Alucard operator actions
-#+STARTUP: overview
-#+TODO: TODO(t) BLOCKED(b) | DONE(d)
+#+title: Manual operations to review
+#+TODO: TODO | DONE
 
-Actions that cannot be automated from this repository, because they need
-credentials only you hold, an external account, or a decision.
+These are unresolved items from earlier work, not a current-state inventory.
+Verify each before acting; keep completed history in Git, not here.
 
-Each entry states *why* it cannot be declarative. When you finish one, mark it
-DONE with =C-c C-t= and record the date.
+* TODO Replace the shared =nix= shell account
+=hosts/alucard/users.nix= grants several people's keys one identity with Docker
+access (root-equivalent). Give people separate accounts; keep game workloads
+under a service identity. Review who still needs Docker and wheel access.
 
-* Access and identity
-** TODO Split the shared =nix= account
-:PROPERTIES:
-:ADDED: 2026-08-29
-:END:
+* TODO Check retired OpenBao/Teleport state
+Inspect =/var/lib/openbao=, =/var/lib/teleport= and =/var/lib/teleport-tls= on
+Alucard. Delete only after confirming no live dependency; earlier unseal shares
+were disclosed in a transcript. The services have already been removed.
 
-=hosts/alucard/users.nix= defines one =nix= account whose =authorized_keys=
-holds Vincenzo's, Marius's and Kyrill's keys, and it is in the =docker= group —
-which is root-equivalent, because the Docker API can mount =/= into a
-privileged container. Three people share one Linux identity, so nothing in the
-logs attributes an action to a person.
+* TODO Rotate nginx basic authentication if not already done
+The old =secrets/htpasswd= remains in Git history. Replace =nginx/htpasswd= in
+=secrets/dmbs.yaml= and update registry/WebDAV clients. Removing a tracked hash
+does not remove the offline cracking target.
 
-Teleport was going to solve this. It was dropped on 2026-08-29 as
-disproportionate for a two-person MVP, so the plain fix stands on its own:
+* TODO Bring external stacks and backups under review
+Mailcow, Onyx and Actual Budget remain outside Nix management. Verify actual
+loopback port bindings and backup coverage, then use supported upstream upgrades.
+Do not replace Mailcow images individually. Media app configurations, Mattermost,
+Hermes and observability state also need an explicit recovery decision.
 
-- give Marius and Kyrill their own accounts with their own keys, or remove
-  their keys if they no longer need shell access;
-- move the game-server containers off a human-shared account onto a dedicated
-  service account;
-- drop =docker= from any account that does not genuinely need root.
+* TODO Verify Jellyfin upgrade compatibility
+Before a major upgrade: check SSO-Auth ABI support, case-insensitive username
+collisions, plugin compatibility and a recoverable database/config backup.
+Schema migrations may prevent downgrades; storage-box library scans are expensive.
+Do not treat earlier version numbers or compatibility checks as current evidence.
 
-None of this needs new software. Worth doing before anyone outside the two
-founders gets shell access.
-
-** TODO Delete the OpenBao and Teleport state directories
-:PROPERTIES:
-:ADDED: 2026-08-29
-:END:
-
-Both services were removed on 2026-08-29. Removing a unit does not remove its
-=StateDirectory=, so three root-owned trees are left behind:
-
-- =/var/lib/openbao= — an initialised Raft store. Its unseal shares were
-  disclosed in a chat transcript, so treat the contents as readable by anyone
-  who obtains the directory.
-- =/var/lib/teleport= — the cluster certificate authority.
-- =/var/lib/teleport-tls= — a Let's Encrypt private key for
-  =alucard.tailf117a1.ts.net=, valid until 2026-11-07.
-
-#+begin_src bash
-ssh -t Bereitserver 'sudo rm -rf /var/lib/openbao /var/lib/teleport /var/lib/teleport-tls'
-#+end_src
-
-Nothing depends on them. Tailscale keeps its own copy of the certificate under
-=/var/lib/tailscale=, so removing =teleport-tls= costs nothing.
-
-* Supply chain
-** TODO Install the Renovate GitHub App
-:PROPERTIES:
-:ADDED: 2026-08-29
-:EVIDENCE: zero PRs and zero issues have ever existed on the repo
-:END:
-
-=renovate.json= is well configured — =docker:pinDigests=,
-=helpers:pinGitHubActionDigests=, =automerge: false= — but *Renovate has never
-run*. With =dependencyDashboard: true= a first run would have opened an issue;
-the GitHub API reports no issues and no pull requests, ever.
-
-So the control described in =README.org= ("Renovate pins container digests and
-GitHub Action SHAs") was aspirational. Digests are now pinned by hand; without
-Renovate they will simply rot instead of drifting.
-
-Install the app at https://github.com/apps/renovate for =donvini94/nixos-config=.
-
-*Two things to expect after installing:*
-
-- =schedule= is ="* 22-23 * * 1-5"=, so Renovate only acts on weekday evenings
-  between 22:00 and 23:00. Install it on a Saturday and nothing at all happens
-  until Monday night — that is the schedule, not a failure.
-- Renovate needs *write* access to open branches, PRs and the dependency
-  dashboard issue. Read-only access produces silence.
-That is the whole task — nothing in the repo needs changing. The config was
-validated with =renovate-config-validator=, and every custom manager was tested
-against its target file: all five dependencies match, including the Trivy digest
-pinned on 2026-08-29.
-
-| manager target | matches |
-|----------------+---------|
-| =lib/hermes-agent.nix= | =ubuntu:24.04= |
-| =modules/n8n.nix= | =n8n:2.34.6=, =runners:2.34.6= |
-| =modules/vulnerability-scan.nix= | =trivy:latest= |
-
-Compose files and workflow actions are covered by the built-in =docker-compose=
-and =github-actions= managers.
-
-** TODO Update mailcow
-:PROPERTIES:
-:ADDED: 2026-08-29
-:EVIDENCE: full Trivy scan of all 51 resident images, 2026-08-29
-:END:
-
-Mailcow accounts for the large majority of fixable criticals on the host, and
-its images are *publicly reachable* (IMAP, POP3, submission, webmail):
-
-| image                    | critical | high |
-|--------------------------+----------+------|
-| =ghcr.io/mailcow/dovecot=  |       17 |   99 |
-| =ghcr.io/mailcow/watchdog= |       11 |   62 |
-| =ghcr.io/mailcow/sogo=     |        9 |   50 |
-| =ghcr.io/mailcow/clamd=    |        4 |   38 |
-| =ghcr.io/mailcow/postfix-tlspol= |  4 |  108 |
-
-They are mariadb-client, openssl, bind and Go stdlib packages in the base
-layers. Mailcow is not managed by this repo and has its own updater:
-
-#+begin_src bash
-ssh -t Bereitserver 'cd /opt/mailcow-dockerized && sudo ./update.sh'
-#+end_src
-
-** TODO Upgrade Jellyfin to 12.0 — blocked on SSO-Auth and nixpkgs
-:PROPERTIES:
-:ADDED: 2026-09-08
-:EVIDENCE: jellyfin.org/posts/jellyfin-release-12.0; 9p4/jellyfin-plugin-sso build.yaml on main
-:END:
-
-Jellyfin 12.0 shipped 2026-09-08 (a renumbering: what would have been 10.12).
-This host runs 10.11.11. Do not upgrade until *both* gates clear:
-
-1. =9p4/jellyfin-plugin-sso= publishes a build with =targetAbi= 12.x and
-   =framework: net10.0=. Today =main= declares =targetAbi: "10.11.0.0"= and
-   =net9.0=, and 12.0 removed =IAuthenticationProvider.HasPassword=, which that
-   plugin implements. Upgrading first locks every Keycloak user out.
-2. nixpkgs merges the bump. Both PRs opened 2026-09-08 (#561130, #561207) are
-   incomplete; =jellyfin-ffmpeg= needs its own 7.1.4-3 -> 8.1.2-4 bump (#560953).
-
-Before upgrading, in this order:
-
-- Check for usernames differing only in capitalization. 12.0 adds a
-  case-insensitive unique index and the migration *fails* if two collide:
-  #+begin_src bash
-  ssh -t Bereitserver 'sudo sqlite3 /home/jellyfin/data/jellyfin.db \
-    "select lower(Username), count(*) from Users group by 1 having count(*) > 1;"'
-  #+end_src
-- Confirm =offsite-backup-jellyfin.service= has a recent snapshot. The 12.0
-  migration rewrites the schema on first boot and there is no downgrade; the
-  backup is the only way back.
-- Remove third-party plugins before the upgrade — the server moved to .NET 10 and
-  10.11 plugins cannot load.
-- Expect a mandatory full library scan afterwards: auto-resolved alternate
-  versions are dropped and every item is path-checked against disk. Over the
-  CIFS mount that pass is slow.
-- =X-Emby-Authorization= and the =/emby/*= and =/mediabrowser/*= route prefixes
-  are gone; check the nginx vhost and any script that used them.
-
-** TODO Upgrade Onyx
-:PROPERTIES:
-:ADDED: 2026-08-29
-:END:
-
-Onyx ships =nginx:1.25.5-alpine= (libexpat, libxml2 criticals) and
-=opensearch:3.6.0= (238 fixable highs). It is deployed from
-=~/.config/onyx/deployment= and follows upstream's own upgrade path.
-
-** DONE Actual Budget updated
-CLOSED: [2026-08-29]
-
-Was running an image with a *application-level* CVE (=CVE-2026-27584= in
-=@actual-app/sync-server=) on a publicly reachable vhost. Updated after taking a
-backup; criticals went 9 → 1, highs 75 → 15, and the sync-server CVE is gone.
-
-Pre-update backup: =/home/vincenzo/actual-data-backup-20260829-185928.tar.gz=.
-Delete it once you are satisfied the budget data is intact.
-
-* Configuration that lives outside this repo
-** TODO Re-apply the loopback bind if Onyx or Actual Budget is re-deployed
-:PROPERTIES:
-:ADDED: 2026-08-29
-:END:
-
-Both stacks published their ports on =0.0.0.0=. The assertion in
-=hosts/alucard/services/reverse-proxy.nix= only rejects selected ports in
-=networking.firewall.allowedTCPPorts=; it cannot inspect Compose files outside
-this repository or protect against Docker-published ports. Both stacks therefore
-violated the intended "every backend binds loopback behind nginx" invariant while
-the Nix assertion still passed. Fixed by editing their compose files *outside
-this repository*, so a fresh clone of either project loses the change:
-
-- =~/.config/onyx/deployment/docker-compose.yml= — both nginx port mappings now
-  carry a =127.0.0.1:= prefix. Note there are *two* mappings that both resolve to
-  1447; prefixing only one makes them collide and the container will not start.
-- =~/actual_budget/docker-compose.yml= — =127.0.0.1:5006:5006=.
-
-Backups of the originals sit beside each file as =*.bak-preloopback=.
-
-The durable fix is to bring both under Nix management.
-
-** TODO Rotate the nginx basic-auth credential
-:PROPERTIES:
-:ADDED: 2026-08-29
-:END:
-
-=secrets/htpasswd= was tracked in Git. It is now removed from the working tree
-and lives in SOPS as =nginx/htpasswd=, mounted at =/run/secrets/nginx/htpasswd=
-for the Docker registry and the Paperless WebDAV drop box.
-
-Removing the file does *not* remove it from history, so the hash is still an
-offline cracking target. Rotate when convenient — it needs your hands because
-your registry and WebDAV clients hold the current password:
-
-#+begin_src bash
-htpasswd -B -c /tmp/htpasswd vincenzo     # prompts for the new password
-jq -Rs . < /tmp/htpasswd | sops set --value-stdin secrets/dmbs.yaml '["nginx"]["htpasswd"]'
-shred -u /tmp/htpasswd
-#+end_src
-
-Then update =docker login registry.dumusstbereitsein.de= and any WebDAV client.
-
-* Verification still owed
-** DONE All three restore drills pass
-CLOSED: [2026-08-29]
-
-Keycloak, n8n and Paperless each completed a full backup → restore-verify cycle.
-Paperless was the last one: its first verify ran against a pre-migration
-snapshot and correctly failed on the changed staging path, so the drill was
-forced again after the migrated backup existed. It restored 1282 files
-(894 MiB) containing both the exporter output and the staged Django signing key.
-
-Check them any time with:
-
-#+begin_src bash
-ssh Bereitserver 'offsite-backup-status'
-#+end_src
-
-** TODO Run a restore drill you actually watch
-:PROPERTIES:
-:ADDED: 2026-08-29
-:END:
-
-Automated verification proves the snapshot *restores*. It does not prove you can
-rebuild the host. Before relying on any of this, do it once by hand: restore the
-Keycloak dump into a scratch database and log in against it.
+* TODO Watch an application restore drill
+Automated jobs restore files and check presence, not application behavior. Restore
+Keycloak into a scratch database and verify login; do the equivalent for each
+critical state store before relying on its backup.

@@ -1,21 +1,5 @@
 { pkgs, username, ... }:
 
-let
-  linear-cli = pkgs.stdenvNoCC.mkDerivation {
-    pname = "linear-cli";
-    version = "2.6.0";
-    src = pkgs.fetchurl {
-      url = "https://github.com/schpet/linear-cli/releases/download/v2.6.0/linear-aarch64-apple-darwin.tar.xz";
-      hash = "sha256-uavdS1rsFEWeQ0oomSA3V96K6EfwVerk8frue7H7wHg=";
-    };
-    installPhase = ''
-      runHook preInstall
-      install -Dm755 linear "$out/bin/linear"
-      runHook postInstall
-    '';
-  };
-in
-
 {
   imports = [
     ../../hm-modules/git.nix
@@ -41,12 +25,6 @@ in
     ./omp.nix
   ];
 
-  # Deliberately NOT imported: kitty.nix, starship.nix, packages.nix, zathura.nix,
-  # gtk.nix, hyprland.nix, caelestia.nix, services.nix, pokemmo.nix and email.nix are
-  # Wayland/GTK/systemd or superseded on this host. ai-clients.nix reads
-  # osConfig.networking.hostName and osConfig.services.remoteOpenAI, NixOS options that
-  # do not exist on a darwin osConfig.
-
   home = {
     username = username;
     homeDirectory = "/Users/${username}";
@@ -56,12 +34,7 @@ in
 
   programs.home-manager.enable = true;
 
-  # hm-modules/ssh.nix replaces ~/.ssh/config wholesale, and this machine's file carries
-  # host blocks that must never be committed. The Include directive is emitted ahead of
-  # every managed Host block (home-manager/modules/programs/ssh.nix:879-889) and
-  # ssh_config is first-match-wins, so a local file can both restore and override.
-  # `config.local` resolves relative to ~/.ssh; a missing include target is not an error
-  # for OpenSSH.
+  # Private host blocks stay outside Git; earlier SSH options win.
   programs.ssh.includes = [
     "~/.orbstack/ssh/config"
     "config.local"
@@ -69,7 +42,7 @@ in
 
   # The system baseline that dracula gets from configuration.nix / modules/packages.nix.
   home.packages = with pkgs; [
-    linear-cli
+    (callPackage ../../packages/linear-cli.nix { })
     # notmuch replica sync with the alucard mail hub (mail/bin/mail-replica-sync).
     # No Homebrew formula exists; it runs the Homebrew notmuch CLI, same 0.40 as nix.
     muchsync

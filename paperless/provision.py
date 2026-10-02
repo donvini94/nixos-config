@@ -1,27 +1,11 @@
 #!/usr/bin/env python3
-"""Idempotent Paperless-ngx configuration reconciler.
+"""Reconcile Paperless from public taxonomy and a SOPS-decrypted private overlay.
 
-Reads a public taxonomy (paperless/taxonomy.yaml) plus an optional private,
-sops-decrypted overlay (correspondents and mail credentials) and converges the
-running Paperless instance onto that description via the REST API.
+Upsert by name; never delete unmanaged objects or change unspecified fields.
+Write-only passwords are updated on create or with --sync-passwords. Nested
+workflow/view sets must be sent complete because PATCH replaces them wholesale.
 
-Design rules, each of which exists because of a specific Paperless behaviour:
-
-* Upsert by name, never by id. Ids are assigned by the database and are not
-  stable across a restore, so they can never be the source of truth.
-* Never delete. Objects present in Paperless but absent from the config are
-  reported, not removed. This is what makes it safe to run on every rebuild:
-  anything you create by hand in the UI survives.
-* Only fields named in the config are compared and written. Everything else
-  (permissions, owners, UI preferences) is left exactly as it is.
-* Mail account passwords are write-only in the API -- a GET returns asterisks.
-  They are therefore sent on create and thereafter only with --sync-passwords,
-  otherwise every run would report a spurious change.
-* Workflow triggers/actions and saved-view filter rules are nested writable
-  sets that PATCH *replaces* wholesale, so they are always sent complete.
-
-Exit codes: 0 converged (or, with --dry-run, already in sync); 1 --dry-run
-found pending changes; 2 an error.
+Exit codes: 0 converged, 1 dry-run found changes, errors exit nonzero.
 """
 
 from __future__ import annotations
@@ -1417,7 +1401,6 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     rec = Reconciler(client, dry_run=args.dry_run)
-    import fnmatch as _fn
 
     overrides = {o["name"]: o for o in private.get("tag_overrides", [])}
 

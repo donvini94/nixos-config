@@ -1,24 +1,7 @@
 #!/usr/bin/env bash
-# Reject repository-owned mutations of nixpkgs packages.
-#
-# Local patches are invisible maintenance debt: they silently rot against
-# upstream, break unrelated rebuilds, and hide the fact that the real fix
-# belongs in nixpkgs. Every mutation this repository once carried is now
-# either fixed upstream or expressed through supported package arguments.
-#
-# Allowed:
-#   * named overlays coming from a pinned flake input (e.g.
-#     `emacs-overlay.overlay`) — reviewed upstream code, not a local diff;
-#   * mutations in a file listed in EXCEPTIONS below, and only those carrying an
-#     `# UPSTREAM DEFECT` comment in the three lines above them, naming the live
-#     failure and the condition for removing it. Listing a file does not exempt
-#     the whole file: an unmarked mutation in it still fails.
-#
-# Where the removal condition is observable at eval time, the exception also carries
-# a probe: `if <upstream fixed> then lib.warn "…delete the override…" stock else
-# <mutation>`. The rebuild that picks up the upstream fix then says so and already
-# uses the stock package. This grep cannot check that the probe exists; it only
-# stops unmarked mutations.
+# Local package mutations need an EXCEPTIONS entry and an UPSTREAM DEFECT
+# comment within three preceding lines. Pinned upstream overlays are allowed.
+# This is a text guard, not a Nix parser.
 set -euo pipefail
 
 root=${1:-.}
@@ -26,9 +9,7 @@ status=0
 
 # path -> one-line justification. Keep this list empty whenever upstream allows.
 declare -A EXCEPTIONS=(
-  ["hm-modules/cli-tools.nix"]="omp-learn needs bun >= 1.3.14; nixpkgs ships 1.3.13"
   ["hm-modules/packages.nix"]="mattermost-desktop's koffi.node has no runpath to libstdc++"
-  ["lib/cuda-torch.nix"]="torch-bin needs cudaPackages_13; its passthru lacks cudaSupport; libnvshmem builds tests"
 )
 
 fail() {
@@ -45,7 +26,8 @@ fi
 # Partition `grep -nH` hits into unreviewed violations and marked exceptions.
 # Runs in the current shell so `fail` can set the exit status.
 justified() {
-  local file=$1 lineno=$2 start=$((lineno > 3 ? lineno - 3 : 1))
+  local file=$1 lineno=$2
+  local start=$((lineno > 3 ? lineno - 3 : 1))
   sed -n "${start},$((lineno - 1))p" "$file" | grep -q 'UPSTREAM DEFECT'
 }
 

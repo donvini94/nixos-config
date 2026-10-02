@@ -1,432 +1,93 @@
-#+TITLE: NixOS Configuration
-#+DESCRIPTION: Flake-based NixOS config for a desktop (dracula) and home server (alucard)
+#+title: Machine configuration
 
-* Overview
+* Hosts
 
-Flake-based NixOS configuration managing two systems:
-- *dracula* — Desktop workstation (AMD CPU, NVIDIA RTX 3090, Hyprland + caelestia-shell), also the local LLM inference host
-- *alucard* — Hetzner OpenStack VM: public nginx edge, Docker media stack, document management, mail, and a private agent/automation stack
+| Host    | Role                                              | System configuration | User configuration        |
+|---------+---------------------------------------------------+----------------------+---------------------------|
+| dracula | Personal desktop: Hyprland, gaming, local AI, ASR  | hosts/dracula/       | home.nix                  |
+| AC-0137 | Personal Mac: AeroSpace, SketchyBar, Doom, Ghostty | hosts/ac-0137/       | hosts/ac-0137/home.nix     |
+| alucard | Media/torrent server and startup infrastructure    | hosts/alucard/       | hosts/alucard/home.nix     |
 
-The flake provides two host-builder functions:
-- =mkDesktopHost "hostname"= — Full desktop with Hyprland, home-manager, sops, hosts blocking
-- =mkServerHost "hostname"= — Minimal server (host imports what it needs)
+=modules/= holds system services; =hm-modules/= holds user tools.
+Package lists are in =modules/packages.nix=, =modules/programming.nix=,
+=hm-modules/{cli-tools,packages}.nix= and =hosts/ac-0137/homebrew.nix=.
+Homebrew cleanup removes undeclared formulae/casks, but does not zap application data.
 
-Both hosts share one AI ingress module, one observability stack, and one container-update
-mechanism; each parameterises them differently. Every AI and admin surface binds loopback —
-nothing in the AI stack is published on a public domain, and on alucard the only remote entry
-point is Tailscale.
+* Build and deploy
 
-Detailed operator documentation lives in [[file:docs/][docs/]]; module conventions in [[file:AGENTS.md][AGENTS.md]].
-
-* Repository Structure
-
-#+begin_src
-.
-├── flake.nix                   # Host builders + repository flake checks
-├── configuration.nix           # Shared base config (shells, locale, gnupg, nix settings)
-├── home.nix                    # Home-manager import manifest (dracula)
-├── ai-ingress/                 # Shared AI ingress Python sources and regression tests
-│   ├── proxy.py                #   The ingress implementation (stdlib Python)
-│   ├── usage-summary.py        #   `ai-usage-summary` report generator
-│   └── test_proxy.py           #   AI ingress proxy regression suite
-├── modules/                    # Shared system-level modules
-│   ├── desktop.nix             #   Meta-module: desktop sub-modules + PAM + hosts blocking
-│   ├── nvidia.nix              #   Opt-in: driver, graphics, env vars, container toolkit
-│   ├── gaming.nix              #   Opt-in: Steam, Proton, Wine, lossless scaling
-│   ├── hyprland/default.nix    #   Hyprland + GDM + portals
-│   ├── packages.nix            #   System packages shared by ALL hosts
-│   ├── programming.nix         #   Dev tools needing system integration (Python+CUDA, Rust, Emacs)
-│   ├── services.nix            #   Pipewire, rtkit, Emacs daemon, printing, Mullvad
-│   ├── fonts.nix               #   Font definitions
-│   ├── ai-stack.nix            #   SHARED: the AI stack both hosts run identically
-│   ├── ai-ingress.nix          #   SHARED: OpenAI-compatible logging proxy, `ai-stack.target`
-│   ├── llama.nix               #   dracula: TabbyAPI/EXL3 or llama.cpp/GGUF model registry
-│   ├── remote-openai.nix       #   alucard: Requesty upstream behind the same ingress
-│   ├── n8n.nix                 #   n8n + task runners (containerised, private bridge)
-│   ├── n8n-credentials.nix     #   alucard: sops → n8n credential import
-│   ├── hermes-dashboard.nix    #   Hermes dashboard supervisor (upstream OCI gap)
-│   ├── observability.nix       #   SHARED: Langfuse + Prometheus + Grafana compose driver
-│   ├── container-updates.nix   #   SHARED: reviewed-digest container recreation
-│   ├── vulnerability-scan.nix  #   alucard: daily Trivy scan → Prometheus textfile metrics
-│   ├── paperless.nix           #   alucard: Paperless-ngx + provisioning + off-site backup
-│   └── mailcow-tls.nix         #   alucard: bind mailcow to loopback, hand it the ACME cert
-├── lib/
-│   ├── hermes-agent.nix        #   Hermes image pin, container hardening, settings builder
-│   └── requesty-models.nix     #   Requesty model catalog + per-Mtok costs (plain data)
-├── packages/
-│   ├── omp.nix                 #   Pinned oh-my-pi (`omp`) release binary
-│   ├── omp-harness.nix         #   `omp` + dracula's `omp-local`/`omp-chat` local launchers
-│   ├── pokemmo.nix             #   dracula: FHS-sandboxed PokeMMO launcher (self-updating client)
-│   └── hermes-n8n-handoff.nix  #   `hermes-n8n-handoff` webhook CLI (Hermes container only)
-├── hm-modules/                 # Home-manager user-level modules (one file per tool)
-│   ├── ai-clients.nix          #   SHARED: wrapped `omp` pinned to the ingress + local profile
-│   ├── claude.nix              #   dracula: ~/.claude pointer + memory-only Syncthing whitelist
-│   ├── omp.nix                 #   SHARED: writable out-of-store symlinks into ~/.omp/agent
-│   ├── git, ssh, fish, shell, hyprland, caelestia, services, packages, email, gtk
-│   └── helix, kitty, mpv, pokemmo, starship, yazi, zathura, zellij, doom
-├── hosts/
-│   ├── dracula/                # Desktop workstation
-│   │   ├── default.nix         #   Imports + local model registry + AI stack wiring + sops
-│   │   ├── hardware.nix        #   Boot, filesystems, CPU (AMD), peripherals
-│   │   └── services.nix        #   Docker + CDI, NVIDIA container toolkit, host packages
-│   └── alucard/                # Home server
-│       ├── default.nix         #   Composition, boot, Hetzner CIFS mount
-│       ├── disk-config.nix     #   Disko BTRFS partitioning
-│       ├── networking.nix      #   Firewall, sshd, fail2ban, mining-pool egress blocks
-│       ├── security.nix        #   ModSecurity + OWASP CRS, CrowdSec agent + bouncer
-│       ├── private-access.nix  #   Tailscale Serve map + Hermes origin-guard vhost
-│       ├── services/
-│       │   ├── default.nix             # Service import manifest + off-site backup enable
-│       │   ├── reverse-proxy.nix       # Public nginx vhosts, ACME, backend firewall guard
-│       │   ├── identity.nix            # PostgreSQL, Keycloak, realm export + backup
-│       │   ├── media-services.nix      # Jellyfin, Navidrome, Calibre-Web
-│       │   └── hosted-applications.nix # Paperless, mailcow TLS, registry, n8n backup
-│       ├── ai.nix              #   Requesty ingress, n8n, Hermes, tinyproxy egress allowlist
-│       ├── media.nix           #   Docker daemons, media stack unit, mining watchdog
-│       ├── syncthing.nix       #   Syncthing devices and folders (no peer may add folders)
-│       ├── users.nix           #   User accounts and SSH keys
-│       ├── home.nix            #   Vincenzo's home-manager: AI clients + OMP context
-│       └── home-kyrill.nix     #   Kyrill's home-manager: the OMP harness alone
-├── observability/              # Compose file + provisioned Grafana dashboard/datasource
-├── n8n/                        # `n8n-workflows` helper + reviewed workflow JSON
-├── hermes/workspace/           # AGENTS.md / SOUL.md installed into the Hermes workspace
-├── paperless/                  # Idempotent provisioner + public taxonomy
-├── omp/                        # OMP harness context: AGENTS.md + RULES.md (symlinked in)
-├── claude/                     # Retired Claude Code harness: pointer file + Mac handoff notes
-├── secrets/                    # sops-nix encrypted secrets (age)
-├── docs/                       # Operator guides (see below)
-├── scripts/                    # Helper scripts + the supply-chain guard
-├── doom/                       # Doom Emacs config (org-tangle based)
-└── mail/                       # Mail setup notes and helpers
-#+end_src
-
-* Desktop (dracula)
-
-| Component      | Tool                                                      |
-|----------------+-----------------------------------------------------------|
-| Window manager | Hyprland (pinned v0.54.3)                                 |
-| Desktop shell  | caelestia-shell (bar, notifications, launcher, lock, OSD) |
-| Editor         | Doom Emacs, Helix                                         |
-| Terminal       | Kitty                                                     |
-| Shell          | Fish (with direnv, zoxide, atuin, starship)               |
-| File manager   | Yazi (TUI), Thunar (GUI)                                  |
-| PDF viewer     | Zathura                                                   |
-| Media          | mpv                                                       |
-| VPN            | Mullvad, Tailscale                                        |
-| AI clients     | =omp=, Claude Code, Codex, Hermes desktop                 |
-
-* AI Stack
-
-One module, =modules/ai-ingress.nix=, defines the contract on both hosts: an
-OpenAI-compatible logging proxy on =127.0.0.1:8080= that every client speaks to. It is the
-single chokepoint for caller attribution (=X-AI-Caller=), token accounting, cost, the JSONL
-audit log, Prometheus metrics, and Langfuse traces. The module *asserts* the bind address is
-loopback. Only the backend behind it differs per host.
-
-#+begin_src
-dracula:  omp / Hermes / n8n
-              → local-llama-logger  127.0.0.1:8080
-              → local-llama-backend 127.0.0.1:18080
-
-alucard:  omp / Hermes / n8n
-              → local-llama-logger  127.0.0.1:8080
-              → https://router.requesty.ai
-#+end_src
-
-** Models
-
-Dracula serves one pinned local model at a time (HF revision + SHA-256 for every required
-file, auto-downloaded and verified into =/var/lib/llama/models=) through either backend —
-TabbyAPI/EXL3 or llama.cpp/GGUF, selected per model in the registry:
-
-| Model ID                       | Backend  | Context | Default |
-|--------------------------------+----------+---------+---------|
-| =qwen3.8-27b-exl3-3.5bpw=      | tabbyapi |   32768 | no      |
-| =occamy-1.0-iq4_xs=            | llamacpp |  131072 | yes     |
-
-Alucard carries the only server-side upstream credential (Requesty). Its model allowlist and
-price map come from =lib/requesty-models.nix=, and =modules/remote-openai.nix= refuses to start
-if that list drifts from the authenticated =/v1/models= catalog. Dracula holds *no* Requesty
-key — its clients reach Alucard's authenticated ingress over Tailscale instead.
-
-** Agents and automation
-
-- *Hermes* — NousResearch's =hermes-agent=, a pinned flake input, run as a hardened Docker
-  container. Dracula runs a personal single-operator agent against the local model; Alucard
-  runs a separate shared instance against Requesty. They share no state. API on =:8642=
-  (bearer auth), dashboard on =:9119= (basic auth). On alucard, Telegram is the only chat
-  transport, and its egress goes through a tinyproxy allowlist (=:18084=) permitting exactly
-  two hosts.
-  Workspace policy is installed under =/var/lib/hermes/workspace=; managed =SOUL.md=
-  is installed separately under =/var/lib/hermes/.hermes=, where Hermes loads its identity.
-- *n8n* — containerised, read-only, cap-drop-ALL, on a private bridge. It reaches the ingress
-  and the Hermes API only through systemd socket proxies bound to the bridge gateway, never a
-  host NIC. Workflows are reviewed JSON in =n8n/workflows/<host>/= and imported with
-  =n8n-workflows=.
-- *Lifecycle* — everything is grouped under =ai-stack.target=. Members of group =llama=
-  (=services.aiIngress.operators=) start and stop it without root via a polkit rule.
-
-* Server (alucard)
-
-Hetzner OpenStack VM. Public traffic terminates at nginx with ACME/Let's Encrypt; every
-backend binds loopback, and Nix assertions fail the build if a backend port ever appears in
-the firewall allowlist.
-
-Domains: =dumusstbereitsein.de=, =istbereit.de=
-
-** Public vhosts
-
-| Domain                              | Backend                 | Notes                          |
-|-------------------------------------+-------------------------+--------------------------------|
-| =dumusstbereitsein.de=              | =404=                   | apex placeholder               |
-| =auth.dumusstbereitsein.de=         | Keycloak =:38080=       | WAF off on the admin REST API  |
-| =stream.dumusstbereitsein.de=       | Jellyfin =:8096=        | WAF off on the playback route  |
-| =music.dumusstbereitsein.de=        | Navidrome =:4533=       |                                |
-| =paperless.dumusstbereitsein.de=    | Paperless-ngx =:58080=  |                                |
-| =requests.dumusstbereitsein.de=     | Jellyseerr =:5055=      | media stack                    |
-| =registry.dumusstbereitsein.de=     | Docker registry =:5000= | basic auth                     |
-| =chat.dumusstbereitsein.de=         | Onyx =:1447=            | managed outside this repo      |
-| =files.dumusstbereitsein.de=        | =:53842=                | managed outside this repo      |
-| =git.=, =docs.dumusstbereitsein.de= | =404=                   | placeholders                   |
-| =read.istbereit.de=                 | Calibre-Web =:8083=     |                                |
-| =comics.istbereit.de=               | Komga =:25600=          | Keycloak OIDC                  |
-| =mail.istbereit.de=                 | mailcow =:880=          | host ACME cert, loopback-bound |
-| =webdav.istbereit.de=               | Paperless consume dir   | basic auth, upload-only        |
-| =budget.istbereit.de=               | Actual Budget =:5006=   | managed outside this repo      |
-| =knowyourfiber.com=                 | static root             |                                |
-
-Every vhost is wrapped by a =harden= function adding per-IP rate limiting, connection limits,
-and =X-Content-Type-Options= / =Referrer-Policy= / =Permissions-Policy=.
-
-** Private access (Tailscale)
-
-No Funnel, no exit node, no subnet routes. =tailscale serve= publishes loopback ports onto
-=alucard.tailf117a1.ts.net= and nothing else:
-
-| Tailnet port | Service          |
-|--------------+------------------|
-|        23000 | Langfuse         |
-|        23001 | Grafana          |
-|        25678 | n8n              |
-|        28080 | AI ingress       |
-|        29091 | Prometheus       |
-|        29119 | Hermes dashboard |
-
-Each media app keeps its own loopback port number on the tailnet: Kapowarr 15656, Bazarr
-16767, Radarr 17878, qBittorrent 18080, Sonarr 18989, SABnzbd 19090, Prowlarr 19696.
-
-The Hermes dashboard needs browser WebSockets, so it is the one HTTPS map: tailnet =:29119=
-→ an internal nginx vhost that rewrites =Host=/=Origin= and returns 403 for any other origin
-→ =127.0.0.1:9119=.
-
-** Docker media automation stack
-
-All published ports bind loopback; torrent traffic is confined to the Gluetun (Mullvad
-WireGuard) network namespace.
-
-| Service     | Purpose             |
-|-------------+---------------------|
-| Gluetun     | VPN tunnel          |
-| qBittorrent | Torrent client      |
-| SABnzbd     | Usenet downloader   |
-| Sonarr      | TV show automation  |
-| Radarr      | Movie automation    |
-| Prowlarr    | Indexer management  |
-| Bazarr      | Subtitle management |
-| Jellyseerr  | Media requests      |
-| Komga       | Comic/manga library |
-| Kapowarr    | Comic management    |
-
-See [[file:hosts/alucard/MEDIA_AUTOMATION_SETUP.md][MEDIA_AUTOMATION_SETUP.md]] for the full media stack documentation.
-
-** Documents
-
-=modules/paperless.nix= runs Paperless-ngx plus an idempotent provisioner
-(=paperless/provision.py=) that reconciles tags, correspondents, document types, workflows and
-saved views from =paperless/taxonomy.yaml= (public) and =secrets/paperless.yaml= (private). It
-upserts by name and never deletes — drift is reported, not applied. Nightly exports are pushed
-off-site to the Hetzner storage box with restic, and a separate unit restores the latest
-snapshot and verifies its contents.
-
-* Security (alucard)
-
-Three independent layers, each in its own file:
-
-| Layer     | Implementation                                                       | File             |
-|-----------+----------------------------------------------------------------------+------------------|
-| L7 WAF    | ModSecurity + OWASP CRS (pinned release), audit log, rate/conn zones | =security.nix=   |
-| L3/L4 IDS | CrowdSec agent + firewall bouncer on =INPUT= and =DOCKER-USER=       | =security.nix=   |
-| SSH       | fail2ban, key-only auth, no root login                               | =networking.nix= |
-
-Plus: outbound mining-pool port blocks in the firewall, a =mining-watchdog= unit that stops
-any container found talking to a pool port, and a daily Trivy scan of every running image
-(root *and* rootless daemons) whose results land in Prometheus as textfile metrics.
-
-CRS exemptions are surgical and each documents a verified false positive in a comment next to
-the rule. Because nginx evaluates the server-level WAF before a nested location can re-enable
-it, the pattern is =modsecurity off= at the vhost and =modsecurity on= on the catch-all route.
-
-* Observability
-
-=modules/observability.nix= drives one digest-pinned compose stack, identical on both hosts
-and parameterised per host (GPU metrics on dracula only):
-
-| Component     |  Port | Purpose                                           |
-|---------------+-------+---------------------------------------------------|
-| Langfuse      | 13000 | LLM traces (+ postgres, clickhouse, redis, minio) |
-| Grafana       | 13001 | Provisioned "AI and machine overview" dashboard   |
-| Prometheus    | 19091 | 90 d / 20 GB retention                            |
-| node-exporter | 19100 | Host metrics + textfile collector                 |
-| cAdvisor      | 18081 | Container metrics                                 |
-| DCGM exporter | 19400 | GPU metrics (compose profile =gpu=, dracula)      |
-
-Scrape targets: the AI ingress, n8n, CrowdSec, node, containers, and Prometheus itself. The
-dashboard renders inference latency/TTFT/cost next to Trivy vulnerability counts, so security
-and AI telemetry close the loop in the same place. Cost is reported on two deliberately
-non-summable tracks — provider-billed and list-price estimate; local models report neither
-rather than a fake =$0.00=.
-
-* Operator Commands
-
-| Command                | Purpose                                                     |
-|------------------------+-------------------------------------------------------------|
-| =ai-stack-start/stop=  | Drive =ai-stack.target=, polling until healthy (no root)    |
-| =ai-stack-health=      | Assert units active, then probe the ingress =/health=       |
-| =ai-usage-summary=     | Per-caller / per-model tokens, cost, latency, TTFT          |
-| =n8n-workflows=        | =import= reviewed workflow JSON / =export= the live set     |
-| =observability-status= | Stack unit status + =docker compose ps=                     |
-| =containers-update=    | Re-pull and recreate the declared container stacks          |
-| =containers-scan=      | Run the Trivy scan now and print a one-line summary         |
-| =crowdsec-admin=       | Sudo-wrapped =cscli= (decisions, alerts, hub)               |
-| =paperless-provision=  | Reconcile the Paperless taxonomy (=--dry-run= is faithful)  |
-| =mailcow-tls-deploy=   | Install the ACME cert into mailcow and restart its services |
-
-* Build Commands
-
-#+begin_src bash
-# Desktop
-sudo nixos-rebuild switch --flake .#dracula
-
-# Server
-sudo nixos-rebuild switch --flake .#alucard
-
-# Test build (no switch)
-sudo nixos-rebuild build --flake .#dracula
-
-# Update flake inputs
-nix flake update
-
-# Check / show flake  (`check` runs repository regression gates)
+#+begin_src sh
 nix flake check
-nix flake show
+nix build --no-link .#nixosConfigurations.dracula.config.system.build.toplevel
+nix build --no-link .#nixosConfigurations.alucard.config.system.build.toplevel
+nix build --no-link '.#darwinConfigurations.AC-0137.system'
+
+sudo nixos-rebuild switch --flake .#dracula
+ssh -t alucard 'cd /home/vincenzo/nixos-config && sudo nixos-rebuild switch --flake .#alucard'
+sudo darwin-rebuild switch --flake .#AC-0137
 #+end_src
 
-* CI and Supply Chain
+CI evaluates host build plans and builds exposed local packages; a plan is not a full build.
+Renovate owns flake inputs, OCI digests and action pins. =package-update.yml= owns
+=packages/= version/hash updates. =agent-update check|apply= handles vendored skills
+and agent pins; it neither commits nor deploys.
 
-- =.github/workflows/nix-build.yml= evaluates the complete build plan for
-  =nixosConfigurations.{dracula,alucard}.config.system.build.toplevel= on every PR and push
-  to master. The Dracula closure is currently 67.4 GiB, so hosted CI uses =nix build --dry-run=
-  instead of attempting to realize it on an undersized runner; full builds remain the local
-  deployment gate. CI runs =nix flake check= as a separate job.
-- =nix flake check= runs both the package-patch guard and the AI ingress regression suite.
-  =scripts/check-no-package-patches.sh= rejects =overrideAttrs=, =postPatch=, =applyPatches=,
-  ~patches =~ assignments and locally defined overlay lambdas. The allow-list lives in the
-  script's =EXCEPTIONS= table (currently bun for omp-learn, mattermost-desktop's
-  =koffi.node=, and the CUDA-13 torch wheel in =lib/cuda-torch.nix=). Listing a file exempts
-  only mutations carrying an =# UPSTREAM DEFECT= comment in the three lines above them,
-  naming the failure and the removal condition. Where that condition is visible at eval
-  time, the mutation sits behind a probe that emits =lib.warn= and falls back to the stock
-  package once upstream is fixed (bun, and all three in =lib/cuda-torch.nix=).
-  mattermost-desktop has no probe: its defect only shows at runtime.
-- =renovate.json= is configured to pin container digests and GitHub Action SHAs with
-  =automerge: false=, so a reviewed Git commit is the only path a container image changes.
-  Renovate is installed and [[https://github.com/donvini94/nixos-config/issues/1][Dependency Dashboard issue #1]] exists.
-  Updates remain non-automerge and use the configured weekday 22:00–23:00 Europe/Berlin
-  schedule; see =docs/OPERATOR-ACTIONS.org=.
-- Hermes stable releases are tracked explicitly from GitHub Releases in =renovate.json=.
-  Only =vYYYY.M.D= tags are accepted; RC and canary tags are excluded. The native Nix
-  manager is disabled for this input because it follows the pinned tag's commit rather
-  than selecting newer releases. =.github/workflows/hermes-update.yml= refreshes
-  =flake.lock= on the same-repository =renovate/hermes-agent-stable= PR, runs flake
-  checks and both Linux host build plans, then commits the lock. Review, merge and
-  rebuild each host to deploy; neither merging nor updating the Ubuntu base image
-  upgrades a running Hermes instance by itself.
+* Dracula
 
-* Secret Management
+=gpu-mode transcription|ai|gaming= selects the exclusive GPU workload;
+=gpu-mode status= reports it. Transcription starts at boot; inference does not.
+=omp-local= and =omp-chat= use the local model. AI requests go through
+=127.0.0.1:8080= to llama.cpp on =:18080=.
+Python projects own their dependencies through uv, not a global ML environment.
 
-Uses [[https://github.com/Mic92/sops-nix][sops-nix]] with age encryption. Three recipient keys (desktop, server, macbook). Secrets are
-delivered to services via systemd =LoadCredential= or sops templates, never plain env vars in
-the store.
+Monitoring is independent of GPU mode, off at boot on Dracula and on at boot on
+Alucard: =sudo systemctl start|stop observability-stack=, =observability-status=.
 
-#+begin_src bash
-sops secrets/dmbs.yaml          # Base host secrets
-sops secrets/alucard-ai.yaml    # Server AI stack (Requesty, n8n, Langfuse, Hermes)
-sops secrets/dracula-ai.yaml    # Desktop AI stack
-sops secrets/paperless.yaml     # Private half of the Paperless taxonomy
-#+end_src
+* Alucard
 
-Config files: [[file:.sops.yaml][.sops.yaml]], [[file:secrets/secrets.nix][secrets.nix]]. Inventory and rotation classes: [[file:docs/SECRETS.md][docs/SECRETS.md]].
+| Configuration                     | Owns                                                      |
+|-----------------------------------+-----------------------------------------------------------|
+| services/reverse-proxy.nix         | Public domains, nginx, ACME                               |
+| services/identity.nix             | PostgreSQL, Keycloak                                      |
+| services/media-services.nix        | Jellyfin, Navidrome, Calibre-Web                           |
+| services/hosted-applications.nix   | Paperless, Mailcow TLS, registry, Mattermost, Atuin         |
+| media-stack/docker-compose.yml    | Gluetun/qBittorrent, *arr, SABnzbd, Seerr, Komga, Kapowarr   |
+| ai.nix                            | Requesty ingress, Hermes, n8n                              |
+| private-access.nix                | Tailscale Serve endpoints                                 |
+| security.nix, networking.nix      | WAF, CrowdSec, SSH, firewall                               |
 
-* Documentation
+Admin interfaces bind loopback and are published through Tailscale Serve; inspect
+=tailscale serve status= for addresses. Do not enable Funnel. Docker wildcard
+port publishing can bypass the host firewall; firewall assertions cannot prove
+that externally maintained Compose stacks are private.
+qBittorrent uses Gluetun's VPN namespace; do not give it an independent network.
 
-| File                                                        | Contents                                                       |
-|-------------------------------------------------------------+----------------------------------------------------------------|
-| [[file:docs/STACK_GUIDE.md][docs/STACK_GUIDE.md]]           | Operator map: every unit, path, port and command on both hosts |
-| [[file:docs/ALUCARD_SECURITY.md][docs/ALUCARD_SECURITY.md]] | Exposure model, access planes, runbooks                        |
-| [[file:docs/SECRETS.md][docs/SECRETS.md]]                   | Secret inventory and rotation (no values)                      |
-| [[file:docs/AI_DEMO_GUIDE.md][docs/AI_DEMO_GUIDE.md]]       | Walkthrough of the AI stack for a non-operator audience        |
-| [[file:AGENTS.md][AGENTS.md]]                               | Module layout conventions and package-placement rules          |
+Mailcow (=/opt/mailcow-dockerized=), Onyx (=~/.config/onyx/deployment=) and Actual
+Budget (=~/actual_budget=) are maintained outside this repository. Back up first
+and use their supported migration/update procedures, not generic image restarts.
 
-* Adding a New Desktop Host
+=ai-stack-start|stop|health= controls Alucard's ingress, Hermes and n8n.
+=n8n-workflows import|export= manages reviewed workflow JSON.
+=ai-usage-summary= reports usage without printing payloads. Raw ingress logs
+(=/var/lib/llama/logs/=) contain prompts and responses; keep them out of Git/sync.
+Hermes sessions are separate but memory/workspace are shared by the founders;
+this is not a tenant boundary. Its credentials are SOPS-owned, not dashboard-owned.
 
-#+begin_src nix
-# 1. In flake.nix, add one line:
-newhost = mkDesktopHost "newhost";
-#+end_src
+* Secrets and recovery
 
-#+begin_src bash
-# 2. Create the host directory:
-mkdir -p hosts/newhost
-#+end_src
+Edit =secrets/*.yaml= with =sops=; runtime plaintext belongs under =/run/secrets=,
+never in the Nix store. Keep age private keys backed up separately.
+- n8n/Langfuse encryption keys, Langfuse salt and restic passwords require a
+  supported migration, not just an edited SOPS value.
+- Database and administrator bootstrap passwords do not update existing accounts.
+- Hermes' =.env= is rewritten on activation; rotate its credentials in SOPS.
+- Paperless private YAML uses records, not names as map keys (SOPS leaves keys visible).
+  After changing an IMAP password run =sudo paperless-provision --sync-passwords=.
 
-#+begin_src nix
-# 3. hosts/newhost/default.nix — import shared modules + set identity:
-{ lib, pkgs, username, ... }:
-{
-  imports = [
-    ../../modules/desktop.nix    # Full desktop stack
-    ../../modules/nvidia.nix     # Opt-in: only for NVIDIA GPUs
-    ../../modules/gaming.nix     # Opt-in: Steam, Wine, etc.
-    ./hardware.nix
-  ];
-  networking.hostName = "newhost";
-  users.users."${username}" = {
-    isNormalUser = true;
-    extraGroups = [ "networkmanager" "wheel" ];
-    packages = with pkgs; [ firefox ];
-  };
-  system.stateVersion = "24.11";
-}
-#+end_src
+=offsite-backup-status= reports backup and restore-verification jobs for Keycloak,
+Jellyfin, n8n and Paperless. Restoring files is not proof of application recovery;
+test database imports and application logins before relying on a migration rollback.
+Media application state and services outside Nix need their own backup coverage.
 
-#+begin_src bash
-# 4. Generate hardware config on the target machine:
-nixos-generate-config --show-hardware-config > hosts/newhost/hardware.nix
-#+end_src
-
-#+begin_src bash
-# 5. Build and switch:
-sudo nixos-rebuild switch --flake .#newhost
-#+end_src
-
-* Adapting This Config
-
-1. Fork and clone
-2. Create your host under =hosts/<name>/= following the pattern above
-3. Enable/disable opt-in modules (=nvidia.nix=, =gaming.nix=) as needed
-4. For a server: adapt =hosts/alucard/= — each file is self-contained
-5. For the AI stack: import =modules/ai-ingress.nix= plus exactly one backend
-   (=llama.nix= for a local TabbyAPI/EXL3 or llama.cpp/GGUF model, =remote-openai.nix= for a hosted router)
-6. Set up your own sops-nix age keys in =.sops.yaml= and re-encrypt secrets
-
-See [[file:AGENTS.md][AGENTS.md]] for module conventions and [[file:docs/STACK_GUIDE.md][docs/STACK_GUIDE.md]] for the full operator map.
+Mail uses one Alucard notmuch hub and two muchsync replicas; recovery and sync
+constraints are in [[file:mail/README.md][mail/README.md]]. Outstanding manual work is in
+[[file:docs/OPERATOR-ACTIONS.org][OPERATOR-ACTIONS.org]].

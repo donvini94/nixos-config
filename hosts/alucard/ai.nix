@@ -113,6 +113,13 @@ in
     };
   };
 
+  services.localObservability = {
+    enable = true;
+    secretsFile = secretFile;
+    inferencePort = 8080;
+    n8nPort = 5678;
+  };
+
   services.aiIngress = {
     backendUrl = "https://router.requesty.ai";
     backendHealthPath = "/v1/models";

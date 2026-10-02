@@ -1,12 +1,10 @@
 {
   config,
-  lib,
   pkgs,
   ...
 }:
 let
   mediaDir = path: "d ${path} 0755 jellyfin jellyfin";
-  miningPorts = lib.concatMapStringsSep "|" toString (import ./mining-pools.nix).ports;
 in
 {
   virtualisation.docker = {
@@ -74,33 +72,4 @@ in
     };
   };
 
-  systemd.services.mining-watchdog = {
-    description = "Detect and stop mining containers";
-    after = [ "docker.service" ];
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      Type = "simple";
-      User = "vincenzo";
-      Group = "users";
-      Environment = [
-        "DOCKER_HOST=unix:///run/user/1000/docker.sock"
-        "XDG_RUNTIME_DIR=/run/user/1000"
-        "PATH=${pkgs.docker}/bin:/run/current-system/sw/bin"
-      ];
-      ExecStart = pkgs.writeShellScript "mining-watchdog.sh" ''
-        export DOCKER_HOST=unix:///run/user/1000/docker.sock
-        export XDG_RUNTIME_DIR=/run/user/1000
-        while true; do
-          ${pkgs.docker}/bin/docker ps -q 2>/dev/null | while read c; do
-            if ${pkgs.docker}/bin/docker exec "$c" sh -c "ss -tn 2>/dev/null | grep -E ':(${miningPorts})'" 2>/dev/null; then
-              ${pkgs.docker}/bin/docker stop "$c" && \
-                logger "Mining-watchdog: Stopped container $c for mining activity"
-            fi
-          done
-          sleep 60
-        done
-      '';
-      Restart = "always";
-    };
-  };
 }

@@ -17,12 +17,12 @@ let
   requestyEndpoint =
     if isDracula then "http://alucard.tailf117a1.ts.net:28080/v1" else "http://127.0.0.1:8080/v1";
 
-  # The Pi binary is an npm global in ~/.local, not a nix package. Pinning the version here keeps
-  # the three hosts on one release; `agent-update` bumps it. See docs/PI.md for the nix cutover.
+  # npm owns the writable binary in ~/.local; agent-update maintains this pin.
   piVersion = "1.0.0";
 
   upstreamRevision = "f82da563ab05d66729492d64c7ed4e96db3663f3";
-  upstream = path: hash:
+  upstream =
+    path: hash:
     pkgs.fetchurl {
       url = "https://raw.githubusercontent.com/amosblomqvist/pi-config/${upstreamRevision}/${path}";
       inherit hash;
@@ -62,26 +62,24 @@ let
     authHeader = false;
     apiKey = "unused";
     headers.X-AI-Caller = "pi";
-    models = lib.mapAttrsToList (
-      id: model: {
-        inherit id;
-        name = model.displayName;
-        reasoning = model.reasoning;
-        input = [ "text" ];
-        contextWindow = model.contextSize;
-        maxTokens = model.output;
-        cost = model.cost // {
-          cacheRead = 0;
-          cacheWrite = 0;
-        };
-        compat = {
-          supportsStore = false;
-          supportsDeveloperRole = false;
-          supportsReasoningEffort = false;
-          maxTokensField = "max_tokens";
-        };
-      }
-    ) osConfig.services.localLlama.models;
+    models = lib.mapAttrsToList (id: model: {
+      inherit id;
+      name = model.displayName;
+      reasoning = model.reasoning;
+      input = [ "text" ];
+      contextWindow = model.contextSize;
+      maxTokens = model.output;
+      cost = model.cost // {
+        cacheRead = 0;
+        cacheWrite = 0;
+      };
+      compat = {
+        supportsStore = false;
+        supportsDeveloperRole = false;
+        supportsReasoningEffort = false;
+        maxTokensField = "max_tokens";
+      };
+    }) osConfig.services.localLlama.models;
   };
   piModels = {
     providers =
@@ -102,7 +100,12 @@ let
     defaultProjectTrust = "ask";
     defaultProvider = "claude-bridge";
     defaultModel = "claude-sonnet-5-5";
-    defaultTools = [ "read" "bash" "edit" "write" ];
+    defaultTools = [
+      "read"
+      "bash"
+      "edit"
+      "write"
+    ];
     externalEditor = "emacsclient -c -a emacs";
     packages = [
       "${home}/code/omp-mentor"
@@ -181,7 +184,12 @@ in
   # mechanism: every switch fast-forwards them from GitHub over HTTPS (no key
   # needed, remotes untouched). A dirty or diverged checkout is reported, never overwritten.
   home.activation.piBinary = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    export PATH=${lib.makeBinPath [ pkgs.nodejs pkgs.coreutils ]}:$HOME/.local/bin:$PATH
+    export PATH=${
+      lib.makeBinPath [
+        pkgs.nodejs
+        pkgs.coreutils
+      ]
+    }:$HOME/.local/bin:$PATH
     if [ -z "''${DRY_RUN:-}" ] && [ "$(pi --version 2>/dev/null)" != "${piVersion}" ]; then
       npm install -g --prefix "$HOME/.local" --ignore-scripts "@earendil-works/pi-coding-agent@${piVersion}" \
         || echo "piBinary: installing pi ${piVersion} failed (offline?)" >&2
@@ -189,7 +197,13 @@ in
   '';
 
   home.activation.agentContentRepos = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    export PATH=${lib.makeBinPath [ pkgs.git pkgs.bun pkgs.coreutils ]}:$PATH
+    export PATH=${
+      lib.makeBinPath [
+        pkgs.git
+        pkgs.bun
+        pkgs.coreutils
+      ]
+    }:$PATH
     code_dir=${lib.escapeShellArg "${home}/code"}
     $DRY_RUN_CMD mkdir -p "$code_dir"
     for repo in omp-learn omp-mentor omp-prompt-snippets; do

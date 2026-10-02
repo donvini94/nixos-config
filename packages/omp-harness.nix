@@ -1,36 +1,5 @@
-# The `omp` command as an account actually installs it: upstream's pinned binary plus
-# this repository's managed configuration overlay.
-#
-# Managed settings reach OMP only through its supported `PI_CONFIG_FILES` overlay, so
-# everything OMP owns under `~/.omp/agent` stays writable and application-owned — OAuth
-# credentials in `agent.db`, and the `default` and `slow` model roles in `config.yml`. A
-# rebuild therefore never invalidates a login and never overwrites the model the operator
-# last chose.
-#
-# `modelRoles` here carries only the roles that are infrastructure rather than
-# preference. `smol` is the one that matters: the bundled `scout`, `sonic` and
-# `librarian` agents all declare `model: "@smol"`, and OMP also spends it on prewalk,
-# session titles and memory consolidation. Left unset it falls back to `@default`, which
-# bills every cheap background call at the session model's reasoning effort and leaves
-# subagent titles ungenerated. `task` is deliberately NOT set: the general-purpose worker
-# does real implementation work, so it keeps the session model. The overlay deep-merges
-# per key, so naming `smol` here leaves an operator's `default`/`slow` in `config.yml`
-# untouched.
-#
-# Roles are a parameter, not a constant, because they name provider-scoped model ids. An
-# account that is not given the Requesty profile must not be handed a role pointing into
-# it; see `hosts/alucard/home-kyrill.nix`.
-#
-# `enabledModels` is a selection scope, not a provider declaration. The two wildcard
-# scopes below expose OMP's bundled Anthropic and OpenAI Codex catalogs without pinning a
-# model list; each account authenticates them interactively against its own Claude and
-# ChatGPT subscription, and a provider holding no credentials stays hidden. A login taken
-# mid-session only shows up after OMP restarts: the picker's model list is built once at
-# startup.
-#
-# `extraEnabledModels` adds a custom-provider profile (the local llama.cpp ingress, the
-# Requesty ingress) on top. An account that passes nothing gets a harness scoped to its
-# own subscription logins.
+# Managed overlays leave OAuth state and user-selected default/slow roles writable.
+# Custom model scopes and infrastructure roles are supplied per account.
 {
   callPackage,
   formats,
@@ -80,25 +49,9 @@ let
     '';
   };
 
-  # `omp-local` / `omp-chat`: the responsive local-model modes, given as separate commands
-  # rather than an in-session `/local`. A running session can be handed a different model,
-  # tool set and system prompt, but not a different privacy boundary: memory backend, MCP
-  # discovery, title generation and compaction routing are resolved per process. A named
-  # profile relocates every one of those to ~/.omp/profiles/local, so "no prompt leaves the
-  # machine" is a property of the process rather than of an extension catching every path.
-  #
-  # The full harness starts a 32k-context local model at ~24k tokens — above OMP's default
-  # 16k-reserve compaction threshold — so its first successful turn is already eligible for
-  # compaction and its handoff/summarization requests overflow llama.cpp's single slot. This
-  # config trades tools for headroom: ~11k tokens of prompt, a 24,576-token threshold
-  # (32768 - 8192), deterministic `shake` before any summarization model, and no
-  # speculative compaction competing for the one inference slot.
-  #
-  # `disabledProviders` carries two id namespaces at once: model backends (anthropic,
-  # openai, google, groq, openrouter, ollama, and the custom `alucard-requesty` profile) and
-  # config-discovery sources (claude, codex, gemini, cursor, ... ). Both are named here, so
-  # neither a remote model nor another harness's context file can enter these sessions.
-  # `native` stays enabled: it is what carries AGENTS.md into `omp-local`.
+  # Local sessions use a separate profile: model selection alone does not isolate
+  # memory, discovery or background calls. Disable both remote model providers and
+  # foreign config sources; native still loads AGENTS.md.
   localConfig = yaml.generate "omp-local-config.yml" {
     disabledProviders = [
       "agent-plugins"
@@ -153,13 +106,7 @@ let
     };
   };
 
-  # `--system-prompt` swaps OMP's default instruction template (~6.5k tokens of tool
-  # policy, internal-URL catalog, delegation and workflow rules) for this text while the
-  # custom template still renders discovered context files, so AGENTS.md survives. Tool
-  # schemas dominate what is left: the six core tools plus lsp cost ~4k tokens, against
-  # ~15k for the full set. Everything the prompt no longer explains — subagents, hub, eval,
-  # xd:// devices — is also absent from `--tools`, so nothing is described that is missing
-  # or missing that is described.
+  # A smaller prompt/tools set leaves context for code; AGENTS.md still loads.
   localSystemPrompt = writeText "omp-local-system-prompt.md" ''
     You are a repository coding agent. Complete the user's requested work with the smallest maintainable change.
 
@@ -192,10 +139,7 @@ let
     '';
   };
 
-  # Bare chat: NULL_PROMPT empties the system prompt entirely (no personality, workstation
-  # block, memory or MCP guidance), `--cwd /tmp` keeps repository context files out of a
-  # conversation that has no tools to use them with, and `--thinking off` reaches the Qwen
-  # template's `enable_thinking: false`. Measured shape: 17 prompt tokens, no tools.
+  # /tmp avoids loading repository context into tool-free chat.
   chatLauncher = writeShellApplication {
     name = "omp-chat";
     text = ''

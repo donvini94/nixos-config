@@ -1,7 +1,3 @@
-# docker-compose rather than services.prometheus/services.grafana on purpose: the stack
-# shares one docker network with Hermes and n8n, tracks upstream Hermes releases directly,
-# and ships as a unit to customer deployments. Porting it to native NixOS modules would
-# cost all three.
 {
   config,
   lib,
@@ -12,6 +8,7 @@
 let
   cfg = config.services.localObservability;
   stateDirectory = "/var/lib/observability-stack";
+  environmentFile = config.sops.templates."observability.env".path;
   scrape = job_name: port: {
     inherit job_name;
     static_configs = [ { targets = [ "127.0.0.1:${toString port}" ]; } ];
@@ -109,10 +106,15 @@ in
   options.services.localObservability = {
     enable = lib.mkEnableOption "local Langfuse, Grafana, and Prometheus observability stack";
 
-    environmentFile = lib.mkOption {
-      type = lib.types.nullOr lib.types.path;
-      default = null;
-      description = "Root-only environment file containing observability service secrets.";
+    secretsFile = lib.mkOption {
+      type = lib.types.path;
+      description = "SOPS file holding Langfuse and Grafana secrets.";
+    };
+
+    autoStart = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Start monitoring at boot, independently of inference.";
     };
 
     hostLabel = lib.mkOption {
@@ -183,12 +185,48 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    assertions = [
-      {
-        assertion = cfg.environmentFile != null;
-        message = "services.localObservability.environmentFile must be configured";
-      }
-    ];
+    sops.secrets =
+      lib.genAttrs
+        [
+          "langfuse/postgres_password"
+          "langfuse/clickhouse_password"
+          "langfuse/redis_auth"
+          "langfuse/minio_root_password"
+          "langfuse/salt"
+          "langfuse/encryption_key"
+          "langfuse/nextauth_secret"
+          "langfuse/project_public_key"
+          "langfuse/project_secret_key"
+          "langfuse/admin_password"
+          "grafana/admin_password"
+        ]
+        (_: {
+          sopsFile = cfg.secretsFile;
+          owner = "root";
+          mode = "0400";
+        });
+
+    sops.templates."observability.env" = {
+      content = ''
+        POSTGRES_PASSWORD=${config.sops.placeholder."langfuse/postgres_password"}
+        CLICKHOUSE_PASSWORD=${config.sops.placeholder."langfuse/clickhouse_password"}
+        REDIS_AUTH=${config.sops.placeholder."langfuse/redis_auth"}
+        MINIO_ROOT_PASSWORD=${config.sops.placeholder."langfuse/minio_root_password"}
+        LANGFUSE_SALT=${config.sops.placeholder."langfuse/salt"}
+        LANGFUSE_ENCRYPTION_KEY=${config.sops.placeholder."langfuse/encryption_key"}
+        NEXTAUTH_SECRET=${config.sops.placeholder."langfuse/nextauth_secret"}
+        LANGFUSE_PROJECT_PUBLIC_KEY=${config.sops.placeholder."langfuse/project_public_key"}
+        LANGFUSE_PROJECT_SECRET_KEY=${config.sops.placeholder."langfuse/project_secret_key"}
+        LANGFUSE_INIT_USER_EMAIL=vincenzo@istbereit.de
+        LANGFUSE_INIT_USER_NAME=Vincenzo
+        LANGFUSE_INIT_USER_PASSWORD=${config.sops.placeholder."langfuse/admin_password"}
+        GRAFANA_ADMIN_PASSWORD=${config.sops.placeholder."grafana/admin_password"}
+      '';
+      restartUnits = [ "observability-stack.service" ];
+      mode = "0400";
+      owner = "root";
+      group = "root";
+    };
 
     virtualisation.docker.enable = true;
 
@@ -201,8 +239,7 @@ in
 
     systemd.services.observability-stack = {
       description = "Langfuse and machine/container observability stack";
-      wantedBy = [ "ai-stack.target" ];
-      partOf = [ "ai-stack.target" ];
+      wantedBy = lib.optional cfg.autoStart "multi-user.target";
       after = [ "docker.service" ];
       requires = [ "docker.service" ];
       path = [
@@ -233,7 +270,7 @@ in
         TimeoutStartSec = "30min";
         TimeoutStopSec = "10min";
         WorkingDirectory = stateDirectory;
-        EnvironmentFile = cfg.environmentFile;
+        EnvironmentFile = environmentFile;
         ExecStartPre = [ (lib.getExe prepare) ];
         ExecStart = "${pkgs.docker}/bin/docker compose up -d --pull always --remove-orphans --wait";
         ExecStop = "${pkgs.docker}/bin/docker compose down";
@@ -246,7 +283,7 @@ in
       (pkgs.writeShellScriptBin "observability-status" ''
         ${pkgs.systemd}/bin/systemctl --no-pager status observability-stack.service
         ${config.security.wrapperDir}/sudo ${pkgs.docker}/bin/docker compose \
-          --env-file ${cfg.environmentFile} \
+          --env-file ${environmentFile} \
           --project-directory ${stateDirectory} ps
       '')
     ];

@@ -1,10 +1,5 @@
 name: Nix checks
 
-# No push trigger. master has no protection and work lands on it directly, so a
-# push run gates nothing and a red master trains you to ignore the badge. Local
-# `nix eval` of the three hosts is the gate that actually runs before a rebuild.
-# What CI is for here is the Renovate PRs it can still block, plus a weekly run
-# that catches a nixpkgs input drifting under an unchanged flake.lock.
 on:
   pull_request:
   schedule:
@@ -19,9 +14,7 @@ concurrency:
   group: nix-build-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Every job resolves github: flake inputs. Unauthenticated, that is the shared
-# 60 requests/hour anonymous limit across all five jobs, and api.github.com
-# answers 429 mid-evaluation. The runner token raises it to 1000/hour.
+# Authenticate flake fetches to avoid the shared anonymous API rate limit.
 env:
   NIX_CONFIG: "access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}"
 
@@ -38,9 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: DeterminateSystems/determinate-nix-action@8d87e8d5e5b8a8309d4281094560f127d9a265f1 # v3
-      # Dracula's 67.4 GiB closure cannot fit on a GitHub-hosted runner. This
-      # still evaluates the complete build graph; restore realization on a
-      # self-hosted runner with enough Nix storage.
+      # Full host closures exceed hosted runner storage; these are build plans.
       - run: nix build --dry-run --no-link .#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel
 
   darwin:
@@ -49,8 +40,6 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: DeterminateSystems/determinate-nix-action@8d87e8d5e5b8a8309d4281094560f127d9a265f1 # v3
-      # Evaluates the whole darwin closure without realizing it: the toplevel is
-      # ~7 GiB unpacked, and `nix flake check` deliberately does not build it.
       - run: nix build --dry-run --no-link '.#darwinConfigurations."AC-0137".system'
 
   packages:
@@ -67,10 +56,7 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: DeterminateSystems/determinate-nix-action@8d87e8d5e5b8a8309d4281094560f127d9a265f1 # v3
-      # REALIZED, not planned. The host jobs above run --dry-run, which never
-      # runs a fixed-output derivation, so a version bump left with a stale
-      # `hash`/`vendorHash` is invisible to them and only fails at switch time.
-      # These closures are small enough to actually build on a hosted runner.
+      # Realize package sources: a build plan cannot detect stale hashes.
       - name: Build every hash-pinned package
         run: |
           attrs=$(nix eval --json --apply builtins.attrNames \

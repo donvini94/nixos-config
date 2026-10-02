@@ -10,11 +10,7 @@
   system.stateVersion = 7;
   system.primaryUser = "vincenzopace";
 
-  # Deliberately NOT in users.knownUsers: nix-darwin must not try to create, re-own or
-  # delete an account that already exists with a pre-nix uid. These two attributes exist
-  # only to feed home-manager's home.username / home.homeDirectory
-  # (home-manager/nixos/common.nix:64-65, which reads .name and .home and probes .uid
-  # with tryEval).
+  # Do not add this existing macOS account to users.knownUsers.
   users.users.vincenzopace = {
     name = "vincenzopace";
     home = "/Users/vincenzopace";
@@ -36,13 +32,9 @@
   programs.fish.enable = true;
   environment.shells = [ pkgs.fish ];
 
-  # fish's `__fish_macos_set_env` (login shells only) runs before nix-darwin's
-  # set-environment, whose hard `export PATH=…` discards it, so everything /etc/paths.d
-  # contributes is dropped and the non-nix prefixes are re-added here. mkOrder 1500 puts
-  # them after the nix profiles (1000) and the macOS system dirs (1200), so Homebrew is a
-  # fallback rather than an override.
+  # nix-darwin replaces login PATH; restore non-Nix tools after system profiles.
   environment.systemPath = lib.mkOrder 1500 [
-    "/opt/homebrew/bin" # 689 binaries: rustup, openstack, mvn, pass, mu, emacsclient, …
+    "/opt/homebrew/bin"
     "/opt/homebrew/sbin" # gnupg helpers, unbound
     "/Library/TeX/texbin" # MacTeX; texliveMedium is Linux-only in this repo
     "/usr/local/go/bin" # go, gofmt — gopls/gotests/gomodifytags are brew formulae
@@ -59,11 +51,7 @@
     symbols-only
   ];
 
-  # AppleInterfaceStyle is deliberately NOT set: macOS owns that key while
-  # AppleInterfaceStyleSwitchesAutomatically is on, and declaring "Dark" alongside the
-  # scheduler would re-assert dark at every activation and flip the UI if a rebuild
-  # happened in a light window. nix-darwin types it as `nullOr (enum [ "Dark" ])` with a
-  # null default, so leaving it out writes nothing.
+  # Leave AppleInterfaceStyle unset so activation does not override automatic switching.
   system.defaults = {
     NSGlobalDomain = {
       AppleInterfaceStyleSwitchesAutomatically = true;

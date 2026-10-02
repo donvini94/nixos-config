@@ -1,161 +1,94 @@
 {
-  description = "NixOS Configuration of Vincenzo Pace";
+  description = "Personal devices and Alucard infrastructure";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     home-manager.url = "github:nix-community/home-manager/master";
-
-    # `inputs.nixpkgs.follows` keeps the darwin closure on the same locked nixpkgs as
-    # dracula and alucard, so a package is the same build everywhere.
     nix-darwin = {
       url = "github:nix-darwin/nix-darwin/master";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     determinate.url = "https://flakehub.com/f/DeterminateSystems/determinate/3";
-
     sops-nix.url = "github:Mic92/sops-nix";
     disko.url = "github:nix-community/disko";
     hosts.url = "github:StevenBlack/hosts";
-
     hermes-agent.url = "github:NousResearch/hermes-agent/v2026.9.24";
 
-    # Pinned to 0.54.3, the last .conf-primary release: 0.55 deprecated hyprlang in
-    # favour of Lua config and home-manager still only emits hyprland.conf. Unpin once
-    # HM can generate hyprland.lua.
+    # Keep hyprlang until Home Manager supports Hyprland's Lua configuration.
     hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/v0.54.3";
     nil.url = "github:oxalica/nil";
-
     lsfg-vk-flake = {
       url = "github:pabloaul/lsfg-vk-flake/main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
     caelestia-shell = {
       url = "github:caelestia-dots/shell";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
     emacs-overlay.url = "github:nix-community/emacs-overlay";
   };
 
   outputs =
-    {
-      self,
-      nixpkgs,
-      home-manager,
-      nix-darwin,
-      determinate,
-      hyprland,
-      disko,
-      hosts,
-      sops-nix,
-      nil,
-      lsfg-vk-flake,
-      caelestia-shell,
-      hermes-agent,
-      emacs-overlay,
-      ...
-    }@inputs:
+    { nixpkgs, ... }@inputs:
     let
+      system = "x86_64-linux";
       username = "vincenzo";
+      macUsername = "vincenzopace";
       fullName = "Vincenzo Pace";
       mail = "vincenzo.pace94@icloud.com";
-      system = "x86_64-linux";
-
-      # darwinSystem reads this host's platform from nixpkgs.hostPlatform in
-      # hosts/ac-0137/default.nix.
-      macUsername = "vincenzopace";
-
-      overlays = [ emacs-overlay.overlay ];
-
-      mkDesktopHost =
-        hostname:
+      mkLinuxHost =
+        hostname: homeModule: extraModules:
         nixpkgs.lib.nixosSystem {
           inherit system;
           specialArgs = { inherit inputs username; };
           modules = [
             ./configuration.nix
             ./hosts/${hostname}
-
-            hyprland.nixosModules.default
-            sops-nix.nixosModules.sops
-            lsfg-vk-flake.nixosModules.default
-            hosts.nixosModule
-            home-manager.nixosModules.home-manager
-            hermes-agent.nixosModules.default
-
+            inputs.home-manager.nixosModules.home-manager
             {
-              nixpkgs.overlays = overlays;
               home-manager = {
                 extraSpecialArgs = {
                   inherit
                     username
-                    mail
                     fullName
+                    mail
                     inputs
                     ;
                 };
                 backupFileExtension = "hm-backup";
-                users.${username} = import ./home.nix;
+                users.${username} = import homeModule;
               };
             }
-          ];
-        };
-
-      mkServerHost =
-        hostname:
-        nixpkgs.lib.nixosSystem {
-          inherit system;
-          specialArgs = { inherit inputs username; };
-          modules = [
-            ./configuration.nix
-            ./hosts/${hostname}
-            home-manager.nixosModules.home-manager
-            hermes-agent.nixosModules.default
-            {
-              home-manager = {
-                # fullName/mail are here for hm-modules/git.nix, which the server
-                # home now imports; without them evaluation fails on a missing
-                # argument rather than silently producing an unconfigured git.
-                extraSpecialArgs = {
-                  inherit
-                    username
-                    fullName
-                    mail
-                    ;
-                };
-                backupFileExtension = "hm-backup";
-                users.${username} = import ./hosts/${hostname}/home.nix;
-              };
-            }
-          ];
+          ]
+          ++ extraModules;
         };
     in
     {
       nixosConfigurations = {
-        dracula = mkDesktopHost "dracula";
-        alucard = mkServerHost "alucard";
+        dracula = mkLinuxHost "dracula" ./home.nix [
+          inputs.hyprland.nixosModules.default
+          inputs.sops-nix.nixosModules.sops
+          inputs.lsfg-vk-flake.nixosModules.default
+          inputs.hosts.nixosModule
+          { nixpkgs.overlays = [ inputs.emacs-overlay.overlay ]; }
+        ];
+        alucard = mkLinuxHost "alucard" ./hosts/alucard/home.nix [
+          inputs.hermes-agent.nixosModules.default
+        ];
       };
 
-      # `useUserPackages = true` is load-bearing: it routes home-manager's packages
-      # through users.users.<name>.packages -> /etc/profiles/per-user/vincenzopace
-      # (nix-darwin/modules/users/default.nix:336-346, which also adds that profile to
-      # environment.profiles at mkOrder 900, ahead of /run/current-system/sw). That keeps
-      # activation away from ~/.nix-profile, which on this machine is a flake-style
-      # `nix profile`.
-      #
-      # No overlays: emacs-overlay is dracula's; the Mac's Emacs is the emacs-plus-app cask.
-      darwinConfigurations."AC-0137" = nix-darwin.lib.darwinSystem {
+      darwinConfigurations."AC-0137" = inputs.nix-darwin.lib.darwinSystem {
         specialArgs = {
           inherit inputs;
           username = macUsername;
         };
         modules = [
-          determinate.darwinModules.default
+          inputs.determinate.darwinModules.default
           ./hosts/ac-0137
-          home-manager.darwinModules.home-manager
+          inputs.home-manager.darwinModules.home-manager
           {
             home-manager = {
+              # Use the per-user system profile, not the existing ~/.nix-profile.
               useUserPackages = true;
               backupFileExtension = "hm-backup";
               extraSpecialArgs = {
@@ -168,16 +101,7 @@
         ];
       };
 
-      # These pin a content hash, which is why they are outputs. CI plans the host
-      # closures with `nix build --dry-run`, which never realizes a fixed-output
-      # derivation, so a stale `hash`/`vendorHash` passes every check and fails on the
-      # machine at switch time instead; .github/workflows/nix-build.yml realizes exactly
-      # this set. `nix-update` also addresses a flake attribute, which is how
-      # .github/workflows/package-update.yml bumps version AND hashes together —
-      # Renovate can only rewrite the version string.
-      #
-      # Packages that pin nothing (pokemmo, hermes-n8n-handoff) are absent: host
-      # evaluation is full coverage for them. omp-harness takes per-account arguments.
+      # Expose hash-pinned packages so CI realizes sources, not just build plans.
       packages = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-darwin" ] (
         packageSystem:
         let
@@ -185,11 +109,12 @@
         in
         {
           lathe = pkgs.callPackage ./packages/lathe.nix { };
+          linear-cli = pkgs.callPackage ./packages/linear-cli.nix { };
         }
         // nixpkgs.lib.optionalAttrs (packageSystem == "x86_64-linux") {
           omp = pkgs.callPackage ./packages/omp.nix { };
           tika = pkgs.callPackage ./packages/tika.nix { };
-          linear-cli = pkgs.callPackage ./packages/linear-cli.nix { };
+          local-transcription-client = pkgs.callPackage ./packages/local-transcription-client.nix { };
         }
       );
 
@@ -200,7 +125,6 @@
             ''
               bash ${./scripts/check-no-package-patches.sh} ${./.} | tee "$out"
             '';
-
         ai-ingress-tests =
           nixpkgs.legacyPackages.${system}.runCommand "check-ai-ingress-tests"
             { nativeBuildInputs = [ nixpkgs.legacyPackages.${system}.python3 ]; }

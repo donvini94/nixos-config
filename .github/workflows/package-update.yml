@@ -54,6 +54,13 @@ jobs:
         run: |
           nix run nixpkgs#nix-update -- \
             --flake --version=stable --build "${{ matrix.package }}"
+          # The release version is shared; refresh the Mac archive hash too.
+          if [ "${{ matrix.package }}" = linear-cli ]; then
+            old=$(nix eval --raw .#packages.aarch64-darwin.linear-cli.src.outputHash)
+            url=$(nix eval --raw .#packages.aarch64-darwin.linear-cli.src.url)
+            hash=$(nix store prefetch-file --json "$url" | jq -r .hash)
+            sed -i "s|$old|$hash|" packages/linear-cli.nix
+          fi
 
       - name: Open a pull request
         env:
