@@ -164,12 +164,15 @@ in
     services.hermes-agent = {
       enable = true;
       addToSystemPackages = true;
+      workingDirectory = "/var/lib/hermes/workspace";
       settings = hermes.mkSettings {
         inherit (cfg.hermes) providerName defaultModel contextLength;
         ingressUrl = "http://127.0.0.1:8080/v1";
       };
       documents = {
         "AGENTS.md" = ../hermes/workspace/AGENTS.md;
+      };
+      hermesHomeFiles = {
         "SOUL.md" = ../hermes/workspace/SOUL.md;
       };
       environment = hermes.runtimeEnv;
