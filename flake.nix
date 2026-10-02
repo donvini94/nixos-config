@@ -17,7 +17,7 @@
     disko.url = "github:nix-community/disko";
     hosts.url = "github:StevenBlack/hosts";
 
-    hermes-agent.url = "github:NousResearch/hermes-agent/v2026.8.3";
+    hermes-agent.url = "github:NousResearch/hermes-agent/v2026.9.24";
 
     # Pinned to 0.54.3, the last .conf-primary release: 0.55 deprecated hyprlang in
     # favour of Lua config and home-manager still only emits hyprland.conf. Unpin once
