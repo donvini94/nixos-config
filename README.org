@@ -157,6 +157,8 @@ key — its clients reach Alucard's authenticated ingress over Tailscale instead
   (bearer auth), dashboard on =:9119= (basic auth). On alucard, Telegram is the only chat
   transport, and its egress goes through a tinyproxy allowlist (=:18084=) permitting exactly
   two hosts.
+  Workspace policy is installed under =/var/lib/hermes/workspace=; managed =SOUL.md=
+  is installed separately under =/var/lib/hermes/.hermes=, where Hermes loads its identity.
 - *n8n* — containerised, read-only, cap-drop-ALL, on a private bridge. It reaches the ingress
   and the Hermes API only through systemd socket proxies bound to the bridge gateway, never a
   host NIC. Workflows are reviewed JSON in =n8n/workflows/<host>/= and imported with
