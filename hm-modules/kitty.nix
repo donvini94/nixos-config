@@ -1,4 +1,4 @@
-{ ... }:
+{ config, lib, pkgs, ... }:
 {
   programs.kitty = {
     enable = true;
@@ -14,7 +14,6 @@
       "LANG" = "en_US.UTF-8";
     };
     settings = {
-      shell = "fish";
       scrollback_lines = 10000; # bare-kitty mouse scroll still uses this
       cursor_shape = "beam";
       window_padding_width = 8;

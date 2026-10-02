@@ -8,6 +8,8 @@
 #
 # The lists are `brew leaves`, not `brew list`: a kept formula's own dependencies stay
 # with Homebrew's resolver, so cleanup never removes something still needed.
+#
+# RTK is intentionally excluded; agents use native tools without its command-rewriting proxy.
 {
   homebrew = {
     enable = true;
@@ -75,7 +77,6 @@
       "pipx"
       "pngpaste"
       "pytest"
-      "rtk"
       "rustup"
       "sevenzip"
       "sqlcmd"

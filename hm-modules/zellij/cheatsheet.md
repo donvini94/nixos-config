@@ -2,6 +2,11 @@
 
 Open this any time with **`Ctrl g` `?`**.
 
+Terminals open a plain fish shell. Start zellij yourself when you want it:
+`zj [name] [layout]` attaches to (or creates) a named session; the name defaults to the
+current directory's name. Startup tips and release notes are disabled declaratively;
+there is no need to dismiss a popup or edit the generated config.
+
 ---
 
 ## The one rule
@@ -147,6 +152,12 @@ zjls Bereitserver       # list sessions there
 
 `zj` and `zjr` never re-run a layout against a live session. Re-attaching shows
 you exactly what you left.
+
+For everyday work, use `main`. For a one-off command, `Ctrl g c` creates a tab;
+`exit` closes its shell when done without creating another session.
+Inside Zellij, `Ctrl g w` opens the session manager: create a named session there
+or select an existing one to switch without nesting. Use `zj myproj` from a shell
+outside Zellij; running it inside a pane deliberately nests another session.
 
 Detach with `Ctrl g D`. Closing the terminal detaches too. `Ctrl g Ctrl q` is the
 only thing that kills a session.

@@ -61,6 +61,7 @@ scrollback_lines_to_serialize 10000
 nested_session_handling "descend"
 
 show_release_notes false
+show_startup_tips false
 
 // `Ctrl g` is the only key zellij owns while locked: it turns the zellij layer on and
 // `Esc` turns it off. Any action that hands the keyboard to something else — a plugin,

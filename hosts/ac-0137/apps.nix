@@ -10,9 +10,7 @@
 
 {
   xdg.configFile = {
-    "ghostty/config".source = pkgs.replaceVars ./ghostty/config {
-      fish = lib.getExe pkgs.fish;
-    };
+    "ghostty/config".source = ./ghostty/config;
     "ghostty/themes/modus-vivendi-tinted".source = ./ghostty/themes/modus-vivendi-tinted;
 
     # AeroSpace's login-item environment has neither nix nor brew on PATH, so every

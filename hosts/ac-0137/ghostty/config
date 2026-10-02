@@ -27,9 +27,6 @@ background-opacity = 0.9
 mouse-hide-while-typing = true
 copy-on-select = clipboard
 
-# Shell
-command = @fish@
-
 # ── Keybindings ──────────────────────────────────
 
 # Tabs
