@@ -100,70 +100,38 @@ let
     # Pi owns this file after the first activation. Do not make it a Home Manager link:
     # /settings, pi config and Pi package management update it in place.
     defaultProjectTrust = "ask";
-    defaultTools = [ "+grep" "+find" "+codemode" "+tool_search" ];
+    defaultProvider = "claude-bridge";
+    defaultModel = "claude-sonnet-5-5";
+    defaultTools = [ "read" "bash" "edit" "write" ];
     externalEditor = "emacsclient -c -a emacs";
     packages = [
       "${home}/code/omp-mentor"
       "${home}/code/omp-prompt-snippets"
       "${home}/code/omp-learn"
       "git:github.com/HazAT/pi-interactive-subagents@c100577ebf7393a11d098ad9810ec6c269dcfc30"
+      "npm:pi-claude-bridge"
     ];
     extensions = [
       "${agentDir}/upstream/amos-ask-user-question.ts"
       "${agentDir}/upstream/amos-web-fetch"
     ];
-    # Pi automatically discovers ~/.agents/skills, including the shared Lathe skills.
-    # The OMP-managed skills live in a harness-specific directory, so it is added explicitly.
-    skills = [ "${home}/.omp/agent/managed-skills" ];
+    # Keep Pi-owned and package skills, without the shared harness policy skills.
+    # Pi discovers ~/.agents/skills automatically; exclude that tree explicitly.
+    skills = [ "!${home}/.agents/skills/**" ];
   };
-  piMcp = {
-    mcpServers = {
-      nixos = {
-        command = lib.getExe pkgs.mcp-nixos;
-        description = "Query current NixOS, nix-darwin, Home Manager and nixpkgs documentation.";
-      };
-      linear = {
-        url = "https://mcp.linear.app/mcp";
-        description = "Read and manage Linear issues, projects and diffs through Pi-owned OAuth.";
-      };
-      exa = {
-        url = "https://mcp.exa.ai/mcp";
-        exposure = "direct";
-        toolExposure.web_search_exa = "direct";
-        description = "Search the web with Exa; the direct Pi tool is mcp__exa__web_search_exa.";
-      };
-    };
-  };
-  memoryManifest = pkgs.writeText "pi-memory-manifest.md" ''
-    # Pi curated-memory manifest
-
-    - **Owner:** Pi only (`${agentDir}/memory/`); Pi must never read, import, write, or
-      modify OMP databases, memory banks, session files, or transcripts.
-    - **Source:** `${home}/.codex/omp-memory-snapshot/global.md`, copied once when Pi is
-      first provisioned.
-    - **Selection:** exactly the 15 active global records curated on 2026-10-01.
-    - **Target:** `curated-global.md`, mode `0600`; it is standalone Pi-owned Markdown.
-    - **Use:** read it only when a task needs a durable personal preference or learning
-      context. It is not automatic system-prompt context.
-    - **Writes:** Pi may add concise, task-relevant Markdown notes under `memory/notes/`.
-      New notes must state provenance and date; neither OMP nor Codex stores are a write
-      target.
-  '';
 in
 {
   home.file = {
-    # This bridge stays writable at its source, so future shared-rule edits reach Pi without
-    # copying a second policy tree into ~/.pi.
-    ".pi/agent/AGENTS.md".source = link "${repo}/pi/AGENTS.md";
+    # AGENTS.md and MEMORY.md are agent-owned writable files, not Nix resources.
     ".pi/agent/skills/mentor".source = link "${home}/code/omp-mentor/skills/mentor";
+    ".pi/agent/skills/meeting-minutes".source = link "${repo}/pi/skills/meeting-minutes";
     ".pi/agent/agents/researcher.md".source = link "${home}/code/omp-learn/agents/researcher.md";
     ".pi/agent/agents/mermaid-maker.md".source = link "${home}/code/omp-learn/agents/mermaid-maker.md";
     ".pi/agent/agents/svg-maker.md".source = link "${home}/code/omp-learn/agents/svg-maker.md";
     ".pi/agent/upstream/amos-ask-user-question.ts".source = amosAskUserQuestion;
   };
 
-  # A shell function scopes HazAT's multiplexer choice to Pi invocations. In particular,
-  # it neither changes OMP's process environment nor any of OMP's PI_CONFIG_FILES handling.
+  # Scope HazAT's multiplexer choice to Pi invocations.
   programs.fish.functions.pi = {
     body = ''
       set -lx PI_SUBAGENT_MUX zellij
@@ -173,9 +141,10 @@ in
 
   home.activation.piAgentBootstrap = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     agent_dir=${lib.escapeShellArg agentDir}
-    memory_source=${lib.escapeShellArg "${home}/.codex/omp-memory-snapshot/global.md"}
 
-    $DRY_RUN_CMD ${pkgs.coreutils}/bin/mkdir -p "$agent_dir/upstream/amos-web-fetch" "$agent_dir/memory/notes"
+    $DRY_RUN_CMD ${pkgs.coreutils}/bin/mkdir -p "$agent_dir/upstream/amos-web-fetch"
+    # Remove the retired global MCP configuration; instructions and memory are agent-owned.
+    $DRY_RUN_CMD ${pkgs.coreutils}/bin/rm -f "$agent_dir/mcp.json"
     # Pi rewrites these files itself (changelog marker, /settings, `pi install`), so Home Manager
     # cannot own them. Declared keys are re-applied on every activation and win over the file;
     # keys Pi added that this module does not declare are kept. Arrays (packages, extensions,
@@ -194,14 +163,7 @@ in
       fi
     }
     reconcile "$agent_dir/settings.json" ${pkgs.writeText "pi-settings.json" (builtins.toJSON piSettings)}
-    reconcile "$agent_dir/mcp.json" ${pkgs.writeText "pi-mcp.json" (builtins.toJSON piMcp)}
     reconcile "$agent_dir/models.json" ${pkgs.writeText "pi-models.json" (builtins.toJSON piModels)}
-    if [ ! -e "$agent_dir/memory/manifest.md" ]; then
-      $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -m 600 ${memoryManifest} "$agent_dir/memory/manifest.md"
-    fi
-    if [ ! -e "$agent_dir/memory/curated-global.md" ] && [ -r "$memory_source" ]; then
-      $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -m 600 "$memory_source" "$agent_dir/memory/curated-global.md"
-    fi
     if [ ! -e "$agent_dir/upstream/amos-web-fetch/package.json" ]; then
       $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -m 600 ${amosWebFetchIndex} "$agent_dir/upstream/amos-web-fetch/index.ts"
       $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -m 600 ${amosWebFetchPackage} "$agent_dir/upstream/amos-web-fetch/package.json"
@@ -215,8 +177,8 @@ in
     fi
   '';
 
-  # The three personal content repositories are plain git checkouts shared by OMP and Pi, so
-  # git is the sync mechanism: every switch fast-forwards them from GitHub over HTTPS (no key
+  # The three personal content repositories are plain git checkouts, so git is the sync
+  # mechanism: every switch fast-forwards them from GitHub over HTTPS (no key
   # needed, remotes untouched). A dirty or diverged checkout is reported, never overwritten.
   home.activation.piBinary = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     export PATH=${lib.makeBinPath [ pkgs.nodejs pkgs.coreutils ]}:$HOME/.local/bin:$PATH
