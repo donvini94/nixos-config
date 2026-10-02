@@ -30,8 +30,6 @@ let
         export RESTIC_REPOSITORY=${lib.escapeShellArg (jobRepository name)}
 
         stage=${lib.escapeShellArg (jobStage name)}
-        mkdir -p "$stage"
-        chmod 0700 "$stage"
 
         parent=$(dirname "$RESTIC_REPOSITORY")
         mkdir -p "$parent"
@@ -41,6 +39,9 @@ let
           restic init
         fi
 
+        # Rebuild scratch staging so deleted source files do not survive in snapshots.
+        rm -rf -- "$stage"
+        install -d -m 0700 "$stage"
         ${job.prepare}
 
         restic backup --tag ${lib.escapeShellArg name} \

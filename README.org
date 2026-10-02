@@ -21,12 +21,17 @@ nix build --no-link .#nixosConfigurations.dracula.config.system.build.toplevel
 nix build --no-link .#nixosConfigurations.alucard.config.system.build.toplevel
 nix build --no-link '.#darwinConfigurations.AC-0137.system'
 
-sudo nixos-rebuild switch --flake .#dracula
-ssh -t alucard 'cd /home/vincenzo/nixos-config && sudo nixos-rebuild switch --flake .#alucard'
+ssh dracula 'sudo -n /run/current-system/sw/bin/nixos-rebuild switch --flake /home/vincenzo/nixos-config#dracula'
+ssh alucard 'sudo -n /run/current-system/sw/bin/nixos-rebuild switch --flake /home/vincenzo/nixos-config#alucard'
 sudo darwin-rebuild switch --flake .#AC-0137
 #+end_src
 
-CI evaluates host build plans and builds exposed local packages; a plan is not a full build.
+The agent commits, pushes, synchronizes the checkouts and switches affected Linux hosts.
+The exact commands above are passwordless; relative flake paths do not match sudo policy.
+=nix flake check= runs shell lint, Python undefined/unused-name checks, ingress tests,
+model-download tests and the package-patch guard on Linux or macOS.
+CI runs these checks, evaluates host build plans and builds exposed local packages;
+a plan is not a full build.
 Renovate owns flake inputs, OCI digests and action pins. =package-update.yml= owns
 =packages/= version/hash updates. =agent-update check|apply= handles vendored skills
 and agent pins; it neither commits nor deploys.

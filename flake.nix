@@ -32,6 +32,10 @@
     { nixpkgs, ... }@inputs:
     let
       system = "x86_64-linux";
+      systems = [
+        system
+        "aarch64-darwin"
+      ];
       username = "vincenzo";
       macUsername = "vincenzopace";
       fullName = "Vincenzo Pace";
@@ -102,7 +106,7 @@
       };
 
       # Expose hash-pinned packages so CI realizes sources, not just build plans.
-      packages = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-darwin" ] (
+      packages = nixpkgs.lib.genAttrs systems (
         packageSystem:
         let
           pkgs = nixpkgs.legacyPackages.${packageSystem};
@@ -118,20 +122,58 @@
         }
       );
 
-      checks.${system} = {
-        no-package-patches =
-          nixpkgs.legacyPackages.${system}.runCommand "check-no-package-patches"
-            { nativeBuildInputs = [ nixpkgs.legacyPackages.${system}.bash ]; }
-            ''
-              bash ${./scripts/check-no-package-patches.sh} ${./.} | tee "$out"
-            '';
-        ai-ingress-tests =
-          nixpkgs.legacyPackages.${system}.runCommand "check-ai-ingress-tests"
-            { nativeBuildInputs = [ nixpkgs.legacyPackages.${system}.python3 ]; }
-            ''
-              PYTHONDONTWRITEBYTECODE=1 python3 ${./ai-ingress}/test_proxy.py
-              touch "$out"
-            '';
-      };
+      checks = nixpkgs.lib.genAttrs systems (
+        checkSystem:
+        let
+          pkgs = nixpkgs.legacyPackages.${checkSystem};
+        in
+        {
+          no-package-patches =
+            pkgs.runCommand "check-no-package-patches" { nativeBuildInputs = [ pkgs.bash ]; }
+              ''
+                bash ${./scripts/check-no-package-patches.sh} ${./.} | tee "$out"
+              '';
+          shell-scripts =
+            pkgs.runCommand "check-shell-scripts" { nativeBuildInputs = [ pkgs.shellcheck ]; }
+              ''
+                shellcheck ${./scripts}/*.sh ${./mail/bin}/* ${./n8n/bin}/n8n-workflows
+                touch "$out"
+              '';
+          python-lint = pkgs.runCommand "check-python-lint" { nativeBuildInputs = [ pkgs.ruff ]; } ''
+            ruff check --no-cache --select F ${./ai-ingress} ${./local-transcription}/server.py ${./paperless}/provision.py
+            touch "$out"
+          '';
+          model-download =
+            pkgs.runCommand "check-model-download"
+              {
+                nativeBuildInputs = with pkgs; [
+                  bash
+                  coreutils
+                  curl
+                ];
+              }
+              ''
+                script=${./scripts/download-model-file.sh}
+                printf 'test model\n' > source
+                hash=$(sha256sum source | cut -d ' ' -f 1)
+                bash "$script" "$PWD/model/file" "$hash" "file://$PWD/source"
+                cmp source model/file
+                if bash "$script" "$PWD/bad" "$(printf '%064d' 0)" "file://$PWD/source"; then
+                  echo "A mismatched checksum was accepted" >&2
+                  exit 1
+                fi
+                test ! -e bad
+                rm source
+                bash "$script" "$PWD/model/file" "$hash" "file://$PWD/source"
+                touch "$out"
+              '';
+          ai-ingress-tests =
+            pkgs.runCommand "check-ai-ingress-tests" { nativeBuildInputs = [ pkgs.python3 ]; }
+              ''
+                PYTHONDONTWRITEBYTECODE=1 python3 ${./ai-ingress}/test_proxy.py
+                touch "$out"
+              '';
+        }
+      );
     };
 }

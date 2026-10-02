@@ -43,8 +43,7 @@
   # The system baseline that dracula gets from configuration.nix / modules/packages.nix.
   home.packages = with pkgs; [
     (callPackage ../../packages/linear-cli.nix { })
-    # notmuch replica sync with the alucard mail hub (mail/bin/mail-replica-sync).
-    # No Homebrew formula exists; it runs the Homebrew notmuch CLI, same 0.40 as nix.
+    # Replica sync uses Homebrew's notmuch CLI.
     muchsync
     ripgrep
     fd

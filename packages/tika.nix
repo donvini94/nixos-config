@@ -1,12 +1,5 @@
-# Apache Tika server, ahead of nixpkgs.
-#
-# UPSTREAM DEFECT: nixpkgs is on 2.9.3, and CVE-2025-66516 is an XXE in tika-core
-# 1.13 through 3.2.1 with no 2.x backport, so the fix is only reachable by moving to
-# the 3.x line. Drop this file once nixpkgs ships tika >= 3.2.2.
-#
-# 3.3.2 rather than 4.0.0: upstream stopped publishing runnable jars in 4.x, where
-# the Maven artifact fails standalone with NoClassDefFoundError. 3.x remains
-# supported, and paperless-ngx itself tests against 3.3.x.
+# Avoid CVE-2025-66516 in nixpkgs' Tika 2.x; remove when nixpkgs ships >= 3.2.2.
+# Tika 4.x's Maven artifact is not a standalone server jar; Paperless uses 3.3.x.
 {
   lib,
   stdenvNoCC,
@@ -40,9 +33,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     # then dies with "Cannot run program java".
     makeWrapper ${lib.getExe' jdk17_headless "java"} "$out/bin/tika-server" \
       --add-flags "-jar $out/share/tika/tika-server.jar" \
-      --prefix PATH : ${
-        lib.makeBinPath ([ jdk17_headless ] ++ lib.optional enableOcr tesseract)
-      }
+      --prefix PATH : ${lib.makeBinPath ([ jdk17_headless ] ++ lib.optional enableOcr tesseract)}
     runHook postInstall
   '';
 

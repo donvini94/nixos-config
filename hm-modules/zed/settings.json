@@ -1,17 +1,5 @@
-// Zed settings
-//
-// For information on how to configure Zed, see the Zed
-// documentation: https://zed.dev/docs/configuring-zed
-//
-// To see all of Zed's default settings without changing your
-// custom settings, run `zed: open default settings` from the
-// command palette (cmd-shift-p / ctrl-shift-p)
 {
-
-  // Extensions, declared so a fresh Zed reinstalls exactly this set. Mirrors
-  // ~/Library/Application Support/Zed/extensions/installed; `false` here means "never
-  // install", so an entry is added rather than removed when an extension is retired.
-  // https://zed.dev/docs/reference/all-settings#auto-install-extensions
+  // Set an extension to false to prevent installation; deleting its entry does not.
   "auto_install_extensions": {
     "catppuccin": true,
     "comment": true,

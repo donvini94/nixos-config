@@ -55,17 +55,16 @@
           StateDirectoryMode = "0750";
         };
       script = ''
-        EDIR="/var/lib/keycloak"
-        EDIRT="$EDIR/$(date '+%Y-%m-%d_%H-%M-%S')"
-        mkdir -p $EDIRT
-        kc.sh export --dir=$EDIRT
-        echo "Keycloak export completed successfully to: $EDIRT"
+        set -euo pipefail
+        export_dir="/var/lib/keycloak/$(date '+%Y-%m-%d_%H-%M-%S')"
+        mkdir -p "$export_dir"
+        kc.sh export --dir="$export_dir"
+        echo "Keycloak export completed successfully to: $export_dir"
       '';
     };
 
   services.offsiteBackup.jobs.keycloak = {
-    # pg_dump, not a file copy: Keycloak's cluster is live during the window,
-    # and the realm export alone omits users, sessions and credentials.
+    # Use a consistent database dump; realm exports do not preserve all database state.
     runtimeInputs = [
       config.services.postgresql.package
       pkgs.util-linux

@@ -74,6 +74,15 @@ let
     lib.concatMapStringsSep "\n" (file: "${file.sha256}  ${file.path}") modelFiles + "\n"
   );
 
+  downloadModelFile = pkgs.writeShellApplication {
+    name = "download-model-file";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.curl
+    ];
+    text = builtins.readFile ../scripts/download-model-file.sh;
+  };
+
   prepare = pkgs.writeShellScript "prepare-local-transcription" ''
     set -euo pipefail
 
@@ -83,34 +92,15 @@ let
     ${pkgs.coreutils}/bin/mkdir -p "$model_dir" "$cache_dir"
 
 
-    download_file() {
-      destination="$1"
-      expected_sha256="$2"
-      source_url="$3"
-      partial="$destination.partial"
-
-      if [ -f "$destination" ] && ${pkgs.coreutils}/bin/printf '%s  %s\n' "$expected_sha256" "$destination" \
-        | ${pkgs.coreutils}/bin/sha256sum --check --status; then
-        return
-      fi
-
-      ${pkgs.curl}/bin/curl --fail --location --retry 5 --continue-at - \
-        --output "$partial" "$source_url"
-      ${pkgs.coreutils}/bin/printf '%s  %s\n' "$expected_sha256" "$partial" \
-        | ${pkgs.coreutils}/bin/sha256sum --check
-      ${pkgs.coreutils}/bin/mv "$partial" "$destination"
-    }
-
     if [ ! -f "$model_dir/.verified-sha256" ] \
       || ! ${pkgs.diffutils}/bin/cmp --silent "$model_dir/.verified-sha256" ${modelManifest}; then
       ${lib.concatMapStringsSep "\n" (file: ''
-        download_file "$model_dir/${file.path}" ${lib.escapeShellArg file.sha256} \
+        ${lib.getExe downloadModelFile} "$model_dir/${file.path}" ${lib.escapeShellArg file.sha256} \
           ${lib.escapeShellArg "https://huggingface.co/netease-youdao/Confucius4-R2T2/resolve/${modelRevision}/${file.path}"}
       '') modelFiles}
       ${pkgs.coreutils}/bin/cp ${modelManifest} "$model_dir/.verified-sha256"
       ${pkgs.coreutils}/bin/cp ${upstreamSource}/MODEL_LICENSE "$model_dir/MODEL_LICENSE"
     fi
-
 
     if ! ${pkgs.docker}/bin/docker image inspect ${lib.escapeShellArg image} >/dev/null 2>&1; then
       ${pkgs.docker}/bin/docker pull ${lib.escapeShellArg image}
@@ -218,9 +208,7 @@ in
 
     security.polkit = {
       enable = true;
-      # Matched on the user list rather than a group (as modules/ai-ingress.nix does):
-      # a fresh group only reaches a running session after a re-login, which would
-      # leave `transcription-stop` asking for a password on the day it is installed.
+      # Match usernames so newly installed permissions do not require a re-login.
       extraConfig = ''
         polkit.addRule(function(action, subject) {
           const operators = ${builtins.toJSON cfg.operators};

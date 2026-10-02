@@ -40,16 +40,7 @@ in
   options.services.localN8n = {
     enable = lib.mkEnableOption "local n8n workflow service";
 
-    # Pinned by digest, readable version in front: n8n and its task runners speak a
-    # versioned protocol and share one SQLite schema, so they must move together in a
-    # reviewed commit. Renovate proposes digest bumps.
-    #
-    # docker.io, not the docker.n8n.io the upstream compose file advertises: that host
-    # is a pull-through proxy whose 401 hands you back to auth.docker.io, so every
-    # anonymous request is billed to the proxy's own egress IP and shares one rate-limit
-    # bucket that sits at `x-ratelimit-remaining: 0`. That 429s the `manifests/<tag>`
-    # fetch, leaving the digest unreadable to Renovate and cold `docker pull` broken.
-    # Same repository either way: Hub returns byte-identical digests for both names.
+    # Update n8n and task runners together. Use Docker Hub to avoid the proxy's shared rate limit.
     image = lib.mkOption {
       type = lib.types.str;
       default = "docker.io/n8nio/n8n:2.40.3@sha256:e397d0aab215cc1a3ed865bd0c2d7982dff9390fa298f3c188d084425cd6fb16";
@@ -77,9 +68,6 @@ in
       description = "Root-only environment file containing the runner authentication token.";
     };
 
-    # Workflows are host-specific: importing the whole tree on both hosts would install
-    # workflows whose dependencies do not exist there (the delegate/inbox pair needs
-    # Hermes as the shared team agent; the smoke test asserts Dracula's local model).
     workflowDirectory = lib.mkOption {
       type = lib.types.path;
       description = "Directory of reviewed workflow JSON installed by `n8n-workflows import`.";

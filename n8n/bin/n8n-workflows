@@ -54,9 +54,11 @@ cmd_import() {
   trap "docker exec '$container' rm -rf -- '$container_dir' >/dev/null 2>&1 || true" EXIT
 
   docker exec "$container" mkdir -p -- "$container_dir"
+  local container_file
   for workflow_file in "${workflow_files[@]}"; do
+    container_file="$container_dir/$(basename -- "$workflow_file")"
     docker exec -i "$container" sh -c 'cat > "$1"' sh \
-      "$container_dir/$(basename -- "$workflow_file")" < "$workflow_file"
+      "$container_file" < "$workflow_file"
   done
   docker exec "$container" n8n import:workflow --separate --input="$container_dir"
 

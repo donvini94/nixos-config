@@ -119,6 +119,15 @@ let
       lib.concatMapStringsSep "\n" (file: "${file.sha256}  ${file.path}") model.files + "\n"
     );
 
+  downloadModelFile = pkgs.writeShellApplication {
+    name = "download-model-file";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.curl
+    ];
+    text = builtins.readFile ../scripts/download-model-file.sh;
+  };
+
   downloadModel =
     name: model:
     pkgs.writeShellScript "download-local-model-${name}" ''
@@ -131,29 +140,9 @@ let
         exit 0
       fi
 
-      download_file() {
-        relative_path="$1"
-        expected_sha256="$2"
-        source_url="$3"
-        destination="$model_dir/$relative_path"
-        partial="$destination.partial"
-
-        ${pkgs.coreutils}/bin/mkdir -p "$(dirname "$destination")"
-        if [ -f "$destination" ] && ${pkgs.coreutils}/bin/printf '%s  %s\n' "$expected_sha256" "$destination" \
-          | ${pkgs.coreutils}/bin/sha256sum --check --status; then
-          return
-        fi
-
-        ${pkgs.curl}/bin/curl --fail --location --retry 5 --continue-at - \
-          --output "$partial" "$source_url"
-        ${pkgs.coreutils}/bin/printf '%s  %s\n' "$expected_sha256" "$partial" \
-          | ${pkgs.coreutils}/bin/sha256sum --check
-        ${pkgs.coreutils}/bin/mv "$partial" "$destination"
-      }
-
       ${lib.concatMapStringsSep "\n" (
         file:
-        "download_file ${lib.escapeShellArg file.path} ${lib.escapeShellArg file.sha256} ${lib.escapeShellArg (modelFileUrl model file)}"
+        "${lib.getExe downloadModelFile} ${lib.escapeShellArg "${modelDirectory name}/${file.path}"} ${lib.escapeShellArg file.sha256} ${lib.escapeShellArg (modelFileUrl model file)}"
       ) model.files}
       ${pkgs.coreutils}/bin/cp "$manifest" "$marker"
     '';
@@ -161,7 +150,7 @@ let
   waitForBackend = pkgs.writeShellScript "wait-for-local-llama-backend" ''
     set -eu
     for attempt in $(${pkgs.coreutils}/bin/seq 1 7200); do
-      if ${pkgs.curl}/bin/curl --fail --silent --show-error "http://${bindAddress}:${toString backendPort}/health" > /dev/null; then
+      if ${pkgs.curl}/bin/curl --fail --silent --show-error --max-time 2 "http://${bindAddress}:${toString backendPort}/health" > /dev/null; then
         exit 0
       fi
       ${pkgs.coreutils}/bin/sleep 1

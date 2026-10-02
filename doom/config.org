@@ -843,18 +843,16 @@ Credentials: on the Mac from =~/.authinfo.gpg=; on NixOS from the sops secret
 no GPG unlock.
 
 Sync runs automatically: every 5 minutes, and 2 s after the calendar file is
-saved. Invariant: a timer never prompts and never freezes Emacs.
+saved. Timer-triggered sync does not prompt, but synchronous requests briefly block Emacs.
 - Deletions propagate without asking in both directions. A deleted heading
   deletes the event on the server; an event deleted remotely is cut from the
   Org file with no local backup (the backup file only keeps entries that a
   remote change overwrote).
-- Each CalDAV request gets a 30 s ceiling; ~org-caldav~ itself uses untimed
+- Each CalDAV request has a 30 s timeout; ~org-caldav~ itself uses untimed
   synchronous requests, and a stalled connection would hang the session.
 - A sync is skipped while the calendar buffer has unsaved edits or the
   minibuffer is active; the save hook catches the edit afterwards.
-- CEILING: ~org-caldav~ is synchronous, so each sync blocks Emacs for about
-  1–3 s. Upgrade path is an async sync in a child Emacs, which needs a lock
-  against the daemon's open buffer.
+- Normal sync takes about 1–3 s. A stalled request can block until its timeout.
 - Editing the same event on two hosts within one sync interval: the last push
   wins on the server.
 

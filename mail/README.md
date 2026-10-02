@@ -45,9 +45,8 @@ is an identical copy of its notmuch database.
 - **muchsync never deletes mail files.** Messages removed on one host are moved to
   `~/Maildir/.notmuch/muchsync/trash` on the others; empty it by hand to reclaim space.
 
-CEILING: alucard down means no host sees new mail in notmuch (Mailcow still has it, and
-replicas can still send). The upgrade path is moving the hub role to another host, never
-running two hubs.
+If Alucard is down, replicas can still send and read existing mail, but receive no new
+mail until the hub returns. To relocate the hub, stop the old hub before starting the new one.
 
 ## Layout
 
@@ -86,7 +85,7 @@ edit `~/.authinfo.gpg` in Emacs, rebuild alucard and dracula.
 
 ### alucard (hub)
 
-`sudo nixos-rebuild switch --flake .#alucard`. Checks:
+Deploy with the passwordless command in the root `README.org`. Checks:
 
 ```sh
 systemctl --user list-timers | grep -E 'mail-sync|notmuch-daily'
@@ -100,7 +99,8 @@ mailbox. To keep manual tags when rebuilding a hub, `notmuch dump` on a replica 
 
 ### dracula (replica)
 
-`sudo nixos-rebuild switch --flake .#dracula`, then `doom sync` if `packages.el` changed.
+Deploy with the passwordless command in the root `README.org`, then `doom sync` if
+`packages.el` changed.
 A replica must start from an **empty** `~/Maildir` (muchsync treats every pre-existing
 file as a conflict, and a leftover Maildir would be uploaded to the hub):
 
@@ -126,7 +126,7 @@ launchctl load $HOME/Library/LaunchAgents/de.istbereit.mail-sync.plist
 ```
 
 `muchsync` comes from nix (`hosts/ac-0137/home.nix`); `notmuch` and `msmtp` from Homebrew
-(`hosts/ac-0137/homebrew.nix`), same notmuch 0.40 as nixpkgs.
+(`hosts/ac-0137/homebrew.nix`). Check the installed versions before a database-format upgrade.
 
 ## Where things live
 

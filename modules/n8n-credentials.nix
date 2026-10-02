@@ -1,6 +1,4 @@
-# n8n keeps credentials encrypted in its own SQLite database, so they can only be
-# installed through n8n's CLI under the instance encryption key — never as a Nix
-# file or env var. Re-importing under the same fixed ID is also the rotation path.
+# Import runtime credentials through n8n's CLI; plaintext must not enter the Nix store.
 {
   config,
   lib,
@@ -13,48 +11,20 @@ let
   n8nCfg = config.services.localN8n;
   stateDirectory = "/var/lib/n8n-container";
 
-  # The container runs as uid/gid 1000 (`node`); the rendered JSON is chowned to it
-  # so the import can read the bind-mounted file while the runtime dir stays root-only.
-  containerUid = 1000;
-
-  syncScript = pkgs.writeShellScript "n8n-credentials-sync" ''
-    set -euo pipefail
-
-    creds="$RUNTIME_DIRECTORY/credentials.json"
-    umask 077
-
-    ${pkgs.jq}/bin/jq -n \
-      --rawfile hermes_key "$CREDENTIALS_DIRECTORY/hermes_api_key" \
-      --rawfile webhook_token "$CREDENTIALS_DIRECTORY/n8n_webhook_token" \
-      '[
-        {
-          id: "startupHermesApi",
-          name: "Startup Hermes API",
-          type: "httpHeaderAuth",
-          data: { name: "Authorization", value: ("Bearer " + ($hermes_key | rtrimstr("\n"))) }
-        },
-        {
-          id: "startupWebhookAuth",
-          name: "Startup webhook token",
-          type: "httpHeaderAuth",
-          data: { name: "X-Startup-Token", value: ($webhook_token | rtrimstr("\n")) }
-        }
-      ]' > "$creds"
-    ${pkgs.coreutils}/bin/chown ${toString containerUid} "$creds"
-    ${pkgs.coreutils}/bin/chmod 0400 "$creds"
-
-    # The image's entrypoint already is `n8n`, so only the subcommand is passed.
-    # `import:credentials` upserts by id: idempotent.
-    ${pkgs.docker}/bin/docker run --rm \
-      --name n8n-credentials-sync \
-      --network none \
-      --user ${toString containerUid}:${toString containerUid} \
-      --volume ${stateDirectory}:/home/node/.n8n \
-      --volume ${n8nCfg.encryptionKeyFile}:/run/secrets/n8n_encryption_key:ro \
-      --volume "$creds":/tmp/credentials.json:ro \
-      ${n8nCfg.image} \
-      import:credentials --input=/tmp/credentials.json
-  '';
+  syncScript = pkgs.writeShellApplication {
+    name = "n8n-credentials-sync";
+    runtimeInputs = [
+      pkgs.jq
+      pkgs.coreutils
+      pkgs.docker
+    ];
+    runtimeEnv = {
+      N8N_STATE_DIRECTORY = stateDirectory;
+      N8N_ENCRYPTION_KEY_FILE = n8nCfg.encryptionKeyFile;
+      N8N_IMAGE = n8nCfg.image;
+    };
+    text = builtins.readFile ../scripts/n8n-credentials-sync.sh;
+  };
 in
 {
   options.services.n8nCredentials = {
@@ -95,7 +65,7 @@ in
           "hermes_api_key:${cfg.hermesApiKeyFile}"
           "n8n_webhook_token:${cfg.webhookTokenFile}"
         ];
-        ExecStart = syncScript;
+        ExecStart = lib.getExe syncScript;
       };
     };
 

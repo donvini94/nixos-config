@@ -9,9 +9,7 @@
   home.packages = with pkgs; [
     rust-analyzer
 
-    # pyright and basedpyright must stay off $PATH: OMP resolves the Python server by
-    # taking the first of pyright, basedpyright, pylsp, ty that appears there, so either
-    # one silently demotes ty. `ty` navigates; `mypy --strict` is the gate per rule://python.
+    # OMP prioritizes pyright/basedpyright/pylsp over ty when they are on PATH.
     ty
     ruff
 

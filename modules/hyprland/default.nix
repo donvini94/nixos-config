@@ -4,10 +4,11 @@ let
   greeterWallpaper = ../../wallpapers/goku-shadow-sunset-dragon-ball-moewalls-com.mp4;
 
   # Placeholder shown until the video starts; the theme hides it on play.
-  greeterPoster = pkgs.runCommand "sddm-greeter-poster.png"
-    { nativeBuildInputs = [ pkgs.ffmpeg-headless ]; } ''
-      ffmpeg -ss 2 -i ${greeterWallpaper} -frames:v 1 -update 1 $out
-    '';
+  greeterPoster =
+    pkgs.runCommand "sddm-greeter-poster.png" { nativeBuildInputs = [ pkgs.ffmpeg-headless ]; }
+      ''
+        ffmpeg -ss 2 -i ${greeterWallpaper} -frames:v 1 -update 1 $out
+      '';
 
   sddm-astronaut = pkgs.sddm-astronaut.override {
     embeddedTheme = "black_hole";
@@ -101,9 +102,7 @@ in
         [ -n "$out" ] && ${pkgs.xrandr}/bin/xrandr --output "$out" --mode 5120x2160 || true
       '';
     };
-    # X11-backed greeter on purpose: the Wayland greeter path (mesa/egl-wayland +
-    # nvidia) was implicated in the June-2026 GDM black screen. The Hyprland session
-    # still runs on Wayland; only the login greeter is Xorg.
+    # Use Xorg for the NVIDIA greeter; the Hyprland session still uses Wayland.
     displayManager.sddm = {
       enable = true;
       package = pkgs.kdePackages.sddm; # Qt6 — required by sddm-astronaut

@@ -25,14 +25,7 @@
       openFirewall = false;
     };
 
-    # Team chat, Slack replacement. Peer auth against the local postgres
-    # instance (identity.nix) instead of a password, so there is no secret
-    # to manage. mutableConfig lets Kyrill/Vincenzo configure most things
-    # from the System Console like a normal SaaS admin panel instead of
-    # editing Nix. preferNixConfig makes the two keys below the exception:
-    # they're re-applied from Nix on every switch, overriding whatever the
-    # System Console UI has stored, because access-domain and the default
-    # theme are policy, not per-admin taste.
+    # Keep UI-managed settings, with Nix taking precedence for domain and theme policy.
     mattermost = {
       enable = true;
       siteName = "Bereit Chat";
@@ -56,12 +49,7 @@
       };
     };
 
-    # Reachable only through `tailscale serve --tcp=28888`
-    # (hosts/alucard/private-access.nix), so authentication is Tailscale's
-    # before it is atuin's.
-    # openRegistration is how a machine enrols (`atuin register` on the client);
-    # set it to false once the last one is enrolled — logins and sync are
-    # unaffected by the flip.
+    # Tailnet-only; registration remains open so new devices can enroll.
     atuin = {
       enable = true;
       openRegistration = true;
@@ -83,13 +71,8 @@
     verifyPaths = [ "/var/lib/offsite-backup/n8n/database.sqlite" ];
   };
 
-  # Jellyfin has no exporter, so every .db is copied with sqlite3 `.backup` while the
-  # server keeps writing. config/ carries the encryption key, the users and the library
-  # definitions, and data/playlists holds .m3u files the database only points at.
-  # cache/, metadata/ and data/subtitles are omitted: a library scan rebuilds them.
-  #
-  # This exists because the 12.0 upgrade rewrites the schema on first boot with no
-  # downgrade path: a backup is the only way back to 10.11.
+  # SQLite .backup is consistent during writes. Preserve config and authored playlists;
+  # omit cache/metadata/subtitles that a library scan can rebuild.
   services.offsiteBackup.jobs.jellyfin = {
     runtimeInputs = [ pkgs.sqlite ];
     prepare = ''

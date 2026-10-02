@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# Local package mutations need an EXCEPTIONS entry and an UPSTREAM DEFECT
-# comment within three preceding lines. Pinned upstream overlays are allowed.
-# This is a text guard, not a Nix parser.
+# Reject unreviewed package mutations. Match the reviewed declaration, not comment wording.
+# Pinned upstream overlays are allowed. This is a text guard, not a Nix parser.
 set -euo pipefail
 
 root=${1:-.}
@@ -23,24 +22,20 @@ if ((${#nix_files[@]} == 0)); then
   exit 1
 fi
 
-# Partition `grep -nH` hits into unreviewed violations and marked exceptions.
-# Runs in the current shell so `fail` can set the exit status.
-justified() {
-  local file=$1 lineno=$2
-  local start=$((lineno > 3 ? lineno - 3 : 1))
-  sed -n "${start},$((lineno - 1))p" "$file" | grep -q 'UPSTREAM DEFECT'
+reviewed() {
+  [[ $1 == hm-modules/packages.nix &&
+     $2 == *"mattermost-desktop = pkgs.mattermost-desktop.overrideAttrs (old: {" ]]
 }
 
 check() {
   local description=$1 pattern=$2
-  local line file lineno rest rel violations=()
+  local line file rest rel violations=()
 
   while IFS= read -r line; do
     file=${line%%:*}
     rest=${line#*:}
-    lineno=${rest%%:*}
     rel=${file#"$root"/}
-    if [[ -v EXCEPTIONS[$rel] ]] && justified "$file" "$lineno"; then
+    if [[ -v EXCEPTIONS[$rel] ]] && reviewed "$rel" "${rest#*:}"; then
       continue
     fi
     violations+=("$line")

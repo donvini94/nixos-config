@@ -1,10 +1,4 @@
-# One GPU, several workloads that each want most of it. `gpu-mode` is the switch:
-# it stops whatever holds the card before starting what you asked for, and
-# `gpu-mode gaming` (alias: `gaming-mode`) hands the card back to games.
-#
-# The modes are declared per host because only hosts with competing GPU workloads
-# need them; each mode reuses that workload's own start/stop commands, which
-# already block until the GPU memory is actually taken or released.
+# Mode start/stop commands must wait until the workload acquires/releases GPU memory.
 {
   config,
   lib,

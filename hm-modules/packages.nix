@@ -3,14 +3,7 @@
 { pkgs, lib, ... }:
 
 let
-  # mattermost-desktop's bundled koffi.node (native tray/badge FFI, under
-  # app.asar.unpacked/node_modules/@koromix) links against libstdc++.so.6 with
-  # no runpath to it: nixpkgs' fixup only autoPatchelfs paths outside the
-  # asar, so this native module is missed and the app dies on load with
-  # "libstdc++.so.6: cannot open shared object file". Wrap the launcher with
-  # LD_LIBRARY_PATH instead of patching the store output by hand.
-  # UPSTREAM DEFECT: remove once nixpkgs' mattermost-desktop patchelfs koffi.node. No
-  # eval-time probe: the missing runpath only shows when the app loads the module.
+  # Bundled koffi.node lacks a libstdc++ runpath. Remove this wrapper when nixpkgs fixes it.
   mattermost-desktop = pkgs.mattermost-desktop.overrideAttrs (old: {
     nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ [ pkgs.makeWrapper ];
     postFixup = ''
@@ -20,11 +13,7 @@ let
     '';
   });
 
-  # linear-cli's binary is a `deno compile` standalone executable: it locates its own
-  # bundled JS via /proc/self/exe plus a trailer appended past the ELF image, so it
-  # can't be patchelf'd (see packages/linear-cli.nix for what that breaks and why).
-  # hosts/dracula/services.nix enables nix-ld so the raw, untouched binary below runs as
-  # a normal kernel-exec'd ELF with no wrapper needed here.
+  # The unmodified Deno binary needs nix-ld; see packages/linear-cli.nix.
   linear-cli = pkgs.callPackage ../packages/linear-cli.nix { };
 in
 {

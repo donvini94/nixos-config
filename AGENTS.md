@@ -12,8 +12,12 @@ current packages, services, ports and paths. Do not duplicate those inventories 
   Linux: `/home/vincenzo/nixos-config`.
 - Evaluate all three hosts after shared changes. Build affected configurations before
   deployment; `--dry-run` only evaluates the build plan.
-- Deploy Alucard with a PTY: `ssh -t alucard 'cd /home/vincenzo/nixos-config &&
-  sudo nixos-rebuild switch --flake .#alucard'`.
+- The agent deploys affected Linux hosts after committing, pushing and synchronizing;
+  do not leave switching to the user unless explicitly asked not to deploy.
+  Passwordless sudo requires these exact commands (tested on both hosts):
+  `ssh dracula 'sudo -n /run/current-system/sw/bin/nixos-rebuild switch --flake /home/vincenzo/nixos-config#dracula'`
+  `ssh alucard 'sudo -n /run/current-system/sw/bin/nixos-rebuild switch --flake /home/vincenzo/nixos-config#alucard'`
+  Relative flake paths are not authorized. No PTY or sudo password is needed.
 - Read runtime logs before diagnosing configuration. A successful evaluation does not
   prove a service works. Do not expose secrets while collecting evidence.
 - Questions are not authorization to edit. Answer "how/why/should" questions and stop;
@@ -30,8 +34,11 @@ current packages, services, ports and paths. Do not duplicate those inventories 
   `pkgs.stdenv.hostPlatform.isDarwin`, rather than acquiring a Mac copy.
 - Hash-pinned packages must be exposed under `packages.<system>` for CI builds.
   Renovate does not update `packages/`; the package-update workflow owns hashes too.
-- Avoid instructions, historical incident reports and repeated inventories in comments.
-  Keep only non-obvious constraints and the reason for deliberate exceptions.
+- Keep comments for non-obvious constraints and deliberate exceptions. No AI audit
+  labels, historical incident reports, repeated inventories or line-by-line narration.
+- Keep substantial shell/Python programs in source files, not Nix strings. Nix wires
+  packages, arguments and services; short wrappers and genuinely generated code stay inline.
+  Use `writeShellApplication` with explicit runtime dependencies for owned shell tools.
 
 ## Boundaries
 
