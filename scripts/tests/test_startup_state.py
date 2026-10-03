@@ -294,40 +294,6 @@ class HermesTest(unittest.TestCase):
                 self.assertEqual((home / ".managed").read_text(), "false\n")
                 self.assertFalse(scratch.exists())
 
-    def test_only_old_deployed_context_override_is_removed(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            home, policy, scratch = (
-                Path(temporary) / name for name in ("home", "policy", "scratch")
-            )
-            home.mkdir()
-            policy.mkdir()
-            (home / ".managed").write_text("nixos")
-            (home / ".env").write_text("HERMES_MANAGED=false\n")
-            config = {
-                "model": {"default": "initial", "context_length": 100},
-                "providers": {
-                    "test": {
-                        "models": {
-                            "initial": {"context_length": 100},
-                            "other": {"context_length": 80},
-                        }
-                    }
-                },
-            }
-            (home / "config.yaml").write_text(yaml.safe_dump(config))
-            state.capture(home, scratch)
-            state.restore(
-                home,
-                scratch,
-                {"model": {"default": "initial", "provider": "custom:test"}},
-                policy,
-            )
-            result = yaml.safe_load((home / "config.yaml").read_text())
-            self.assertNotIn("context_length", result["model"])
-            self.assertEqual(
-                result["providers"]["test"]["models"], {"other": {"context_length": 80}}
-            )
-
     def test_invalid_configuration_refuses_capture(self):
         with tempfile.TemporaryDirectory() as temporary:
             home = Path(temporary)

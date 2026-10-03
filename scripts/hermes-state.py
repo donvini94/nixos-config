@@ -59,9 +59,7 @@ def capture(home, scratch):
     scratch.mkdir(mode=0o700, parents=True, exist_ok=True)
     os.chmod(scratch, 0o700)
     previous = home / ".nix-env-keys.json"
-    marker = home / ".managed"
     snapshot = {
-        "legacy": marker.exists() and marker.read_text().strip() in ("nixos", "true"),
         "env": environment(home / ".env"),
         "managed": json.loads(previous.read_text()) if previous.exists() else [],
     }
@@ -79,22 +77,6 @@ def restore(home, scratch, defaults, policy):
     atomic_write(home / ".env", render_env({**retained, **declared}), 0o640)
     atomic_write(home / ".nix-env-keys.json", json.dumps(list(declared)), 0o640)
     existing = yaml.safe_load((home / "config.yaml").read_text())
-    # Drop the old deployment's matching default-model context override once, so discovery
-    # can supply it. Preserve unrelated per-model overrides and any changed model preference.
-    selected = existing.get("model", {})
-    if (
-        snapshot.get("legacy")
-        and isinstance(selected, dict)
-        and selected.get("default") == defaults["model"]["default"]
-    ):
-        name = defaults["model"]["provider"].removeprefix("custom:")
-        models = existing.get("providers", {}).get(name, {}).get("models", {})
-        entry = models.get(selected["default"], {})
-        if selected.get("context_length") == entry.get("context_length"):
-            selected.pop("context_length", None)
-            entry.pop("context_length", None)
-            if not entry:
-                models.pop(selected["default"], None)
     atomic_write(
         home / "config.yaml",
         yaml.safe_dump(merge_defaults(defaults, existing), sort_keys=False),
