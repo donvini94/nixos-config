@@ -197,6 +197,10 @@ class ModelsTest(unittest.TestCase):
         self.assertEqual(converted["maxTokens"], 30000)
         self.assertEqual(converted["input"], ["text", "image"])
         self.assertEqual(converted["cost"]["cacheRead"], 1)
+        self.assertEqual(
+            set(converted["cost"]), {"input", "output", "cacheRead", "cacheWrite"}
+        )
+        self.assertEqual(converted["cost"]["cacheWrite"], 0)
         self.assertNotIn("cost", sync.client_model({"id": "x"}))
 
     def test_clients_preserve_other_providers_and_use_offline_cache(self):

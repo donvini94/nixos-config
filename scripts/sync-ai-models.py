@@ -29,7 +29,9 @@ def client_model(model):
         value = model.get(source)
         if isinstance(value, int) and not isinstance(value, bool) and value > 0:
             result[target] = value
-    costs = {}
+    # Native client schemas require all four rates when a cost object is present.
+    # Absent cache rates use the clients' zero default; the ingress keeps actual billing separate.
+    costs = {"cacheRead": 0, "cacheWrite": 0}
     for source, target in (
         ("input_price", "input"),
         ("output_price", "output"),
@@ -39,7 +41,7 @@ def client_model(model):
         value = model.get(source)
         if finite_number(value):
             costs[target] = value * 1_000_000
-    if costs:
+    if "input" in costs and "output" in costs:
         result["cost"] = costs
     return result
 
