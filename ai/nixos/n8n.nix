@@ -43,6 +43,13 @@ in
       default = "127.0.0.1";
     };
 
+    publicUrl = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      example = "https://agent.example.de/";
+      description = "Public base URL that webhook and form URLs are generated for, behind one proxy.";
+    };
+
     encryptionKeyFile = lib.mkOption {
       type = lib.types.path;
       description = "File containing the n8n credential-encryption key.";
@@ -145,6 +152,10 @@ in
           N8N_TEMPLATES_ENABLED = "false";
           N8N_LOG_LEVEL = "info";
           N8N_LOG_OUTPUT = "console";
+        }
+        // lib.optionalAttrs (cfg.publicUrl != null) {
+          WEBHOOK_URL = cfg.publicUrl;
+          N8N_PROXY_HOPS = "1";
         }
         // lib.optionalAttrs (cfg.sharedMount != null) {
           N8N_RESTRICT_FILE_ACCESS_TO = cfg.sharedMount.mountPoint;

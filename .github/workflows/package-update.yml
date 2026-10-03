@@ -45,6 +45,7 @@ jobs:
           - omp
           - linear-cli
           - coreruleset
+          - n8n-chat
     concurrency:
       group: package-update-${{ matrix.package }}
       cancel-in-progress: true
@@ -56,7 +57,7 @@ jobs:
         run: |
           # ai/ packages are defined in the ai-stack flake, where nix-update finds their files.
           dir=.
-          case "${{ matrix.package }}" in coreruleset) dir=ai ;; esac
+          case "${{ matrix.package }}" in coreruleset | n8n-chat) dir=ai ;; esac
           (cd "$dir" && nix run nixpkgs#nix-update -- \
             --flake --version=stable --build "${{ matrix.package }}")
           # The release version is shared; refresh the Mac archive hash too.

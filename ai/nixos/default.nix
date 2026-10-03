@@ -4,6 +4,7 @@
     ./ai-stack.nix
     ./edge.nix
     ./egress.nix
+    ./public.nix
     ./observability/exporters.nix
     ./vulnerability-scan/container.nix
     ./vulnerability-scan/host.nix

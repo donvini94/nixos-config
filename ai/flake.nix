@@ -32,6 +32,7 @@
 
       packages = lib.genAttrs systems (system: {
         coreruleset = nixpkgs.legacyPackages.${system}.callPackage ./packages/coreruleset.nix { };
+        n8n-chat = nixpkgs.legacyPackages.${system}.callPackage ./packages/n8n-chat.nix { };
       });
 
       checks = lib.genAttrs systems (
@@ -49,6 +50,7 @@
         }
         // lib.optionalAttrs (system == "x86_64-linux") {
           egress = pkgs.testers.runNixOSTest ./tests/egress.nix;
+          public = pkgs.testers.runNixOSTest ./tests/public.nix;
           # Every module enabled on a bare host must evaluate, assertions included.
           evaluation =
             let
