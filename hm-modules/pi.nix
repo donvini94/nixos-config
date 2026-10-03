@@ -11,10 +11,10 @@ let
   agentDir = "${home}/.pi/agent";
   repo = "${home}/nixos-config";
   link = config.lib.file.mkOutOfStoreSymlink;
-  requesty = import ../lib/requesty.nix;
   isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
   isDracula = !isDarwin && (osConfig.networking.hostName or "") == "dracula";
-  requestyKeyFile = if isDarwin then null else osConfig.services.requesty.apiKeyFile or null;
+  requesty = osConfig.services.requesty or null;
+  requestyKeyFile = requesty.apiKeyFile or null;
 
   # npm installs the pinned binary into the writable ~/.local prefix.
   piVersion = "1.0.0";

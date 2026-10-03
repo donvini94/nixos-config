@@ -10,7 +10,9 @@ let
   hostname = osConfig.networking.hostName or "";
   isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
   isDracula = !isDarwin && hostname == "dracula";
-  requestyKeyFile = if isDarwin then null else osConfig.services.requesty.apiKeyFile or null;
+  # Only hosts that import modules/requesty.nix have a remote profile.
+  requesty = osConfig.services.requesty or null;
+  requestyKeyFile = requesty.apiKeyFile or null;
   isRemote = requestyKeyFile != null;
   active = config.programs.ompClient.enable && (isDracula || isRemote);
   localProfile = {
@@ -25,7 +27,7 @@ let
     }) osConfig.services.localLlama.models;
   };
   requestyProfile = {
-    inherit (import ../lib/requesty.nix) endpoint defaultModel;
+    inherit (requesty) endpoint defaultModel;
     provider = "requesty";
     disableStrictTools = false;
     models = { }; # Discovered at runtime from the organization-approved catalog.
