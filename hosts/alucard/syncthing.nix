@@ -1,6 +1,6 @@
-{ lib, ... }:
+{ lib, username, ... }:
 let
-  home = "/home/vincenzo";
+  home = "/home/${username}";
 
   claudePeers = [
     "bereitbook-pro-m4"
@@ -46,10 +46,10 @@ in
 {
   services.syncthing = {
     enable = true;
-    user = "vincenzo";
+    user = username;
     openDefaultPorts = true;
-    dataDir = "/home/vincenzo/";
-    configDir = "/home/vincenzo/.config/syncthing";
+    dataDir = "${home}/";
+    configDir = "${home}/.config/syncthing";
     # No peer may introduce a folder here: autoAcceptFolders on a device
     # silently defaults `overrideFolders` to false, which leaves the
     # declarations below decorative.

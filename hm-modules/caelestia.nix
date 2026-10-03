@@ -1,11 +1,11 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 
 {
   programs.caelestia = {
     enable = true;
     systemd.enable = true;
     settings = {
-      paths.wallpaperDir = "/home/vincenzo/nixos-config/wallpapers";
+      paths.wallpaperDir = "${config.home.homeDirectory}/nixos-config/wallpapers";
       background.desktopClock = {
         enabled = true;
         position = "bottom-right";

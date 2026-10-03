@@ -1,4 +1,9 @@
-{ lib, pkgs, ... }:
+{
+  lib,
+  pkgs,
+  username,
+  ...
+}:
 
 {
   imports = [
@@ -8,12 +13,12 @@
 
   nixpkgs.hostPlatform = "aarch64-darwin";
   system.stateVersion = 7;
-  system.primaryUser = "vincenzopace";
+  system.primaryUser = username;
 
   # Do not add this existing macOS account to users.knownUsers.
-  users.users.vincenzopace = {
-    name = "vincenzopace";
-    home = "/Users/vincenzopace";
+  users.users.${username} = {
+    name = username;
+    home = "/Users/${username}";
   };
 
   # The installer still owns the Determinate Nix runtime and main nix.conf. This module

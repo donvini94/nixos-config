@@ -2,11 +2,12 @@
   config,
   lib,
   pkgs,
+  site,
   ...
 }:
 let
-  domain = "dumusstbereitsein.de";
-  domain2 = "istbereit.de";
+  domain = site.domains.primary;
+  domain2 = site.domains.secondary;
   harden = lib.mapAttrs (
     _: host:
     host
@@ -65,7 +66,7 @@ in
 
   security.acme = {
     acceptTerms = true;
-    defaults.email = "vincenzo.pace94@icloud.com";
+    defaults.email = site.owner.mail;
   };
 
   services = {

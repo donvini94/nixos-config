@@ -3,6 +3,7 @@
   lib,
   pkgs,
   modulesPath,
+  site,
   username,
   ...
 }:
@@ -31,7 +32,7 @@
 
   # The flake wires home-manager for the primary user only; Kyrill's own
   # account is named here.
-  home-manager.users.kyrill = import ./home-kyrill.nix;
+  home-manager.users.${site.partner} = import ./home-kyrill.nix;
 
   services.containerUpdates = {
     enable = true;

@@ -1,6 +1,7 @@
 {
   config,
   pkgs,
+  site,
   ...
 }:
 {
@@ -15,7 +16,7 @@
         passwordFile = config.sops.secrets."keycloak/password".path;
       };
       settings = {
-        hostname = "auth.dumusstbereitsein.de";
+        hostname = "auth.${site.domains.primary}";
         http-port = 38080;
         http-host = "127.0.0.1";
         http-enabled = true;

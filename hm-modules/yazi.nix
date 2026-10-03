@@ -1,4 +1,5 @@
 {
+  config,
   pkgs,
   ...
 }:
@@ -74,7 +75,7 @@ in
               desc = "Go to KIT directory";
             }
             {
-              run = "cd /run/media/vincenzo/data";
+              run = "cd /run/media/${config.home.username}/data";
               on = [
                 "g"
                 "p"

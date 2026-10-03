@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, site, ... }:
 
 {
   # PATH lives here rather than in interactiveShellInit so it reaches non-interactive and
@@ -30,7 +30,7 @@
       arr = "ssh media-admin";
       py = "python3";
       lg = "lazygit";
-      bereit = "ssh vincenzo@dumusstbereitsein.de";
+      bereit = "ssh ${site.owner.username}@${site.domains.primary}";
       windows = "bash ~/nixos-config/scripts/windows.sh";
 
       # The zellij helpers (zj / zjr / zjls / zjl) are functions in hm-modules/zellij, next

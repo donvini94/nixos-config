@@ -37,15 +37,18 @@
         system
         "aarch64-darwin"
       ];
-      username = "vincenzo";
-      macUsername = "vincenzopace";
-      fullName = "Vincenzo Pace";
-      mail = "vincenzo.pace94@icloud.com";
+      site = import ./site.nix;
+      inherit (site.owner)
+        username
+        macUsername
+        fullName
+        mail
+        ;
       mkLinuxHost =
         hostname: homeModule: extraModules:
         nixpkgs.lib.nixosSystem {
           inherit system;
-          specialArgs = { inherit inputs username; };
+          specialArgs = { inherit inputs site username; };
           modules = [
             ./configuration.nix
             ./hosts/${hostname}
@@ -58,6 +61,7 @@
                     fullName
                     mail
                     inputs
+                    site
                     ;
                 };
                 backupFileExtension = "hm-backup";
@@ -82,7 +86,7 @@
 
       darwinConfigurations."AC-0137" = inputs.nix-darwin.lib.darwinSystem {
         specialArgs = {
-          inherit inputs;
+          inherit inputs site;
           username = macUsername;
         };
         modules = [
@@ -95,7 +99,7 @@
               useUserPackages = true;
               backupFileExtension = "hm-backup";
               extraSpecialArgs = {
-                inherit fullName mail inputs;
+                inherit fullName mail inputs site;
                 username = macUsername;
               };
               users.${macUsername} = import ./hosts/ac-0137/home.nix;

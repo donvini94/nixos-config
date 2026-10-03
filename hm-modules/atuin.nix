@@ -1,5 +1,10 @@
 # Sync target is the tailnet, not a public vhost; plain HTTP inside WireGuard.
-{ lib, pkgs, ... }:
+{
+  lib,
+  pkgs,
+  site,
+  ...
+}:
 
 {
   programs.atuin = {
@@ -9,7 +14,7 @@
     flags = lib.optional pkgs.stdenv.hostPlatform.isDarwin "--disable-ctrl-r";
     settings = {
       auto_sync = true;
-      sync_address = "http://alucard.tailf117a1.ts.net:28888";
+      sync_address = "http://${site.server}.${site.tailnet}:28888";
       search_mode = "prefix";
     };
   };

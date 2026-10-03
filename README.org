@@ -8,6 +8,8 @@
 | AC-0137 | Personal Mac: AeroSpace, SketchyBar, Doom, Ghostty | hosts/ac-0137/       | hosts/ac-0137/home.nix     |
 | alucard | Media/torrent server and startup infrastructure    | hosts/alucard/       | hosts/alucard/home.nix     |
 
+=site.nix= holds the deployment's identity (users, domains, tailnet, server name) and is
+passed to every module as =site=; a second deployment starts there.
 =modules/= holds system services; =hm-modules/= holds user tools.
 Package lists are in =modules/packages.nix=, =modules/programming.nix=,
 =hm-modules/{cli-tools,packages}.nix= and =hosts/ac-0137/homebrew.nix=.

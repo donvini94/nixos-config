@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  site,
   ...
 }:
 {
@@ -10,14 +11,14 @@
     # provisioning and backup travel with it.
     paperlessStack = {
       enable = true;
-      domain = "paperless.dumusstbereitsein.de";
+      domain = "paperless.${site.domains.primary}";
       port = 58080;
     };
 
     # mailcow's own ACME cannot work behind this nginx, so hand it our cert.
     mailcowTls = {
       enable = true;
-      domain = "mail.istbereit.de";
+      domain = "mail.${site.domains.secondary}";
     };
 
     dockerRegistry = {
@@ -29,17 +30,17 @@
     mattermost = {
       enable = true;
       siteName = "Bereit Chat";
-      siteUrl = "https://chat.istbereit.de";
+      siteUrl = "https://chat.${site.domains.secondary}";
       host = "127.0.0.1";
       port = 8065;
       mutableConfig = true;
       preferNixConfig = true;
       settings = {
         TeamSettings = {
-          # Signup stays open (no invite needed) but only istbereit.de
+          # Signup stays open (no invite needed) but only the secondary domain
           # addresses can create an account.
           EnableOpenServer = true;
-          RestrictCreationToDomains = "istbereit.de";
+          RestrictCreationToDomains = site.domains.secondary;
         };
         ThemeSettings.DefaultTheme = "onyx";
       };

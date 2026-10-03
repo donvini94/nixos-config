@@ -2,12 +2,13 @@
   config,
   lib,
   pkgs,
+  site,
   ...
 }:
 
 let
   tailscale = lib.getExe config.services.tailscale.package;
-  tailnetHost = "alucard.tailf117a1.ts.net";
+  tailnetHost = "${config.networking.hostName}.${site.tailnet}";
   # Tailnet listen port -> loopback target. The AI entries match dracula's
   # ai-admin SSH forwards, the media ones media-admin's.
   privateTcpServices = {

@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ config, pkgs, ... }:
 {
   wayland.windowManager.hyprland = {
     enable = true;
@@ -216,7 +216,7 @@
     # `caelestia scheme set -n dynamic` once on a fresh machine; if the file is missing
     # hyprland logs a source error and keeps defaults.
     extraConfig = ''
-      source = /home/vincenzo/.config/hypr/scheme/current.conf
+      source = ${config.home.homeDirectory}/.config/hypr/scheme/current.conf
       general {
         col.active_border = rgb($primary) rgb($tertiary) 45deg
         col.inactive_border = rgb($surfaceVariant)

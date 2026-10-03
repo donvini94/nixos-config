@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ lib, site, ... }:
 
 {
   home.activation.ensureSshControlDir = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
@@ -20,14 +20,14 @@
         Port = 443;
       };
       Bereitserver = {
-        HostName = "dumusstbereitsein.de";
-        User = "vincenzo";
+        HostName = site.domains.primary;
+        User = site.owner.username;
       };
       # Private AI administration tunnel. The local ports deliberately differ from
       # Dracula's own AI stack so both machines can be inspected at once.
       ai-admin = {
-        HostName = "dumusstbereitsein.de";
-        User = "vincenzo";
+        HostName = site.domains.primary;
+        User = site.owner.username;
         ExitOnForwardFailure = "yes";
         ServerAliveInterval = 30;
         ServerAliveCountMax = 3;
@@ -58,8 +58,8 @@
       # `bereit` zellij layout routes its lazydocker pane through this alias so opening that
       # session binds the arr ports. The layout overrides TERM per-command where colour matters.
       media-admin = {
-        HostName = "dumusstbereitsein.de";
-        User = "vincenzo";
+        HostName = site.domains.primary;
+        User = site.owner.username;
         LocalForward = [
           {
             bind.port = 18989;
