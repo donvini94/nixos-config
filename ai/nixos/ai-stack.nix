@@ -49,6 +49,15 @@ in
       description = "SOPS file holding the stack's secrets.";
     };
 
+    tier = lib.mkOption {
+      type = lib.types.enum [
+        "basic"
+        "plus"
+      ];
+      default = "basic";
+      description = "Product tier; sets the default of each optional feature, which may override it.";
+    };
+
     hermes = {
       dashboardUser = lib.mkOption {
         type = lib.types.str;

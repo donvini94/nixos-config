@@ -31,10 +31,16 @@
         };
       };
 
-      packages = lib.genAttrs systems (system: {
-        coreruleset = nixpkgs.legacyPackages.${system}.callPackage ./packages/coreruleset.nix { };
-        n8n-chat = nixpkgs.legacyPackages.${system}.callPackage ./packages/n8n-chat.nix { };
-      });
+      packages = lib.genAttrs systems (
+        system:
+        {
+          coreruleset = nixpkgs.legacyPackages.${system}.callPackage ./packages/coreruleset.nix { };
+          n8n-chat = nixpkgs.legacyPackages.${system}.callPackage ./packages/n8n-chat.nix { };
+        }
+        // lib.optionalAttrs (system == "x86_64-linux") {
+          tika = nixpkgs.legacyPackages.${system}.callPackage ./packages/tika.nix { };
+        }
+      );
 
       checks = lib.genAttrs systems (
         system:
@@ -79,6 +85,13 @@
                         secretsFile = "/dev/null";
                         hermes.telegram = true;
                         tailnet.domain = "example.ts.net";
+                        tier = "plus";
+                        features.paperless.domain = "docs.example.test";
+                        public = {
+                          domain = "agent.example.test";
+                          acmeEmail = "ops@example.test";
+                        };
+                        backup.repository = "sftp:u1-sub1@u1.your-storagebox.de:restic";
                       };
                       observability = {
                         exporters.enable = true;

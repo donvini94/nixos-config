@@ -121,7 +121,8 @@ Dracula runs no company infrastructure: no monitoring, scanning or Hermes.
 | services/reverse-proxy.nix         | Public domains, nginx, ACME                               |
 | services/identity.nix             | PostgreSQL, Keycloak                                      |
 | services/media-services.nix        | Jellyfin, Navidrome, Calibre-Web                           |
-| services/hosted-applications.nix   | Paperless, Mailcow TLS, registry, Mattermost, Atuin         |
+| paperless.nix                     | Paperless (ai-stack feature) plus household specifics     |
+| services/hosted-applications.nix   | Mailcow TLS, registry, Mattermost, Atuin                  |
 | media-stack/docker-compose.yml    | Gluetun/qBittorrent, *arr, SABnzbd, Seerr, Komga, Kapowarr   |
 | ai.nix                            | Hermes, n8n, Requesty key                                  |
 | private-access.nix                | Tailscale Serve endpoints                                 |

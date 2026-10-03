@@ -7,13 +7,6 @@
 }:
 {
   services = {
-    # Paperless itself lives in modules/paperless.nix.
-    paperlessStack = {
-      enable = true;
-      domain = "paperless.${site.domains.primary}";
-      port = 58080;
-    };
-
     # mailcow's own ACME cannot work behind this nginx, so hand it our cert.
     mailcowTls = {
       enable = true;
@@ -56,16 +49,4 @@
     };
   };
 
-  systemd.services.paperless-consumer.after = [ "var-lib-paperless.mount" ];
-  systemd.services.paperless-scheduler.after = [ "var-lib-paperless.mount" ];
-  systemd.services.paperless-task-queue.after = [ "var-lib-paperless.mount" ];
-  systemd.services.paperless-web.after = [ "var-lib-paperless.mount" ];
-
-  # Consumer/web/scheduler share task-queue's PrivateTmp namespace (JoinsNamespaceOf).
-  # Bind their lifecycle so a task-queue restart cycles them too, otherwise they keep
-  # a stale namespace where /tmp/paperless no longer exists and uploads fail with
-  # "[Errno 2] No such file or directory: '/tmp/paperless/...'".
-  systemd.services.paperless-consumer.unitConfig.PartOf = [ "paperless-task-queue.service" ];
-  systemd.services.paperless-scheduler.unitConfig.PartOf = [ "paperless-task-queue.service" ];
-  systemd.services.paperless-web.unitConfig.PartOf = [ "paperless-task-queue.service" ];
 }

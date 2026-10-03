@@ -21,7 +21,7 @@
     ./ai.nix
     ./postgresql-upgrade.nix
     ../../modules/packages.nix
-    ../../modules/paperless.nix
+    ./paperless.nix
     ../../mail/nixos/mailcow-tls.nix
     ../../mail/nixos/credentials.nix
     ../../modules/container-updates.nix

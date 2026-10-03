@@ -15,7 +15,6 @@
     age.keyFile = "/var/lib/sops/age/keys.txt";
     secrets = {
       "keycloak/password".mode = "640";
-      "paperless/password".mode = "640";
       "smb_hetzner/username" = { };
       "smb_hetzner/password" = { };
       "mullvad/private_key" = { };

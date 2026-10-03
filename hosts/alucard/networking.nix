@@ -33,7 +33,9 @@ in
         9877 # Bereit Rising (V Rising)
       ];
       extraCommands =
-        lib.concatMapStrings (port: "iptables -A OUTPUT -p tcp --dport ${toString port} -j DROP\n") mining.ports
+        lib.concatMapStrings (
+          port: "iptables -A OUTPUT -p tcp --dport ${toString port} -j DROP\n"
+        ) mining.ports
         + lib.concatMapStrings (host: "iptables -A OUTPUT -d ${host} -j DROP\n") mining.hosts;
     };
   };

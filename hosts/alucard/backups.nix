@@ -57,25 +57,8 @@
         '';
       };
 
-      # Paperless: the exporter writes a consistent dump to its own directory, snapshotted in
-      # place. The Django signing key is not in the export; a restore without it invalidates
-      # every session and signed value.
-      paperless = {
-        # Predates the shared key; repointing it would orphan the existing snapshots.
-        passwordFile = config.sops.secrets."paperless/restic_password".path;
-        # The 03:30 schedule has to stay after the 02:30 exporter run.
-        after = [ "paperless-exporter.service" ];
-        paths = [ config.services.paperless.exporter.directory ];
-        prepare = ''
-          secret_key=${lib.escapeShellArg "${config.services.paperless.dataDir}/nixos-paperless-secret-key.env"}
-          if [ -r "$secret_key" ]; then
-            install -m 0400 "$secret_key" "$stage/nixos-paperless-secret-key.env"
-          else
-            echo "$secret_key is not readable; refusing a restore-incomplete snapshot" >&2
-            exit 1
-          fi
-        '';
-      };
+      # Predates the shared key; repointing it would orphan the existing snapshots.
+      paperless.passwordFile = config.sops.secrets."paperless/restic_password".path;
     };
   };
 }

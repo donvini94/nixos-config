@@ -102,7 +102,12 @@
               useUserPackages = true;
               backupFileExtension = "hm-backup";
               extraSpecialArgs = {
-                inherit fullName mail inputs site;
+                inherit
+                  fullName
+                  mail
+                  inputs
+                  site
+                  ;
                 username = macUsername;
               };
               users.${macUsername} = import ./hosts/ac-0137/home.nix;
@@ -125,7 +130,6 @@
         // inputs.ai-stack.packages.${packageSystem} or { }
         // nixpkgs.lib.optionalAttrs (packageSystem == "x86_64-linux") {
           omp = pkgs.callPackage ./coding-agents/packages/omp.nix { };
-          tika = pkgs.callPackage ./packages/tika.nix { };
           local-transcription-client = pkgs.callPackage ./transcription/client.nix { };
         }
       );
