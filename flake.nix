@@ -121,7 +121,7 @@
         // nixpkgs.lib.optionalAttrs (packageSystem == "x86_64-linux") {
           omp = pkgs.callPackage ./ai/packages/omp.nix { };
           tika = pkgs.callPackage ./packages/tika.nix { };
-          local-transcription-client = pkgs.callPackage ./packages/local-transcription-client.nix { };
+          local-transcription-client = pkgs.callPackage ./transcription/client.nix { };
         }
       );
 
@@ -154,11 +154,11 @@
           shell-scripts =
             pkgs.runCommand "check-shell-scripts" { nativeBuildInputs = [ pkgs.shellcheck ]; }
               ''
-                shellcheck ${./scripts}/*.sh ${./ai/scripts}/*.sh ${./mail/bin}/*
+                shellcheck ${./scripts}/*.sh ${./ai/scripts}/*.sh ${./mail/bin}/* ${./mail/nixos}/*.sh ${./modules/vulnerability-scan}/*.sh ${./hosts/alucard/services}/*.sh
                 touch "$out"
               '';
           python-lint = pkgs.runCommand "check-python-lint" { nativeBuildInputs = [ pkgs.ruff ]; } ''
-            ruff check --no-cache --select F ${./local-transcription}/server.py ${./ai/scripts/tests}
+            ruff check --no-cache --select F ${./transcription}/server.py ${./ai/scripts/tests}
             touch "$out"
           '';
           model-download =

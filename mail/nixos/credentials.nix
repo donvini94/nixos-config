@@ -7,7 +7,7 @@
 # lines in ~/.authinfo.gpg instead (no sops-nix on darwin here).
 {
   sops.secrets."mail/bereit_authinfo" = {
-    sopsFile = ../secrets/mail.yaml;
+    sopsFile = ../../secrets/mail.yaml;
     key = "bereit_authinfo";
     owner = username;
     mode = "0400";

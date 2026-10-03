@@ -12,12 +12,13 @@ current packages, services, ports and paths. Do not duplicate those inventories 
   Linux: `/home/vincenzo/nixos-config`.
 - Evaluate all three hosts after shared changes. Build affected configurations before
   deployment; `--dry-run` only evaluates the build plan.
-- The agent deploys affected Linux hosts after committing, pushing and synchronizing;
+- The agent deploys affected hosts after committing, pushing and synchronizing;
   do not leave switching to the user unless explicitly asked not to deploy.
   Passwordless sudo requires these exact commands (tested on both hosts):
   `ssh dracula 'sudo -n /run/current-system/sw/bin/nixos-rebuild switch --flake /home/vincenzo/nixos-config#dracula'`
   `ssh alucard 'sudo -n /run/current-system/sw/bin/nixos-rebuild switch --flake /home/vincenzo/nixos-config#alucard'`
-  Relative flake paths are not authorized. No PTY or sudo password is needed.
+  `sudo -n /run/current-system/sw/bin/darwin-rebuild switch --flake /Users/vincenzopace/nixos-config#AC-0137`
+  (the Mac, run locally). Relative flake paths are not authorized. No PTY or sudo password is needed.
 - Read runtime logs before diagnosing configuration. A successful evaluation does not
   prove a service works. Do not expose secrets while collecting evidence.
 - Questions are not authorization to edit. Answer "how/why/should" questions and stop;
@@ -27,6 +28,8 @@ current packages, services, ports and paths. Do not duplicate those inventories 
 ## Placement
 
 - Host-specific wiring: `hosts/<host>/`. Shared system functionality: `modules/`.
+  Features spanning NixOS, home-manager and packages get one folder: `ai/`,
+  `transcription/`, `mail/`.
 - User configuration: `hm-modules/`; home files are import manifests plus identity.
 - Cross-platform CLI packages: `hm-modules/cli-tools.nix`. Linux GUI packages:
   `hm-modules/packages.nix`. System packages are for integration/toolchains.
@@ -34,9 +37,9 @@ current packages, services, ports and paths. Do not duplicate those inventories 
   `pkgs.stdenv.hostPlatform.isDarwin`, rather than acquiring a Mac copy.
 - OMP and Pi are independently enabled with `programs.ompClient.enable` and
   `programs.piClient.enable`. Client modules own their settings and state; shared
-  source packages live in `hm-modules/agent-content.nix`, guidance in `guidance/`.
+  source packages live in `ai/home/agent-content.nix`, guidance in `ai/guidance/`.
 - Hash-pinned packages must be exposed under `packages.<system>` for CI builds.
-  Renovate does not update `packages/`; the package-update workflow owns hashes too.
+  Renovate does not update `packages/` or `ai/packages/`; the package-update workflow owns hashes too.
 - Keep comments for non-obvious constraints and deliberate exceptions. No AI audit
   labels, historical incident reports, repeated inventories or line-by-line narration.
 - Keep substantial shell/Python programs in source files, not Nix strings. Nix wires

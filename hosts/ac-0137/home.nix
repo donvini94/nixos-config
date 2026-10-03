@@ -2,21 +2,13 @@
 
 {
   imports = [
-    ../../hm-modules/git.nix
+    ../../hm-modules/base.nix
     ../../hm-modules/ssh.nix
-    ../../hm-modules/fish.nix
-    ../../hm-modules/shell.nix
-    ../../hm-modules/atuin.nix
-    ../../hm-modules/helix.nix
     ../../hm-modules/mpv.nix
-    ../../hm-modules/yazi.nix
     ../../hm-modules/zellij
     ../../hm-modules/zed.nix
     ../../hm-modules/doom.nix
-    ../../ai/home
     ../../ai/home/claude.nix
-    ../../hm-modules/lsp.nix
-    ../../hm-modules/cli-tools.nix
     ../../hm-modules/zotero-cli.nix
     ./fish.nix
     ./apps.nix
@@ -29,9 +21,6 @@
     stateVersion = "26.11";
   };
 
-  programs.home-manager.enable = true;
-  programs.ompClient.enable = true;
-  programs.piClient.enable = true;
 
   # Private host blocks stay outside Git; earlier SSH options win.
   programs.ssh.includes = [

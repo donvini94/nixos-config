@@ -47,7 +47,7 @@
     };
   };
 
-  # xdg-desktop-portal-gtk must stay registered system-side in modules/hyprland/default.nix
+  # xdg-desktop-portal-gtk must stay registered system-side in modules/desktop/hyprland.nix
   # under xdg.portal.extraPortals; as a user binary xdg-desktop-portal will not delegate to it.
   home.packages = with pkgs; [
     hyprpicker

@@ -18,7 +18,7 @@ let
       pkgs.gnused
     ];
     runtimeEnv.MAILCOW_DIR = cfg.mailcowDir;
-    text = builtins.readFile ../scripts/mailcow-configure-bindings.sh;
+    text = builtins.readFile ./mailcow-configure-bindings.sh;
   };
   deploy = pkgs.writeShellApplication {
     name = "mailcow-tls-deploy";
@@ -34,7 +34,7 @@ let
       MAILCOW_DOMAIN = cfg.domain;
       MAILCOW_RELOAD_SERVICES = lib.concatStringsSep " " cfg.reloadServices;
     };
-    text = builtins.readFile ../scripts/mailcow-deploy-cert.sh;
+    text = builtins.readFile ./mailcow-deploy-cert.sh;
   };
 in
 {

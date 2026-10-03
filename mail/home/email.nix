@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 
 # notmuch replica role for NixOS desktops (dracula). The Mac runs the same role from
-# the stateful files under ../mail/ (see mail/README.md).
+# the stateful files under mail/ (see mail/README.md).
 #
 # A replica never talks IMAP. Every 5 minutes mail-replica-sync runs `muchsync alucard`,
 # which makes this Maildir + notmuch database identical to the hub's (mail, tags,
@@ -13,7 +13,7 @@
 # modules/mail-credentials.nix, so no GPG prompt is involved.
 
 let
-  mailDir = ../mail;
+  mailDir = ./..;
   scripts = "${mailDir}/bin";
   configs = "${mailDir}/config";
   authinfo = "/run/secrets/mail/bereit_authinfo";

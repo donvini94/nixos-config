@@ -4,7 +4,7 @@
 }:
 
 let
-  client = pkgs.callPackage ../packages/local-transcription-client.nix { };
+  client = pkgs.callPackage ./client.nix { };
 
   # The model translates to English when it guesses the language wrong, so every
   # entry point forces one. "auto" is still accepted and means "let it guess".

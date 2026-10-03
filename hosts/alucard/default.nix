@@ -21,12 +21,12 @@
     ./ai.nix
     ../../modules/packages.nix
     ../../modules/paperless.nix
-    ../../modules/mailcow-tls.nix
+    ../../mail/nixos/mailcow-tls.nix
     ../../modules/observability
     ../../modules/container-updates.nix
-    ../../modules/vulnerability-scan.nix
-    ../../modules/host-vulnerability-scan.nix
-    ../../modules/mail-credentials.nix
+    ../../modules/vulnerability-scan/container.nix
+    ../../modules/vulnerability-scan/host.nix
+    ../../mail/nixos/credentials.nix
     ../../secrets/secrets.nix
   ];
 

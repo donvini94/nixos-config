@@ -14,7 +14,7 @@ let
   image = "qwenllm/qwen3-asr@sha256:fb75b775f089e06e5a1aaebffd421e37505cc630d50c86d889d95ffa45a7e16a";
   sourceRevision = "80c22e6140bcb9166fb9906798894fc8b18c8309";
   modelRevision = "185ce639118ad1362d049ca0d8ed04b6ec5cd6c9";
-  serverScript = ../local-transcription/server.py;
+  serverScript = ./server.py;
 
   upstreamSource = pkgs.fetchFromGitHub {
     owner = "netease-youdao";

@@ -5,20 +5,11 @@
 
 {
   imports = [
-    ../../ai/home
-    ../../hm-modules/lsp.nix
+    ../../hm-modules/base.nix
     ./zellij.nix
 
-    # fish's cd abbreviation needs shell.nix's zoxide.
-    ../../hm-modules/fish.nix
-    ../../hm-modules/shell.nix
     ../../hm-modules/starship.nix
-    ../../hm-modules/atuin.nix
-    ../../hm-modules/git.nix
-    ../../hm-modules/cli-tools.nix
-    ../../hm-modules/helix.nix
-    ../../hm-modules/yazi.nix
-    ../../hm-modules/mail-hub.nix
+    ../../mail/home/mail-hub.nix
   ];
 
   nixpkgs.config.allowUnfree = true;
@@ -27,7 +18,4 @@
     homeDirectory = "/home/${username}";
     stateVersion = "23.05";
   };
-  programs.home-manager.enable = true;
-  programs.ompClient.enable = true;
-  programs.piClient.enable = true;
 }

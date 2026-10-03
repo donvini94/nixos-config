@@ -16,14 +16,14 @@ is an identical copy of its notmuch database.
             Mailcow (IMAP / SMTP)
                   ▲ mbsync (two-way)
                   │
-   alucard — mail hub (hm-modules/mail-hub.nix, systemd user timers)
+   alucard — mail hub (mail/home/mail-hub.nix, systemd user timers)
      mail-sync every 5 min: mbsync → notmuch new → tag rules → compute-state
                             → emit-followups (~/org/mail-followups.org)
      notmuch-daily 03:00:   ~/org/notmuch-tags.dump, ~/org/notmuch-counts/
                   ▲ muchsync over SSH (mail + tags, both directions)
         ┌─────────┴─────────┐
        Mac                dracula
-  launchd agent       hm-modules/email.nix
+  launchd agent       mail/home/email.nix
   mail-replica-sync every 5 min; msmtp sends directly to Mailcow SMTP
 ```
 
@@ -71,7 +71,7 @@ mail/
 The same Mailcow app password, in authinfo format, in two places:
 
 - **NixOS (alucard, dracula):** sops secret `secrets/mail.yaml` → key `bereit_authinfo`,
-  installed by `modules/mail-credentials.nix` at `/run/secrets/mail/bereit_authinfo`
+  installed by `mail/nixos/credentials.nix` at `/run/secrets/mail/bereit_authinfo`
   (owner vincenzo, 0400). Read by the hub's mbsync, dracula's msmtp and dracula's
   org-caldav. No GPG unlock involved, so timers never block on a prompt.
 - **Mac:** `~/.authinfo.gpg` (GPG key `F40515934D278A5E`) with

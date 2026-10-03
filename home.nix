@@ -7,32 +7,24 @@
 
 {
   imports = [
-    ./hm-modules/git.nix
+    ./hm-modules/base.nix
     ./hm-modules/ssh.nix
-    ./hm-modules/fish.nix
-    ./hm-modules/shell.nix
-    ./hm-modules/helix.nix
     ./hm-modules/hyprland.nix
     ./hm-modules/kitty.nix
     ./hm-modules/gtk.nix
     ./hm-modules/mpv.nix
     ./hm-modules/pokemmo.nix
-    ./hm-modules/cli-tools.nix
     ./hm-modules/packages.nix
-    ./hm-modules/atuin.nix
     ./hm-modules/zed.nix
     ./hm-modules/starship.nix
-    ./hm-modules/yazi.nix
     ./hm-modules/zathura.nix
     ./hm-modules/doom.nix
     ./hm-modules/zellij
     ./hm-modules/caelestia.nix
     ./hm-modules/services.nix
-    ./hm-modules/transcription.nix
-    ./hm-modules/email.nix
+    ./transcription/home.nix
+    ./mail/home/email.nix
     ./ai/home/claude.nix
-    ./ai/home
-    ./hm-modules/lsp.nix
     ./hm-modules/zotero-cli.nix
     inputs.caelestia-shell.homeManagerModules.default
   ];
@@ -53,9 +45,6 @@
   };
 
   fonts.fontconfig.enable = true;
-  programs.home-manager.enable = true;
-  programs.ompClient.enable = true;
-  programs.piClient.enable = true;
 
   xdg.mimeApps.defaultApplications = {
     "application/pdf" = [ "zathura.desktop" ];

@@ -16,7 +16,7 @@ let
       JELLYFIN_USER = config.services.jellyfin.user;
       JELLYFIN_GROUP = config.services.jellyfin.group;
     };
-    text = builtins.readFile ../../../scripts/jellyfin-runtime-policy.sh;
+    text = builtins.readFile ./jellyfin-runtime-policy.sh;
   };
 in
 {

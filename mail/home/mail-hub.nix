@@ -3,7 +3,7 @@
 # Only the hub runs IMAP/tagging and writes mail-derived Org files; replicas use muchsync.
 
 let
-  mailDir = ../mail;
+  mailDir = ./..;
   scripts = "${mailDir}/bin";
   configs = "${mailDir}/config";
 in

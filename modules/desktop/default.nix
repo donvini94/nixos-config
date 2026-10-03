@@ -2,9 +2,9 @@
 
 {
   imports = [
-    ./packages.nix
+    ../packages.nix
     ./fonts.nix
-    ./hyprland/default.nix
+    ./hyprland.nix
     ./programming.nix
     ./services.nix
   ];

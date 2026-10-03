@@ -33,16 +33,16 @@ in
 {
   imports = [
     inputs.determinate.nixosModules.default
-    ../../modules/desktop.nix
+    ../../modules/desktop
     ../../modules/nvidia.nix
-    ../../modules/gaming.nix
+    ../../modules/desktop/gaming.nix
     ../../modules/observability
     ../../ai/nixos/llama.nix
-    ../../modules/mail-credentials.nix
+    ../../mail/nixos/credentials.nix
     ../../ai/nixos/requesty.nix
-    ../../modules/transcription.nix
+    ../../transcription/nixos.nix
     ../../modules/gpu-mode.nix
-    ../../modules/host-vulnerability-scan.nix
+    ../../modules/vulnerability-scan/host.nix
     ./hardware.nix
     ./services.nix
   ];

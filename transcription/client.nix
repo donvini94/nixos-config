@@ -9,8 +9,16 @@ rustPlatform.buildRustPackage {
   pname = "local-transcription-client";
   version = "0.1.0";
 
-  src = ../local-transcription;
-  cargoLock.lockFile = ../local-transcription/Cargo.lock;
+  # The directory also holds Nix modules and the Python server; only the crate is source.
+  src = lib.fileset.toSource {
+    root = ./.;
+    fileset = lib.fileset.unions [
+      ./Cargo.toml
+      ./Cargo.lock
+      ./src
+    ];
+  };
+  cargoLock.lockFile = ./Cargo.lock;
 
   nativeBuildInputs = [ makeWrapper ];
 
