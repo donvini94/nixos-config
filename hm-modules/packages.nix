@@ -31,7 +31,6 @@ in
     zed-editor
     zeal
     bruno
-    aider-chat
     warp-terminal
     claude-agent-acp
     chromium

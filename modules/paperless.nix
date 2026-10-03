@@ -18,8 +18,8 @@ let
   privateSecret = config.sops.secrets."paperless-private".path;
   adminPasswordSecret = config.sops.secrets."paperless/password".path;
 
-  # Operator CLI: same code path as the systemd unit, so `--dry-run` previews exactly
-  # what the next rebuild will do.
+  # Operator CLI. Nothing runs it automatically: the taxonomy seeds a new instance, and
+  # the web UI owns it afterwards.
   provisionCli = pkgs.writeShellApplication {
     name = "paperless-provision";
     runtimeInputs = [ python ];
@@ -71,16 +71,6 @@ in
       description = "Tesseract languages, '+'-joined. Drives which language packs get installed.";
     };
 
-    provision = {
-      enable = lib.mkOption {
-        type = lib.types.bool;
-        default = true;
-        description = ''
-          Reconcile the taxonomy on every rebuild. Upsert-only: objects created
-          by hand in the web UI are reported but never deleted.
-        '';
-      };
-    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -152,7 +142,6 @@ in
         key = "";
         owner = paperless.user;
         mode = "0400";
-        restartUnits = lib.optional cfg.provision.enable "paperless-provision.service";
       };
       # Paperless' date parser takes the first plausible date in a document, so
       # "geboren am 14.07.1994" wins over the actual letter date.
@@ -187,40 +176,5 @@ in
     };
 
     environment.systemPackages = [ provisionCli ];
-
-    systemd.services.paperless-provision = lib.mkIf cfg.provision.enable {
-      description = "Reconcile Paperless taxonomy from declarative config";
-      wantedBy = [ "multi-user.target" ];
-      after = [
-        "paperless-web.service"
-        "sops-install-secrets.service"
-      ];
-      requires = [ "paperless-web.service" ];
-      # A rebuild starts every paperless unit in one transaction, so ordering only
-      # guarantees launch order, not readiness. The script polls for up to three
-      # minutes; the unit timeout has to outlast that, and retries cover a slow start.
-      startLimitBurst = 4;
-      startLimitIntervalSec = 900;
-      serviceConfig = {
-        Type = "oneshot";
-        TimeoutStartSec = "600";
-        Restart = "on-failure";
-        RestartSec = "45";
-        User = paperless.user;
-        Group = config.users.users.${paperless.user}.group;
-        LoadCredential = [ "admin-password:${adminPasswordSecret}" ];
-        ExecStart = ''
-          ${python}/bin/python3 ${provisionSource} \
-            --base-url ${lib.escapeShellArg cfg.baseUrl} \
-            --taxonomy ${taxonomyFile} \
-            --private ${lib.escapeShellArg privateSecret} \
-            --wait
-        '';
-        PrivateTmp = true;
-        ProtectSystem = "strict";
-        ProtectHome = true;
-        NoNewPrivileges = true;
-      };
-    };
   };
 }

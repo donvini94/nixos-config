@@ -141,6 +141,9 @@ never in the Nix store. Keep age private keys backed up separately.
 - Hermes values saved in the UI override the SOPS ones; clear them there to rotate via SOPS.
 - Paperless private YAML uses records, not names as map keys (SOPS leaves keys visible).
   After changing an IMAP password run =sudo paperless-provision --sync-passwords=.
+  =paperless-provision= is a manual seed/sync tool (=--dry-run= previews); the web UI owns
+  Paperless afterwards. Bulk classification is Paperless' own
+  =paperless-manage document_retagger --use-first --suggest -c -t -T=.
 
 =systemctl list-timers 'restic-backups-*'= shows the restic jobs (Keycloak, Jellyfin, n8n,
 Hermes, Paperless; repositories under =/mnt/hetzner/restic/=). Restoring files is not proof of application recovery;
