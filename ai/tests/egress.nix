@@ -45,7 +45,7 @@
 
   testScript = ''
     start_all()
-    peer.wait_for_unit("network-online.target")
+    peer.wait_for_unit("multi-user.target")
     peer.succeed("${pkgs.python3}/bin/python3 -m http.server 80 >/dev/null 2>&1 &")
     peer.succeed("${pkgs.python3}/bin/python3 -m http.server 25 >/dev/null 2>&1 &")
     peer.wait_for_open_port(80)
