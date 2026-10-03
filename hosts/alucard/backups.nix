@@ -104,15 +104,19 @@ lib.mkMerge [
     '';
   })
 
-  # n8n: `.backup` copies a database the container is still writing to. Rows stay
-  # encrypted; the encryption key lives only in SOPS.
+  # n8n: a database dump plus the state directory (binary data, instance config). Credential
+  # rows stay encrypted; the encryption key lives only in SOPS.
   (job "n8n" {
-    runtimeInputs = [ pkgs.sqlite ];
-    after = [ "docker-n8n.service" ];
+    runtimeInputs = [
+      config.services.postgresql.package
+      pkgs.util-linux
+    ];
+    after = [ "postgresql.service" ];
+    requires = [ "postgresql.service" ];
+    paths = [ config.services.localN8n.stateDirectory ];
     prepare = ''
-      sqlite3 ${lib.escapeShellArg "${config.services.localN8n.stateDirectory}/database.sqlite"} \
-        ".backup '$stage/database.sqlite'"
-      test -s "$stage/database.sqlite"
+      runuser -u postgres -- pg_dump --format=custom --no-owner n8n > "$stage/n8n.dump"
+      test -s "$stage/n8n.dump"
     '';
   })
 

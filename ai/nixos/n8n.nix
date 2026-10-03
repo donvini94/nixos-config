@@ -1,5 +1,5 @@
-# A single n8n container on the host network: it must reach Hermes on loopback and the
-# internet, and nothing but Tailscale Serve exposes it. Code nodes run in a second
+# A single n8n container on the host network, backed by the host's PostgreSQL: it must
+# reach Hermes and the database on loopback, and nothing but Tailscale Serve exposes it. Code nodes run in a second
 # container (n8n's external task runner) that reaches the broker on loopback.
 {
   config,
@@ -48,6 +48,11 @@ in
       description = "File containing the n8n credential-encryption key.";
     };
 
+    databasePasswordFile = lib.mkOption {
+      type = lib.types.path;
+      description = "File containing the password of the `n8n` PostgreSQL role.";
+    };
+
     runnerAuthTokenFile = lib.mkOption {
       type = lib.types.path;
       description = "File containing the task-runner authentication token.";
@@ -76,6 +81,7 @@ in
           "${stateDirectory}:/home/node/.n8n"
           "${cfg.encryptionKeyFile}:/run/secrets/n8n_encryption_key:ro"
           "${cfg.runnerAuthTokenFile}:/run/secrets/n8n_runner_auth_token:ro"
+          "${cfg.databasePasswordFile}:/run/secrets/n8n_db_password:ro"
         ]
         ++ lib.optional (
           cfg.sharedMount != null
@@ -90,9 +96,12 @@ in
 
           N8N_ENCRYPTION_KEY_FILE = "/run/secrets/n8n_encryption_key";
           N8N_RUNNERS_AUTH_TOKEN_FILE = "/run/secrets/n8n_runner_auth_token";
-          DB_TYPE = "sqlite";
-          DB_SQLITE_POOL_SIZE = "4";
-          DB_SQLITE_VACUUM_ON_STARTUP = "false";
+          DB_TYPE = "postgresdb";
+          DB_POSTGRESDB_HOST = "127.0.0.1";
+          DB_POSTGRESDB_PORT = "5432";
+          DB_POSTGRESDB_DATABASE = "n8n";
+          DB_POSTGRESDB_USER = "n8n";
+          DB_POSTGRESDB_PASSWORD_FILE = "/run/secrets/n8n_db_password";
 
           EXECUTIONS_MODE = "regular";
           EXECUTIONS_TIMEOUT = "1800";
@@ -186,7 +195,45 @@ in
       };
     };
 
+    services.postgresql = {
+      enable = true;
+      ensureDatabases = [ "n8n" ];
+      ensureUsers = [
+        {
+          name = "n8n";
+          ensureDBOwnership = true;
+        }
+      ];
+    };
+
+    # ensureUsers creates the role without a password; n8n authenticates over loopback.
+    systemd.services.n8n-database-password = {
+      description = "Set the n8n PostgreSQL role's password";
+      after = [ "postgresql.service" ];
+      requires = [ "postgresql.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+      };
+      path = [
+        config.services.postgresql.package
+        pkgs.util-linux
+      ];
+      script = ''
+        password=$(< ${lib.escapeShellArg cfg.databasePasswordFile})
+        # Interpolated into SQL, so only characters that need no quoting are accepted.
+        if [[ ! $password =~ ^[A-Za-z0-9]{24,}$ ]]; then
+          echo "n8n/db_password must be at least 24 letters or digits" >&2
+          exit 1
+        fi
+        echo "ALTER ROLE n8n WITH LOGIN PASSWORD '$password';" \
+          | runuser -u postgres -- psql --quiet --set=ON_ERROR_STOP=1 >/dev/null
+      '';
+    };
+
     systemd.services.docker-n8n = {
+      after = [ "n8n-database-password.service" ];
+      requires = [ "n8n-database-password.service" ];
       wantedBy = lib.mkForce [ "ai-stack.target" ];
       partOf = [ "ai-stack.target" ];
       serviceConfig = {

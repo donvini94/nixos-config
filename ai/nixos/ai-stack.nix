@@ -102,6 +102,13 @@ in
     sops.secrets = {
       # Not restarted on change: a new key needs n8n's export/import migration.
       "n8n/encryption_key" = secret { uid = n8nUid; };
+      "n8n/db_password" = secret {
+        uid = n8nUid;
+        restartUnits = [
+          "n8n-database-password.service"
+          "docker-n8n.service"
+        ];
+      };
       "n8n/runner_auth_token" = secret {
         uid = n8nUid;
         restartUnits = [ "docker-n8n.service" ];
@@ -154,6 +161,7 @@ in
       enable = true;
       encryptionKeyFile = config.sops.secrets."n8n/encryption_key".path;
       runnerAuthTokenFile = config.sops.secrets."n8n/runner_auth_token".path;
+      databasePasswordFile = config.sops.secrets."n8n/db_password".path;
       runnerEnvironmentFile = config.sops.templates."n8n-runner.env".path;
       inherit sharedMount;
     };
