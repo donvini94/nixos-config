@@ -145,7 +145,9 @@ in
           ln -s ${config.sops.templates."onyx.env".path} ${directory}/docker_compose/.env
         '';
         ExecStart = "${compose} up --detach --wait --remove-orphans";
-        ExecStop = "${compose} down";
+        # Post, not Stop: a failed start must not leave containers bound to the directory
+        # the next start replaces.
+        ExecStopPost = "${compose} down";
       };
     };
 
