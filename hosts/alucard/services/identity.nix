@@ -26,23 +26,6 @@
     };
   };
 
-  services.offsiteBackup.jobs.keycloak = {
-    # Use a consistent database dump; realm exports do not preserve all database state.
-    runtimeInputs = [
-      config.services.postgresql.package
-      pkgs.util-linux
-    ];
-    requires = [ "postgresql.service" ];
-    after = [ "postgresql.service" ];
-    prepare = ''
-      install -d -m 0700 "$stage"
-      runuser -u postgres -- pg_dump --format=custom --no-owner keycloak \
-        > "$stage/keycloak.dump"
-      test -s "$stage/keycloak.dump"
-    '';
-    verifyPaths = [ "/var/lib/offsite-backup/keycloak/keycloak.dump" ];
-  };
-
   systemd.services.keycloak.serviceConfig = {
     CapabilityBoundingSet = "";
     PrivateDevices = true;

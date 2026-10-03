@@ -4,7 +4,6 @@
     ./identity.nix
     ./media-services.nix
     ./hosted-applications.nix
+    ../backups.nix
   ];
-
-  services.offsiteBackup.enable = true;
 }

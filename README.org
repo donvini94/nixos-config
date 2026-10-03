@@ -144,8 +144,8 @@ never in the Nix store. Keep age private keys backed up separately.
 - Paperless private YAML uses records, not names as map keys (SOPS leaves keys visible).
   After changing an IMAP password run =sudo paperless-provision --sync-passwords=.
 
-=offsite-backup-status= reports backup and restore-verification jobs for Keycloak,
-Jellyfin, n8n and Paperless. Restoring files is not proof of application recovery;
+=systemctl list-timers 'restic-backups-*'= shows the restic jobs (Keycloak, Jellyfin, n8n,
+Hermes, Paperless; repositories under =/mnt/hetzner/restic/=). Restoring files is not proof of application recovery;
 test database imports and application logins before relying on a migration rollback.
 Media application state and services outside Nix need their own backup coverage.
 
