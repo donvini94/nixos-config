@@ -40,11 +40,26 @@ in
         owner = username;
         mode = "0400";
       };
+      "n8n/runner_auth_token" = {
+        sopsFile = cfg.secretsFile;
+        owner = username;
+        mode = "0400";
+      };
       "hermes/api_server_key" = {
         sopsFile = cfg.secretsFile;
         owner = "root";
         mode = "0400";
       };
+    };
+
+    sops.templates."n8n-runner.env" = {
+      content = ''
+        N8N_RUNNERS_AUTH_TOKEN=${config.sops.placeholder."n8n/runner_auth_token"}
+      '';
+      restartUnits = [ "docker-n8n-runners.service" ];
+      mode = "0400";
+      owner = "root";
+      group = "root";
     };
 
     # OMP, Hermes and n8n all trace through this one proxy.
@@ -64,6 +79,8 @@ in
     services.localN8n = {
       enable = true;
       encryptionKeyFile = config.sops.secrets."n8n/encryption_key".path;
+      runnerAuthTokenFile = config.sops.secrets."n8n/runner_auth_token".path;
+      runnerEnvironmentFile = config.sops.templates."n8n-runner.env".path;
       orgOwner = username;
       inherit orgDirectory;
     };
@@ -81,6 +98,7 @@ in
 
     services.containerUpdates.units = [
       "docker-n8n.service"
+      "docker-n8n-runners.service"
       "docker-hermes-agent.service"
     ];
   };

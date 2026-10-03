@@ -112,6 +112,7 @@
           "atuin"
           "calibre-web"
           "docker-n8n"
+          "docker-n8n-runners"
           "docker-registry"
           "gotenberg"
           "docker-hermes-agent"

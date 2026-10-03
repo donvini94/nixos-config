@@ -1,7 +1,6 @@
 # A single n8n container on the host network: it must reach Hermes on loopback and the
-# internet, and nothing but Tailscale Serve exposes it. Code nodes run in n8n's
-# internal task runner, which n8n has deprecated: once an image drops it, add the
-# separate runners container back instead of pinning around it.
+# internet, and nothing but Tailscale Serve exposes it. Code nodes run in a second
+# container (n8n's external task runner) that reaches the broker on loopback.
 {
   config,
   lib,
@@ -20,10 +19,17 @@ in
   options.services.localN8n = {
     enable = lib.mkEnableOption "local n8n workflow service";
 
+    # Update n8n and the runners together; their versions must match.
     image = lib.mkOption {
       type = lib.types.str;
-      default = "docker.io/n8nio/n8n:2.40.3@sha256:e397d0aab215cc1a3ed865bd0c2d7982dff9390fa298f3c188d084425cd6fb16";
+      default = "docker.io/n8nio/n8n:2.41.6@sha256:87e0bab2c93192e8dd885ff7b0697c22a1bd97489568a8c67cc140fd7dbb342d";
       description = "Digest-pinned official n8n OCI image.";
+    };
+
+    runnersImage = lib.mkOption {
+      type = lib.types.str;
+      default = "docker.io/n8nio/runners:2.41.6@sha256:443eaee69319997627e2129ed8d512c4f4ea2418a744393cf26e843237399299";
+      description = "Digest-pinned official task-runner image; must match `image`.";
     };
 
     stateDirectory = lib.mkOption {
@@ -40,6 +46,16 @@ in
     encryptionKeyFile = lib.mkOption {
       type = lib.types.path;
       description = "File containing the n8n credential-encryption key.";
+    };
+
+    runnerAuthTokenFile = lib.mkOption {
+      type = lib.types.path;
+      description = "File containing the task-runner authentication token.";
+    };
+
+    runnerEnvironmentFile = lib.mkOption {
+      type = lib.types.path;
+      description = "Root-only environment file defining N8N_RUNNERS_AUTH_TOKEN.";
     };
 
     orgOwner = lib.mkOption {
@@ -63,6 +79,7 @@ in
         volumes = [
           "${stateDirectory}:/home/node/.n8n"
           "${cfg.encryptionKeyFile}:/run/secrets/n8n_encryption_key:ro"
+          "${cfg.runnerAuthTokenFile}:/run/secrets/n8n_runner_auth_token:ro"
           "${cfg.orgDirectory}:/org"
         ];
         environment = {
@@ -74,6 +91,7 @@ in
           N8N_SECURE_COOKIE = "false";
 
           N8N_ENCRYPTION_KEY_FILE = "/run/secrets/n8n_encryption_key";
+          N8N_RUNNERS_AUTH_TOKEN_FILE = "/run/secrets/n8n_runner_auth_token";
           DB_TYPE = "sqlite";
           DB_SQLITE_POOL_SIZE = "4";
           DB_SQLITE_VACUUM_ON_STARTUP = "false";
@@ -102,7 +120,9 @@ in
           N8N_METRICS_INCLUDE_EXECUTION_DATA_METRICS = "true";
           N8N_METRICS_INCLUDE_DB_POOL_METRICS = "true";
 
-          N8N_RUNNERS_MODE = "internal";
+          N8N_RUNNERS_MODE = "external";
+          N8N_RUNNERS_BROKER_LISTEN_ADDRESS = cfg.bindAddress;
+          N8N_RUNNERS_BROKER_PORT = "5679";
           N8N_RUNNERS_TASK_TIMEOUT = "300";
 
           N8N_BLOCK_ENV_ACCESS_IN_NODE = "true";
@@ -130,12 +150,42 @@ in
           "--tmpfs=/home/node/.cache:rw,nosuid,size=128m"
         ];
       };
+
+      containers.n8n-runners = {
+        image = cfg.runnersImage;
+        autoStart = false;
+        pull = "missing";
+        dependsOn = [ "n8n" ];
+        environmentFiles = [ cfg.runnerEnvironmentFile ];
+        environment = {
+          N8N_RUNNERS_TASK_BROKER_URI = "http://${cfg.bindAddress}:5679";
+          N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT = "15";
+          N8N_RUNNERS_TASK_TIMEOUT = "300";
+        };
+        extraOptions = [
+          "--network=host"
+          "--read-only"
+          "--security-opt=no-new-privileges:true"
+          "--cap-drop=ALL"
+          "--pids-limit=512"
+          "--tmpfs=/tmp:rw,nosuid,size=512m"
+        ];
+      };
     };
 
     systemd.tmpfiles.rules = [
       "d ${stateDirectory} 0750 1000 1000 -"
       "d ${cfg.orgDirectory} 2770 ${cfg.orgOwner} users -"
     ];
+
+    systemd.services.docker-n8n-runners = {
+      wantedBy = lib.mkForce [ "ai-stack.target" ];
+      partOf = [ "ai-stack.target" ];
+      serviceConfig = {
+        TimeoutStopSec = lib.mkForce "10s";
+        SuccessExitStatus = [ 143 ];
+      };
+    };
 
     systemd.services.docker-n8n = {
       wantedBy = lib.mkForce [ "ai-stack.target" ];
