@@ -57,10 +57,10 @@ not depend on =ai/= except =coding-agents= reading =services.requesty= through
 
 * Known couplings and problems to resolve during extraction
 
-- Rule: nothing personal to the operator (accounts, the Org tree, personal paths or
-  hostnames) belongs in =ai/=. The Org tree is already generalised to the optional
-  =services.aiStack.sharedDirectory=; only Alucard's host config sets it, with
-  =/org= as mount point. Check the rest of =ai/= and the secrets contract for leftovers.
+- Rule: nothing personal to the operator (accounts, notes trees, personal paths or
+  hostnames) belongs in =ai/=. Audit =ai/=, the interface and the secrets contract
+  against it. =services.aiStack.sharedDirectory= is optional and off by default; only
+  Alucard's host config sets it.
 - =ai-stack-target= was built for exclusive GPU workloads and operator tooling. Decide
   whether customers need it at all.
 - =services.aiStack.user= is a required operator account; customer servers need a
