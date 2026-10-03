@@ -60,9 +60,10 @@ not depend on =ai/= except =coding-agents= reading =services.requesty= through
 
 * Known couplings and problems to resolve during extraction
 
-- Alucard's PostgreSQL is 14 (stateVersion 23.05); n8n supports 17+ and warns at startup
-  and at build. The cluster also holds Keycloak, Mattermost and Atuin. Upgrading is a
-  data migration: needs the operator's approval and fresh dumps first.
+- Alucard's PostgreSQL went from 14 to 17 on 2026-10-03 (Keycloak, Mattermost, Atuin and
+  n8n verified). Once the operator accepts it, remove =hosts/alucard/postgresql-upgrade.nix=
+  (pinning =services.postgresql.package= to 17 in Alucard's config instead),
+  =/var/lib/postgresql/14= and the dump in =/var/backup/postgresql-upgrade=.
 - n8n moved to PostgreSQL on 2026-10-03 (counts verified). Remove
   =n8n-sqlite-migration= from =hosts/alucard/ai.nix= and the =sqlite-archive= and
   =sqlite-export= directories under =/var/lib/n8n-container= once the operator agrees.
