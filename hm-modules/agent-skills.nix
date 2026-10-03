@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  inputs,
   pkgs,
   ...
 }:
@@ -36,7 +37,7 @@ let
       diffutils
       git
       jq
-      nix
+      inputs.determinate.inputs.nix.packages.${pkgs.stdenv.hostPlatform.system}.default
       rsync
       unzip
     ];
