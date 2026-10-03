@@ -1,0 +1,234 @@
+#+title: Repository audit handover
+
+* Purpose and authority
+
+Vincenzo requested an independent, full-repository audit. His central concern:
+ask whether we SHOULD build and maintain something, not merely whether we CAN.
+Question architecture and ownership before polishing an implementation. Confirm
+significant design choices with him; do not work through a long redesign silently.
+
+This is a factual handover from the implementing agent, not an independent audit.
+Treat its claims as leads to verify against source, upstream behavior and runtime
+artifacts. Passing tests does not establish necessity, simplicity or completeness.
+Read =AGENTS.md= and =README.org= for repository rules and operations.
+
+* Requirements and boundaries
+
+- Dracula and AC-0137 are personal machines. Alucard hosts media/torrents and
+  startup infrastructure for the trusted founding pair.
+- Preserve internal agents, monitoring (including Langfuse), AI workflows,
+  backups, mail and other live capabilities unless removal is approved.
+- Reproducibility and portability are requirements, not optional future polish.
+  A separate Bereit Consulting startup-stack project remains a later design task;
+  extraction into another flake/repository was NOT authorized in this round.
+- Nix should deploy applications without preventing normal UI use. Preserve
+  application preferences, MCP configuration and credentials across activation;
+  distinguish these from genuinely enforced deployment/security policy.
+- Pi and OMP remain independently selectable clients with separate state. Native
+  Pi settings/package choices must survive activation. No cross-client fallback.
+- No installed third-party source patches, secret exposure or destructive cleanup.
+  In the preceding cleanup, Paperless implementation changes were explicitly
+  deferred. Read-only audit is appropriate; obtain approval before further edits.
+
+Specific approvals in the latest stack work:
+- Implement Hermes configuration ownership and dynamic Requesty discovery;
+  simplify the existing stack without removing live capabilities.
+- Expose all models approved by the Requesty organization, replacing the local
+  six-model allowlist; retain an intentional initial default.
+- Permit npm, PyPI and GitHub download hosts through Hermes's existing proxy for
+  operator-installed MCP dependencies. This was not approval for unrestricted
+  browsing or arbitrary remote MCP destinations.
+
+* Source checkpoints
+
+The inspected starting checkout for this document was =43f8f23=; all three
+checkouts were clean at that commit. This document is a later documentation-only
+change. Recheck Git status, HEAD and deployed generations before acting.
+
+| Commit    | Scope                                                        |
+|-----------+--------------------------------------------------------------|
+| c3f30f1   | Before latest stack changes; compact guidance, no templates   |
+| 3ad78df   | Hermes state hooks, dynamic catalog/client generation, n8n    |
+| b028cee   | Complete native-client cost records after SDK failure         |
+| 8a9677d   | Remove dead ingress options; share Requesty endpoint logic    |
+| 43f8f23   | Remove completed Hermes legacy context-override migration     |
+
+Start with =git diff c3f30f1..43f8f23= for the latest work, but audit the rest of
+the repository too. That delta is 24 files, 1,171 insertions and 391 deletions:
+780 net added lines, including tests. Calling this an established overall
+simplification would be misleading.
+
+Earlier cleanup/client separation checkpoints: =5c9f07d=, =68c8ddc=, =b3fb888=
+and =5287625=. They are review leads, not evidence that everything outside the
+latest diff has already been audited.
+
+* Latest implementation: where to look
+
+| Files                                        | Current responsibility                              |
+|----------------------------------------------+-----------------------------------------------------|
+| ai-ingress/proxy.py                          | Reverse proxy, payload logs, metrics, Langfuse       |
+| ai-ingress/catalog.py                        | Authenticated discovery and disk/memory cache       |
+| modules/ai-ingress.nix, remote-openai.nix      | Ingress deployment, credentials and remote backend   |
+| lib/requesty.nix                             | Initial default and client endpoint selection       |
+| scripts/sync-ai-models.py                     | Convert metadata; merge writable Pi/OMP definitions |
+| hm-modules/ai-model-catalog.nix               | Activation hooks, updater and user timer            |
+| hm-modules/pi.nix, omp-clients.nix            | Client endpoints, transport and local definitions   |
+| scripts/hermes-state.py                      | Capture/restore UI environment around activation    |
+| lib/hermes-agent.nix, modules/ai-stack.nix    | Seed preferences; configure managed policy          |
+| modules/hermes-dashboard.nix                 | Dashboard process in the upstream agent container   |
+| hosts/alucard/ai.nix                          | Secret references, integration and egress proxy     |
+| modules/n8n.nix, n8n-credentials.nix           | Containers/runners, private routes, credential import|
+| n8n/, packages/hermes-n8n-handoff.nix         | Reviewed workflows and agent/workflow handoff        |
+| scripts/tests/test_startup_state.py          | Catalog and activation regression tests             |
+
+At =43f8f23=: proxy 848 lines; catalog 123; Hermes state helper 111; client
+synchronizer 182; startup tests 307. Count code and tests separately when
+assessing maintenance burden.
+
+Implementation facts to check:
+- Server catalog refresh attempts are at most once per 300 seconds when queried.
+  Cache is bound to upstream URL and a private API-key fingerprint. Failed
+  refreshes retain valid cached metadata; there is no maximum stale age.
+- Catalog membership is used to reject unknown completion models. With neither
+  live nor cached data, catalog-dependent requests return 503. Upstream auth is
+  still used on actual requests; verify revocation semantics rather than assuming
+  cached membership is equivalent to current authorization.
+- Linux client refresh runs on activation and through a 15-minute user timer.
+  Client cache is endpoint-bound. JSON output is also used for OMP's YAML file.
+  Declared transport overrides existing transport; other providers/options are
+  intended to survive. This is custom behavior, not native discovery.
+- Hermes hooks surround upstream activation, which regenerates its environment.
+  They retain UI-owned keys, apply declared values, remember declared key names,
+  seed missing preferences, and set the coarse managed marker to false.
+- Granular policy is in =/var/lib/hermes/policy=, seen as =/data/policy= inside
+  the existing container. Config points into the Nix store; policy environment
+  is a root-owned file. Do not mistake application-layer policy for hostile-agent
+  isolation: inspect parent ownership, terminal/sudo capabilities and networking.
+- Nix still installs the workspace instructions/SOUL through upstream activation.
+  Not every application file has become UI-owned or seed-only.
+- The one-time context-override migration ran during Alucard's first activation
+  of this work. It is removed in =43f8f23=. No separate upstream Hermes legacy
+  migration command was run; do not conflate the two.
+
+* Challenge the design before accepting the code
+
+For each custom module/script/function, identify the concrete requirement,
+consumer, state owner and failure behavior. Consider standard tooling or an
+upstream capability first. Classify it as keep, simplify, replace, delete, or
+investigate; provide evidence and capability impacts for each recommendation.
+
+Priority questions:
+1. Should a custom inference proxy exist? Compare maintained gateways and native
+   integrations against attribution, monitoring, privacy and portability needs.
+2. Can native provider discovery replace the catalog cache and client generator?
+   Alternatives were not adequately investigated before implementation.
+3. Can an upstream-supported ownership interface eliminate the Hermes hooks?
+   This wrapper fixes real behavior but creates another lifecycle to maintain.
+4. Are retained n8n services/scripts actually needed, or compensating for a
+   deployment choice? Preserve private routing, runner authentication, workflow
+   behavior, consistent backups and monitoring when comparing alternatives.
+5. Which host/user/Org-tree assumptions remain despite newly configurable n8n
+   paths/network? What is necessary for a reproducible second deployment?
+
+The implementing agent acknowledged that it moved to implementation before a
+sufficient design comparison. Do not use its successful tests to defend the
+architecture automatically.
+
+* Risk and correctness review leads
+
+These are questions, not confirmed exploits or proof of correctness:
+- Full request/response logging: credentials, personal/business content, log
+  permissions, retention, redaction and outbound observability exports.
+- Ingress exposure/authentication: host loopback, Tailscale publication, bridge
+  sockets, caller-header trust, forwarded credentials and upstream endpoints.
+- Request/body limits, unbounded threads/memory, large catalogs, streaming,
+  disconnects, timeouts, resource contention and dependency failures.
+- Catalog staleness and revoked approvals; key rotation; malformed/partial data;
+  empty catalogs; capability mapping; absent limits and cache-pricing semantics.
+  Native clients use zero for missing cache rates to satisfy their schema; that
+  is not evidence those rates are free. Provider billing stays distinct.
+- Atomic rename is per file, not a transaction across client files. The updater
+  lock only coordinates updater processes, not native UI/manual writers.
+- Activation failure midway, concurrent Hermes writes, missing/stale snapshots,
+  interrupted cleanup, ownership changes, symlinks and malformed nested state.
+  Inspect dotenv quoting/interpolation and removal/rotation of managed keys.
+- Policy-directory ancestry and mutability; whether UI, CLI, profiles and child
+  processes all see the same policy; package update behavior after disabling
+  the coarse lock; distinction between proxy policy and effective network access.
+- Backup/restore completeness: do not assume a database backup covers filesystem
+  artifacts, Hermes state, UI-installed packages or a container writable layer.
+- README statements and comments may overstate ownership or coverage. Verify
+  them against the implementation; do not create another duplicated inventory.
+
+* Evidence from the previous implementation session
+
+Deployment evidence below covers the implementation session through =b028cee=.
+It was not independently re-established for =8a9677d=/=43f8f23= while authoring
+this handover. The current checkout's startup (10 tests) and ingress (21 tests)
+suites were rerun and passed; that does not verify deployment of those follow-ups.
+- Full configurations built for all three hosts. Seven flake checks passed on
+  Linux and Darwin. Ruff's configured F checks and ty on the three new Python
+  implementation files passed during development; ty was not rerun after the
+  final pricing hotfix.
+- Startup suite then had 11 tests; current source has 10 after removal of the
+  completed migration test. Existing ingress suite had 21 tests.
+- The pinned Hermes runtime passed a temporary-home test: MCP/model/UI secret
+  saves worked, while managed approval/auth fields remained enforced. Production
+  processes were checked for disabled coarse lock and enabled granular policy.
+- Pi's native registry and =omp models alucard-requesty --json --no-extensions=
+  each loaded 749 models on both Linux hosts. This did not call those models or
+  establish tool-use, streaming or model-driven client parity.
+- Both Linux hosts were switched, with no failed system/user units. n8n and
+  ingress health passed; monitoring containers remained up; Dracula ASR was ready.
+- Hermes container ID/creation time matched its pre-change backup. Native Pi
+  settings matched their backups. Registry downloads passed via the proxy;
+  an unapproved host was rejected with CONNECT 403.
+- Mac configuration matched its active generation; no Mac switch was required.
+
+NOT established:
+- Complete browser-driven MCP installation/authentication/use across real servers.
+- Clean-room deployment, disaster recovery, cross-host restore or client portability.
+- Reproducible reconstruction of arbitrary UI-installed tools and container-layer changes.
+- Comprehensive custom-code necessity review or proof this is the smallest design.
+
+* Evidence locations and operational cautions
+
+Local implementation artifacts were left in =/tmp/=; they are ephemeral and may
+be absent. Useful names include:
+- =startup-final-{mac,linux}-build.log=
+- =startup-{alucard,dracula}-final-switch.log=
+- =startup-alucard-health.log=, =startup-pricing-linux-build.log=
+- =check-runtime-catalog.mjs=, =test-hermes-ui-state.py=
+- =startup-omp-{alucard,dracula}-models.json=
+- =auditor-handover-{startup,ingress}-tests.log= (current-checkout reruns)
+
+Private pre-change backups on Linux:
+- Alucard: =~/.local/state/startup-backup-20261003-110805/=
+- Dracula: =~/.local/state/startup-backup-20261003-110705/=
+
+Backups contain sensitive configuration. Do not print or commit their contents.
+They are local safety copies, not proof of off-site recoverability.
+
+Use the exact deployment commands in =AGENTS.md=; never request sudo passwords.
+Alucard also has rootless Docker: system containers require
+=DOCKER_HOST=unix:///run/docker.sock=. Monitoring uses
+=observability-stack.service= and Docker Compose containers, not guessed
+=docker-langfuse*= units. Read logs before diagnosing failures.
+
+Tika remains a separate justified exception to investigate: =packages/tika.nix=
+was added for CVE-2025-66516. The locked and fetched nixos-unstable definitions
+inspected earlier still had Tika 2.9.3 with a different CVE patch; our server was
+3.3.2. Recheck current upstream before proposing removal. Do not downgrade solely
+because Apache has released a fix.
+
+* Requested audit output
+
+Produce a prioritized, evidence-backed report before edits:
+- Requirements and architectural alternatives, including a no-new-code option.
+- Necessity decisions for custom code, with consumers and preserved capabilities.
+- Confirmed defects separated from hypotheses and untested behavior.
+- Reproducibility/portability gaps and a concrete verification plan.
+- A small proposed change set, its risks and decisions requiring user approval.
+
+Do not implement an extraction, retire services, rewrite application state or
+start an unbounded refactor merely because the audit finds complexity.
