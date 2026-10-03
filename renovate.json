@@ -14,7 +14,8 @@
   ],
   "ignorePaths": [
     "packages/**",
-    "coding-agents/packages/**"
+    "coding-agents/packages/**",
+    "ai/packages/**"
   ],
   "prHourlyLimit": 2,
   "prConcurrentLimit": 5,

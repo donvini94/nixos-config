@@ -121,6 +121,8 @@
           lathe = pkgs.callPackage ./coding-agents/packages/lathe.nix { };
           linear-cli = pkgs.callPackage ./packages/linear-cli.nix { };
         }
+        # CI builds only this flake's packages until ai/ has its own repository.
+        // inputs.ai-stack.packages.${packageSystem} or { }
         // nixpkgs.lib.optionalAttrs (packageSystem == "x86_64-linux") {
           omp = pkgs.callPackage ./coding-agents/packages/omp.nix { };
           tika = pkgs.callPackage ./packages/tika.nix { };

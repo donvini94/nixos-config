@@ -2,6 +2,7 @@
 {
   imports = [
     ./ai-stack.nix
+    ./edge.nix
     ./egress.nix
     ./observability/exporters.nix
     ./vulnerability-scan/container.nix

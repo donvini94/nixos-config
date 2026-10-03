@@ -30,6 +30,10 @@
         };
       };
 
+      packages = lib.genAttrs systems (system: {
+        coreruleset = nixpkgs.legacyPackages.${system}.callPackage ./packages/coreruleset.nix { };
+      });
+
       checks = lib.genAttrs systems (
         system:
         let

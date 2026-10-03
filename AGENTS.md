@@ -39,7 +39,7 @@ current packages, services, ports and paths. Do not duplicate those inventories 
   `programs.piClient.enable`. Client modules own their settings and state; shared
   source packages live in `coding-agents/home/agent-content.nix`, guidance in `coding-agents/guidance/`.
 - Hash-pinned packages must be exposed under `packages.<system>` for CI builds.
-  Renovate does not update `packages/` or `coding-agents/packages/`; the package-update workflow owns hashes too.
+  Renovate does not update `packages/`, `coding-agents/packages/` or `ai/packages/`; the package-update workflow owns hashes too.
 - Keep comments for non-obvious constraints and deliberate exceptions. No AI audit
   labels, historical incident reports, repeated inventories or line-by-line narration.
 - Keep substantial shell/Python programs in source files, not Nix strings. Nix wires
