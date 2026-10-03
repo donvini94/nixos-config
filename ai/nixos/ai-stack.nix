@@ -1,4 +1,4 @@
-# Alucard's agent and workflow services.
+# n8n and Hermes with their secrets, plus the stack target.
 {
   config,
   lib,
@@ -7,6 +7,10 @@
 
 let
   cfg = config.services.aiStack;
+  sharedMount = lib.mapNullable (shared: {
+    hostPath = shared.path;
+    inherit (shared) mountPoint;
+  }) cfg.sharedDirectory;
 in
 {
   imports = [
@@ -20,13 +24,29 @@ in
 
     user = lib.mkOption {
       type = lib.types.str;
-      description = "Operator account: owns the n8n secrets and the Org tree and drives the stack target.";
+      description = "Operator account: owns the n8n secret files and may start and stop the stack target.";
     };
 
-    orgDirectory = lib.mkOption {
-      type = lib.types.str;
-      default = "/home/${cfg.user}/org";
-      description = "Org tree that n8n and Hermes read and write.";
+    sharedDirectory = lib.mkOption {
+      default = null;
+      description = "Optional host directory n8n and Hermes both read and write.";
+      type = lib.types.nullOr (
+        lib.types.submodule {
+          options = {
+            path = lib.mkOption { type = lib.types.str; };
+            mountPoint = lib.mkOption {
+              type = lib.types.str;
+              default = "/shared";
+              description = "Where both containers see the directory.";
+            };
+            owner = lib.mkOption { type = lib.types.str; };
+            group = lib.mkOption {
+              type = lib.types.str;
+              default = "users";
+            };
+          };
+        }
+      );
     };
 
     secretsFile = lib.mkOption {
@@ -69,9 +89,10 @@ in
       operators = [ cfg.user ];
     };
 
-    # The agent container runs as the hermes user and reaches the Org tree through this ACL.
-    systemd.tmpfiles.rules = [
-      "A+ ${cfg.orgDirectory} - - - - u:hermes:rwX,d:u:hermes:rwx"
+    # The agent container runs as the hermes user and reaches the shared directory through this ACL.
+    systemd.tmpfiles.rules = lib.optionals (cfg.sharedDirectory != null) [
+      "d ${cfg.sharedDirectory.path} 2770 ${cfg.sharedDirectory.owner} ${cfg.sharedDirectory.group} -"
+      "A+ ${cfg.sharedDirectory.path} - - - - u:hermes:rwX,d:u:hermes:rwx"
     ];
 
     services.localN8n = {
@@ -79,13 +100,12 @@ in
       encryptionKeyFile = config.sops.secrets."n8n/encryption_key".path;
       runnerAuthTokenFile = config.sops.secrets."n8n/runner_auth_token".path;
       runnerEnvironmentFile = config.sops.templates."n8n-runner.env".path;
-      orgOwner = cfg.user;
-      inherit (cfg) orgDirectory;
+      inherit sharedMount;
     };
 
     services.hermesAgent = {
       enable = true;
-      inherit (cfg) orgDirectory;
+      inherit sharedMount;
     };
   };
 }

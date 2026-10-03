@@ -86,6 +86,11 @@ in
   services.aiStack = {
     user = username;
     enable = true;
+    sharedDirectory = {
+      path = "/home/${username}/org";
+      mountPoint = "/org";
+      owner = username;
+    };
     secretsFile = secretFile;
   };
 

@@ -40,6 +40,11 @@ Optional modules, selected per customer: Paperless-ngx, Onyx, others later.
 Operator-only, never customer-facing: Dracula-style local inference, transcription, OMP
 and Pi are personal tools and are not part of the stack.
 
+* Separation from the operator's personal setup
+
+Nothing in the stack may reference the operator's personal accounts, notes tree, hosts or
+paths. Personal configuration stays in =hosts/= and =coding-agents/=.
+
 * Network exposure
 
 - Public (customer domain): inbound webhooks (WhatsApp/Meta, n8n webhook triggers), the

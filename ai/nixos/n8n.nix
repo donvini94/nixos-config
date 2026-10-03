@@ -58,14 +58,10 @@ in
       description = "Root-only environment file defining N8N_RUNNERS_AUTH_TOKEN.";
     };
 
-    orgOwner = lib.mkOption {
-      type = lib.types.str;
-      description = "User owning the shared Org tree; its `users` group gets write access.";
-    };
-
-    orgDirectory = lib.mkOption {
-      type = lib.types.path;
-      description = "Shared Org tree exposed read-write at /org.";
+    sharedMount = lib.mkOption {
+      type = lib.types.nullOr (import ./shared-mount.nix lib);
+      default = null;
+      description = "Host directory shared read-write with n8n; also the only place file nodes may touch.";
     };
   };
 
@@ -80,8 +76,10 @@ in
           "${stateDirectory}:/home/node/.n8n"
           "${cfg.encryptionKeyFile}:/run/secrets/n8n_encryption_key:ro"
           "${cfg.runnerAuthTokenFile}:/run/secrets/n8n_runner_auth_token:ro"
-          "${cfg.orgDirectory}:/org"
-        ];
+        ]
+        ++ lib.optional (
+          cfg.sharedMount != null
+        ) "${cfg.sharedMount.hostPath}:${cfg.sharedMount.mountPoint}";
         environment = {
           N8N_LISTEN_ADDRESS = cfg.bindAddress;
           N8N_HOST = cfg.bindAddress;
@@ -126,7 +124,6 @@ in
           N8N_RUNNERS_TASK_TIMEOUT = "300";
 
           N8N_BLOCK_ENV_ACCESS_IN_NODE = "true";
-          N8N_RESTRICT_FILE_ACCESS_TO = "/org";
           N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS = "true";
           N8N_GIT_NODE_DISABLE_BARE_REPOS = "true";
           N8N_UNVERIFIED_PACKAGES_ENABLED = "false";
@@ -139,6 +136,9 @@ in
           N8N_TEMPLATES_ENABLED = "false";
           N8N_LOG_LEVEL = "info";
           N8N_LOG_OUTPUT = "console";
+        }
+        // lib.optionalAttrs (cfg.sharedMount != null) {
+          N8N_RESTRICT_FILE_ACCESS_TO = cfg.sharedMount.mountPoint;
         };
         extraOptions = [
           "--network=host"
@@ -175,7 +175,6 @@ in
 
     systemd.tmpfiles.rules = [
       "d ${stateDirectory} 0750 1000 1000 -"
-      "d ${cfg.orgDirectory} 2770 ${cfg.orgOwner} users -"
     ];
 
     systemd.services.docker-n8n-runners = {

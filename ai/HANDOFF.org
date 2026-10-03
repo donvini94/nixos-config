@@ -57,9 +57,10 @@ not depend on =ai/= except =coding-agents= reading =services.requesty= through
 
 * Known couplings and problems to resolve during extraction
 
-- n8n and Hermes carry a personal "Org tree" concept (=orgDirectory=, =orgOwner=, an ACL
-  for the =hermes= user, a =/home/<user>/org= default). Customers have none. Make it an
-  optional feature or remove it from the generic modules; Alucard keeps it in host config.
+- Rule: nothing personal to the operator (accounts, the Org tree, personal paths or
+  hostnames) belongs in =ai/=. The Org tree is already generalised to the optional
+  =services.aiStack.sharedDirectory=; only Alucard's host config sets it, with
+  =/org= as mount point. Check the rest of =ai/= and the secrets contract for leftovers.
 - =ai-stack-target= was built for exclusive GPU workloads and operator tooling. Decide
   whether customers need it at all.
 - =services.aiStack.user= is a required operator account; customer servers need a

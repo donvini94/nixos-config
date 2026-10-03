@@ -40,10 +40,10 @@ in
       default = 10000;
     };
 
-    orgDirectory = lib.mkOption {
-      type = lib.types.nullOr lib.types.str;
+    sharedMount = lib.mkOption {
+      type = lib.types.nullOr (import ./shared-mount.nix lib);
       default = null;
-      description = "Shared Org tree mounted read-write at /org.";
+      description = "Host directory shared read-write with the agent, which may also write there.";
     };
 
     environmentFiles = lib.mkOption {
@@ -75,7 +75,9 @@ in
       volumes = [
         "${cfg.stateDirectory}:/opt/data"
       ]
-      ++ lib.optional (cfg.orgDirectory != null) "${cfg.orgDirectory}:/org:rw";
+      ++ lib.optional (
+        cfg.sharedMount != null
+      ) "${cfg.sharedMount.hostPath}:${cfg.sharedMount.mountPoint}:rw";
       environmentFiles = cfg.environmentFiles;
       environment = {
         HERMES_UID = toString cfg.uid;
@@ -87,7 +89,9 @@ in
         API_SERVER_ENABLED = "true";
         API_SERVER_HOST = "127.0.0.1";
         API_SERVER_PORT = toString apiPort;
-        HERMES_WRITE_SAFE_ROOT = "/opt/data:/org";
+        HERMES_WRITE_SAFE_ROOT = lib.concatStringsSep ":" (
+          [ "/opt/data" ] ++ lib.optional (cfg.sharedMount != null) cfg.sharedMount.mountPoint
+        );
       };
       # Host networking: n8n reaches the API on loopback and the dashboard is published
       # by Tailscale Serve. Both bind 127.0.0.1.
