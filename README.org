@@ -94,8 +94,9 @@ Hermes runs the upstream image (=ai/nixos/hermes.nix=) as one host-network conta
 with its data in =/var/lib/hermes-agent=. Nix pins the image and supplies the initial
 credentials, mounts and loopback bindings; settings, MCP servers and tools are managed in
 the dashboard and persist in that directory, where saved values override the SOPS ones.
-The agent has unrestricted network access and can reach host loopback services; the
-container is not a security boundary against it.
+The agent reaches host services and the public internet; its UID is blocked from other
+machines, the tailnet, metadata and SMTP (=services.aiStack.egress=). The container is
+not a security boundary against it.
 
 Base images and application packages are pinned. UI-installed tools and workflow edits
 are mutable state, not automatically reproducible builds: record their versions and
