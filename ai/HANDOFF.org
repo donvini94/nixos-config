@@ -60,6 +60,13 @@ not depend on =ai/= except =coding-agents= reading =services.requesty= through
 
 * Known couplings and problems to resolve during extraction
 
+- Alucard's PostgreSQL is 14 (stateVersion 23.05); n8n supports 17+ and warns at startup
+  and at build. The cluster also holds Keycloak, Mattermost and Atuin. Upgrading is a
+  data migration: needs the operator's approval and fresh dumps first.
+- n8n moved to PostgreSQL on 2026-10-03 (counts verified). Remove
+  =n8n-sqlite-migration= from =hosts/alucard/ai.nix= and the =sqlite-archive= and
+  =sqlite-export= directories under =/var/lib/n8n-container= once the operator agrees.
+
 - Rule: nothing personal to the operator (accounts, notes trees, personal paths or
   hostnames) belongs in =ai/=. Audit =ai/=, the interface and the secrets contract
   against it. =services.aiStack.sharedDirectory= is optional and off by default; only

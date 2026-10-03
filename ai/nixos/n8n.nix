@@ -195,6 +195,8 @@ in
       };
     };
 
+    warnings = lib.optional (lib.versionOlder config.services.postgresql.package.version "17") "n8n supports PostgreSQL 17 and newer; this host runs ${config.services.postgresql.package.version}.";
+
     services.postgresql = {
       enable = true;
       ensureDatabases = [ "n8n" ];
