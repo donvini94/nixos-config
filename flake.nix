@@ -29,6 +29,7 @@
       url = "path:./ai";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.sops-nix.follows = "sops-nix";
+      inputs.disko.follows = "disko";
     };
   };
 

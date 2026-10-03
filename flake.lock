@@ -2,6 +2,9 @@
   "nodes": {
     "ai-stack": {
       "inputs": {
+        "disko": [
+          "disko"
+        ],
         "nixpkgs": [
           "nixpkgs"
         ],

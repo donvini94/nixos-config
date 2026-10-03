@@ -8,10 +8,19 @@
       url = "github:Mic92/sops-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    disko = {
+      url = "github:nix-community/disko";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
-    { nixpkgs, sops-nix, ... }:
+    {
+      nixpkgs,
+      sops-nix,
+      disko,
+      ...
+    }:
     let
       lib = nixpkgs.lib;
       systems = [
@@ -22,6 +31,13 @@
     {
       nixosModules = {
         default = ./nixos;
+        customerHost = {
+          imports = [
+            disko.nixosModules.disko
+            sops-nix.nixosModules.sops
+            ./nixos/customer-host.nix
+          ];
+        };
         monitoringServer = {
           imports = [
             ./nixos/observability/exporters.nix
@@ -29,6 +45,11 @@
             ./nixos/tailnet.nix
           ];
         };
+      };
+
+      templates.fleet = {
+        path = ./templates/fleet;
+        description = "Fleet repository: one file per customer server, deployed with deploy-rs";
       };
 
       packages = lib.genAttrs systems (
@@ -58,6 +79,28 @@
         }
         // lib.optionalAttrs (system == "x86_64-linux") {
           egress = pkgs.testers.runNixOSTest ./tests/egress.nix;
+          # The fleet template's test customer, built the way the fleet builds it.
+          customer-host =
+            let
+              host = lib.nixosSystem {
+                inherit system;
+                modules = [
+                  disko.nixosModules.disko
+                  sops-nix.nixosModules.sops
+                  ./nixos/customer-host.nix
+                  ./templates/fleet/common.nix
+                  ./templates/fleet/customers/test-kunde.nix
+                  {
+                    networking.hostName = "test-kunde";
+                    services.aiStack.secretsFile = lib.mkForce "/dev/null";
+                    sops.validateSopsFiles = false;
+                  }
+                ];
+              };
+            in
+            pkgs.writeText "ai-stack-customer-host" (
+              builtins.unsafeDiscardStringContext host.config.system.build.toplevel.drvPath
+            );
           public = pkgs.testers.runNixOSTest ./tests/public.nix;
           # Every module enabled on a bare host must evaluate, assertions included.
           evaluation =
