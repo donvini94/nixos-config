@@ -54,9 +54,9 @@ Mentor, learning and prompt-snippet source packages live under
 =~/.local/share/agent-content/=, managed by =hm-modules/agent-content.nix=.
 Their Pi and OMP entry points use separate client state. Activation fast-forwards
 clean source checkouts and leaves dirty or diverged ones untouched.
-Shared engineering/research instructions are in =guidance/=; project templates
-are in =templates/=. OMP links these rules for automatic loading. Other clients
-read the same files directly through the shared skills, without OMP rule URLs.
+Shared engineering and scoped domain instructions are in =guidance/=. OMP
+links rules for automatic loading within their declared scopes. Other clients
+read the same files through shared skills without OMP rule URLs.
 Pi deliberately excludes the automatic =~/.agents/skills/= tree.
 
 Pi settings are seeded as defaults; existing native selections win on activation.

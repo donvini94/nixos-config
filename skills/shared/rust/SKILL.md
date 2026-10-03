@@ -8,4 +8,5 @@ Read and follow the current authored rules before working:
 - `~/nixos-config/guidance/rules/rust.md`
 - `~/nixos-config/guidance/rules/rust-runtime-hazard.md`
 
-Use these client-neutral source files directly. Resolve `templates/` and `guidance/research/` beneath `~/nixos-config/`. Apply each rule only within its stated scope.
+Use these client-neutral files directly. Apply the guide to the current project and its
+constraints; use the runtime-hazard checklist as a review aid, not proof of a defect.

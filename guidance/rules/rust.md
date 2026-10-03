@@ -1,168 +1,48 @@
 ---
 name: rust
-description: Rust standards for CLI tools, services, and internal libraries — error taxonomy, expect-over-unwrap, async discipline, clippy posture, test topology, new-crate scaffolding
+description: Rust defaults and guardrails for explicit invariants, useful errors and bounded concurrent work
 globs:
   - "**/*.rs"
   - "**/Cargo.toml"
 ---
 # Rust
 
-Sourced from `guidance/research/RustCraft.md` — Gjengset, dtolnay, matklad, Ryhl, Nethercote,
-the Rust API Guidelines and the std-dev-guide. Where those disagree, the choice made here
-is noted as a choice.
+Apply these defaults to new work; respect existing project constraints.
 
-## One assumption: greenfield, full control, maintained by us long term
+## Design and errors
 
-Every project is new and we own the environment: internal tooling, and software running in
-enterprise environments that we keep running for years. Latest stable toolchain, current
-edition, no legacy constraint to design around. If a project genuinely cannot use this
-stack, that is an exception to raise explicitly, not a branch to guess at.
+- Use the project's formatter and Clippy gates. Keep lint configuration in the manifest;
+  justify narrow exceptions rather than disabling whole groups to silence a warning.
+- Use types to prevent realistic unit, state or argument-order mistakes. Introduce newtypes,
+  enums and traits when they improve the contract; do not wrap every primitive reflexively.
+- Keep fields private where an invariant depends on controlled construction or mutation.
+  Design public compatibility guarantees only where callers actually need them.
+- Give callers structured errors when they must distinguish failures. At application
+  boundaries, attach context about the operation while preserving the underlying cause.
+  `thiserror` and `anyhow` are useful defaults, not mandatory dependencies for every crate.
+- Handle expected failures with `Result`. Reserve panics for genuine invariants, with an
+  explanatory `expect` message. Tests may use `unwrap`; external input is not an invariant.
+- Keep credentials out of logs and error context. Redact secret-bearing debug representations.
+  Use structured diagnostics when the service needs correlation or machine consumption.
 
-Two consequences pull in opposite directions and both hold. **Nothing is published to
-crates.io**, so the downstream-caller ceremony is out — no MSRV policy, no
-`cargo-semver-checks`, no sealed traits, no `#[non_exhaustive]`, no mandatory doctests; a
-breaking change is fixed on both sides in one commit. But **we maintain this for years**, so
-the things that decay without discipline are in: a real error taxonomy, observability from
-the start, and tests at module boundaries. The reader to design for is me in two years.
+## Async and concurrency
 
-## Errors
+- Keep blocking I/O and sustained CPU work off async executor threads. Use bounded worker
+  pools or dedicated threads appropriate to the workload; do not spawn unlimited work.
+- Bound queues and concurrency. Decide what happens at capacity: backpressure, rejection
+  or deliberate dropping. An actor is an option for owned state, not a required architecture.
+- Define cancellation, shutdown and task-failure handling. Observe task results where failure
+  matters; detached tasks must not silently hide lost work.
+- Review locks held across awaits, shared-state invariants and ordering requirements.
+  Compiler acceptance does not establish freedom from deadlocks or race conditions.
 
-- Internal library: its own error type via `thiserror`. Binary or top layer:
-  `anyhow::Result` with `.context(...)` at each step. The audience decides, not the crate
-  type — a library whose errors are never matched on may legitimately use `anyhow`
-  internally.
-- Keep a library's error opaque: a public struct wrapping a private representation
-  (`#[error(transparent)] pub struct Error(#[from] Repr)`). Never a public enum embedding
-  dependency error types — that makes their major bump your major bump, and freezes the
-  layout so boxing a fat variant later is breaking.
-- `.context(...)` says what you were doing, not what failed. "reading config from
-  `$path`", not "io error". The underlying error already knows it was an io error.
+## Safety and verification
 
-## Panics
-
-- **`expect("reason")`, never bare `unwrap()`.** The string states the invariant that makes
-  the call unreachable: `.expect("config validated at startup")`. A panic message that
-  names its invariant is documentation that executes.
-- In a spawned task a panic kills that task and nothing else, silently. So in service code
-  propagate with `?` and decide at the task boundary; an `expect` there needs an invariant
-  you could defend in review.
-- Tests and `main()` are free.
-
-## Async — services and daemons
-
-- **Never spend more than ~10–100µs between `.await` points.** Sync I/O goes to
-  `spawn_blocking`; CPU-bound work to `rayon` bridged with a `oneshot`; a never-ending
-  loop to a dedicated `std::thread`. A blocking loop parked on `spawn_blocking` takes a
-  thread out of the pool permanently, and the multi-threaded runtime has one per core —
-  few enough to exhaust in production, many enough to hide the bug locally.
-- **Bounded channels only.** Unbounded means unbounded memory and no backpressure.
-- Long-lived owned state is an actor: a `Handle` holding an `mpsc::Sender` plus a task
-  owning the state, spawned from the handle's constructor rather than from a `&mut self`
-  method. Never merge the two — that gives every handle clone access to the task's fields.
-
-## Observability — anything long-lived
-
-Instrument as you build; retrofitting telemetry into a service you already cannot see into
-means reproducing the incident first. `tracing` with `#[instrument]` on the operations that
-can fail or block, spans carrying the identifiers you will search by, structured fields
-rather than formatted strings, and JSON output in production. A log line that cannot be
-correlated to a request is a line you will not use at 3am. *(Crate choice is my read —
-`guidance/research/RustCraft.md` covers async and error discipline but not instrumentation.)*
-
-Never log a token, credential, or secret-bearing struct. If a type can hold one, give it a
-`Debug` impl that redacts, so a stray `{:?}` cannot leak it.
-
-## Types
-
-- No bare `bool`, integer, or `String` standing for a domain concept. Newtype or a small
-  enum. `Widget::new(true, false)` cannot be reviewed at the call site.
-- No trait until there is a second implementor. Decide generic-versus-`dyn` at the trait
-  definition; retrofitting object safety onto a trait with generic methods is a rewrite.
-- Private fields plus accessors on anything carrying an invariant.
-- Never bound a data structure on `Clone`, `PartialEq`, `PartialOrd`, `Debug`, `Display`,
-  `Default`, `Serialize`, or `Deserialize`. `derive` supplies them, and a bound written by
-  hand propagates to every user forever.
-
-## Lints live in `Cargo.toml`, not in crate-root attributes
-
-A `[lints.rust]` / `[lints.clippy]` table is declarative, workspace-inheritable, and keeps
-`lib.rs` about the code. The exact table is in `templates/rust/Cargo.toml`; do not
-retype it from memory. It sets `unsafe_code = "forbid"`, `unused_must_use = "deny"`,
-`unwrap_used = "deny"`, the five clippy gate groups at explicit `priority = -1` so specific
-lints can override them, and `dbg_macro`/`todo` as warnings.
-
-`print_stdout` and `print_stderr` stay commented in a binary — a CLI writing to stdout is
-the entire point — and get uncommented in a library or daemon.
-
-`missing_docs` on an internal library only when the crate will outlive my memory of it.
-`#[must_use]` only where discarding the value is almost certainly a bug — not reflexively;
-nuisance warnings train `let _ =`, which then hides a real dropped `Result`.
-
-## Clippy
-
-Two levels, deliberately different:
-
-- **While writing:** `pedantic`. The friction lands on the agent, not on me, and it is
-  where the teaching is.
-- **As the gate:** `correctness`, `suspicious`, `complexity`, `perf`, `style`, plus
-  `dbg_macro`, `todo`, `print_stdout`, `print_stderr` denied — matklad's rust-analyzer set,
-  which catches debugging residue before it ships.
-- **In service and library crates additionally:** `clippy::unwrap_used` denied. That is the
-  mechanical half of the `expect`-over-`unwrap` rule above; keep it allowed in `tests/` and
-  in `main.rs`, where a panic is an acceptable exit.
-
-When `pedantic` is wrong, `allow` that one lint at the narrowest scope with the reason in
-the comment. Never blanket-allow a group. Known-wrong candidates with receipts:
-`must_use_candidate` (clippy's own docs: "expect many false positives"),
-`missing_errors_doc`, `missing_panics_doc`, `module_name_repetitions`,
-`uninlined_format_args`, `wildcard_imports`, `similar_names`, `type_complexity`.
-Never enable `nursery` or `restriction` wholesale — nobody credible does.
-
-## Tests
-
-- **One integration binary**: `tests/it/main.rs` with submodules, not many files under
-  `tests/`. Cargo relinks the library once per file there and runs test binaries
-  sequentially. Measured on cargo itself: 3× faster compile, 5× smaller artifacts.
-- Unit tests as `#[cfg(test)] mod tests;` in a separate `tests.rs`, so editing tests does
-  not recompile the library.
-- `[lib] doctest = false` on internal crates. Each doctest links its own binary, and there
-  are no external users copying examples.
-- Property tests where there is a genuine round trip or ordering invariant. Commit
-  `proptest-regressions/`, and promote every shrunk counterexample to a named `#[test]` —
-  otherwise the fix is unprotected once the seed moves on.
-- Miri in CI if any `unsafe` exists at all. Loom as well if the crate implements a
-  concurrency primitive.
-
-## Performance
-
-Profile before optimising; optimised code costs complexity, so only hot code earns it.
-Algorithm and data structure before micro-optimisation. `criterion` or `divan`, never
-ad-hoc `Instant::now()` — wall time reports memory-layout noise as a win.
-`#[inline(always)]` needs a microbenchmark attached to justify it.
-
-## Comments
-
-Comment the traps only: the places where an obvious future edit breaks something.
-A lifetime or ownership choice that looks arbitrary but isn't, an async boundary, the
-reason a construct was chosen over the obvious one. Not what the code does — the types
-carry that. Silence everywhere else.
-
-## Scaffolding a new crate
-
-**Copy `templates/rust/`. Do not hand-roll the manifest.** Verified against cargo 1.96
-and clippy 0.1.96: `cargo check --all-targets`, `cargo clippy --all-targets` and
-`cargo test` are clean on a fresh copy, and the gate was confirmed to reject code — adding a
-bare `unwrap()` fails clippy with exit 101, and adding an `unsafe` block fails on
-`-F unsafe-code`. Rename `CHANGEME`, delete what you do not need.
-
-It carries the `[lints]` table, the standard dependency set (`anyhow`, `thiserror`, `clap`,
-`tracing`, `tracing-subscriber`), `src/main.rs` showing the `.context()` and `#[instrument]`
-patterns, the single `tests/it/` integration binary with its `#![allow(clippy::unwrap_used)]`,
-and a CI job.
-
-Beyond the template:
-- Multi-crate: flat `crates/*` under a virtual manifest, directory name identical to crate
-  name, `version = "0.0.0"` for anything unpublished. No hierarchy — there are no perfect
-  hierarchies, and Cargo's namespace is flat anyway.
-- Repo automation in an `xtask` crate, not shell scripts.
-- Add `cargo hack --feature-powerset check` to CI only once the crate actually has features.
+- Prefer safe APIs. Any necessary unsafe code needs documented safety invariants and caller
+  obligations, kept to a small reviewable boundary. Use Miri for supported unsafe tests and
+  concurrency-testing tools when implementing synchronization primitives.
+- Test observable behavior and important failure paths. Choose test layout for the project;
+  do not mandate one integration binary or disable useful doctests by default.
+- Preserve regression cases, including minimized failures from property tests.
+- Profile before adding performance complexity. Prefer algorithm and data-structure changes;
+  justify low-level optimizations with measurements relevant to the workload.

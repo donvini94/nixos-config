@@ -8,4 +8,5 @@ Read and follow the current authored rules before working:
 - `~/nixos-config/guidance/rules/isc-rule.md`
 - `~/nixos-config/guidance/rules/isc-rule-divergence.md`
 
-Use these client-neutral source files directly. Resolve `templates/` and `guidance/research/` beneath `~/nixos-config/`. Apply each rule only within its stated scope.
+Use these client-neutral files directly. Read the engagement's own instructions for kit
+paths, build commands, toolchains and client-specific policy.

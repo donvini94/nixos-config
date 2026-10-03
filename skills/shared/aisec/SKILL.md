@@ -7,4 +7,5 @@ Read and follow the current authored rules before working:
 
 - `~/nixos-config/guidance/rules/aisec-prose.md`
 
-Use these client-neutral source files directly. Resolve `templates/` and `guidance/research/` beneath `~/nixos-config/`. Apply each rule only within its stated scope.
+Use this client-neutral file directly. Apply it only to AI-security research and its
+deliverables, including sessions whose files do not match the automatic-loading globs.

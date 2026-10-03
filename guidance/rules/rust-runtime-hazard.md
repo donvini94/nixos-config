@@ -9,24 +9,14 @@ scope:
   - "tool:edit(**/*.rs)"
   - "tool:write(**/*.rs)"
 ---
-Stop and check which of these you just wrote. None of them fail in local testing.
+Review the matched code in context; a regex match is a reminder, not proof of a defect.
 
-**Unbounded channel.** Unbounded memory growth with no backpressure — the producer never
-learns that the consumer is behind, and the process dies under load with an OOM that never
-reproduces in development. Use a bounded channel and decide, explicitly, what happens when
-it is full.
+- **Unbounded queue:** what bounds memory growth, and what happens when the consumer falls
+  behind? Prefer explicit capacity and backpressure.
+- **Blocking operation:** does it run on an async executor thread? If so, move sustained
+  blocking work to appropriate bounded workers. Synchronous CLI code may use blocking APIs.
+- **Unsafe:** is it necessary, permitted by the project and backed by documented safety
+  invariants and suitable tests? Do not remove a safety gate just to make code compile.
 
-**A blocking call.** If this file has async in it, `std::thread::sleep`, `reqwest::blocking`
-and synchronous `std::fs` starve the runtime: the multi-threaded scheduler has one thread
-per core, which is few enough to exhaust in production and many enough to hide the problem
-locally. Sync I/O goes to `spawn_blocking`, CPU work to `rayon` bridged with a `oneshot`, a
-never-ending loop to a dedicated `std::thread` — and note that a loop parked on
-`spawn_blocking` removes that thread from the pool permanently. In a synchronous CLI these
-calls are fine; continue.
-
-**`unsafe`.** These crates carry `#![forbid(unsafe_code)]`, so writing `unsafe` means either
-the attribute has to go — with the reason recorded in the commit — or the design needs to
-change. If it stays: one operation per `unsafe` block, a `// SAFETY:` comment naming the
-invariant that discharges the obligation, a `# Safety` doc section on any `unsafe fn`
-stating what the caller must uphold, and `cargo miri test` added to CI. Writing the
-justification is itself the bug-finding step.
+The full requirements live in `rust.md`. Check the actual execution context before changing
+working code.

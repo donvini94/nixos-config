@@ -12,28 +12,14 @@ scope:
   - "tool:edit(**/rules/Rule*.xml)"
   - "tool:write(**/rules/Rule*.xml)"
 ---
-Stop. Each of these compiles against the stub JARs and fails in the cloud runtime, where the
-only symptom is a provisioning result nobody expected.
+Review the matched API against the actual ISC rule contract. Stub compilation is not proof
+of runtime support.
 
-**`getOp()` on an account request, or `ObjectOperation` anywhere.** IdentityIQ idiom. ISC
-wants `getOperation()` returning `AccountRequest.Operation`, and the stub JAR still exposes
-the old shape, so nothing warns you - the rule simply never matches the operation it was
-written for.
+- Account requests use `getOperation()`; attribute requests may correctly use `getOp()`.
+  Check the receiver type before replacing a call.
+- IdentityIQ `context.*` object access is not an ISC cloud API. Use supported ISC helpers.
+- Confirm the edit reaches the deployed XML source and tests execute that source.
+- Confirm referenced variables are inputs for this rule type; local harness declarations
+  do not make them available in production.
 
-`AttributeRequest.getOp()` returning `ProvisioningPlan.Operation` is a different, correct
-API. Do not "fix" it. This rule deliberately does not fire under `src/test/`, where
-asserting on it is normal.
-
-**`context.*` object access.** `getObjectById`, `getObjectByName`, `getObject`, `search` and
-`countObjects` are unavailable in the ISC runtime. Use the injected `IdnRuleUtil`. This is a
-deploy-time failure, not a test-time one.
-
-Two more that no regex can see, so check them by eye before you finish:
-
-**Did the edit land in the XML?** `src/main/resources/rules/Rule - *.xml` is what deploys.
-Editing `src/main/java/<Name>.java` alone leaves the suite green and the deployed rule
-unchanged - the tests eval the XML's `<Source>`, not the twin. The triad moves together.
-
-**Is the variable actually injected?** Only what `<Signature><Inputs>` declares arrives.
-`identity` is not passed to a BeforeProvisioning rule; it comes from `plan.getIdentity()`.
-An uninjected reference is null at runtime and silent everywhere else.
+The full requirements live in `isc-rule.md`; paths and commands belong to the project.

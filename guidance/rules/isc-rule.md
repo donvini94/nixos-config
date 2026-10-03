@@ -1,6 +1,6 @@
 ---
 name: isc-rule
-description: SailPoint ISC rule development - which artifact deploys, injected variables per rule type, the API boundary, and the two gates that actually run
+description: SailPoint ISC guardrails for deployed artifacts, injected inputs and runtime API compatibility
 globs:
   - "**/rule-development-kit/**/*.java"
   - "**/rule-development-kit/**/*.xml"
@@ -9,90 +9,31 @@ globs:
 ---
 # SailPoint ISC rules
 
-Java-shaped, not a Java project. Read this before editing anything here, because the file
-that compiles is not the file that deploys.
+## Verify what ships
 
-## The XML is the artifact
+- Identify the deployed artifact before editing. In kits that deploy XML with BeanShell
+  inside `<Source>`, a Java compile-check twin is not the deployed code.
+- Keep any compile-check twin consistent with the XML. Tests must execute the shipped
+  source, not merely a reimplementation that can drift from it.
+- Run both the project's behavior tests and the applicable rule validator. Compilation
+  against stub JARs alone does not establish cloud-runtime compatibility.
 
-Three files carry one rule and they move together:
+## Verify the runtime contract
 
-```
-src/main/resources/rules/Rule - <Type> - <Name>.xml   <- deploys. BeanShell in <Source><![CDATA[...]]>
-src/main/java/<Name>.java                             <- compile check only. Never deployed.
-src/test/java/sailpoint/<Name>Test.java               <- extracts the XML's <Source> and evals it
-```
+- Check inputs against the rule type's documented signature; do not assume variables are
+  injected because a local harness declares them. Handle absent values explicitly.
+- A BeforeProvisioning rule does not receive `identity` as a separate input; retrieve it
+  through the plan when needed and handle a missing identity.
+- Do not assume IdentityIQ APIs exist in ISC. Use the documented ISC helpers. If stubs and
+  documentation disagree, establish the deployed runtime's supported API before proceeding.
+- Distinguish account and attribute operations: account requests use `getOperation()`;
+  an attribute request's `getOp()` is a different API and must not be replaced blindly.
+- Test operation filters and non-matching cases. Provisioning logic must not silently act
+  on Modify or Disable when it is intended only for Create.
+- When testing BeanShell failures, inspect the underlying exception rather than treating
+  an interpreter wrapper as the rule's error contract.
 
-The test reads the XML through `RuleXmlUtils.readRuleSourceFromFilePath()` and runs it in a
-real `bsh.Interpreter` against Mockito doubles. So the suite proves the **shipped**
-BeanShell, and a change made only in the `.java` twin passes every test while changing
-nothing that deploys. Edit the XML first, mirror it into the `.java`, then the test.
+## Keep project details local
 
-The `.java` twin exists so the compiler and `javap` can check types against the SailPoint
-stub JARs in `lib/`. It carries declarations - a `Logger`, a `plan`, an `IdnRuleUtil` - that
-are stubs for the injected variables and are deleted when the logic is copied into
-`<Source>`. Do not add a constructor, a `main`, or dependency wiring to make it "proper
-Java". It is a type harness.
-
-## Injected variables are per rule type
-
-The `<Signature><Inputs>` block declares what the platform passes in. Reference anything
-outside it and you get null at runtime, not a compile error.
-
-| Rule type | Injected |
-|---|---|
-| BeforeProvisioning | `plan`, `log` - **not** `identity` |
-| AttributeGenerator | `identity`, `log` |
-| IdentityAttribute | `identity`, `log` |
-| BuildMap | `record`, `columns`, `log` |
-| ManagerCorrelation | `link`, `managerAttributeValue`, `log` |
-
-BeforeProvisioning is the one that bites: reach the identity through `plan.getIdentity()`
-and null-check it, because a plan without one is a real state and the rule should throw
-`GeneralException` naming the identity rather than dereference it.
-
-## ISC is not IdentityIQ
-
-The stub JARs expose the IIQ surface, so IIQ idioms compile and then misbehave. Two
-families:
-
-- `getOperation()` returning `AccountRequest.Operation`, never `getOp()` / `ObjectOperation`.
-- `context.getObjectById()`, `getObjectByName()`, `getObject()`, `search()`, `countObjects()`
-  are gone in the cloud runtime. The `IdnRuleUtil` helper (`idn`) is the replacement.
-
-When the published docs disagree with the stub JAR, the JAR wins - decompile it with
-`javap -p` and follow the signature you find.
-
-## Two gates, and the invocation matters
-
-```sh
-# unit tests - Java 17 and Maven come from devbox; a newer system JDK breaks byte-buddy
-devbox run -- bash -c 'cd rule-development-kit && mvn test'
-devbox run -- bash -c 'cd rule-development-kit && mvn test -Dtest=<Name>Test'
-
-# ISC linter - the shipped ./sp-rv wrapper is not executable, so call the jar
-java -jar sailpoint-saas-rule-validator-*/sailpoint-saas-rule-validator.jar \
-  -f rule-development-kit/src/main/resources/rules/
-```
-
-The validator takes only `--file` / `-f`, accepts a directory and recurses, and rejects
-`--help`. It enforces that the `name` attribute inside the XML matches the filename minus
-the `Rule - <Type> - ` prefix. Both gates run before a rule is considered done; green tests
-alone say nothing about whether the XML is deployable.
-
-## Asserting on a BeanShell rule
-
-BeanShell has no typed return, so tests verify through mock interaction rather than a
-returned value - `verify(accountRequest).setNativeIdentity(expected)`. Thrown exceptions
-arrive wrapped: catch `bsh.TargetError` and unwrap with `getTarget()` before asserting the
-type and message.
-
-Cover the operation filter explicitly. A rule that reacts to Create must be shown ignoring
-Modify and Disable, because over-triggering on the wrong operation is silent in test and
-destructive in production.
-
-## Client specifics live with the client
-
-Target OU tables, application names, attribute mappings and DN layouts are per engagement
-and stay in the client repo - `SKILL.md` beside the kit carries them, and it is not
-discoverable from here by design. This file holds only the platform mechanics, because it
-is versioned in a public repository.
+Kit paths, build commands, toolchains, validator quirks, application names, mappings and
+client-specific policy belong in the engagement's repository. Read its instructions first.
