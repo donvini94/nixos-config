@@ -24,8 +24,7 @@ let
     }) osConfig.services.localLlama.models;
   };
   requestyProfile = {
-    endpoint =
-      if isDracula then "http://alucard.tailf117a1.ts.net:28080/v1" else "http://127.0.0.1:8080/v1";
+    endpoint = (import ../lib/requesty.nix).endpoint isDracula;
     provider = "alucard-requesty";
     defaultModel = osConfig.services.remoteOpenAI.defaultModel;
     disableStrictTools = false;

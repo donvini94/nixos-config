@@ -11,10 +11,11 @@ let
   agentDir = "${home}/.pi/agent";
   repo = "${home}/nixos-config";
   link = config.lib.file.mkOutOfStoreSymlink;
+  requesty = import ../lib/requesty.nix;
   isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
   isDracula = !isDarwin && (osConfig.networking.hostName or "") == "dracula";
-  requestyEndpoint =
-    if isDracula then "http://alucard.tailf117a1.ts.net:28080/v1" else "http://127.0.0.1:8080/v1";
+  active = isDracula || (!isDarwin && (osConfig.services.remoteOpenAI.enable or false));
+  requestyEndpoint = requesty.endpoint isDracula;
 
   # npm installs the pinned binary into the writable ~/.local prefix.
   piVersion = "1.0.0";
@@ -69,13 +70,9 @@ let
     }) osConfig.services.localLlama.models;
   };
   piModels = {
-    providers =
-      if isDarwin || !(isDracula || (osConfig.services.remoteOpenAI.enable or false)) then
-        { }
-      else
-        lib.optionalAttrs isDracula {
-          dracula-local = localProvider;
-        };
+    providers = lib.optionalAttrs isDracula {
+      dracula-local = localProvider;
+    };
   };
 
   piSettings = {
@@ -133,16 +130,14 @@ in
 
   config = lib.mkIf config.programs.piClient.enable {
     home.agentContent.enable = true;
-    home.aiModelCatalog =
-      lib.mkIf (!isDarwin && (isDracula || (osConfig.services.remoteOpenAI.enable or false)))
-        {
-          enable = true;
-          endpoint = requestyEndpoint;
-          clients.pi = {
-            path = "${agentDir}/models.json";
-            defaults.providers.alucard-requesty = requestyProvider;
-          };
-        };
+    home.aiModelCatalog = lib.mkIf active {
+      enable = true;
+      endpoint = requestyEndpoint;
+      clients.pi = {
+        path = "${agentDir}/models.json";
+        defaults.providers.alucard-requesty = requestyProvider;
+      };
+    };
     home.file = {
       # AGENTS.md and MEMORY.md are agent-owned writable files, not Nix resources.
       ".pi/agent/skills/mentor".source = link "${home}/.local/share/agent-content/mentor/skills/mentor";

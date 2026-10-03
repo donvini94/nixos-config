@@ -119,24 +119,10 @@ in
       description = "Upstream API key injected by the ingress, when the backend needs one.";
     };
 
-    extraPreStart = lib.mkOption {
-      type = lib.types.listOf lib.types.path;
-      default = [ ];
-      description = "Backend-specific ExecStartPre checks, run before the log preparation.";
-    };
-
     extraAfter = lib.mkOption {
       type = lib.types.listOf lib.types.str;
       default = [ ];
       description = "Additional units the ingress must start after.";
-    };
-
-    hardened = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = ''
-        Apply filesystem/namespace confinement to the proxy.
-      '';
     };
 
     langfuse = {
@@ -216,7 +202,7 @@ in
         Group = "llama";
         StateDirectory = "llama";
         StateDirectoryMode = "0750";
-        ExecStartPre = cfg.extraPreStart ++ [ prepareLogs ];
+        ExecStartPre = [ prepareLogs ];
         ExecStart = "${python}/bin/python3 ${proxy}/proxy.py";
         LoadCredential =
           lib.optional (
@@ -229,8 +215,6 @@ in
         Restart = "on-failure";
         RestartSec = "2s";
         UMask = "0027";
-      }
-      // lib.optionalAttrs cfg.hardened {
         NoNewPrivileges = true;
         PrivateDevices = true;
         PrivateTmp = true;
