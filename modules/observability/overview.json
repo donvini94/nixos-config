@@ -73,7 +73,7 @@
       "targets": [
         {
           "expr": "100 * nvidia_smi_utilization_gpu_ratio",
-          "legendFormat": "{{name}}",
+          "legendFormat": "GPU",
           "refId": "A"
         }
       ]
@@ -96,7 +96,7 @@
       "targets": [
         {
           "expr": "nvidia_smi_memory_used_bytes",
-          "legendFormat": "{{name}}",
+          "legendFormat": "GPU",
           "refId": "A"
         }
       ]
@@ -142,7 +142,7 @@
       "targets": [
         {
           "expr": "sum by (name) (container_memory_working_set_bytes{name!=\"\"})",
-          "legendFormat": "{{name}}",
+          "legendFormat": "GPU",
           "refId": "A"
         }
       ]
