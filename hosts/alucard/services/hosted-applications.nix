@@ -7,8 +7,7 @@
 }:
 {
   services = {
-    # Paperless itself lives in modules/paperless.nix: taxonomy, mail rules,
-    # provisioning and backup travel with it.
+    # Paperless itself lives in modules/paperless.nix.
     paperlessStack = {
       enable = true;
       domain = "paperless.${site.domains.primary}";

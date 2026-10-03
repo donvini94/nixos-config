@@ -9,30 +9,7 @@ let
   cfg = config.services.paperlessStack;
   paperless = config.services.paperless;
 
-  taxonomyFile = ../paperless/taxonomy.yaml;
-  provisionSource = pkgs.writeText "paperless-provision.py" (
-    builtins.readFile ../paperless/provision.py
-  );
-  python = pkgs.python3.withPackages (ps: [ ps.pyyaml ]);
-
-  privateSecret = config.sops.secrets."paperless-private".path;
   adminPasswordSecret = config.sops.secrets."paperless/password".path;
-
-  # Operator CLI. Nothing runs it automatically: the taxonomy seeds a new instance, and
-  # the web UI owns it afterwards.
-  provisionCli = pkgs.writeShellApplication {
-    name = "paperless-provision";
-    runtimeInputs = [ python ];
-    text = ''
-      exec ${python}/bin/python3 ${provisionSource} \
-        --base-url ${lib.escapeShellArg cfg.baseUrl} \
-        --taxonomy ${taxonomyFile} \
-        --private ${lib.escapeShellArg privateSecret} \
-        --password-file ${lib.escapeShellArg adminPasswordSecret} \
-        "$@"
-    '';
-  };
-
 in
 {
   options.services.paperlessStack = {
@@ -52,17 +29,6 @@ in
     port = lib.mkOption {
       type = lib.types.port;
       default = 58080;
-    };
-
-    baseUrl = lib.mkOption {
-      type = lib.types.str;
-      default = "http://${cfg.address}:${toString cfg.port}";
-      defaultText = lib.literalExpression ''"http://''${address}:''${port}"'';
-      description = ''
-        Where the provisioner talks to Paperless. Deliberately loopback rather
-        than the public vhost: the public one runs ModSecurity CRS, which
-        false-positives on the regex-bearing JSON bodies a taxonomy push sends.
-      '';
     };
 
     ocrLanguage = lib.mkOption {
@@ -92,7 +58,7 @@ in
         PAPERLESS_OCR_LANGUAGE = cfg.ocrLanguage;
         PAPERLESS_URL = "https://${cfg.domain}";
         PAPERLESS_CSRF_TRUSTED_ORIGINS = "https://${cfg.domain}";
-        # Loopback is here so the provisioner can bypass nginx. Django still
+        # Loopback allows local administration without nginx. Django still
         # checks the Host header, so this does not widen external exposure.
         PAPERLESS_ALLOWED_HOSTS = "${cfg.domain},127.0.0.1,localhost";
 
@@ -135,14 +101,6 @@ in
     services.tika.package = pkgs.callPackage ../packages/tika.nix { };
 
     sops.secrets = {
-      "paperless-private" = {
-        sopsFile = ../secrets/paperless.yaml;
-        format = "yaml";
-        # An empty key yields the whole decrypted document rather than one leaf.
-        key = "";
-        owner = paperless.user;
-        mode = "0400";
-      };
       # Paperless' date parser takes the first plausible date in a document, so
       # "geboren am 14.07.1994" wins over the actual letter date.
       "paperless/ignore_dates" = {
@@ -175,6 +133,20 @@ in
       ];
     };
 
-    environment.systemPackages = [ provisionCli ];
+    # The export holds mail-account passwords, password hashes and TOTP secrets; the
+    # directory is created world-readable by the upstream module, so close it. Root-run
+    # backups are unaffected.
+    systemd.services.paperless-export-private = {
+      description = "Restrict the Paperless export directory to its owner";
+      wantedBy = [ "multi-user.target" ];
+      after = [ "systemd-tmpfiles-setup.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        User = paperless.user;
+        ExecStart = "${pkgs.coreutils}/bin/chmod 0700 ${paperless.exporter.directory}";
+      };
+    };
+
   };
 }

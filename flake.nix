@@ -158,7 +158,7 @@
                 touch "$out"
               '';
           python-lint = pkgs.runCommand "check-python-lint" { nativeBuildInputs = [ pkgs.ruff ]; } ''
-            ruff check --no-cache --select F ${./local-transcription}/server.py ${./paperless}/provision.py ${./scripts/tests}
+            ruff check --no-cache --select F ${./local-transcription}/server.py ${./scripts/tests}
             touch "$out"
           '';
           model-download =
