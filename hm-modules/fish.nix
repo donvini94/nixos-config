@@ -31,7 +31,7 @@
       py = "python3";
       lg = "lazygit";
       bereit = "ssh ${site.owner.username}@${site.domains.primary}";
-      windows = "bash ~/nixos-config/scripts/windows.sh";
+      windows = "sudo efibootmgr --bootnext (efibootmgr | string match -rg 'Boot(\\d+)\\* Windows Boot Manager') && sudo reboot";
 
       # The zellij helpers (zj / zjr / zjls / zjl) are functions in hm-modules/zellij, next
       # to the keymap they belong to: they branch on whether the session already exists.

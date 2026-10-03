@@ -9,10 +9,7 @@
 
     rust-analyzer
     rustup
-    rustfmt
     cargo-watch
-    clippy
-    rustc
 
     lldb
     gdb

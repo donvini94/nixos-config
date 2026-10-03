@@ -21,12 +21,6 @@ in
   options.services.aiStack = {
     enable = lib.mkEnableOption "n8n and Hermes";
 
-    autoStart = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = "Whether the AI stack starts automatically at boot.";
-    };
-
     secretsFile = lib.mkOption {
       type = lib.types.path;
       description = "SOPS file holding n8n and Hermes secrets.";
@@ -64,7 +58,6 @@ in
 
     services.aiStackTarget = {
       enable = true;
-      inherit (cfg) autoStart;
       operators = [ username ];
     };
 
