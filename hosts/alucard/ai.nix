@@ -6,14 +6,12 @@
 }:
 
 let
-  requesty = import ../../lib/requesty.nix;
-  inherit (requesty) defaultModel;
   secretFile = ../../secrets/alucard-ai.yaml;
 in
 {
   imports = [
     ../../modules/ai-stack.nix
-    ../../modules/remote-openai.nix
+    ../../modules/requesty.nix
   ];
 
   assertions = [
@@ -28,7 +26,6 @@ in
       assertion =
         lib.intersectLists [
           5678
-          8080
           8642
           9119
           13000
@@ -46,7 +43,7 @@ in
   sops.secrets =
     lib.genAttrs
       [
-        "requesty/api_key"
+        "requesty/hermes_api_key"
         "hermes/dashboard_password"
         "hermes/dashboard_password_hash"
         "hermes/dashboard_session_secret"
@@ -58,7 +55,17 @@ in
         sopsFile = secretFile;
         owner = "root";
         mode = "0400";
-      });
+      })
+    // {
+      # This host's interactive clients (Pi, OMP) use their own key.
+      "requesty/api_key" = {
+        sopsFile = secretFile;
+        owner = username;
+        mode = "0400";
+      };
+    };
+
+  services.requesty.apiKeyFile = config.sops.secrets."requesty/api_key".path;
 
   # Initial credentials; anything saved in the Hermes UI overrides them.
   sops.templates."hermes.env" = {
@@ -71,6 +78,7 @@ in
       API_SERVER_KEY=${config.sops.placeholder."hermes/api_server_key"}
       TELEGRAM_BOT_TOKEN=${config.sops.placeholder."hermes/telegram_bot_token"}
       TELEGRAM_ALLOWED_USERS=${config.sops.placeholder."hermes/telegram_allowed_users"}
+      REQUESTY_API_KEY=${config.sops.placeholder."requesty/hermes_api_key"}
     '';
     restartUnits = [ "docker-hermes-agent.service" ];
     mode = "0400";
@@ -86,20 +94,7 @@ in
   services.localObservability = {
     enable = true;
     secretsFile = secretFile;
-    inferencePort = 8080;
     n8nPort = 5678;
-  };
-
-  services.aiIngress = {
-    backendUrl = "https://router.requesty.ai";
-    backendHealthPath = "/v1/models";
-    upstreamBearerCredentialFile = config.sops.secrets."requesty/api_key".path;
-    operators = [ username ];
-  };
-
-  services.remoteOpenAI = {
-    enable = true;
-    inherit defaultModel;
   };
 
   # Keep the identity existing files and the Org ACL already use.

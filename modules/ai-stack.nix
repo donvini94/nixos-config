@@ -1,4 +1,4 @@
-# Alucard's agent and workflow services, backed by the AI ingress.
+# Alucard's agent and workflow services.
 {
   config,
   lib,
@@ -12,14 +12,14 @@ let
 in
 {
   imports = [
-    ./ai-ingress.nix
+    ./ai-stack-target.nix
     ./n8n.nix
     ./hermes.nix
     ./container-updates.nix
   ];
 
   options.services.aiStack = {
-    enable = lib.mkEnableOption "AI ingress, n8n and Hermes";
+    enable = lib.mkEnableOption "n8n and Hermes";
 
     autoStart = lib.mkOption {
       type = lib.types.bool;
@@ -62,13 +62,10 @@ in
       group = "root";
     };
 
-    # OMP, Hermes and n8n all trace through this one proxy.
-    services.aiIngress.autoStart = cfg.autoStart;
-
-    services.aiIngress.langfuse = {
+    services.aiStackTarget = {
       enable = true;
-      publicKeyFile = config.sops.secrets."langfuse/project_public_key".path;
-      secretKeyFile = config.sops.secrets."langfuse/project_secret_key".path;
+      inherit (cfg) autoStart;
+      operators = [ username ];
     };
 
     # The agent container runs as the hermes user and reaches the Org tree through this ACL.
@@ -88,12 +85,6 @@ in
     services.hermesAgent = {
       enable = true;
       inherit orgDirectory;
-    };
-
-    # The agent talks to the ingress, so it must not start before it.
-    systemd.services.docker-hermes-agent = {
-      after = [ "local-llama-logger.service" ];
-      requires = [ "local-llama-logger.service" ];
     };
 
     services.containerUpdates.units = [

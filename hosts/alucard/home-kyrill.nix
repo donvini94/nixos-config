@@ -1,8 +1,6 @@
-# The OMP harness only: no authored agent context, and no Requesty ingress
-# profile — the ingress binds loopback and does no per-user authorization, so
-# which accounts receive the profile is the spend boundary on Vincenzo's single
-# upstream key. Kyrill reaches Anthropic and Codex through his own subscription
-# logins instead.
+# The OMP harness only: no authored agent context, and no Requesty profile — that
+# profile reads Vincenzo's key, so which accounts receive it is the spend boundary.
+# Kyrill reaches Anthropic and Codex through his own subscription logins instead.
 { pkgs, ... }:
 
 {

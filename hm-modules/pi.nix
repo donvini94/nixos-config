@@ -14,8 +14,7 @@ let
   requesty = import ../lib/requesty.nix;
   isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
   isDracula = !isDarwin && (osConfig.networking.hostName or "") == "dracula";
-  active = isDracula || (!isDarwin && (osConfig.services.remoteOpenAI.enable or false));
-  requestyEndpoint = requesty.endpoint isDracula;
+  requestyKeyFile = if isDarwin then null else osConfig.services.requesty.apiKeyFile or null;
 
   # npm installs the pinned binary into the writable ~/.local prefix.
   piVersion = "1.0.0";
@@ -32,24 +31,12 @@ let
   amosWebFetchPackage = upstream "extensions/web-fetch/package.json" "sha256-4lYfuZ56pzSpuDexodOa4ZiADnreQ/fhNab+0INNhC4=";
   amosWebFetchLock = upstream "extensions/web-fetch/package-lock.json" "sha256-3/ofJOqI8pLzHQjEgMoaMA4sw1WFljpGVUQ/hPyI7qo=";
 
-  requestyProvider = {
-    name = "Alucard Requesty";
-    baseUrl = requestyEndpoint;
-    api = "openai-completions";
-    # Pi hides a provider with no key; the ingress ignores this placeholder (authHeader is off).
-    apiKey = "unused";
-    # The ingress authenticates this host; Pi must not invent an Authorization header.
-    authHeader = false;
-    headers.X-AI-Caller = "pi";
-    models = [ ]; # Filled from the private ingress, not during Nix evaluation.
-  };
   localProvider = {
     name = "Dracula local llama.cpp";
     baseUrl = "http://127.0.0.1:8080/v1";
     api = "openai-completions";
     authHeader = false;
     apiKey = "unused";
-    headers.X-AI-Caller = "pi";
     models = lib.mapAttrsToList (id: model: {
       inherit id;
       name = model.displayName;
@@ -93,6 +80,7 @@ let
       "${home}/.local/share/agent-content/learning"
       "git:github.com/HazAT/pi-interactive-subagents@c100577ebf7393a11d098ad9810ec6c269dcfc30"
       "npm:pi-claude-bridge"
+      "git:github.com/requestyai/pi-requesty@c28e2f8208eb467d248a7dc33bfb5cb04f310575"
     ];
     extensions = [
       "${agentDir}/upstream/amos-ask-user-question.ts"
@@ -117,27 +105,20 @@ let
       PI_WEB_PACKAGE = amosWebFetchPackage;
       PI_WEB_LOCK = amosWebFetchLock;
       PI_VERSION = piVersion;
+    }
+    // lib.optionalAttrs (requestyKeyFile != null) {
+      PI_REQUESTY_KEY_FILE = requestyKeyFile;
+      PI_REQUESTY_URL = requesty.endpoint;
     };
     text = builtins.readFile ../scripts/bootstrap-pi.sh;
   };
 in
 {
-  imports = [
-    ./agent-content.nix
-    ./ai-model-catalog.nix
-  ];
+  imports = [ ./agent-content.nix ];
   options.programs.piClient.enable = lib.mkEnableOption "Pi coding client";
 
   config = lib.mkIf config.programs.piClient.enable {
     home.agentContent.enable = true;
-    home.aiModelCatalog = lib.mkIf active {
-      enable = true;
-      endpoint = requestyEndpoint;
-      clients.pi = {
-        path = "${agentDir}/models.json";
-        defaults.providers.alucard-requesty = requestyProvider;
-      };
-    };
     home.file = {
       # AGENTS.md and MEMORY.md are agent-owned writable files, not Nix resources.
       ".pi/agent/skills/mentor".source = link "${home}/.local/share/agent-content/mentor/skills/mentor";

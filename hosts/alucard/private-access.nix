@@ -11,10 +11,8 @@ let
   # Tailnet listen port -> loopback target. The AI entries match dracula's
   # ai-admin SSH forwards, the media ones media-admin's.
   privateTcpServices = {
-    langfuse = { listen = 23000; target = 13000; };
     grafana = { listen = 23001; target = 13001; };
     n8n = { listen = 25678; target = 5678; };
-    openai-ingress = { listen = 28080; target = 8080; };
     prometheus = { listen = 29091; target = 19091; };
     kapowarr = { listen = 15656; target = 15656; };
     bazarr = { listen = 16767; target = 16767; };

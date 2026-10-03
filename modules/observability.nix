@@ -86,7 +86,7 @@ let
       (scrape "containers" cfg.cadvisorPort)
     ]
     ++ lib.optional cfg.gpuMetrics (scrape "nvidia" cfg.dcgmExporterPort)
-    ++ lib.optional (cfg.inferencePort != null) (scrape "ai-ingress" cfg.inferencePort)
+    ++ lib.optional (cfg.inferencePort != null) (scrape "llama" cfg.inferencePort)
     ++ lib.optional (cfg.n8nPort != null) (scrape "n8n" cfg.n8nPort)
     ++ lib.mapAttrsToList scrape cfg.extraScrapeTargets;
   };
@@ -104,11 +104,11 @@ let
 in
 {
   options.services.localObservability = {
-    enable = lib.mkEnableOption "local Langfuse, Grafana, and Prometheus observability stack";
+    enable = lib.mkEnableOption "Grafana and Prometheus observability stack";
 
     secretsFile = lib.mkOption {
       type = lib.types.path;
-      description = "SOPS file holding Langfuse and Grafana secrets.";
+      description = "SOPS file holding the Grafana secrets.";
     };
 
     autoStart = lib.mkOption {
@@ -128,11 +128,6 @@ in
       default = "127.0.0.1";
     };
 
-    langfusePort = lib.mkOption {
-      type = lib.types.port;
-      default = 13000;
-    };
-
     grafanaPort = lib.mkOption {
       type = lib.types.port;
       default = 13001;
@@ -141,11 +136,6 @@ in
     prometheusPort = lib.mkOption {
       type = lib.types.port;
       default = 19091;
-    };
-
-    minioPort = lib.mkOption {
-      type = lib.types.port;
-      default = 19000;
     };
 
     nodeExporterPort = lib.mkOption {
@@ -168,7 +158,7 @@ in
     inferencePort = lib.mkOption {
       type = lib.types.nullOr lib.types.port;
       default = null;
-      description = "Optional loopback OpenAI ingress metrics port.";
+      description = "Optional loopback llama.cpp metrics port.";
     };
 
     n8nPort = lib.mkOption {
@@ -188,16 +178,6 @@ in
     sops.secrets =
       lib.genAttrs
         [
-          "langfuse/postgres_password"
-          "langfuse/clickhouse_password"
-          "langfuse/redis_auth"
-          "langfuse/minio_root_password"
-          "langfuse/salt"
-          "langfuse/encryption_key"
-          "langfuse/nextauth_secret"
-          "langfuse/project_public_key"
-          "langfuse/project_secret_key"
-          "langfuse/admin_password"
           "grafana/admin_password"
         ]
         (_: {
@@ -208,18 +188,6 @@ in
 
     sops.templates."observability.env" = {
       content = ''
-        POSTGRES_PASSWORD=${config.sops.placeholder."langfuse/postgres_password"}
-        CLICKHOUSE_PASSWORD=${config.sops.placeholder."langfuse/clickhouse_password"}
-        REDIS_AUTH=${config.sops.placeholder."langfuse/redis_auth"}
-        MINIO_ROOT_PASSWORD=${config.sops.placeholder."langfuse/minio_root_password"}
-        LANGFUSE_SALT=${config.sops.placeholder."langfuse/salt"}
-        LANGFUSE_ENCRYPTION_KEY=${config.sops.placeholder."langfuse/encryption_key"}
-        NEXTAUTH_SECRET=${config.sops.placeholder."langfuse/nextauth_secret"}
-        LANGFUSE_PROJECT_PUBLIC_KEY=${config.sops.placeholder."langfuse/project_public_key"}
-        LANGFUSE_PROJECT_SECRET_KEY=${config.sops.placeholder."langfuse/project_secret_key"}
-        LANGFUSE_INIT_USER_EMAIL=vincenzo@istbereit.de
-        LANGFUSE_INIT_USER_NAME=Vincenzo
-        LANGFUSE_INIT_USER_PASSWORD=${config.sops.placeholder."langfuse/admin_password"}
         GRAFANA_ADMIN_PASSWORD=${config.sops.placeholder."grafana/admin_password"}
       '';
       restartUnits = [ "observability-stack.service" ];
@@ -238,7 +206,7 @@ in
     ];
 
     systemd.services.observability-stack = {
-      description = "Langfuse and machine/container observability stack";
+      description = "Machine and container observability stack";
       wantedBy = lib.optional cfg.autoStart "multi-user.target";
       after = [ "docker.service" ];
       requires = [ "docker.service" ];
@@ -255,10 +223,8 @@ in
       ];
       environment = {
         OBSERVABILITY_BIND_ADDRESS = cfg.bindAddress;
-        LANGFUSE_PORT = toString cfg.langfusePort;
         GRAFANA_PORT = toString cfg.grafanaPort;
         PROMETHEUS_PORT = toString cfg.prometheusPort;
-        MINIO_PORT = toString cfg.minioPort;
         NODE_EXPORTER_PORT = toString cfg.nodeExporterPort;
         CADVISOR_PORT = toString cfg.cadvisorPort;
         DCGM_EXPORTER_PORT = toString cfg.dcgmExporterPort;

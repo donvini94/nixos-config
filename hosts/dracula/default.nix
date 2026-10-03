@@ -8,7 +8,6 @@
 }:
 
 let
-  requesty = import ../../lib/requesty.nix;
   hermesDesktop = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.desktop;
   hermesDesktopLauncher = pkgs.makeDesktopItem {
     name = "hermes-desktop";
@@ -37,12 +36,11 @@ in
     ../../modules/desktop.nix
     ../../modules/nvidia.nix
     ../../modules/gaming.nix
-    ../../modules/ai-ingress.nix
     ../../modules/observability.nix
     ../../modules/container-updates.nix
     ../../modules/llama.nix
     ../../modules/mail-credentials.nix
-    ../../modules/remote-openai.nix
+    ../../modules/requesty.nix
     ../../modules/transcription.nix
     ../../modules/gpu-mode.nix
     ../../modules/host-vulnerability-scan.nix
@@ -129,21 +127,17 @@ in
     };
   };
 
-  services.aiIngress = {
+  services.aiStackTarget = {
     operators = [ username ];
     autoStart = false;
-    langfuse = {
-      enable = true;
-      publicKeyFile = config.sops.secrets."langfuse/project_public_key".path;
-      secretKeyFile = config.sops.secrets."langfuse/project_secret_key".path;
-    };
   };
 
-  # No Requesty credential is copied to Dracula. Interactive clients reach the
-  # authenticated Alucard ingress privately over Tailscale.
-  services.remoteOpenAI = {
-    inherit (requesty) defaultModel;
+  sops.secrets."requesty/api_key" = {
+    sopsFile = ../../secrets/dracula-ai.yaml;
+    owner = username;
+    mode = "0400";
   };
+  services.requesty.apiKeyFile = config.sops.secrets."requesty/api_key".path;
 
   services.localObservability = {
     enable = true;

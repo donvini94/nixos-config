@@ -127,7 +127,6 @@ in
       lapi.credentialsFile = "/var/lib/crowdsec/state/local_api_credentials.yaml";
       general.api.server = {
         enable = true;
-        # Port 8080 belongs permanently to the AI ingress.
         listen_uri = "127.0.0.1:18082";
         # No security events off-host without an explicit CAPI enrollment decision.
         online_client = {

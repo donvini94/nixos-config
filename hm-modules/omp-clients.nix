@@ -10,13 +10,14 @@ let
   hostname = osConfig.networking.hostName or "";
   isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
   isDracula = !isDarwin && hostname == "dracula";
-  isRemote = !isDarwin && (osConfig.services.remoteOpenAI.enable or false);
+  requestyKeyFile = if isDarwin then null else osConfig.services.requesty.apiKeyFile or null;
+  isRemote = requestyKeyFile != null;
   active = config.programs.ompClient.enable && (isDracula || isRemote);
   localProfile = {
     endpoint = "http://127.0.0.1:8080/v1";
     provider = "dracula-local";
     disableStrictTools = true;
-    # Local serving metadata is declared; remote metadata comes from the ingress.
+    # Local serving metadata is declared; remote metadata is discovered.
     models = lib.mapAttrs (_id: model: {
       name = model.displayName;
       context = model.contextSize;
@@ -24,11 +25,10 @@ let
     }) osConfig.services.localLlama.models;
   };
   requestyProfile = {
-    endpoint = (import ../lib/requesty.nix).endpoint isDracula;
-    provider = "alucard-requesty";
-    defaultModel = osConfig.services.remoteOpenAI.defaultModel;
+    inherit (import ../lib/requesty.nix) endpoint defaultModel;
+    provider = "requesty";
     disableStrictTools = false;
-    models = { }; # The runtime catalog fills this provider.
+    models = { }; # Discovered at runtime from the organization-approved catalog.
   };
   profiles =
     if isDracula then
@@ -57,9 +57,19 @@ let
       value = {
         baseUrl = profile.endpoint;
         api = "openai-completions";
-        auth = "none";
         disableStrictTools = profile.disableStrictTools;
-        headers.X-AI-Caller = "omp";
+      }
+      // (
+        if profile.provider == requestyProfile.provider then
+          {
+            auth = "apiKey";
+            apiKey = "!cat ${requestyKeyFile}";
+            discovery.type = "openai-models-list";
+          }
+        else
+          { auth = "none"; }
+      )
+      // {
         models = lib.mapAttrsToList (
           id: model:
           {
@@ -105,9 +115,8 @@ let
     }) profiles
   );
   yaml = pkgs.formats.yaml { };
-  # `smol` backs session titles and prewalk, so both hosts point it at the Requesty
-  # ingress's cheap default rather than dracula's local model: the role must not break
-  # whenever llama.cpp is down.
+  # `smol` backs session titles and prewalk, so both hosts point it at Requesty's cheap
+  # default rather than dracula's local model: the role must not break whenever llama.cpp is down.
   smolModel = modelSelector requestyProfile requestyProfile.defaultModel;
   omp = pkgs.callPackage ../packages/omp-harness.nix {
     extraEnabledModels = profileModels;
@@ -121,22 +130,7 @@ let
   };
 in
 {
-  imports = [ ./ai-model-catalog.nix ];
   config = lib.mkIf active {
-    home.aiModelCatalog = {
-      enable = true;
-      endpoint = requestyProfile.endpoint;
-      clients.omp = {
-        path = "${config.home.homeDirectory}/.omp/agent/models.yml";
-        defaults.providers = ompProviders;
-        modelDefaults.compat = {
-          supportsStore = false;
-          supportsDeveloperRole = false;
-          supportsReasoningEffort = false;
-          maxTokensField = "max_tokens";
-        };
-      };
-    };
     home.packages = [ omp ];
 
     # A named profile sees only its own user-level config — never ~/.omp/agent — so the
@@ -144,7 +138,12 @@ in
     # one alone) and its own AGENTS.md. The AGENTS.md is a link to the default profile's
     # file, which is itself an out-of-store link into this repository: one authored file,
     # editable without a rebuild, visible to both profiles.
-    home.file = lib.optionalAttrs isDracula {
+    home.file = {
+      ".omp/agent/models.yml".source = yaml.generate "omp-models.yml" {
+        providers = ompProviders;
+      };
+    }
+    // lib.optionalAttrs isDracula {
       ".omp/profiles/local/agent/models.yml".source = yaml.generate "omp-local-models.yml" {
         providers.${localProfile.provider} = ompProviders.${localProfile.provider};
       };

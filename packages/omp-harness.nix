@@ -56,7 +56,7 @@ let
     disabledProviders = [
       "agent-plugins"
       "agents"
-      "alucard-requesty"
+      "requesty"
       "anthropic"
       "claude"
       "claude-md"

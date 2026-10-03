@@ -118,6 +118,30 @@ class BootstrapPiTests(unittest.TestCase):
         for file in state:
             self.assertEqual(file.read_text(), "private fixture\n")
 
+    def test_requesty_provider_gets_key_and_keeps_discovered_models(self) -> None:
+        key = self.root / "key"
+        key.write_text("secret-value\n")
+        self.env["PI_REQUESTY_KEY_FILE"] = str(key)
+        self.env["PI_REQUESTY_URL"] = "https://router.invalid/v1"
+        (self.agent / "models.json").write_text(
+            json.dumps(
+                {
+                    "providers": {
+                        "alucard-requesty": {"baseUrl": "https://old.invalid"},
+                        "requesty": {"models": [{"id": "discovered"}]},
+                    }
+                }
+            )
+        )
+        self.assertEqual(self.invoke().returncode, 0)
+        file = self.agent / "models.json"
+        providers = json.loads(file.read_text())["providers"]
+        self.assertNotIn("alucard-requesty", providers)
+        self.assertEqual(providers["requesty"]["apiKey"], "secret-value")
+        self.assertEqual(providers["requesty"]["baseUrl"], "https://router.invalid/v1")
+        self.assertEqual(providers["requesty"]["models"], [{"id": "discovered"}])
+        self.assertEqual(file.stat().st_mode & 0o777, 0o600)
+
     def test_invalid_settings_are_not_overwritten(self) -> None:
         file = self.agent / "settings.json"
         file.write_text("not json\n")

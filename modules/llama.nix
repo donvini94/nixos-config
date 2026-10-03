@@ -10,7 +10,7 @@ let
   stateDirectory = "/var/lib/llama";
   modelRoot = "${stateDirectory}/models";
   bindAddress = "127.0.0.1";
-  backendPort = 18080;
+  port = 8080;
 
   modelFileType = lib.types.submodule {
     options = {
@@ -150,7 +150,7 @@ let
   waitForBackend = pkgs.writeShellScript "wait-for-local-llama-backend" ''
     set -eu
     for attempt in $(${pkgs.coreutils}/bin/seq 1 7200); do
-      if ${pkgs.curl}/bin/curl --fail --silent --show-error --max-time 2 "http://${bindAddress}:${toString backendPort}/health" > /dev/null; then
+      if ${pkgs.curl}/bin/curl --fail --silent --show-error --max-time 2 "http://${bindAddress}:${toString port}/health" > /dev/null; then
         exit 0
       fi
       ${pkgs.coreutils}/bin/sleep 1
@@ -166,9 +166,10 @@ let
       "--host"
       bindAddress
       "--port"
-      (toString backendPort)
+      (toString port)
       "-m"
       "${modelDirectory cfg.defaultModel}/${m.modelFile}"
+      "--metrics"
       "-c"
       (toString m.contextSize)
       "--parallel"
@@ -177,6 +178,8 @@ let
     ++ m.serverArgs;
 in
 {
+  imports = [ ./ai-stack-target.nix ];
+
   options.services.localLlama = {
     enable = lib.mkEnableOption "local OpenAI-compatible inference (llama.cpp/GGUF)";
     package = lib.mkOption {
@@ -254,18 +257,20 @@ in
 
     services.logind.settings.Login.IdleAction = "ignore";
 
-    # The ingress, its logging, metrics, and operator tooling are shared with
-    # the Requesty backend; this module only supplies the local one.
-    services.aiIngress = {
+    services.aiStackTarget = {
       enable = true;
-      backendUrl = "http://${bindAddress}:${toString backendPort}";
-      priceMap = lib.mapAttrs (_: localModel: localModel.cost) cfg.models;
       lifecycleUnits = [
         "ai-stack.target"
         "local-llama-backend.service"
-        "local-llama-logger.service"
       ];
-      extraAfter = [ "local-llama-backend.service" ];
+      healthUrl = "http://${bindAddress}:${toString port}/health";
+    };
+
+    users.groups.llama = { };
+    users.users.llama = {
+      isSystemUser = true;
+      group = "llama";
+      home = stateDirectory;
     };
   };
 }

@@ -23,6 +23,19 @@ merge "$PI_AGENT_DIR/settings.json" "$PI_DEFAULT_SETTINGS" '.[1] * .[0]'
 # Declared model definitions win; additional user-defined providers remain intact.
 merge "$PI_AGENT_DIR/models.json" "$PI_DECLARED_MODELS" '.[0] * .[1]'
 
+if [ -n "${PI_REQUESTY_KEY_FILE:-}" ]; then
+  # The pi-requesty extension reads the key from models.json and discovers models itself.
+  merged=$(mktemp "$PI_AGENT_DIR/models.json.XXXXXX")
+  jq --rawfile key "$PI_REQUESTY_KEY_FILE" --arg url "$PI_REQUESTY_URL" '
+    del(.providers["alucard-requesty"])
+    | .providers.requesty = (((.providers.requesty // {}) + {
+        name: "Requesty", baseUrl: $url, api: "openai-completions",
+        apiKey: ($key | rtrimstr("\n"))
+      }) | .models //= [])' "$PI_AGENT_DIR/models.json" > "$merged"
+  chmod 600 "$merged"
+  mv "$merged" "$PI_AGENT_DIR/models.json"
+fi
+
 web="$PI_AGENT_DIR/upstream/amos-web-fetch"
 needs_install=0
 if [ ! -d "$web/node_modules" ] || ! cmp -s "$PI_WEB_LOCK" "$web/package-lock.json"; then
