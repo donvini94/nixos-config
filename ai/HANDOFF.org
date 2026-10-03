@@ -34,20 +34,23 @@ gaps), =AGENTS.md= (repository rules, deployment rules), =README.org=.
 
 #+begin_example
 ai/
-  REQUIREMENTS.org  decided requirements
+  flake.nix             the ai-stack flake: nixosModules.{default,monitoringServer}, checks
+  REQUIREMENTS.org      decided requirements
   nixos/
-    ai-stack.nix          option services.aiStack: n8n + Hermes + sops wiring + stack target
-    ai-stack-target.nix   ai-stack.target and operator tooling (polkit-driven start/stop/health)
+    default.nix           the customer-side module: everything below except server.nix
+    ai-stack.nix          option services.aiStack: n8n + Hermes + sops wiring + ai-stack.target
     n8n.nix               services.localN8n: container, task-runner container
     hermes.nix            services.hermesAgent: upstream image, host network
-    requesty.nix          services.requesty.{apiKeyFile,endpoint,defaultModel}
     observability/        exporters.nix (customer side), server.nix (central), alerts.nix, overview.json
     vulnerability-scan/   container.nix, host.nix and their scripts (publish into the textfile dir)
 #+end_example
 
-Host wiring that consumes it today: =hosts/alucard/ai.nix= (secrets, templates,
-assertions, Tailscale-served ports) and =hosts/alucard/default.nix=
-(=services.containerUpdates=, scanners). =modules/container-updates.nix= is shared with
+The root flake consumes it as =inputs.ai-stack= (=path:./ai=, following its nixpkgs and
+sops-nix) and runs its checks as =ai-stack-*=. Host wiring: =hosts/alucard/ai.nix=
+(secrets, templates, assertions) and =hosts/alucard/default.nix=
+(=services.containerUpdates=, scanners). Dracula's GPU switch now lives in
+=modules/ai-stack-target.nix= and the personal Requesty option in
+=coding-agents/nixos/requesty.nix=; neither depends on =ai/=. =modules/container-updates.nix= is shared with
 the media stack and stays outside =ai/=, but the stack needs an update mechanism.
 
 Not part of the stack, already moved out: =coding-agents/= (personal OMP/Pi tooling),
@@ -61,8 +64,6 @@ not depend on =ai/= except =coding-agents= reading =services.requesty= through
   hostnames) belongs in =ai/=. Audit =ai/=, the interface and the secrets contract
   against it. =services.aiStack.sharedDirectory= is optional and off by default; only
   Alucard's host config sets it.
-- =ai-stack-target= was built for exclusive GPU workloads and operator tooling. Decide
-  whether customers need it at all.
 - =services.aiStack.user= is a required operator account; customer servers need a
   defined service/operator user model.
 - =alucard/ai.nix= holds secret declarations, the =hermes.env= sops template and port
@@ -80,7 +81,6 @@ not depend on =ai/= except =coding-agents= reading =services.requesty= through
 - n8n metrics are loopback-only, so central Prometheus can scrape them for Alucard only.
 - Grafana needs =grafana/secret_key= and =grafana/admin_password= in the secrets file.
   Alertmanager Telegram delivery is implemented but untested and unconfigured.
-- =secrets/dracula-ai.yaml= still holds unused =grafana= and =hermes= entries.
 
 * Design decisions already made (do not reopen without cause)
 
@@ -97,15 +97,13 @@ Answered in the 2026-10 interview and recorded in =REQUIREMENTS.org=: flake name
 location, presets, deploy-rs and release-tag promotion, PostgreSQL for n8n, public
 paths, DNS/ACME, edge protection, open egress with Hermes isolation and tailnet ACLs, workflow import and drift, =ai-stack-check=,
 the target and account model, backup isolation, Onyx packaging and Alucard's migration.
-The operator approved removing the unused =grafana= and =hermes= entries from
-=secrets/dracula-ai.yaml= once Dracula is verified not to reference them.
 
 * Suggested sequence
 
 1. Done: interview on the open decisions; answers are in =REQUIREMENTS.org=.
 2. Define the flake's public interface: one module (=aiStack= plus feature flags and
    presets), the options customers set, the secrets contract.
-3. Make =ai/= standalone inside this repository first (own =flake.nix=, outputs
+3. Done: make =ai/= standalone inside this repository first (own =flake.nix=, outputs
    =nixosModules=, =packages=, checks), with Alucard consuming it through a path input.
    Keep all three hosts building.
 4. Lift the Alucard-only pieces into reusable modules one at a time, deploying to Alucard

@@ -8,7 +8,7 @@
 
 let
   hasLocalModel = osConfig.services.localLlama.enable or false;
-  # Only hosts that import ai/nixos/requesty.nix have a remote profile.
+  # Only hosts that import coding-agents/nixos/requesty.nix have a remote profile.
   requesty = osConfig.services.requesty or null;
   requestyKeyFile = requesty.apiKeyFile or null;
   isRemote = requestyKeyFile != null;

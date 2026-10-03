@@ -40,7 +40,7 @@ Always installed:
 - Egress controls and Hermes isolation (see Network exposure) /Gap/
 - =ai-stack.target= as a grouping unit that starts at boot (n8n, runners, Hermes). The
   polkit rules, operator group and =ai-stack-start|stop|health= are dropped; health is
-  covered by =ai-stack-check=. /Gap/
+  covered by =ai-stack-check=.
 
 Optional modules at launch: Paperless-ngx and Onyx. /Gap: not implemented./
 - Presets set defaults; feature flags override them, e.g. =tier = "plus"= and

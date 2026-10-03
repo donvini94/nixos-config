@@ -25,6 +25,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     emacs-overlay.url = "github:nix-community/emacs-overlay";
+    ai-stack = {
+      url = "path:./ai";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.sops-nix.follows = "sops-nix";
+    };
   };
 
   outputs =
@@ -152,7 +157,7 @@
           shell-scripts =
             pkgs.runCommand "check-shell-scripts" { nativeBuildInputs = [ pkgs.shellcheck ]; }
               ''
-                shellcheck ${./coding-agents/scripts}/*.sh ${./mail/bin}/* ${./mail/nixos}/*.sh ${./ai/nixos/vulnerability-scan}/*.sh ${./hosts/alucard/services}/*.sh
+                shellcheck ${./coding-agents/scripts}/*.sh ${./mail/bin}/* ${./mail/nixos}/*.sh ${./hosts/alucard/services}/*.sh
                 touch "$out"
               '';
           python-lint = pkgs.runCommand "check-python-lint" { nativeBuildInputs = [ pkgs.ruff ]; } ''
@@ -214,6 +219,10 @@
                 touch "$out"
               '';
         }
+        # CI runs only this flake's checks until ai/ has its own repository.
+        // nixpkgs.lib.mapAttrs' (name: nixpkgs.lib.nameValuePair "ai-stack-${name}") (
+          inputs.ai-stack.checks.${checkSystem} or { }
+        )
       );
     };
 }

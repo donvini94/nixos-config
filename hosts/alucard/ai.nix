@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   lib,
   username,
   ...
@@ -10,8 +11,9 @@ let
 in
 {
   imports = [
-    ../../ai/nixos/ai-stack.nix
-    ../../ai/nixos/requesty.nix
+    inputs.ai-stack.nixosModules.default
+    inputs.ai-stack.nixosModules.monitoringServer
+    ../../coding-agents/nixos/requesty.nix
   ];
 
   assertions = [

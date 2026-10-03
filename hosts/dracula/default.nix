@@ -29,7 +29,7 @@ in
     ../../modules/desktop/gaming.nix
     ../../modules/llama.nix
     ../../mail/nixos/credentials.nix
-    ../../ai/nixos/requesty.nix
+    ../../coding-agents/nixos/requesty.nix
     ../../transcription/nixos.nix
     ../../modules/gpu-mode.nix
     ./hardware.nix

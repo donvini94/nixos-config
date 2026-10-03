@@ -1,5 +1,24 @@
 {
   "nodes": {
+    "ai-stack": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "sops-nix": [
+          "sops-nix"
+        ]
+      },
+      "locked": {
+        "path": "./ai",
+        "type": "path"
+      },
+      "original": {
+        "path": "./ai",
+        "type": "path"
+      },
+      "parent": []
+    },
     "aquamarine": {
       "inputs": {
         "hyprutils": [
@@ -978,6 +997,7 @@
     },
     "root": {
       "inputs": {
+        "ai-stack": "ai-stack",
         "caelestia-shell": "caelestia-shell",
         "determinate": "determinate",
         "disko": "disko",

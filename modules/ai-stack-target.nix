@@ -1,4 +1,4 @@
-# `ai-stack.target`: one switch for the services that share a GPU or a purpose, plus the
+# `ai-stack.target`: one switch for the workloads that share Dracula's GPU, plus the
 # operator tooling to drive it without root. Backends and applications attach themselves
 # with wantedBy/partOf.
 {

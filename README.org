@@ -14,11 +14,11 @@ Features that span NixOS, home-manager and packages live in one folder:
 
 | Folder          | Contents                                                              |
 |-----------------+-----------------------------------------------------------------------|
-| ai/             | The deployable AI stack for customer servers: n8n, Hermes, Requesty, ai-stack.target, observability (exporters and central server), vulnerability scanning |
-| coding-agents/  | Personal OMP and Pi clients: home/, packages/, scripts/, skills/, guidance/ |
+| ai/             | The =ai-stack= flake for customer servers (n8n, Hermes, observability, vulnerability scanning); Alucard consumes it through a path input |
+| coding-agents/  | Personal OMP and Pi clients: home/, nixos/ (Requesty key option), packages/, scripts/, skills/, guidance/ |
 | transcription/  | Local ASR on Dracula's GPU: server module, client, Rust crate         |
 | mail/           | nixos/ (credentials, Mailcow TLS), home/ (hub, Mac client), stateful config |
-| modules/        | Shared system modules: desktop/, container-updates, llama, nvidia, gpu-mode |
+| modules/        | Shared system modules: desktop/, container-updates, llama, ai-stack-target (Dracula's GPU switch), nvidia, gpu-mode |
 | hm-modules/     | Shared user tools; base.nix is what every host imports               |
 
 Package lists are in =modules/packages.nix=, =modules/desktop/programming.nix=,
@@ -88,7 +88,7 @@ Clients talk to Requesty directly with a per-host key (=services.requesty.apiKey
 SOPS-owned); spend, access and the approved-model catalog are managed in Requesty.
 OMP discovers models natively (=openai-models-list=), Pi through the pinned
 =pi-requesty= extension, Hermes through its provider config. The initial default model
-is in =services.requesty.{endpoint,defaultModel}= in =ai/nixos/requesty.nix=; local model metadata stays declarative.
+is in =services.requesty.{endpoint,defaultModel}= in =coding-agents/nixos/requesty.nix=; local model metadata stays declarative.
 
 Hermes runs the upstream image (=ai/nixos/hermes.nix=) as one host-network container
 with its data in =/var/lib/hermes-agent=. Nix pins the image and supplies the initial
@@ -136,7 +136,7 @@ Mailcow (=/opt/mailcow-dockerized=), Onyx (=~/.config/onyx/deployment=) and Actu
 Budget (=~/actual_budget=) are maintained outside this repository. Back up first
 and use their supported migration/update procedures, not generic image restarts.
 
-=ai-stack-start|stop|health= controls Alucard's Hermes and n8n.
+=systemctl restart ai-stack.target= restarts Alucard's Hermes and n8n together.
 Hermes sessions are separate but memory/workspace are shared by the founders;
 this is not a tenant boundary.
 

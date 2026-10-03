@@ -1,0 +1,95 @@
+{
+  description = "AI stack for single-tenant customer servers";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Consumers import sops-nix themselves; checks need it to evaluate the modules.
+    sops-nix = {
+      url = "github:Mic92/sops-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
+
+  outputs =
+    { nixpkgs, sops-nix, ... }:
+    let
+      lib = nixpkgs.lib;
+      systems = [
+        "x86_64-linux"
+        "aarch64-darwin"
+      ];
+    in
+    {
+      nixosModules = {
+        default = ./nixos;
+        monitoringServer = {
+          imports = [
+            ./nixos/observability/exporters.nix
+            ./nixos/observability/server.nix
+          ];
+        };
+      };
+
+      checks = lib.genAttrs systems (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        {
+          shell-scripts =
+            pkgs.runCommand "check-shell-scripts" { nativeBuildInputs = [ pkgs.shellcheck ]; }
+              ''
+                shellcheck ${./nixos/vulnerability-scan}/*.sh
+                touch "$out"
+              '';
+        }
+        // lib.optionalAttrs (system == "x86_64-linux") {
+          # Every module enabled on a bare host must evaluate, assertions included.
+          evaluation =
+            let
+              host = lib.nixosSystem {
+                inherit system;
+                modules = [
+                  sops-nix.nixosModules.sops
+                  ./nixos
+                  ./nixos/observability/server.nix
+                  {
+                    system.stateVersion = "25.05";
+                    boot.loader.grub.enable = false;
+                    fileSystems."/" = {
+                      device = "/dev/vda";
+                      fsType = "ext4";
+                    };
+                    users.users.operator.isNormalUser = true;
+                    sops = {
+                      validateSopsFiles = false;
+                      age.keyFile = "/var/lib/sops/age/keys.txt";
+                    };
+                    virtualisation.docker.enable = true;
+                    services = {
+                      aiStack = {
+                        enable = true;
+                        user = "operator";
+                        secretsFile = "/dev/null";
+                      };
+                      observability = {
+                        exporters.enable = true;
+                        server = {
+                          enable = true;
+                          secretsFile = "/dev/null";
+                        };
+                      };
+                      containerVulnerabilityScan.enable = true;
+                      hostVulnerabilityScan.enable = true;
+                    };
+                  }
+                ];
+              };
+            in
+            pkgs.writeText "ai-stack-evaluation" (
+              builtins.unsafeDiscardStringContext host.config.system.build.toplevel.drvPath
+            );
+        }
+      );
+    };
+}

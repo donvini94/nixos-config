@@ -1,4 +1,4 @@
-# n8n and Hermes with their secrets, plus the stack target.
+# n8n and Hermes with their secrets, grouped under ai-stack.target.
 {
   config,
   lib,
@@ -14,7 +14,6 @@ let
 in
 {
   imports = [
-    ./ai-stack-target.nix
     ./n8n.nix
     ./hermes.nix
   ];
@@ -24,7 +23,7 @@ in
 
     user = lib.mkOption {
       type = lib.types.str;
-      description = "Operator account: owns the n8n secret files and may start and stop the stack target.";
+      description = "Account owning the n8n secret files.";
     };
 
     sharedDirectory = lib.mkOption {
@@ -84,9 +83,10 @@ in
       group = "root";
     };
 
-    services.aiStackTarget = {
-      enable = true;
-      operators = [ cfg.user ];
+    # Groups the stack's units: `systemctl restart ai-stack.target` restarts them all.
+    systemd.targets.ai-stack = {
+      description = "AI application stack";
+      wantedBy = [ "multi-user.target" ];
     };
 
     # The agent container runs as the hermes user and reaches the shared directory through this ACL.
