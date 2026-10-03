@@ -68,8 +68,7 @@
     psmisc
 
     strace
-    # Its ptrace-based test suite fails in some build sandboxes (alucard).
-    (ltrace.overrideAttrs { doCheck = false; })
+    ltrace
     lsof
 
     # Media tools (server has media stack too)
