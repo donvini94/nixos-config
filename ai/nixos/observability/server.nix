@@ -104,6 +104,17 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    services.aiStack.tailnet.tcp = {
+      grafana = {
+        listen = 10000 + cfg.grafanaPort;
+        target = cfg.grafanaPort;
+      };
+      prometheus = {
+        listen = 10000 + cfg.prometheusPort;
+        target = cfg.prometheusPort;
+      };
+    };
+
     sops.secrets = lib.genAttrs [ "grafana/admin_password" "grafana/secret_key" ] (_: {
       sopsFile = cfg.secretsFile;
       owner = "grafana";

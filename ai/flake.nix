@@ -26,6 +26,7 @@
           imports = [
             ./nixos/observability/exporters.nix
             ./nixos/observability/server.nix
+            ./nixos/tailnet.nix
           ];
         };
       };
@@ -77,6 +78,7 @@
                         enable = true;
                         secretsFile = "/dev/null";
                         hermes.telegram = true;
+                        tailnet.domain = "example.ts.net";
                       };
                       observability = {
                         exporters.enable = true;

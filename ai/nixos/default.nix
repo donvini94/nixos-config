@@ -6,6 +6,7 @@
     ./edge.nix
     ./egress.nix
     ./public.nix
+    ./tailnet.nix
     ./observability/exporters.nix
     ./vulnerability-scan/container.nix
     ./vulnerability-scan/host.nix
