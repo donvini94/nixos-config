@@ -9,7 +9,6 @@
 let
   requesty = import ../../lib/requesty.nix;
   hermes = import ../../lib/hermes-agent.nix;
-  hermesN8nHandoff = pkgs.callPackage ../../packages/hermes-n8n-handoff.nix { };
   inherit (requesty) defaultModel;
   secretFile = ../../secrets/alucard-ai.yaml;
   hermesProxyPort = 18084;
@@ -25,7 +24,6 @@ in
   imports = [
     ../../modules/ai-stack.nix
     ../../modules/remote-openai.nix
-    ../../modules/n8n-credentials.nix
   ];
 
   assertions = [
@@ -68,9 +66,6 @@ in
     lib.genAttrs
       [
         "requesty/api_key"
-        # Shared by the n8n webhook credential and Hermes' handoff command; the
-        # two must agree or the inbox rejects Hermes with 403.
-        "n8n/webhook_token"
         "hermes/dashboard_password"
         "hermes/dashboard_password_hash"
         "hermes/dashboard_session_secret"
@@ -96,7 +91,6 @@ in
       API_SERVER_KEY=${config.sops.placeholder."hermes/api_server_key"}
       TELEGRAM_BOT_TOKEN=${config.sops.placeholder."hermes/telegram_bot_token"}
       TELEGRAM_ALLOWED_USERS=${config.sops.placeholder."hermes/telegram_allowed_users"}
-      N8N_WEBHOOK_TOKEN=${config.sops.placeholder."n8n/webhook_token"}
     '';
     restartUnits = [ "hermes-agent.service" ];
     mode = "0400";
@@ -107,7 +101,6 @@ in
   services.aiStack = {
     enable = true;
     secretsFile = secretFile;
-    workflowDirectory = ../../n8n/workflows/alucard;
     hermes = {
       providerName = "alucard-requesty";
       inherit defaultModel;
@@ -133,14 +126,6 @@ in
     inherit defaultModel;
   };
 
-  # Both credentials are provisioned by n8n's own CLI so they land encrypted
-  # in n8n's database; the values exist only in SOPS and systemd credentials.
-  services.n8nCredentials = {
-    enable = true;
-    hermesApiKeyFile = config.sops.secrets."hermes/api_server_key".path;
-    webhookTokenFile = config.sops.secrets."n8n/webhook_token".path;
-  };
-
   services.hermes-agent = {
     environment = {
       HTTPS_PROXY = hermesProxyUrl;
@@ -149,20 +134,12 @@ in
       NO_PROXY = "127.0.0.1,localhost";
       no_proxy = "127.0.0.1,localhost";
     };
-    extraPackages = [ hermesN8nHandoff ];
     container = {
       # One agent for the trusted founding pair: sessions separate by chat
       # origin, but memory, skills, workspace and /org are shared. The CLI is
       # shared state, not a per-user session boundary. Widening this past two
       # people means deploying separate upstream instances instead.
       hostUsers = [ "kyrill" ];
-      # extraPackages only reaches the host profile and the native unit's
-      # PATH; in container mode PATH comes from the image, so the handoff
-      # command is named explicitly. The store is already mounted read-only.
-      extraOptions = [
-        "--env"
-        "PATH=${hermesN8nHandoff}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-      ];
     };
   };
 

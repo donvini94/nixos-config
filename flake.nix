@@ -151,7 +151,7 @@
           shell-scripts =
             pkgs.runCommand "check-shell-scripts" { nativeBuildInputs = [ pkgs.shellcheck ]; }
               ''
-                shellcheck ${./scripts}/*.sh ${./mail/bin}/* ${./n8n/bin}/n8n-workflows
+                shellcheck ${./scripts}/*.sh ${./mail/bin}/*
                 touch "$out"
               '';
           python-lint = pkgs.runCommand "check-python-lint" { nativeBuildInputs = [ pkgs.ruff ]; } ''

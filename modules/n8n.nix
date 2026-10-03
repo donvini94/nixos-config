@@ -1,3 +1,6 @@
+# A single n8n container on the host network: it must reach Hermes on loopback and the
+# internet, and nothing but Tailscale Serve exposes it. Code nodes run in n8n's
+# internal task runner.
 {
   config,
   lib,
@@ -11,65 +14,11 @@ let
   n8nUrl = "http://${cfg.bindAddress}:${toString port}";
   executionRetentionHours = 2160;
   inherit (cfg) stateDirectory;
-  dockerNetwork = cfg.network.name;
-  dockerBridge = cfg.network.bridge;
-  dockerSubnet = cfg.network.subnet;
-  dockerGateway = cfg.network.gateway;
-
-  # Mirrors API_SERVER_PORT in lib/hermes-agent.nix: the proxy must target the port
-  # Hermes listens on.
-  hermesApiPort = 8642;
-
-  hermesRouteProbe = ''
-    hermes_status="$(${pkgs.docker}/bin/docker exec n8n node -e \
-      'fetch("http://host.docker.internal:${toString hermesApiPort}/v1/models").then(r => process.stdout.write(String(r.status))).catch(() => process.exit(2))')"
-    if [ "$hermes_status" != 401 ]; then
-      echo "n8n-to-Hermes private route returned HTTP $hermes_status, expected authenticated rejection 401" >&2
-      exit 1
-    fi
-  '';
-
-  privateSocket = targetPort: {
-    wantedBy = [ "ai-stack.target" ];
-    partOf = [ "ai-stack.target" ];
-    after = [ "n8n-docker-network.service" ];
-    requires = [ "n8n-docker-network.service" ];
-    # The bridge starts after basic.target; default sockets.target ordering would create a cycle.
-    unitConfig.DefaultDependencies = false;
-    listenStreams = [ "${dockerGateway}:${toString targetPort}" ];
-  };
-  privateProxy = targetPort: upstreamUnit: {
-    partOf = [ "ai-stack.target" ];
-    after = [ upstreamUnit ];
-    requires = [ upstreamUnit ];
-    serviceConfig = {
-      ExecStart = "${pkgs.systemd}/lib/systemd/systemd-socket-proxyd 127.0.0.1:${toString targetPort}";
-      DynamicUser = true;
-      NoNewPrivileges = true;
-      PrivateDevices = true;
-      PrivateTmp = true;
-      ProtectSystem = "strict";
-      ProtectHome = true;
-      RestrictAddressFamilies = [
-        "AF_UNIX"
-        "AF_INET"
-        "AF_INET6"
-      ];
-    };
-  };
-
-  containerHardening = [
-    "--read-only"
-    "--security-opt=no-new-privileges:true"
-    "--cap-drop=ALL"
-    "--pids-limit=512"
-  ];
 in
 {
   options.services.localN8n = {
     enable = lib.mkEnableOption "local n8n workflow service";
 
-    # Update n8n and task runners together. Use Docker Hub to avoid the proxy's shared rate limit.
     image = lib.mkOption {
       type = lib.types.str;
       default = "docker.io/n8nio/n8n:2.40.3@sha256:e397d0aab215cc1a3ed865bd0c2d7982dff9390fa298f3c188d084425cd6fb16";
@@ -79,25 +28,7 @@ in
     stateDirectory = lib.mkOption {
       type = lib.types.str;
       default = "/var/lib/n8n-container";
-      description = "Persistent n8n state, also used by credential import and backups.";
-    };
-    network = {
-      name = lib.mkOption {
-        type = lib.types.str;
-        default = "n8n-local";
-      };
-      bridge = lib.mkOption {
-        type = lib.types.str;
-        default = "n8n-local0";
-      };
-      subnet = lib.mkOption {
-        type = lib.types.str;
-        default = "172.30.0.0/24";
-      };
-      gateway = lib.mkOption {
-        type = lib.types.str;
-        default = "172.30.0.1";
-      };
+      description = "Persistent n8n state, also used by backups.";
     };
 
     bindAddress = lib.mkOption {
@@ -106,24 +37,8 @@ in
     };
 
     encryptionKeyFile = lib.mkOption {
-      type = lib.types.nullOr lib.types.path;
-      default = null;
+      type = lib.types.path;
       description = "File containing the n8n credential-encryption key.";
-    };
-
-    runnerAuthTokenFile = lib.mkOption {
-      type = lib.types.path;
-      description = "File containing the task-runner authentication token.";
-    };
-
-    runnerEnvironmentFile = lib.mkOption {
-      type = lib.types.path;
-      description = "Root-only environment file containing the runner authentication token.";
-    };
-
-    workflowDirectory = lib.mkOption {
-      type = lib.types.path;
-      description = "Directory of reviewed workflow JSON installed by `n8n-workflows import`.";
     };
 
     orgOwner = lib.mkOption {
@@ -138,209 +53,100 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    assertions = [
-      {
-        assertion = cfg.encryptionKeyFile != null;
-        message = "services.localN8n.encryptionKeyFile must be configured";
-      }
-    ];
-
     virtualisation.oci-containers = {
       backend = "docker";
-      containers = {
-        n8n = {
-          image = cfg.image;
-          autoStart = false;
-          pull = "missing";
-          ports = [ "${cfg.bindAddress}:${toString port}:5678" ];
-          networks = [ dockerNetwork ];
-          volumes = [
-            "${stateDirectory}:/home/node/.n8n"
-            "${cfg.encryptionKeyFile}:/run/secrets/n8n_encryption_key:ro"
-            "${cfg.runnerAuthTokenFile}:/run/secrets/n8n_runner_auth_token:ro"
-            "${cfg.orgDirectory}:/org"
-          ];
-          environment = {
-            N8N_LISTEN_ADDRESS = "0.0.0.0";
-            N8N_HOST = cfg.bindAddress;
-            N8N_PORT = "5678";
-            N8N_PROTOCOL = "http";
-            N8N_EDITOR_BASE_URL = n8nUrl;
-            N8N_SECURE_COOKIE = "false";
+      containers.n8n = {
+        image = cfg.image;
+        autoStart = false;
+        pull = "missing";
+        volumes = [
+          "${stateDirectory}:/home/node/.n8n"
+          "${cfg.encryptionKeyFile}:/run/secrets/n8n_encryption_key:ro"
+          "${cfg.orgDirectory}:/org"
+        ];
+        environment = {
+          N8N_LISTEN_ADDRESS = cfg.bindAddress;
+          N8N_HOST = cfg.bindAddress;
+          N8N_PORT = toString port;
+          N8N_PROTOCOL = "http";
+          N8N_EDITOR_BASE_URL = n8nUrl;
+          N8N_SECURE_COOKIE = "false";
 
-            N8N_ENCRYPTION_KEY_FILE = "/run/secrets/n8n_encryption_key";
-            N8N_RUNNERS_AUTH_TOKEN_FILE = "/run/secrets/n8n_runner_auth_token";
+          N8N_ENCRYPTION_KEY_FILE = "/run/secrets/n8n_encryption_key";
+          DB_TYPE = "sqlite";
+          DB_SQLITE_POOL_SIZE = "4";
+          DB_SQLITE_VACUUM_ON_STARTUP = "false";
 
-            DB_TYPE = "sqlite";
-            DB_SQLITE_POOL_SIZE = "4";
-            DB_SQLITE_VACUUM_ON_STARTUP = "false";
+          EXECUTIONS_MODE = "regular";
+          EXECUTIONS_TIMEOUT = "1800";
+          EXECUTIONS_TIMEOUT_MAX = "3600";
+          N8N_AI_TIMEOUT_MAX = "1800000";
+          N8N_CONCURRENCY_PRODUCTION_LIMIT = "2";
+          EXECUTIONS_DATA_SAVE_ON_ERROR = "all";
+          EXECUTIONS_DATA_SAVE_ON_SUCCESS = "all";
+          EXECUTIONS_DATA_SAVE_ON_PROGRESS = "false";
+          EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS = "true";
+          EXECUTIONS_DATA_PRUNE = "true";
+          EXECUTIONS_DATA_MAX_AGE = toString executionRetentionHours;
+          EXECUTIONS_DATA_PRUNE_MAX_COUNT = "50000";
+          N8N_DEFAULT_BINARY_DATA_MODE = "filesystem";
 
-            EXECUTIONS_MODE = "regular";
-            EXECUTIONS_TIMEOUT = "1800";
-            EXECUTIONS_TIMEOUT_MAX = "3600";
-            N8N_AI_TIMEOUT_MAX = "1800000";
-            N8N_CONCURRENCY_PRODUCTION_LIMIT = "2";
-            EXECUTIONS_DATA_SAVE_ON_ERROR = "all";
-            EXECUTIONS_DATA_SAVE_ON_SUCCESS = "all";
-            EXECUTIONS_DATA_SAVE_ON_PROGRESS = "false";
-            EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS = "true";
-            EXECUTIONS_DATA_PRUNE = "true";
-            EXECUTIONS_DATA_MAX_AGE = toString executionRetentionHours;
-            EXECUTIONS_DATA_PRUNE_MAX_COUNT = "50000";
-            N8N_DEFAULT_BINARY_DATA_MODE = "filesystem";
+          N8N_METRICS = "true";
+          N8N_METRICS_INCLUDE_DEFAULT_METRICS = "true";
+          N8N_METRICS_INCLUDE_WORKFLOW_ID_LABEL = "true";
+          N8N_METRICS_INCLUDE_WORKFLOW_NAME_LABEL = "true";
+          N8N_METRICS_INCLUDE_NODE_TYPE_LABEL = "true";
+          N8N_METRICS_INCLUDE_WORKFLOW_EXECUTION_DURATION = "true";
+          N8N_METRICS_INCLUDE_WORKFLOW_STATISTICS = "true";
+          N8N_METRICS_INCLUDE_EXECUTION_DATA_METRICS = "true";
+          N8N_METRICS_INCLUDE_DB_POOL_METRICS = "true";
 
-            N8N_METRICS = "true";
-            N8N_METRICS_INCLUDE_DEFAULT_METRICS = "true";
-            N8N_METRICS_INCLUDE_WORKFLOW_ID_LABEL = "true";
-            N8N_METRICS_INCLUDE_WORKFLOW_NAME_LABEL = "true";
-            N8N_METRICS_INCLUDE_NODE_TYPE_LABEL = "true";
-            N8N_METRICS_INCLUDE_WORKFLOW_EXECUTION_DURATION = "true";
-            N8N_METRICS_INCLUDE_WORKFLOW_STATISTICS = "true";
-            N8N_METRICS_INCLUDE_EXECUTION_DATA_METRICS = "true";
-            N8N_METRICS_INCLUDE_DB_POOL_METRICS = "true";
+          N8N_RUNNERS_MODE = "internal";
+          N8N_RUNNERS_TASK_TIMEOUT = "300";
 
-            N8N_RUNNERS_MODE = "external";
-            N8N_RUNNERS_BROKER_LISTEN_ADDRESS = "0.0.0.0";
-            N8N_RUNNERS_BROKER_PORT = "5679";
-            N8N_RUNNERS_TASK_TIMEOUT = "300";
-
-            N8N_BLOCK_ENV_ACCESS_IN_NODE = "true";
-            N8N_RESTRICT_FILE_ACCESS_TO = "/org";
-            N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS = "true";
-            N8N_GIT_NODE_DISABLE_BARE_REPOS = "true";
-            N8N_UNVERIFIED_PACKAGES_ENABLED = "false";
-            N8N_COMPRESSION_NODE_MAX_DECOMPRESSED_SIZE_BYTES = "268435456";
-            N8N_COMPRESSION_NODE_MAX_ZIP_ENTRIES = "1000";
-            N8N_DIAGNOSTICS_ENABLED = "false";
-            N8N_VERSION_NOTIFICATIONS_ENABLED = "false";
-            N8N_PERSONALIZATION_ENABLED = "false";
-            N8N_HIRING_BANNER_ENABLED = "false";
-            N8N_TEMPLATES_ENABLED = "false";
-            N8N_LOG_LEVEL = "info";
-            N8N_LOG_OUTPUT = "console";
-          };
-          extraOptions = containerHardening ++ [
-            "--tmpfs=/tmp:rw,nosuid,size=512m"
-            "--tmpfs=/home/node/.cache:rw,nosuid,size=128m"
-            "--add-host=host.docker.internal:${dockerGateway}"
-          ];
+          N8N_BLOCK_ENV_ACCESS_IN_NODE = "true";
+          N8N_RESTRICT_FILE_ACCESS_TO = "/org";
+          N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS = "true";
+          N8N_GIT_NODE_DISABLE_BARE_REPOS = "true";
+          N8N_UNVERIFIED_PACKAGES_ENABLED = "false";
+          N8N_COMPRESSION_NODE_MAX_DECOMPRESSED_SIZE_BYTES = "268435456";
+          N8N_COMPRESSION_NODE_MAX_ZIP_ENTRIES = "1000";
+          N8N_DIAGNOSTICS_ENABLED = "false";
+          N8N_VERSION_NOTIFICATIONS_ENABLED = "false";
+          N8N_PERSONALIZATION_ENABLED = "false";
+          N8N_HIRING_BANNER_ENABLED = "false";
+          N8N_TEMPLATES_ENABLED = "false";
+          N8N_LOG_LEVEL = "info";
+          N8N_LOG_OUTPUT = "console";
         };
-
-        n8n-runners = {
-          # Tag must match `services.localN8n.image`; see the pinning note there.
-          image = "docker.io/n8nio/runners:2.40.3@sha256:9b5c34a26e7302fc83488cd354e5f94a3e452c313c2ac64a53e35311a42e0711";
-          autoStart = false;
-          pull = "missing";
-          dependsOn = [ "n8n" ];
-          networks = [ dockerNetwork ];
-          environmentFiles = [ cfg.runnerEnvironmentFile ];
-          environment = {
-            N8N_RUNNERS_TASK_BROKER_URI = "http://n8n:5679";
-            N8N_RUNNERS_AUTO_SHUTDOWN_TIMEOUT = "15";
-            N8N_RUNNERS_TASK_TIMEOUT = "300";
-          };
-          extraOptions = containerHardening ++ [
-            "--tmpfs=/tmp:rw,nosuid,size=512m"
-          ];
-        };
+        extraOptions = [
+          "--network=host"
+          "--read-only"
+          "--security-opt=no-new-privileges:true"
+          "--cap-drop=ALL"
+          "--pids-limit=512"
+          "--tmpfs=/tmp:rw,nosuid,size=512m"
+          "--tmpfs=/home/node/.cache:rw,nosuid,size=128m"
+        ];
       };
     };
-
-    networking.firewall.interfaces.${dockerBridge}.allowedTCPPorts = [
-      8080
-      hermesApiPort
-    ];
 
     systemd.tmpfiles.rules = [
       "d ${stateDirectory} 0750 1000 1000 -"
       "d ${cfg.orgDirectory} 2770 ${cfg.orgOwner} users -"
     ];
 
-    systemd.services.n8n-docker-network = {
-      description = "Private Docker network for n8n and its task runners";
-      after = [ "docker.service" ];
-      requires = [ "docker.service" ];
-      before = [
-        "docker-n8n.service"
-        "docker-n8n-runners.service"
-        "n8n-ai-ingress.socket"
-      ];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-      };
-      script = ''
-        set -euo pipefail
-        if ! ${pkgs.docker}/bin/docker network inspect ${dockerNetwork} >/dev/null 2>&1; then
-          ${pkgs.docker}/bin/docker network create \
-            --driver bridge \
-            --subnet ${dockerSubnet} \
-            --gateway ${dockerGateway} \
-            --opt com.docker.network.bridge.name=${dockerBridge} \
-            ${dockerNetwork} >/dev/null
-        fi
-        subnet="$(${pkgs.docker}/bin/docker network inspect ${dockerNetwork} \
-          --format '{{(index .IPAM.Config 0).Subnet}}')"
-        gateway="$(${pkgs.docker}/bin/docker network inspect ${dockerNetwork} \
-          --format '{{(index .IPAM.Config 0).Gateway}}')"
-        bridge="$(${pkgs.docker}/bin/docker network inspect ${dockerNetwork} \
-          --format '{{index .Options "com.docker.network.bridge.name"}}')"
-        if [ "$subnet" != ${dockerSubnet} ] || [ "$gateway" != ${dockerGateway} ] || [ "$bridge" != ${dockerBridge} ]; then
-          echo "Docker network ${dockerNetwork} has $subnet/$gateway on $bridge; expected ${dockerSubnet}/${dockerGateway} on ${dockerBridge}" >&2
-          exit 1
-        fi
-      '';
-    };
-
-    systemd.sockets.n8n-ai-ingress = privateSocket 8080 // {
-      description = "Container-only socket for the local AI ingress";
-    };
-    systemd.services.n8n-ai-ingress = privateProxy 8080 "local-llama-logger.service" // {
-      description = "Proxy n8n container traffic to the loopback AI ingress";
-    };
-    systemd.sockets.n8n-hermes-api = privateSocket hermesApiPort // {
-      description = "Container-only socket for the Hermes agent API";
-    };
-    systemd.services.n8n-hermes-api = privateProxy hermesApiPort "hermes-agent.service" // {
-      description = "Proxy n8n container traffic to the Hermes agent API";
-    };
-
     systemd.services.docker-n8n = {
       wantedBy = lib.mkForce [ "ai-stack.target" ];
       partOf = [ "ai-stack.target" ];
-      after = [ "n8n-docker-network.service" ];
-      requires = [ "n8n-docker-network.service" ];
       serviceConfig = {
         TimeoutStartSec = lib.mkForce "600s";
         TimeoutStopSec = lib.mkForce "40s";
         SuccessExitStatus = [ 143 ];
         ExecStartPost = pkgs.writeShellScript "wait-for-container-n8n" ''
-          healthy_samples=0
-          for attempt in $(${pkgs.coreutils}/bin/seq 1 600); do
-            container_running="$(${pkgs.docker}/bin/docker inspect --format '{{.State.Running}}' n8n 2>/dev/null || true)"
-            # Docker can spend substantial time pulling before it creates the container
-            # object; an absent object is not a failed container, and the main docker-run
-            # process stays authoritative.
-            if [ "$container_running" = false ]; then
-              echo "n8n container exited before becoming healthy" >&2
-              exit 1
-            fi
+          for _ in $(${pkgs.coreutils}/bin/seq 1 600); do
             if ${pkgs.curl}/bin/curl --fail --silent --max-time 1 ${n8nUrl}/healthz/readiness >/dev/null; then
-              healthy_samples=$((healthy_samples + 1))
-              if [ "$healthy_samples" -ge 3 ]; then
-                journal_mode="$(${pkgs.sqlite}/bin/sqlite3 ${stateDirectory}/database.sqlite \
-                  'PRAGMA journal_mode;')"
-                if [ "$journal_mode" != wal ]; then
-                  echo "n8n SQLite journal mode is '$journal_mode', expected 'wal'" >&2
-                  exit 1
-                fi
-                ${pkgs.docker}/bin/docker exec n8n sh -c \
-                  'probe=/org/.n8n-write-probe; : > "$probe"; rm "$probe"'
-                ${hermesRouteProbe}
-                exit 0
-              fi
-            else
-              healthy_samples=0
+              exit 0
             fi
             ${pkgs.coreutils}/bin/sleep 1
           done
@@ -349,39 +155,5 @@ in
         '';
       };
     };
-
-    systemd.services.docker-n8n-runners = {
-      wantedBy = lib.mkForce [ "ai-stack.target" ];
-      partOf = [ "ai-stack.target" ];
-      after = [
-        "n8n-docker-network.service"
-      ];
-      requires = [
-        "n8n-docker-network.service"
-      ];
-      serviceConfig = {
-        TimeoutStopSec = lib.mkForce "10s";
-        SuccessExitStatus = [ 143 ];
-      };
-    };
-
-    environment.systemPackages = [
-      (pkgs.writeShellScriptBin "n8n-workflows" ''
-        export PATH=${
-          lib.makeBinPath [
-            pkgs.coreutils
-            pkgs.docker
-            pkgs.findutils
-            pkgs.gnugrep
-            pkgs.jq
-          ]
-        }:"$PATH"
-        # The n8n container belongs to the system daemon; an operator's rootless
-        # DOCKER_HOST (Alucard has one) would make this tool report it as missing.
-        export DOCKER_HOST=unix:///run/docker.sock
-        export N8N_WORKFLOW_DIR=${cfg.workflowDirectory}
-        exec ${pkgs.bash}/bin/bash ${../n8n/bin/n8n-workflows} "$@"
-      '')
-    ];
   };
 }

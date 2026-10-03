@@ -89,7 +89,8 @@ hosts. Other remote MCP destinations need an explicit entry in
 Base images and application packages are pinned. UI-installed tools and workflow edits
 are mutable state, not automatically reproducible builds: record their versions and
 configuration before relying on them in another deployment. The n8n state directory
-and Docker subnet/gateway are configurable rather than tied to Alucard.
+is configurable rather than tied to Alucard. n8n runs as one host-network container
+(internal task runner); workflows and credentials live in its UI and database.
 
 * Dracula
 
@@ -126,7 +127,6 @@ Budget (=~/actual_budget=) are maintained outside this repository. Back up first
 and use their supported migration/update procedures, not generic image restarts.
 
 =ai-stack-start|stop|health= controls Alucard's ingress, Hermes and n8n.
-=n8n-workflows import|export= manages reviewed workflow JSON.
 =ai-usage-summary= reports usage without printing payloads. Raw ingress logs
 (=/var/lib/llama/logs/=) contain prompts and responses; keep them out of Git/sync.
 Hermes sessions are separate but memory/workspace are shared by the founders;
