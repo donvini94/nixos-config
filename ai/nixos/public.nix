@@ -76,6 +76,22 @@ in
       certs.${cfg.domain}.email = cfg.acmeEmail;
     };
 
+    # Messaging platforms retry deliveries to webhooks that no longer exist; those 404s
+    # must not ban the platform's address and with it every other delivery. nginx still
+    # rate-limits the path.
+    services.crowdsec.localConfig.parsers.s02Enrich = [
+      {
+        name = "ai-stack/webhook-404-whitelist";
+        description = "404s on n8n webhook paths are stale deliveries, not probing";
+        whitelist = {
+          reason = "n8n webhook not registered";
+          expression = [
+            "evt.Meta.target_fqdn == '${cfg.domain}' && evt.Meta.http_status == '404' && evt.Parsed.request startsWith '/webhook'"
+          ];
+        };
+      }
+    ];
+
     services.nginx = {
       enable = true;
       recommendedProxySettings = lib.mkDefault true;
