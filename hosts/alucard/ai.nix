@@ -16,6 +16,20 @@ in
     ../../coding-agents/nixos/requesty.nix
   ];
 
+  # nixos-rebuild evaluates as root, which fetches the private ai-stack with a read-only
+  # deploy key; users keep their own GitHub keys.
+  sops.secrets."github/ai_stack_deploy_key".mode = "0400";
+  programs.ssh = {
+    knownHosts.github = {
+      hostNames = [ "github.com" ];
+      publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
+    };
+    extraConfig = ''
+      Match localuser root host github.com
+        IdentityFile ${config.sops.secrets."github/ai_stack_deploy_key".path}
+    '';
+  };
+
   # This host's interactive clients (Pi, OMP) use their own key, not the stack's.
   sops.secrets."requesty/operator_api_key" = {
     sopsFile = secretFile;
