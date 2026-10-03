@@ -95,13 +95,14 @@ paths. Personal configuration stays in =hosts/= and =coding-agents/=.
   Per-application WAF exemptions live in the application modules.
 - Egress is open to the public internet: agents search, shop, mail, call arbitrary APIs
   and post to social media, so a domain allow-list would block the product and still
-  not stop exfiltration through allowed sites. Blocked: private and CGNAT ranges
-  (including the tailnet), the cloud metadata endpoint and outbound port 25 (mail goes
-  through the customer's provider on 587/465). Outbound connections are counted per
-  destination and exported as metrics; anomalies alert.
-- Hermes runs on its own container network, not the host network. It reaches only n8n's
-  webhook/API endpoint, not loopback services (PostgreSQL, admin UIs) or the tailnet.
-  This applies on Alucard too.
+  not stop exfiltration through allowed sites. Outbound connections are counted per
+  destination and exported as metrics; anomalies alert. /Gap/
+- Hermes keeps the host network so it can reach every service on its own machine
+  (n8n, its MCP endpoint, applications, local containers). Its UID is blocked from other
+  machines' private ranges, the tailnet, link-local/metadata addresses and outbound
+  port 25 (mail goes through the customer's provider on 587/465 or a local server);
+  =services.aiStack.egress= implements this, on Alucard too. Consequence: Hermes can
+  also reach loopback admin services; they keep their own authentication.
 - Containment comes from credentials and approval, not the network: per-task API keys
   with spending limits, a dedicated mailbox or alias per agent, Requesty budgets. Orders,
   payments, outbound mail to new recipients, public posts and other irreversible

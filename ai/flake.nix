@@ -44,6 +44,7 @@
               '';
         }
         // lib.optionalAttrs (system == "x86_64-linux") {
+          egress = pkgs.testers.runNixOSTest ./tests/egress.nix;
           # Every module enabled on a bare host must evaluate, assertions included.
           evaluation =
             let

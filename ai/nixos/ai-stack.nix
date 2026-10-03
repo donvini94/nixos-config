@@ -158,6 +158,10 @@ in
       inherit sharedMount;
     };
 
+    # Hermes stays on the host network to reach local services; its UID is kept off
+    # other machines.
+    services.aiStack.egress.uids = [ config.services.hermesAgent.uid ];
+
     services.hermesAgent = {
       enable = true;
       environmentFiles = [ config.sops.templates."hermes.env".path ];
