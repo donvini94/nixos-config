@@ -24,7 +24,7 @@ gaps), =AGENTS.md= (repository rules, deployment rules), =README.org=.
   for dracula and alucard, =.#darwinConfigurations.AC-0137.system.drvPath= for the Mac.
 - New files are invisible to flake evaluation until =git add=.
 - The Mac is macOS with fish and BSD sed: use python or the edit tool for rewrites.
-  Commands sent over ssh run in fish on the Linux hosts; wrap bash syntax in =bash -c=.
+  Commands sent over ssh run in bash on the Linux hosts.
 - Read runtime logs before diagnosing; a successful evaluation proves nothing about a
   running service. Never print secrets. Decrypting with =sops -d= works on the Mac.
 - Do not delete application data or retire live services without approval.
@@ -95,7 +95,7 @@ nixos-anywhere and disko; presets (=basic=, =plus=) plus per-feature flags.
 
 Answered in the 2026-10 interview and recorded in =REQUIREMENTS.org=: flake name and
 location, presets, deploy-rs and release-tag promotion, PostgreSQL for n8n, public
-paths, DNS/ACME, edge protection, egress, workflow import and drift, =ai-stack-check=,
+paths, DNS/ACME, edge protection, open egress with Hermes isolation and tailnet ACLs, workflow import and drift, =ai-stack-check=,
 the target and account model, backup isolation, Onyx packaging and Alucard's migration.
 The operator approved removing the unused =grafana= and =hermes= entries from
 =secrets/dracula-ai.yaml= once Dracula is verified not to reference them.

@@ -37,7 +37,7 @@ Always installed:
 - Container and host vulnerability scanning (done: =ai/nixos/vulnerability-scan/=)
 - Keeping images and packages updated (see Updates)
 - Monitoring exporters (done: =ai/nixos/observability/exporters.nix=)
-- Egress allow-list /Gap/
+- Egress controls and Hermes isolation (see Network exposure) /Gap/
 - =ai-stack.target= as a grouping unit that starts at boot (n8n, runners, Hermes). The
   polkit rules, operator group and =ai-stack-start|stop|health= are dropped; health is
   covered by =ai-stack-check=. /Gap/
@@ -79,22 +79,36 @@ paths. Personal configuration stays in =hosts/= and =coding-agents/=.
     customer staff.
 - Hermes has no public surface. Dashboard and API stay on the tailnet; customers chat
   through messaging gateways (outbound connections) or an n8n hosted chat that calls
-  Hermes on loopback.
+  Hermes.
 - Everything else (SSH, Grafana, Prometheus, n8n and Hermes admin UIs, exporters) is
   reachable only over the operator's tailnet. No Tailscale Funnel.
+- Tailnet access rules, kept in the fleet repository as the source of truth: customer
+  hosts are =tag:customer= and initiate nothing on the tailnet; Alucard
+  (=tag:monitoring=) reaches customer exporter ports only; the operator reaches SSH and
+  admin UIs. A compromised customer host cannot reach Alucard, the operator's machines
+  or other customers. /Gap/
 - DNS: the customer's IT or registrar sets A/AAAA records the operator supplies; ACME
   uses HTTP-01, so port 80 stays open. No DNS credentials in sops.
 - Edge protection on every public vhost, as on Alucard: CrowdSec with firewall bouncer,
   ModSecurity with OWASP CRS, security headers. Rate limits per path: looser on
   =/webhook/= (Meta and Telegram burst from few addresses), tighter on forms and logins.
   Per-application WAF exemptions live in the application modules.
-- Egress: nftables default-deny for the host and containers. A local resolver fills
-  nftables sets with the resolved addresses of allowed domains (Requesty, messaging
-  APIs, ACME, Nix caches, registries, backup target, tailnet); drops are counted and
-  alerted. Customers extend the list with =egress.allowedDomains=. =egress.enforce=
-  defaults to true; Alucard sets it to false because its other services need open
-  egress. Enforcement is tested by a NixOS VM check and on a disposable Hetzner test
-  customer.
+- Egress is open to the public internet: agents search, shop, mail, call arbitrary APIs
+  and post to social media, so a domain allow-list would block the product and still
+  not stop exfiltration through allowed sites. Blocked: private and CGNAT ranges
+  (including the tailnet), the cloud metadata endpoint and outbound port 25 (mail goes
+  through the customer's provider on 587/465). Outbound connections are counted per
+  destination and exported as metrics; anomalies alert.
+- Hermes runs on its own container network, not the host network. It reaches only n8n's
+  webhook/API endpoint, not loopback services (PostgreSQL, admin UIs) or the tailnet.
+  This applies on Alucard too.
+- Containment comes from credentials and approval, not the network: per-task API keys
+  with spending limits, a dedicated mailbox or alias per agent, Requesty budgets. Orders,
+  payments, outbound mail to new recipients, public posts and other irreversible
+  actions require human approval (n8n approval steps, Hermes approvals); this is a rule
+  for =ai-library= content.
+- "LLM calls go through Requesty only" is enforced by configuration (no other LLM keys
+  in the stack) and checked by =ai-stack-check=, not by the firewall.
 
 * Provisioning and operation
 
@@ -120,6 +134,16 @@ paths. Personal configuration stays in =hosts/= and =coding-agents/=.
   upsert, activated) and skills, overwriting UI edits. A timer compares live state with
   Git and exports a drift metric with an alert, so edits are noticed before a deploy
   replaces them. Items created only in the UI are left alone. /Gap/
+
+* Agent operating guide
+
+Future customer setups are performed by agents. The flake ships a lean guide:
+=AGENTS.md= with the rules and =OPERATIONS.org= with procedures (onboard a customer,
+deploy and promote a release, rotate a secret, restore, add or remove a module,
+offboard). The fleet repository's =AGENTS.md= adds fleet specifics and points to them.
+This file keeps the reasons; the guide keeps the steps. Each procedure is written when
+its implementation lands and is verified on the test customer. The extraction is done
+when a fresh agent session onboards the test customer from the guide alone. /Gap/
 
 * Backups
 
