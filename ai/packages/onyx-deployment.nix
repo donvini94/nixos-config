@@ -21,6 +21,8 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   };
 
   dontBuild = true;
+  # The scripts run inside upstream's containers; their shebangs must stay as shipped.
+  dontFixup = true;
   installPhase = ''
     cp -r deployment "$out"
   '';
