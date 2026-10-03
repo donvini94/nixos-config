@@ -24,7 +24,7 @@
       },
       "targets": [
         {
-          "expr": "100 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100",
+          "expr": "100 - avg(rate(node_cpu_seconds_total{host=~\"$host\",mode=\"idle\"}[5m])) * 100",
           "refId": "A"
         }
       ]
@@ -48,79 +48,8 @@
       },
       "targets": [
         {
-          "expr": "(1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100",
+          "expr": "(1 - node_memory_MemAvailable_bytes{host=~\"$host\"} / node_memory_MemTotal_bytes{host=~\"$host\"}) * 100",
           "refId": "A"
-        }
-      ]
-    },
-    {
-      "type": "stat",
-      "title": "GPU utilization",
-      "id": 3,
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 12,
-        "y": 0
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "min": 0,
-          "max": 100
-        }
-      },
-      "targets": [
-        {
-          "expr": "100 * nvidia_smi_utilization_gpu_ratio",
-          "legendFormat": "GPU",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "type": "stat",
-      "title": "GPU framebuffer used",
-      "id": 4,
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 18,
-        "y": 0
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "bytes"
-        }
-      },
-      "targets": [
-        {
-          "expr": "nvidia_smi_memory_used_bytes",
-          "legendFormat": "GPU",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "type": "timeseries",
-      "title": "Local LLM tokens per second",
-      "id": 6,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 4
-      },
-      "targets": [
-        {
-          "expr": "rate(llamacpp:prompt_tokens_total[5m])",
-          "legendFormat": "input",
-          "refId": "A"
-        },
-        {
-          "expr": "rate(llamacpp:tokens_predicted_total[5m])",
-          "legendFormat": "output",
-          "refId": "B"
         }
       ]
     },
@@ -141,7 +70,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (name) (container_memory_working_set_bytes{name!=\"\"})",
+          "expr": "sum by (name) (container_memory_working_set_bytes{host=~\"$host\",name!=\"\"})",
           "legendFormat": "{{name}}",
           "refId": "A"
         }
@@ -159,12 +88,12 @@
       },
       "targets": [
         {
-          "expr": "sum by (type) (rate(n8n_instance_ai_tokens_total[5m]))",
+          "expr": "sum by (type) (rate(n8n_instance_ai_tokens_total{host=~\"$host\"}[5m]))",
           "legendFormat": "tokens \u00b7 {{type}}",
           "refId": "A"
         },
         {
-          "expr": "sum(rate(n8n_instance_ai_tool_errors_total[5m]))",
+          "expr": "sum(rate(n8n_instance_ai_tool_errors_total{host=~\"$host\"}[5m]))",
           "legendFormat": "tool errors",
           "refId": "B"
         }
@@ -189,7 +118,7 @@
       },
       "targets": [
         {
-          "expr": "100 * (1 - node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay\"})",
+          "expr": "100 * (1 - node_filesystem_avail_bytes{host=~\"$host\",fstype!~\"tmpfs|overlay\"} / node_filesystem_size_bytes{host=~\"$host\",fstype!~\"tmpfs|overlay\"})",
           "legendFormat": "{{mountpoint}}",
           "refId": "A"
         }
@@ -224,7 +153,7 @@
       },
       "targets": [
         {
-          "expr": "security_container_vulnerabilities{severity=\"critical\"}",
+          "expr": "security_container_vulnerabilities{host=~\"$host\",severity=\"critical\"}",
           "refId": "A"
         }
       ]
@@ -258,7 +187,7 @@
       },
       "targets": [
         {
-          "expr": "security_container_vulnerabilities{severity=\"high\"}",
+          "expr": "security_container_vulnerabilities{host=~\"$host\",severity=\"high\"}",
           "refId": "A"
         }
       ]
@@ -292,7 +221,7 @@
       },
       "targets": [
         {
-          "expr": "security_container_scan_failures",
+          "expr": "security_container_scan_failures{host=~\"$host\"}",
           "refId": "A"
         }
       ]
@@ -327,7 +256,7 @@
       },
       "targets": [
         {
-          "expr": "time() - security_container_scan_timestamp_seconds",
+          "expr": "time() - security_container_scan_timestamp_seconds{host=~\"$host\"}",
           "refId": "A"
         }
       ]
@@ -366,7 +295,7 @@
       },
       "targets": [
         {
-          "expr": "sort_desc(security_container_image_vulnerabilities{severity=\"critical\"} > 0)",
+          "expr": "sort_desc(security_container_image_vulnerabilities{host=~\"$host\",severity=\"critical\"} > 0)",
           "instant": true,
           "legendFormat": "{{image}} ({{engine}})",
           "refId": "A"
@@ -407,7 +336,7 @@
       },
       "targets": [
         {
-          "expr": "sort_desc(security_container_image_vulnerabilities{severity=\"high\"} > 0)",
+          "expr": "sort_desc(security_container_image_vulnerabilities{host=~\"$host\",severity=\"high\"} > 0)",
           "instant": true,
           "legendFormat": "{{image}} ({{engine}})",
           "refId": "A"
@@ -423,14 +352,33 @@
     "host"
   ],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "name": "host",
+        "label": "Host",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": "label_values(node_uname_info, host)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      }
+    ]
   },
   "time": {
     "from": "now-6h",
     "to": "now"
   },
   "timezone": "browser",
-  "title": "AI and machine overview",
+  "title": "Host and workload overview",
   "uid": "local-ai-overview",
   "version": 5
 }

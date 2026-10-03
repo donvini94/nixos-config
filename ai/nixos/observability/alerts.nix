@@ -15,14 +15,14 @@ in
           expr = "${ratioFree} < 0.10";
           for = "30m";
           labels.severity = "warning";
-          annotations.summary = "{{ $labels.mountpoint }} is below 10% free ({{ $value | humanizePercentage }})";
+          annotations.summary = "{{ $labels.host }}: {{ $labels.mountpoint }} is below 10% free ({{ $value | humanizePercentage }})";
         }
         {
           alert = "FilesystemAlmostFull";
           expr = "${ratioFree} < 0.03";
           for = "10m";
           labels.severity = "critical";
-          annotations.summary = "{{ $labels.mountpoint }} is below 3% free ({{ $value | humanizePercentage }}); backups to it will start failing";
+          annotations.summary = "{{ $labels.host }}: {{ $labels.mountpoint }} is below 3% free ({{ $value | humanizePercentage }}); backups to it will start failing";
         }
       ];
     }
@@ -36,7 +36,7 @@ in
           expr = "security_container_scan_failures > 0";
           for = "15m";
           labels.severity = "warning";
-          annotations.summary = "{{ $value }} running image(s) could not be scanned; the vulnerability counts are incomplete";
+          annotations.summary = "{{ $labels.host }}: {{ $value }} running image(s) could not be scanned; the vulnerability counts are incomplete";
         }
         {
           # Daily timer with up to 2h of jitter, so a legitimate gap never exceeds
@@ -45,7 +45,7 @@ in
           expr = "time() - security_container_scan_timestamp_seconds > 36 * 3600";
           for = "30m";
           labels.severity = "warning";
-          annotations.summary = "No container scan completed for {{ $value | humanizeDuration }}";
+          annotations.summary = "{{ $labels.host }}: No container scan completed for {{ $value | humanizeDuration }}";
         }
         {
           # Weekly timer. Both staleness rules compare a published value rather than
@@ -54,7 +54,7 @@ in
           expr = "time() - security_host_scan_timestamp_seconds > 9 * 24 * 3600";
           for = "30m";
           labels.severity = "warning";
-          annotations.summary = "No host closure scan completed for {{ $value | humanizeDuration }}";
+          annotations.summary = "{{ $labels.host }}: No host closure scan completed for {{ $value | humanizeDuration }}";
         }
       ];
     }

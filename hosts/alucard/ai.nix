@@ -89,10 +89,14 @@ in
     secretsFile = secretFile;
   };
 
-  services.localObservability = {
-    enable = true;
-    secretsFile = secretFile;
-    scrapeTargets.n8n = 5678;
+  # Alucard is the central monitoring server and the canary customer host.
+  services.observability = {
+    exporters.enable = true;
+    server = {
+      enable = true;
+      secretsFile = secretFile;
+      localTargets.n8n = 5678;
+    };
   };
 
   # Keep the identity existing files and the Org ACL already use.

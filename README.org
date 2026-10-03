@@ -14,11 +14,11 @@ Features that span NixOS, home-manager and packages live in one folder:
 
 | Folder          | Contents                                                              |
 |-----------------+-----------------------------------------------------------------------|
-| ai/             | The deployable AI stack for customer servers: n8n, Hermes, Requesty, ai-stack.target |
+| ai/             | The deployable AI stack for customer servers: n8n, Hermes, Requesty, ai-stack.target, observability (exporters and central server), vulnerability scanning |
 | coding-agents/  | Personal OMP and Pi clients: home/, packages/, scripts/, skills/, guidance/ |
 | transcription/  | Local ASR on Dracula's GPU: server module, client, Rust crate         |
 | mail/           | nixos/ (credentials, Mailcow TLS), home/ (hub, Mac client), stateful config |
-| modules/        | Shared system modules: desktop/, observability/, vulnerability-scan/, llama, nvidia, gpu-mode |
+| modules/        | Shared system modules: desktop/, container-updates, llama, nvidia, gpu-mode |
 | hm-modules/     | Shared user tools; base.nix is what every host imports               |
 
 Package lists are in =modules/packages.nix=, =modules/desktop/programming.nix=,
@@ -108,11 +108,10 @@ is configurable rather than tied to Alucard. n8n runs as one host-network contai
 =gpu-mode transcription|ai|gaming= selects the exclusive GPU workload;
 =gpu-mode status= reports it. Transcription starts at boot; inference does not.
 =omp-local= and =omp-chat= use the local model. The local model is llama.cpp
-on =127.0.0.1:8080= (metrics at =/metrics=).
+on =127.0.0.1:8080=.
 Python projects own their dependencies through uv, not a global ML environment.
 
-Monitoring is independent of GPU mode, off at boot on Dracula and on at boot on
-Alucard. Start or stop it with =sudo systemctl start|stop observability.target=.
+Dracula runs no company infrastructure: no monitoring, scanning or Hermes.
 
 * Alucard
 

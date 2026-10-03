@@ -22,9 +22,9 @@
     ../../modules/packages.nix
     ../../modules/paperless.nix
     ../../mail/nixos/mailcow-tls.nix
-    ../../modules/observability
-    ../../modules/vulnerability-scan/container.nix
-    ../../modules/vulnerability-scan/host.nix
+    ../../ai/nixos/observability
+    ../../ai/nixos/vulnerability-scan/container.nix
+    ../../ai/nixos/vulnerability-scan/host.nix
     ../../mail/nixos/credentials.nix
     ../../modules/container-updates.nix
     ../../secrets/secrets.nix

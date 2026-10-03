@@ -152,7 +152,7 @@
           shell-scripts =
             pkgs.runCommand "check-shell-scripts" { nativeBuildInputs = [ pkgs.shellcheck ]; }
               ''
-                shellcheck ${./coding-agents/scripts}/*.sh ${./mail/bin}/* ${./mail/nixos}/*.sh ${./modules/vulnerability-scan}/*.sh ${./hosts/alucard/services}/*.sh
+                shellcheck ${./coding-agents/scripts}/*.sh ${./mail/bin}/* ${./mail/nixos}/*.sh ${./ai/nixos/vulnerability-scan}/*.sh ${./hosts/alucard/services}/*.sh
                 touch "$out"
               '';
           python-lint = pkgs.runCommand "check-python-lint" { nativeBuildInputs = [ pkgs.ruff ]; } ''

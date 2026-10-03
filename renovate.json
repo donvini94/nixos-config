@@ -31,7 +31,7 @@
     {
       "customType": "regex",
       "managerFilePatterns": [
-        "/^modules/vulnerability-scan/container\\.nix$/",
+        "/^ai/nixos/vulnerability-scan/container\\.nix$/",
         "/^ai/nixos/(n8n|hermes)\\.nix$/"
       ],
       "matchStrings": [

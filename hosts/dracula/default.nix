@@ -27,13 +27,11 @@ in
     ../../modules/desktop
     ../../modules/nvidia.nix
     ../../modules/desktop/gaming.nix
-    ../../modules/observability
     ../../modules/llama.nix
     ../../mail/nixos/credentials.nix
     ../../ai/nixos/requesty.nix
     ../../transcription/nixos.nix
     ../../modules/gpu-mode.nix
-    ../../modules/vulnerability-scan/host.nix
     ./hardware.nix
     ./services.nix
   ];
@@ -129,15 +127,7 @@ in
   };
   services.requesty.apiKeyFile = config.sops.secrets."requesty/api_key".path;
 
-  services.localObservability = {
-    enable = true;
-    autoStart = false;
-    secretsFile = ../../secrets/dracula-ai.yaml;
-    gpuMetrics = true;
-    scrapeTargets.llama = 8080;
-  };
 
-  services.hostVulnerabilityScan.enable = true;
   determinate.enable = true;
 
   # Determinate Nixd owns garbage collection on this pilot. Keep its policy explicit and

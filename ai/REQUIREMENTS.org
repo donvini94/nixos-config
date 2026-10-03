@@ -1,0 +1,82 @@
+#+title: AI stack: requirements for customer deployments
+
+Source: requirements interview with the operator, 2026-10. This is the reference for
+turning =ai/= into a standalone flake. Statements marked /Gap/ are required but not
+yet implemented in this repository.
+
+* Product and customers
+
+- Small German Mittelstand companies and small businesses. Customers are non-technical
+  and buy outcomes (automations, agent tasks, messaging assistants); they do not know
+  n8n or Hermes exist. The operator runs all IT.
+- One dedicated single-tenant Hetzner Cloud x86 VPS per customer (4-8 vCPU, 16-32 GB,
+  no GPU), rented and billed by the operator. The customer never logs in.
+- EU/German hosting for servers and backups. LLM calls go through Requesty only, with
+  EU-compliant models and a signed DPA/AVV. /Gap:/ egress allow-list (Requesty,
+  messaging gateways, ACME, update sources) enforced on the host.
+
+* Components
+
+Always installed:
+- n8n with task runners, PostgreSQL for n8n /Gap: still SQLite or embedded?/
+- Hermes agent
+- Requesty access with one key per customer
+- Reverse proxy and TLS (nginx, ACME) on the customer's own domain, e.g.
+  =agent.customer.de= /Gap: Alucard has this in hosts/alucard/services/reverse-proxy.nix/
+- Intrusion protection (CrowdSec) /Gap: lives in hosts/alucard/security.nix/
+- Backups: restic per host to an operator-owned off-site target in Germany (e.g. Hetzner
+  Storage Box), one repository per customer, encryption key in sops plus an offline copy,
+  restore tests /Gap: lives in hosts/alucard/backups.nix/
+- Container and host vulnerability scanning (done: =ai/nixos/vulnerability-scan/=)
+- Keeping images and packages updated (see Updates)
+- Monitoring exporters (done: =ai/nixos/observability/exporters.nix=)
+
+Optional modules, selected per customer: Paperless-ngx, Onyx, others later.
+- Model: named presets (=basic=, =plus=) set defaults; individual feature flags override
+  them, e.g. =tier = "plus"= and =features.onyx.enable = true=. Which feature belongs to
+  which tier is an open product decision. /Gap: not implemented./
+- Giving a customer an optional module must be a one-line change.
+
+Operator-only, never customer-facing: Dracula-style local inference, transcription, OMP
+and Pi are personal tools and are not part of the stack.
+
+* Network exposure
+
+- Public (customer domain): inbound webhooks (WhatsApp/Meta, n8n webhook triggers), the
+  Hermes web UI/chat, n8n forms and portals. Messaging gateways (WhatsApp, Telegram)
+  reach the host through these endpoints. Public surface should be path-allow-listed.
+- Everything else (SSH, Grafana, Prometheus, n8n and Hermes admin UIs, exporters) is
+  reachable only over the operator's tailnet. No Tailscale Funnel.
+
+* Provisioning and operation
+
+- One private fleet repository holds one small file per customer that imports the AI
+  flake. Bootstrap with nixos-anywhere and disko; the flake ships a standard Hetzner
+  disk layout /Gap/. Deploy from the operator's Mac with deploy-rs or colmena /Gap/.
+- Secrets: sops-nix in the fleet repo, one age key per customer host plus the operator
+  key. Every secret change is a deploy.
+- Manual steps after install (the flake should state them as a checklist, and ideally
+  verify them): DNS records for the customer domain; create Requesty key and add it via
+  sops; set up WhatsApp/Meta and Telegram; create Hermes and n8n accounts; join the
+  tailnet; with Onyx: create the admin account, connect sources, set the LLM key.
+- n8n workflows, Hermes agent configuration and skills are authored in Git (fleet or a
+  library repository) and deployed declaratively. /Gap: import mechanism for n8n
+  workflows and Hermes config, and rules for UI edits made on the live server./
+
+* Updates
+
+- Controlled, staged: Renovate bumps the flake and image digests, the operator reviews,
+  a canary host runs the new version, customers follow after a soak period. Deployment
+  is by the operator; hosts do not update themselves.
+- Alucard is the canary and imports the stack the way a customer would.
+
+* Monitoring and alerting
+
+- Customer hosts run exporters only (node, cAdvisor, scan metrics through the textfile
+  directory) and expose them on the tailnet interface.
+- One central Prometheus, Grafana and Alertmanager on Alucard scrapes all customer hosts
+  over the tailnet (=services.observability.server.hosts=).
+- Alerts go to a Telegram chat through Alertmanager (e-mail optional). Implemented;
+  needs a bot token (sops) and a chat id on Alucard. Alucard has neither yet.
+- /Gap:/ n8n metrics are only reachable on a host's loopback and are therefore scraped
+  for Alucard only.
