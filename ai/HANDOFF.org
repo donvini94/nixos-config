@@ -91,24 +91,18 @@ over the tailnet; Telegram alerts; restic per customer to an operator-owned Germ
 target; EU hosting and Requesty-only LLM egress; Hetzner x86 VPS provisioned with
 nixos-anywhere and disko; presets (=basic=, =plus=) plus per-feature flags.
 
-* Open decisions (interview the operator)
+* Open decisions
 
-- Flake name, location and visibility (separate private repository? how does this
-  repository consume it before and after the split?).
-- Preset contents: what is in =basic= versus =plus=; which optional modules exist at
-  launch (Paperless, Onyx).
-- Deployment tool (deploy-rs or colmena) and how the canary soak period is expressed.
-- n8n database: SQLite or PostgreSQL for customers.
-- Public exposure details: which URL paths are allowed per application, rate limiting,
-  how customer domains and ACME are configured, who manages DNS.
-- Egress allow-list mechanism (nftables on the host versus provider firewall).
-- How workflows and Hermes configuration are imported declaratively and what wins when
-  someone edits them in the UI.
-- First-run checklist: printed by the flake, or verified by a command.
+Answered in the 2026-10 interview and recorded in =REQUIREMENTS.org=: flake name and
+location, presets, deploy-rs and release-tag promotion, PostgreSQL for n8n, public
+paths, DNS/ACME, edge protection, egress, workflow import and drift, =ai-stack-check=,
+the target and account model, backup isolation, Onyx packaging and Alucard's migration.
+The operator approved removing the unused =grafana= and =hermes= entries from
+=secrets/dracula-ai.yaml= once Dracula is verified not to reference them.
 
 * Suggested sequence
 
-1. Interview on the open decisions above; record answers in =REQUIREMENTS.org=.
+1. Done: interview on the open decisions; answers are in =REQUIREMENTS.org=.
 2. Define the flake's public interface: one module (=aiStack= plus feature flags and
    presets), the options customers set, the secrets contract.
 3. Make =ai/= standalone inside this repository first (own =flake.nix=, outputs
