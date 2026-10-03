@@ -22,7 +22,7 @@
     ./hm-modules/zellij
     ./hm-modules/caelestia.nix
     ./hm-modules/services.nix
-    ./transcription/home.nix
+    ./ai/transcription/home.nix
     ./mail/home/email.nix
     ./ai/home/claude.nix
     ./hm-modules/zotero-cli.nix

@@ -28,8 +28,7 @@ current packages, services, ports and paths. Do not duplicate those inventories 
 ## Placement
 
 - Host-specific wiring: `hosts/<host>/`. Shared system functionality: `modules/`.
-  Features spanning NixOS, home-manager and packages get one folder: `ai/`,
-  `transcription/`, `mail/`.
+  Features spanning NixOS, home-manager and packages get one folder: `ai/` (self-contained; it will become its own flake) and `mail/`.
 - User configuration: `hm-modules/`; home files are import manifests plus identity.
 - Cross-platform CLI packages: `hm-modules/cli-tools.nix`. Linux GUI packages:
   `hm-modules/packages.nix`. System packages are for integration/toolchains.

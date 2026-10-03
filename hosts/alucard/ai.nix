@@ -84,6 +84,7 @@ in
   };
 
   services.aiStack = {
+    user = username;
     enable = true;
     secretsFile = secretFile;
   };

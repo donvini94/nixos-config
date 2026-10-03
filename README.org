@@ -14,8 +14,7 @@ Features that span NixOS, home-manager and packages live in one folder:
 
 | Folder          | Contents                                                              |
 |-----------------+-----------------------------------------------------------------------|
-| ai/             | AI stack: nixos/ (llama, n8n, Hermes, Requesty), home/ (OMP, Pi, skills), packages/, scripts/, skills/, guidance/ |
-| transcription/  | Local ASR: nixos.nix (server), home.nix and client.nix (client), Rust crate |
+| ai/             | AI stack: nixos/ (llama, n8n, Hermes, Requesty), home/ (OMP, Pi, skills), transcription/ (local ASR), packages/, scripts/, skills/, guidance/ |
 | mail/           | nixos/ (credentials, Mailcow TLS), home/ (hub, Mac client), stateful config |
 | modules/        | Shared system modules: desktop/, observability/, vulnerability-scan/, nvidia, gpu-mode |
 | hm-modules/     | Shared user tools; base.nix is what every host imports               |

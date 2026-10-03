@@ -9,10 +9,9 @@
 let
   home = config.home.homeDirectory;
   agentDir = "${home}/.pi/agent";
-  repo = "${home}/nixos-config";
+  repo = config.home.aiStack.checkout;
   link = config.lib.file.mkOutOfStoreSymlink;
-  isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
-  isDracula = !isDarwin && (osConfig.networking.hostName or "") == "dracula";
+  hasLocalModel = osConfig.services.localLlama.enable or false;
   requesty = osConfig.services.requesty or null;
   requestyKeyFile = requesty.apiKeyFile or null;
 
@@ -57,7 +56,7 @@ let
     }) osConfig.services.localLlama.models;
   };
   piModels = {
-    providers = lib.optionalAttrs isDracula {
+    providers = lib.optionalAttrs hasLocalModel {
       dracula-local = localProvider;
     };
   };
@@ -114,7 +113,10 @@ let
   };
 in
 {
-  imports = [ ./agent-content.nix ];
+  imports = [
+    ./agent-content.nix
+    ./checkout.nix
+  ];
   options.programs.piClient.enable = lib.mkEnableOption "Pi coding client";
 
   config = lib.mkIf config.programs.piClient.enable {
@@ -122,7 +124,7 @@ in
     home.file = {
       # AGENTS.md and MEMORY.md are agent-owned writable files, not Nix resources.
       ".pi/agent/skills/mentor".source = link "${home}/.local/share/agent-content/mentor/skills/mentor";
-      ".pi/agent/skills/meeting-minutes".source = link "${repo}/ai/pi/skills/meeting-minutes";
+      ".pi/agent/skills/meeting-minutes".source = link "${repo}/pi/skills/meeting-minutes";
       ".pi/agent/agents/researcher.md".source =
         link "${home}/.local/share/agent-content/learning/pi/agents/researcher.md";
       ".pi/agent/agents/mermaid-maker.md".source =

@@ -7,14 +7,12 @@
 }:
 
 let
-  hostname = osConfig.networking.hostName or "";
-  isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
-  isDracula = !isDarwin && hostname == "dracula";
-  # Only hosts that import modules/requesty.nix have a remote profile.
+  hasLocalModel = osConfig.services.localLlama.enable or false;
+  # Only hosts that import ai/nixos/requesty.nix have a remote profile.
   requesty = osConfig.services.requesty or null;
   requestyKeyFile = requesty.apiKeyFile or null;
   isRemote = requestyKeyFile != null;
-  active = config.programs.ompClient.enable && (isDracula || isRemote);
+  active = config.programs.ompClient.enable && (hasLocalModel || isRemote);
   localProfile = {
     endpoint = "http://127.0.0.1:8080/v1";
     provider = "dracula-local";
@@ -33,7 +31,7 @@ let
     models = { }; # Discovered at runtime from the organization-approved catalog.
   };
   profiles =
-    if isDracula then
+    if hasLocalModel then
       [
         localProfile
         requestyProfile
@@ -43,7 +41,7 @@ let
   modelSelector = profile: model: "${profile.provider}/${model}";
   # Only dracula serves a local model, so only dracula gets `omp-local` / `omp-chat`.
   localModel =
-    if isDracula then modelSelector localProfile osConfig.services.localLlama.defaultModel else null;
+    if hasLocalModel then modelSelector localProfile osConfig.services.localLlama.defaultModel else null;
   # Custom-provider selectors only; the harness package adds the scopes for
   # OMP's bundled subscription-authenticated providers.
   profileModels = lib.concatMap (
@@ -145,7 +143,7 @@ in
         providers = ompProviders;
       };
     }
-    // lib.optionalAttrs isDracula {
+    // lib.optionalAttrs hasLocalModel {
       ".omp/profiles/local/agent/models.yml".source = yaml.generate "omp-local-models.yml" {
         providers.${localProfile.provider} = ompProviders.${localProfile.provider};
       };

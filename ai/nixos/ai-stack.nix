@@ -2,24 +2,33 @@
 {
   config,
   lib,
-  username,
   ...
 }:
 
 let
   cfg = config.services.aiStack;
-  orgDirectory = "/home/${username}/org";
 in
 {
   imports = [
     ./ai-stack-target.nix
     ./n8n.nix
     ./hermes.nix
-    ../../modules/container-updates.nix
+    ./container-updates.nix
   ];
 
   options.services.aiStack = {
     enable = lib.mkEnableOption "n8n and Hermes";
+
+    user = lib.mkOption {
+      type = lib.types.str;
+      description = "Operator account: owns the n8n secrets and the Org tree and drives the stack target.";
+    };
+
+    orgDirectory = lib.mkOption {
+      type = lib.types.str;
+      default = "/home/${cfg.user}/org";
+      description = "Org tree that n8n and Hermes read and write.";
+    };
 
     secretsFile = lib.mkOption {
       type = lib.types.path;
@@ -31,12 +40,12 @@ in
     sops.secrets = {
       "n8n/encryption_key" = {
         sopsFile = cfg.secretsFile;
-        owner = username;
+        owner = cfg.user;
         mode = "0400";
       };
       "n8n/runner_auth_token" = {
         sopsFile = cfg.secretsFile;
-        owner = username;
+        owner = cfg.user;
         mode = "0400";
       };
       "hermes/api_server_key" = {
@@ -58,12 +67,12 @@ in
 
     services.aiStackTarget = {
       enable = true;
-      operators = [ username ];
+      operators = [ cfg.user ];
     };
 
     # The agent container runs as the hermes user and reaches the Org tree through this ACL.
     systemd.tmpfiles.rules = [
-      "A+ ${orgDirectory} - - - - u:hermes:rwX,d:u:hermes:rwx"
+      "A+ ${cfg.orgDirectory} - - - - u:hermes:rwX,d:u:hermes:rwx"
     ];
 
     services.localN8n = {
@@ -71,13 +80,13 @@ in
       encryptionKeyFile = config.sops.secrets."n8n/encryption_key".path;
       runnerAuthTokenFile = config.sops.secrets."n8n/runner_auth_token".path;
       runnerEnvironmentFile = config.sops.templates."n8n-runner.env".path;
-      orgOwner = username;
-      inherit orgDirectory;
+      orgOwner = cfg.user;
+      inherit (cfg) orgDirectory;
     };
 
     services.hermesAgent = {
       enable = true;
-      inherit orgDirectory;
+      inherit (cfg) orgDirectory;
     };
 
     services.containerUpdates.units = [

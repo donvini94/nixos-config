@@ -1,7 +1,6 @@
 {
   config,
   lib,
-  inputs,
   pkgs,
   ...
 }:
@@ -10,7 +9,7 @@
 # update-skills refreshes only vendored sources; native client package managers own plugins.
 # Pi opts out of this tree in its own settings.
 let
-  repo = "${config.home.homeDirectory}/nixos-config/ai/skills";
+  repo = "${config.home.aiStack.checkout}/skills";
   # Out-of-store links keep every authored file writable and editable without a rebuild.
   link = config.lib.file.mkOutOfStoreSymlink;
   lathe = pkgs.callPackage ../packages/lathe.nix { };
@@ -37,7 +36,7 @@ let
       diffutils
       git
       jq
-      inputs.determinate.inputs.nix.packages.${pkgs.stdenv.hostPlatform.system}.default
+      nix
       rsync
       unzip
     ];
@@ -45,6 +44,8 @@ let
   };
 in
 {
+  imports = [ ./checkout.nix ];
+
   home.packages = [
     updateSkills
     lathe

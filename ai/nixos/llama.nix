@@ -125,7 +125,7 @@ let
       pkgs.coreutils
       pkgs.curl
     ];
-    text = builtins.readFile ../../scripts/download-model-file.sh;
+    text = builtins.readFile ../scripts/download-model-file.sh;
   };
 
   downloadModel =

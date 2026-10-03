@@ -40,7 +40,7 @@ in
     ../../ai/nixos/llama.nix
     ../../mail/nixos/credentials.nix
     ../../ai/nixos/requesty.nix
-    ../../transcription/nixos.nix
+    ../../ai/transcription/nixos.nix
     ../../modules/gpu-mode.nix
     ../../modules/vulnerability-scan/host.nix
     ./hardware.nix
