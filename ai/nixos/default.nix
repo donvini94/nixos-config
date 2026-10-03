@@ -5,6 +5,7 @@
     ./backup.nix
     ./edge.nix
     ./egress.nix
+    ./onyx.nix
     ./paperless.nix
     ./public.nix
     ./tailnet.nix

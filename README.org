@@ -134,8 +134,8 @@ port publishing can bypass the host firewall; firewall assertions cannot prove
 that externally maintained Compose stacks are private.
 qBittorrent uses Gluetun's VPN namespace; do not give it an independent network.
 
-Mailcow (=/opt/mailcow-dockerized=), Onyx (=~/.config/onyx/deployment=) and Actual
-Budget (=~/actual_budget=) are maintained outside this repository. Back up first
+Mailcow (=/opt/mailcow-dockerized=) and Actual Budget (=~/actual_budget=) are
+maintained outside this repository. Onyx runs from the ai-stack's Onyx feature. Back up first
 and use their supported migration/update procedures, not generic image restarts.
 
 =systemctl restart ai-stack.target= restarts Alucard's Hermes and n8n together.

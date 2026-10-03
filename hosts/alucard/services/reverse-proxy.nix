@@ -122,7 +122,6 @@ in
           };
           catchAll.proxyPass = "http://127.0.0.1:8096";
         };
-        "chat.${domain}" = proxy 1447;
         "music.${domain}" = proxy 4533;
         "docs.${domain}" = gone;
         "files.${domain}" = proxy 53842 // {

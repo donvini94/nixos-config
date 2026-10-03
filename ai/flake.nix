@@ -36,6 +36,7 @@
         {
           coreruleset = nixpkgs.legacyPackages.${system}.callPackage ./packages/coreruleset.nix { };
           n8n-chat = nixpkgs.legacyPackages.${system}.callPackage ./packages/n8n-chat.nix { };
+          onyx-deployment = nixpkgs.legacyPackages.${system}.callPackage ./packages/onyx-deployment.nix { };
         }
         // lib.optionalAttrs (system == "x86_64-linux") {
           tika = nixpkgs.legacyPackages.${system}.callPackage ./packages/tika.nix { };
@@ -87,6 +88,10 @@
                         tailnet.domain = "example.ts.net";
                         tier = "plus";
                         features.paperless.domain = "docs.example.test";
+                        features.onyx = {
+                          enable = true;
+                          domain = "search.example.test";
+                        };
                         public = {
                           domain = "agent.example.test";
                           acmeEmail = "ops@example.test";

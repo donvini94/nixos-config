@@ -32,6 +32,10 @@ in
       domain = "agent.${site.domains.secondary}";
       acmeEmail = site.owner.mail;
     };
+    features.onyx = {
+      enable = true;
+      domain = "chat.${site.domains.primary}";
+    };
     hermes = {
       dashboardUser = "demo";
       telegram = true;

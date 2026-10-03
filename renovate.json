@@ -39,6 +39,16 @@
         "(?:default|image|trivyImage)\\s*=\\s*\\\"(?<depName>(?:[\\w.-]+/)*[\\w.-]+):(?<currentValue>[\\w.-]+)(?:@(?<currentDigest>sha256:[a-f0-9]{64}))?\\\""
       ],
       "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^ai/nixos/onyx\\.nix$/"
+      ],
+      "matchStrings": [
+        "=\\s*\\\"(?<depName>(?:[\\w.-]+/)*[\\w.-]+):(?<currentValue>[\\w.-]+)@(?<currentDigest>sha256:[a-f0-9]{64})\\\""
+      ],
+      "datasourceTemplate": "docker"
     }
   ],
   "packageRules": [
@@ -52,6 +62,18 @@
         "docker.io/n8nio/runners"
       ],
       "groupName": "n8n and task runners"
+    },
+    {
+      "description": "Onyx images move together and with ai/packages/onyx-deployment.nix; the module asserts the versions match.",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "docker.io/onyxdotapp/onyx-backend",
+        "docker.io/onyxdotapp/onyx-web-server",
+        "docker.io/onyxdotapp/onyx-model-server"
+      ],
+      "groupName": "Onyx"
     }
   ]
 }
