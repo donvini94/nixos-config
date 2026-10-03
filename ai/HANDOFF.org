@@ -34,61 +34,64 @@ gaps), =AGENTS.md= (repository rules, deployment rules), =README.org=.
 
 #+begin_example
 ai/
-  flake.nix             the ai-stack flake: nixosModules.{default,monitoringServer}, checks
-  REQUIREMENTS.org      decided requirements
+  flake.nix           nixosModules.{default,monitoringServer}, packages, checks (eval + VM tests)
+  AGENTS.md           rules for agents operating customer servers
+  OPERATIONS.org      verified procedures (grows with each step)
+  REQUIREMENTS.org    decided requirements
+  secrets.example.yaml  the secrets contract
+  packages/           coreruleset, n8n-chat, onyx-deployment, tika (package-update owns them)
+  tests/              egress.nix, public.nix (NixOS VM tests)
   nixos/
-    default.nix           the customer-side module: everything below except server.nix
-    ai-stack.nix          option services.aiStack: n8n + Hermes + sops wiring + ai-stack.target
-    n8n.nix               services.localN8n: container, task-runner container
-    hermes.nix            services.hermesAgent: upstream image, host network
-    observability/        exporters.nix (customer side), server.nix (central), alerts.nix, overview.json
-    vulnerability-scan/   container.nix, host.nix and their scripts (publish into the textfile dir)
+    default.nix         customer-side module: everything below except observability/server.nix
+    ai-stack.nix        services.aiStack: secrets, tier, n8n + Hermes, ai-stack.target, backup jobs
+    n8n.nix, hermes.nix containers; n8n on the host's PostgreSQL
+    egress.nix          Hermes' UID kept off other machines, the tailnet, metadata and SMTP
+    edge.nix            CrowdSec, firewall bouncer, ModSecurity/CRS
+    public.nix          n8n's public paths on the customer domain
+    tailnet.nix         Tailscale Serve for admin ports (owns the host's whole Serve config)
+    backup.nix          restic jobs, weekly checks, SFTP, last-success metric
+    paperless.nix       feature (plus tier)
+    onyx.nix            feature (add-on): pinned upstream compose, no code interpreter
+    observability/      exporters.nix, server.nix (central), alerts.nix
+    vulnerability-scan/ container and host scans
 #+end_example
 
-The root flake consumes it as =inputs.ai-stack= (=path:./ai=, following its nixpkgs and
-sops-nix) and runs its checks as =ai-stack-*=. Host wiring: =hosts/alucard/ai.nix=
-(secrets, templates, assertions) and =hosts/alucard/default.nix=
-(=services.containerUpdates=, scanners). Dracula's GPU switch now lives in
-=modules/ai-stack-target.nix= and the personal Requesty option in
-=coding-agents/nixos/requesty.nix=; neither depends on =ai/=. =modules/container-updates.nix= is shared with
-the media stack and stays outside =ai/=, but the stack needs an update mechanism.
+The root flake consumes it as =inputs.ai-stack= (=path:./ai=, following nixpkgs and
+sops-nix) and merges its checks and packages for CI. Alucard imports both modules; its
+host files keep only personal or household specifics (=ai.nix=, =backups.nix=,
+=paperless.nix=, =security.nix=, =private-access.nix=). Dracula's GPU target lives in
+=modules/ai-stack-target.nix=, the personal Requesty option in
+=coding-agents/nixos/requesty.nix=; Dracula and the Mac do not depend on =ai/=.
+=modules/container-updates.nix= stays shared with the media stack; stack images update
+by digest on deploy.
 
-Not part of the stack, already moved out: =coding-agents/= (personal OMP/Pi tooling),
-=transcription/=, =modules/llama.nix=, Dracula's local model. Dracula and the Mac must
-not depend on =ai/= except =coding-agents= reading =services.requesty= through
-=osConfig=. Verify that stays true.
+* Pending on Alucard (operator acceptance or first runs)
 
-* Known couplings and problems to resolve during extraction
+- First nightly restic runs through the flake: 2026-10-04 03:30. Check the journal and
+  =restic_backup_last_success_timestamp_seconds= for n8n, Hermes, Paperless, Onyx,
+  Keycloak, Jellyfin.
+- PostgreSQL 14 -> 17 (2026-10-03, verified). On acceptance: remove
+  =hosts/alucard/postgresql-upgrade.nix= (pin =services.postgresql.package= to 17
+  instead), =/var/lib/postgresql/14= and =/var/backup/postgresql-upgrade=.
+- n8n on PostgreSQL (2026-10-03, counts verified). On acceptance: remove
+  =n8n-sqlite-migration= from =hosts/alucard/ai.nix= and =sqlite-archive=,
+  =sqlite-export= under =/var/lib/n8n-container=.
+- Onyx on the flake module (2026-10-03). The old rootless containers are down; their
+  volumes remain in the operator's rootless Docker until the operator removes them.
+- Alertmanager Telegram: needs a bot token (sops) and chat id.
 
-- Alucard serves =agent.istbereit.de= through =services.aiStack.public= (verified
-  2026-10-03). Its restic jobs run through =services.aiStack.backup= from 2026-10-04
-  03:30; confirm the first night's runs (journal and
-  =restic_backup_last_success_timestamp_seconds=) before relying on them.
+* Remaining work
 
-- Alucard's PostgreSQL went from 14 to 17 on 2026-10-03 (Keycloak, Mattermost, Atuin and
-  n8n verified). Once the operator accepts it, remove =hosts/alucard/postgresql-upgrade.nix=
-  (pinning =services.postgresql.package= to 17 in Alucard's config instead),
-  =/var/lib/postgresql/14= and the dump in =/var/backup/postgresql-upgrade=.
-- n8n moved to PostgreSQL on 2026-10-03 (counts verified). Remove
-  =n8n-sqlite-migration= from =hosts/alucard/ai.nix= and the =sqlite-archive= and
-  =sqlite-export= directories under =/var/lib/n8n-container= once the operator agrees.
-
-- Rule: nothing personal to the operator (accounts, notes trees, personal paths or
-  hostnames) belongs in =ai/=. Audit =ai/=, the interface and the secrets contract
-  against it. =services.aiStack.sharedDirectory= is optional and off by default; only
-  Alucard's host config sets it.
-- Image tags and digests in =n8n.nix=, =hermes.nix= and =container.nix= are managed by
-  Renovate through regex rules in =renovate.json=; keep those rules working after the
-  move and add flake-input bumps for the fleet repository.
-- Alucard-only pieces that the requirements say belong in the stack and do not exist as
-  reusable modules yet: reverse proxy/ACME (=hosts/alucard/services/reverse-proxy.nix=),
-  CrowdSec (=hosts/alucard/security.nix=), restic backups (=hosts/alucard/backups.nix=,
-  tied to a Hetzner mount and per-application jobs), Tailscale-served private ports
-  (=hosts/alucard/private-access.nix=), Paperless (=modules/paperless.nix=), Onyx
-  (a Docker stack on Alucard; find where it is defined before moving it).
-- n8n metrics are loopback-only, so central Prometheus can scrape them for Alucard only.
-- Grafana needs =grafana/secret_key= and =grafana/admin_password= in the secrets file.
-  Alertmanager Telegram delivery is implemented but untested and unconfigured.
+- Customer host profile (=nixosModules.customerHost=): disko layout for Hetzner,
+  nixos-anywhere bootstrap, Tailscale join with =tag:customer=, root SSH on the tailnet
+  only, n8n's UID in =services.aiStack.egress.uids=.
+- Fleet skeleton: deploy-rs nodes, one test customer, tailnet ACL policy file, Renovate
+  following =ai-stack= release tags. Evaluate; provision only with approval.
+- Customer metrics over the tailnet: n8n and CrowdSec metrics are loopback-only.
+- Outbound connection accounting per destination (metrics, anomaly alert).
+- =ai-stack-check= (command and textfile metrics) for the first-run checklist.
+- =ai-library= import of n8n workflows, Hermes skills and config; drift metric.
+- Agent guide: procedures for onboarding, release promotion, restore, offboarding.
 
 * Design decisions already made (do not reopen without cause)
 
@@ -109,13 +112,12 @@ the target and account model, backup isolation, Onyx packaging and Alucard's mig
 * Suggested sequence
 
 1. Done: interview on the open decisions; answers are in =REQUIREMENTS.org=.
-2. Define the flake's public interface: one module (=aiStack= plus feature flags and
-   presets), the options customers set, the secrets contract.
+2. Done: define the flake's public interface.
 3. Done: make =ai/= standalone inside this repository first (own =flake.nix=, outputs
    =nixosModules=, =packages=, checks), with Alucard consuming it through a path input.
    Keep all three hosts building.
-4. Lift the Alucard-only pieces into reusable modules one at a time, deploying to Alucard
-   after each and reading its logs.
+4. Done: lift the Alucard-only pieces into reusable modules one at a time, deploying to
+   Alucard after each and reading its logs.
 5. Add a provisioning layer (disko layout, nixos-anywhere instructions) and a skeleton
    fleet repository with one test customer definition. Evaluate it; do not provision a
    real server without approval.
