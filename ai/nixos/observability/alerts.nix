@@ -27,6 +27,20 @@ in
       ];
     }
     {
+      name = "backups";
+      rules = [
+        {
+          # Nightly timer with 15 minutes of jitter; 36h means a run failed or never
+          # started. Quiet until a job has succeeded once.
+          alert = "BackupStale";
+          expr = "time() - restic_backup_last_success_timestamp_seconds > 36 * 3600";
+          for = "30m";
+          labels.severity = "critical";
+          annotations.summary = "{{ $labels.host }}: backup {{ $labels.backup }} last succeeded {{ $value | humanizeDuration }} ago";
+        }
+      ];
+    }
+    {
       name = "security-scans";
       rules = [
         {

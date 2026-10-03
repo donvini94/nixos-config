@@ -3,6 +3,7 @@
 {
   config,
   lib,
+  pkgs,
   ...
 }:
 
@@ -169,6 +170,40 @@ in
     # Hermes stays on the host network to reach local services; its UID is kept off
     # other machines.
     services.aiStack.egress.uids = [ config.services.hermesAgent.uid ];
+
+    services.aiStack.backup.jobs = {
+      # A database dump plus the state directory (binary data, instance config).
+      # Credential rows stay encrypted; the encryption key lives only in SOPS.
+      n8n = {
+        runtimeInputs = [
+          config.services.postgresql.package
+          pkgs.util-linux
+        ];
+        after = [ "postgresql.service" ];
+        requires = [ "postgresql.service" ];
+        paths = [ config.services.localN8n.stateDirectory ];
+        prepare = ''
+          runuser -u postgres -- pg_dump --format=custom --no-owner n8n > "$stage/n8n.dump"
+          test -s "$stage/n8n.dump"
+        '';
+      };
+      # SQLite databases are copied consistently; the rest of the data directory is
+      # snapshotted minus caches that rebuild themselves.
+      hermes = {
+        runtimeInputs = [ pkgs.sqlite ];
+        prepare = ''
+          src=${lib.escapeShellArg config.services.hermesAgent.stateDirectory}
+          find "$src" -name '*.db' -not -path '*/skills/*' -print0 | while IFS= read -r -d "" db; do
+            rel=''${db#"$src"/}
+            install -d -m 0700 "$stage/$(dirname "$rel")"
+            sqlite3 "$db" ".backup '$stage/$rel'"
+          done
+          tar -C "$src" --exclude='*.db' --exclude='*.db-wal' --exclude='*.db-shm' --exclude=./cache \
+            --exclude=./image_cache --exclude=./audio_cache --exclude=./models_dev_cache.json -cf - . \
+            | tar -C "$stage" -xf -
+        '';
+      };
+    };
 
     services.hermesAgent = {
       enable = true;

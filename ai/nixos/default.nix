@@ -2,6 +2,7 @@
 {
   imports = [
     ./ai-stack.nix
+    ./backup.nix
     ./edge.nix
     ./egress.nix
     ./public.nix
