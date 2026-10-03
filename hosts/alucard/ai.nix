@@ -16,10 +16,7 @@ in
 
   assertions = [
     {
-      assertion = lib.all (address: address == "127.0.0.1") [
-        config.services.localN8n.bindAddress
-        config.services.localObservability.bindAddress
-      ];
+      assertion = config.services.localN8n.bindAddress == "127.0.0.1";
       message = "Alucard AI services must remain loopback-only; use Tailscale Serve";
     }
     {
@@ -94,7 +91,7 @@ in
   services.localObservability = {
     enable = true;
     secretsFile = secretFile;
-    n8nPort = 5678;
+    scrapeTargets.n8n = 5678;
   };
 
   # Keep the identity existing files and the Org ACL already use.

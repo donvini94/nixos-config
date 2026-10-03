@@ -36,8 +36,7 @@ in
     ../../modules/desktop.nix
     ../../modules/nvidia.nix
     ../../modules/gaming.nix
-    ../../modules/observability.nix
-    ../../modules/container-updates.nix
+    ../../modules/observability
     ../../modules/llama.nix
     ../../modules/mail-credentials.nix
     ../../modules/requesty.nix
@@ -144,10 +143,9 @@ in
     autoStart = false;
     secretsFile = ../../secrets/dracula-ai.yaml;
     gpuMetrics = true;
-    inferencePort = 8080;
+    scrapeTargets.llama = 8080;
   };
 
-  services.containerUpdates.enable = true;
   services.hostVulnerabilityScan.enable = true;
   determinate.enable = true;
 

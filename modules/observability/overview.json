@@ -72,8 +72,8 @@
       },
       "targets": [
         {
-          "expr": "DCGM_FI_DEV_GPU_UTIL",
-          "legendFormat": "GPU {{gpu}}",
+          "expr": "100 * nvidia_smi_utilization_gpu_ratio",
+          "legendFormat": "{{name}}",
           "refId": "A"
         }
       ]
@@ -90,13 +90,13 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "decmbytes"
+          "unit": "bytes"
         }
       },
       "targets": [
         {
-          "expr": "DCGM_FI_DEV_FB_USED",
-          "legendFormat": "GPU {{gpu}}",
+          "expr": "nvidia_smi_memory_used_bytes",
+          "legendFormat": "{{name}}",
           "refId": "A"
         }
       ]

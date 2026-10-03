@@ -22,7 +22,7 @@
     ../../modules/packages.nix
     ../../modules/paperless.nix
     ../../modules/mailcow-tls.nix
-    ../../modules/observability.nix
+    ../../modules/observability
     ../../modules/container-updates.nix
     ../../modules/vulnerability-scan.nix
     ../../modules/host-vulnerability-scan.nix

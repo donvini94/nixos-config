@@ -102,7 +102,7 @@ on =127.0.0.1:8080= (metrics at =/metrics=).
 Python projects own their dependencies through uv, not a global ML environment.
 
 Monitoring is independent of GPU mode, off at boot on Dracula and on at boot on
-Alucard: =sudo systemctl start|stop observability-stack=, =observability-status=.
+Alucard. Start or stop it with =sudo systemctl start|stop observability.target=.
 
 * Alucard
 

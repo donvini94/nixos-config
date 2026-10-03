@@ -325,5 +325,5 @@ in
     (pkgs.formats.yaml { }).generate "crowdsec.yaml"
       config.services.crowdsec.settings.general;
 
-  services.localObservability.extraScrapeTargets.crowdsec = 6060;
+  services.localObservability.scrapeTargets.crowdsec = 6060;
 }
