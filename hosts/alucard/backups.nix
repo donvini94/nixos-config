@@ -60,6 +60,29 @@ let
           TimeoutStartSec = "2h";
         };
       };
+      systemd.services."restic-check-${name}" = {
+        description = "Verify restic repository ${name}";
+        after = [ "restic-backups-${name}.service" ];
+        unitConfig.RequiresMountsFor = "/mnt/hetzner";
+        serviceConfig = {
+          Type = "oneshot";
+          Nice = 10;
+          IOSchedulingClass = "idle";
+          ExecStart = "${pkgs.restic}/bin/restic check --read-data-subset=5%";
+        };
+        environment = {
+          RESTIC_REPOSITORY = "${repositoryBase}/${name}";
+          RESTIC_PASSWORD_FILE = config.sops.secrets.${passwordSecret}.path;
+        };
+      };
+      systemd.timers."restic-check-${name}" = {
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          OnCalendar = "Sun 05:00";
+          Persistent = true;
+          RandomizedDelaySec = "30m";
+        };
+      };
       sops.secrets.${passwordSecret} = {
         owner = "root";
         mode = "0400";
