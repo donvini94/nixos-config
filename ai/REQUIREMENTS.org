@@ -64,7 +64,7 @@ paths. Personal configuration stays in =hosts/= and =coding-agents/=.
 * Accounts
 
 - Each service runs as its own system user and owns its secrets; the stack has no
-  notion of a human user (=services.aiStack.user= goes away).
+  notion of a human user.
 - Customer hosts have no human accounts: root SSH with the operator's keys
   (=operator.sshKeys=), tailnet only, password authentication off. This lives in a
   customer-host profile that Alucard does not import.

@@ -60,7 +60,6 @@
                       device = "/dev/vda";
                       fsType = "ext4";
                     };
-                    users.users.operator.isNormalUser = true;
                     sops = {
                       validateSopsFiles = false;
                       age.keyFile = "/var/lib/sops/age/keys.txt";
@@ -69,8 +68,8 @@
                     services = {
                       aiStack = {
                         enable = true;
-                        user = "operator";
                         secretsFile = "/dev/null";
+                        hermes.telegram = true;
                       };
                       observability = {
                         exporters.enable = true;

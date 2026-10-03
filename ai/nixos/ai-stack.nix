@@ -1,4 +1,5 @@
-# n8n and Hermes with their secrets, grouped under ai-stack.target.
+# n8n and Hermes with their secrets, grouped under ai-stack.target. `secretsFile` must
+# hold the keys listed in ai/secrets.example.yaml.
 {
   config,
   lib,
@@ -11,6 +12,27 @@ let
     hostPath = shared.path;
     inherit (shared) mountPoint;
   }) cfg.sharedDirectory;
+  # The n8n image runs as `node`, UID 1000; secret files it reads must belong to that UID.
+  n8nUid = 1000;
+  secret =
+    attrs:
+    {
+      sopsFile = cfg.secretsFile;
+      mode = "0400";
+    }
+    // attrs;
+  hermesSecrets = [
+    "requesty/api_key"
+    "hermes/api_server_key"
+    "hermes/dashboard_password_hash"
+    "hermes/dashboard_session_secret"
+  ]
+  ++ lib.optionals cfg.hermes.telegram [
+    "hermes/telegram_bot_token"
+    # Comma-separated numeric Telegram IDs; never "*", never allow-all.
+    "hermes/telegram_allowed_users"
+  ];
+  placeholder = name: config.sops.placeholder.${name};
 in
 {
   imports = [
@@ -21,9 +43,23 @@ in
   options.services.aiStack = {
     enable = lib.mkEnableOption "n8n and Hermes";
 
-    user = lib.mkOption {
-      type = lib.types.str;
-      description = "Account owning the n8n secret files.";
+    secretsFile = lib.mkOption {
+      type = lib.types.path;
+      description = "SOPS file holding the stack's secrets.";
+    };
+
+    hermes = {
+      dashboardUser = lib.mkOption {
+        type = lib.types.str;
+        default = "operator";
+        description = "Initial dashboard login; the UI can change it.";
+      };
+
+      telegram = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Configure Hermes' Telegram gateway from the secrets file.";
+      };
     };
 
     sharedDirectory = lib.mkOption {
@@ -47,37 +83,56 @@ in
         }
       );
     };
-
-    secretsFile = lib.mkOption {
-      type = lib.types.path;
-      description = "SOPS file holding n8n and Hermes secrets.";
-    };
   };
 
   config = lib.mkIf cfg.enable {
+    assertions = [
+      {
+        assertion =
+          lib.intersectLists [
+            5678
+            5679
+            8642
+            9119
+          ] config.networking.firewall.allowedTCPPorts == [ ];
+        message = "n8n and Hermes ports must not be opened on the global firewall";
+      }
+    ];
+
     sops.secrets = {
-      "n8n/encryption_key" = {
-        sopsFile = cfg.secretsFile;
-        owner = cfg.user;
-        mode = "0400";
+      # Not restarted on change: a new key needs n8n's export/import migration.
+      "n8n/encryption_key" = secret { uid = n8nUid; };
+      "n8n/runner_auth_token" = secret {
+        uid = n8nUid;
+        restartUnits = [ "docker-n8n.service" ];
       };
-      "n8n/runner_auth_token" = {
-        sopsFile = cfg.secretsFile;
-        owner = cfg.user;
-        mode = "0400";
-      };
-      "hermes/api_server_key" = {
-        sopsFile = cfg.secretsFile;
-        owner = "root";
-        mode = "0400";
-      };
-    };
+    }
+    // lib.genAttrs hermesSecrets (_: secret { owner = "root"; });
 
     sops.templates."n8n-runner.env" = {
       content = ''
-        N8N_RUNNERS_AUTH_TOKEN=${config.sops.placeholder."n8n/runner_auth_token"}
+        N8N_RUNNERS_AUTH_TOKEN=${placeholder "n8n/runner_auth_token"}
       '';
       restartUnits = [ "docker-n8n-runners.service" ];
+      mode = "0400";
+      owner = "root";
+      group = "root";
+    };
+
+    # Initial credentials; anything saved in the Hermes UI overrides them.
+    sops.templates."hermes.env" = {
+      content = ''
+        HERMES_DASHBOARD_BASIC_AUTH_USERNAME=${cfg.hermes.dashboardUser}
+        HERMES_DASHBOARD_BASIC_AUTH_PASSWORD_HASH=${placeholder "hermes/dashboard_password_hash"}
+        HERMES_DASHBOARD_BASIC_AUTH_SECRET=${placeholder "hermes/dashboard_session_secret"}
+        API_SERVER_KEY=${placeholder "hermes/api_server_key"}
+        REQUESTY_API_KEY=${placeholder "requesty/api_key"}
+      ''
+      + lib.optionalString cfg.hermes.telegram ''
+        TELEGRAM_BOT_TOKEN=${placeholder "hermes/telegram_bot_token"}
+        TELEGRAM_ALLOWED_USERS=${placeholder "hermes/telegram_allowed_users"}
+      '';
+      restartUnits = [ "docker-hermes-agent.service" ];
       mode = "0400";
       owner = "root";
       group = "root";
@@ -105,6 +160,7 @@ in
 
     services.hermesAgent = {
       enable = true;
+      environmentFiles = [ config.sops.templates."hermes.env".path ];
       inherit sharedMount;
     };
   };

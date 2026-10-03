@@ -1,0 +1,19 @@
+#+title: ai-stack operations
+
+Procedures for operating customer servers. Each one is verified before it is listed
+here; rules are in =AGENTS.md=, reasons in =REQUIREMENTS.org=.
+
+* Secrets
+
+Each host has one sops file holding the keys in =secrets.example.yaml=; the host
+configuration passes it as =services.aiStack.secretsFile=. Keys for disabled features
+may be absent.
+
+- Create: copy =secrets.example.yaml=, replace every value, encrypt it with sops for the
+  host's age key and the operator's key, and verify with =sops -d file >/dev/null=.
+  Random values: =openssl rand -hex 32=.
+- Change a value: =sops set FILE '["group"]["key"]'= with =--value-stdin=, then deploy.
+  Services using the changed value restart on activation, except as noted below.
+- Values that need more than an edit: =n8n/encryption_key= (re-encrypts every n8n
+  credential; needs n8n's export/import), and anything saved in the Hermes dashboard,
+  which overrides the file until cleared in the UI.
