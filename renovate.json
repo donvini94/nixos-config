@@ -14,66 +14,25 @@
   ],
   "ignorePaths": [
     "packages/**",
-    "coding-agents/packages/**",
-    "ai/packages/**"
+    "coding-agents/packages/**"
   ],
   "prHourlyLimit": 2,
   "prConcurrentLimit": 5,
   "enabledManagers": [
     "docker-compose",
     "github-actions",
-    "nix",
-    "custom.regex"
+    "nix"
   ],
   "nix": {
     "enabled": true
   },
-  "customManagers": [
-    {
-      "customType": "regex",
-      "managerFilePatterns": [
-        "/^ai/nixos/vulnerability-scan/container\\.nix$/",
-        "/^ai/nixos/(n8n|hermes)\\.nix$/"
-      ],
-      "matchStrings": [
-        "(?:default|image|trivyImage)\\s*=\\s*\\\"(?<depName>(?:[\\w.-]+/)*[\\w.-]+):(?<currentValue>[\\w.-]+)(?:@(?<currentDigest>sha256:[a-f0-9]{64}))?\\\""
-      ],
-      "datasourceTemplate": "docker"
-    },
-    {
-      "customType": "regex",
-      "managerFilePatterns": [
-        "/^ai/nixos/onyx\\.nix$/"
-      ],
-      "matchStrings": [
-        "=\\s*\\\"(?<depName>(?:[\\w.-]+/)*[\\w.-]+):(?<currentValue>[\\w.-]+)@(?<currentDigest>sha256:[a-f0-9]{64})\\\""
-      ],
-      "datasourceTemplate": "docker"
-    }
-  ],
   "packageRules": [
     {
-      "description": "Update n8n and its task runners together.",
-      "matchDatasources": [
-        "docker"
+      "description": "ai-stack is private; Alucard's lock entry is bumped by hand after pushing it.",
+      "matchDepNames": [
+        "ai-stack"
       ],
-      "matchPackageNames": [
-        "docker.io/n8nio/n8n",
-        "docker.io/n8nio/runners"
-      ],
-      "groupName": "n8n and task runners"
-    },
-    {
-      "description": "Onyx images move together and with ai/packages/onyx-deployment.nix; the module asserts the versions match.",
-      "matchDatasources": [
-        "docker"
-      ],
-      "matchPackageNames": [
-        "docker.io/onyxdotapp/onyx-backend",
-        "docker.io/onyxdotapp/onyx-web-server",
-        "docker.io/onyxdotapp/onyx-model-server"
-      ],
-      "groupName": "Onyx"
+      "enabled": false
     }
   ]
 }

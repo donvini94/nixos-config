@@ -8,13 +8,16 @@
 | AC-0137 | Personal Mac: AeroSpace, SketchyBar, Doom, Ghostty | hosts/ac-0137/       | hosts/ac-0137/home.nix     |
 | alucard | Media/torrent server and startup infrastructure    | hosts/alucard/       | hosts/alucard/home.nix     |
 
+The customer AI stack is the private flake =donvini94/ai-stack= (=inputs.ai-stack=,
+fetched over SSH); Alucard imports it as the canary. Change it in its own checkout, then
+run =nix flake update ai-stack= here.
+
 =site.nix= holds the deployment's identity (users, domains, tailnet, server name) and is
 passed to every module as =site=; a second deployment starts there.
 Features that span NixOS, home-manager and packages live in one folder:
 
 | Folder          | Contents                                                              |
 |-----------------+-----------------------------------------------------------------------|
-| ai/             | The =ai-stack= flake for customer servers (n8n, Hermes, observability, vulnerability scanning); Alucard consumes it through a path input |
 | coding-agents/  | Personal OMP and Pi clients: home/, nixos/ (Requesty key option), packages/, scripts/, skills/, guidance/ |
 | transcription/  | Local ASR on Dracula's GPU: server module, client, Rust crate         |
 | mail/           | nixos/ (credentials, Mailcow TLS), home/ (hub, Mac client), stateful config |
@@ -90,7 +93,7 @@ OMP discovers models natively (=openai-models-list=), Pi through the pinned
 =pi-requesty= extension, Hermes through its provider config. The initial default model
 is in =services.requesty.{endpoint,defaultModel}= in =coding-agents/nixos/requesty.nix=; local model metadata stays declarative.
 
-Hermes runs the upstream image (=ai/nixos/hermes.nix=) as one host-network container
+Hermes runs the upstream image (ai-stack's =nixos/hermes.nix=) as one host-network container
 with its data in =/var/lib/hermes-agent=. Nix pins the image and supplies the initial
 credentials, mounts and loopback bindings; settings, MCP servers and tools are managed in
 the dashboard and persist in that directory, where saved values override the SOPS ones.

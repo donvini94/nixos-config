@@ -25,8 +25,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     emacs-overlay.url = "github:nix-community/emacs-overlay";
+    # Private; fetched over SSH (root on Alucard and CI use read-only deploy keys).
     ai-stack = {
-      url = "path:./ai";
+      url = "git+ssh://git@github.com/donvini94/ai-stack?ref=main";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.sops-nix.follows = "sops-nix";
       inputs.disko.follows = "disko";
@@ -127,8 +128,6 @@
           lathe = pkgs.callPackage ./coding-agents/packages/lathe.nix { };
           linear-cli = pkgs.callPackage ./packages/linear-cli.nix { };
         }
-        # CI builds only this flake's packages until ai/ has its own repository.
-        // inputs.ai-stack.packages.${packageSystem} or { }
         // nixpkgs.lib.optionalAttrs (packageSystem == "x86_64-linux") {
           omp = pkgs.callPackage ./coding-agents/packages/omp.nix { };
           local-transcription-client = pkgs.callPackage ./transcription/client.nix { };
@@ -226,10 +225,6 @@
                 touch "$out"
               '';
         }
-        # CI runs only this flake's checks until ai/ has its own repository.
-        // nixpkgs.lib.mapAttrs' (name: nixpkgs.lib.nameValuePair "ai-stack-${name}") (
-          inputs.ai-stack.checks.${checkSystem} or { }
-        )
       );
     };
 }

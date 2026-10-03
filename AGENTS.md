@@ -28,8 +28,11 @@ current packages, services, ports and paths. Do not duplicate those inventories 
 ## Placement
 
 - Host-specific wiring: `hosts/<host>/`. Shared system functionality: `modules/`.
-  Features spanning NixOS, home-manager and packages get one folder: `ai/` (the customer-deployable stack, self-contained; it will become its own flake),
-  `coding-agents/` (personal OMP/Pi tooling), `transcription/` and `mail/`.
+  Features spanning NixOS, home-manager and packages get one folder: `coding-agents/`
+  (personal OMP/Pi tooling), `transcription/` and `mail/`.
+- The customer AI stack is the private flake `donvini94/ai-stack` (checkout `~/ai-stack`
+  on the Mac), consumed as `inputs.ai-stack`; change it there, then
+  `nix flake update ai-stack` here. Alucard is its canary; only Alucard imports it.
 - User configuration: `hm-modules/`; home files are import manifests plus identity.
 - Cross-platform CLI packages: `hm-modules/cli-tools.nix`. Linux GUI packages:
   `hm-modules/packages.nix`. System packages are for integration/toolchains.
@@ -39,7 +42,7 @@ current packages, services, ports and paths. Do not duplicate those inventories 
   `programs.piClient.enable`. Client modules own their settings and state; shared
   source packages live in `coding-agents/home/agent-content.nix`, guidance in `coding-agents/guidance/`.
 - Hash-pinned packages must be exposed under `packages.<system>` for CI builds.
-  Renovate does not update `packages/`, `coding-agents/packages/` or `ai/packages/`; the package-update workflow owns hashes too.
+  Renovate does not update `packages/` or `coding-agents/packages/`; the package-update workflow owns hashes too.
 - Keep comments for non-obvious constraints and deliberate exceptions. No AI audit
   labels, historical incident reports, repeated inventories or line-by-line narration.
 - Keep substantial shell/Python programs in source files, not Nix strings. Nix wires

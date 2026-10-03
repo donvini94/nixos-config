@@ -30,6 +30,15 @@ jobs:
           - alucard
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      # Alucard imports the private ai-stack flake; a read-only deploy key fetches it.
+      - name: Access ai-stack
+        env:
+          KEY: ${{ secrets.AI_STACK_DEPLOY_KEY }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' >> ~/.ssh/known_hosts
       - uses: DeterminateSystems/determinate-nix-action@8d87e8d5e5b8a8309d4281094560f127d9a265f1 # v3
       # Full host closures exceed hosted runner storage; these are build plans.
       - run: nix build --dry-run --no-link .#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel
@@ -74,5 +83,14 @@ jobs:
         runner: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      # Alucard imports the private ai-stack flake; a read-only deploy key fetches it.
+      - name: Access ai-stack
+        env:
+          KEY: ${{ secrets.AI_STACK_DEPLOY_KEY }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' >> ~/.ssh/known_hosts
       - uses: DeterminateSystems/determinate-nix-action@8d87e8d5e5b8a8309d4281094560f127d9a265f1 # v3
       - run: nix flake check

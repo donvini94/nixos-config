@@ -1,5 +1,4 @@
-# Version bumps for the locally packaged tools in packages/, coding-agents/packages/ and
-# ai/packages/.
+# Version bumps for the locally packaged tools in packages/ and coding-agents/packages/.
 #
 # Renovate deliberately does not do this. Its regex manager can only rewrite the
 # version string, and every package here also pins a source hash (lathe pins a
@@ -35,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Every attribute of packages.x86_64-linux in flake.nix (ai-stack's included) except tika. lathe is
+        # Every attribute of packages.x86_64-linux in flake.nix. lathe is
         # built for both systems but its hashes are platform-independent, so bumping
         # it here covers the Mac as well. tika is excluded because nix-update would
         # take it to 4.x, which stopped shipping runnable jars; that line needs a
@@ -44,8 +43,6 @@ jobs:
           - lathe
           - omp
           - linear-cli
-          - coreruleset
-          - n8n-chat
     concurrency:
       group: package-update-${{ matrix.package }}
       cancel-in-progress: true
@@ -55,11 +52,8 @@ jobs:
 
       - name: Bump ${{ matrix.package }}
         run: |
-          # ai/ packages are defined in the ai-stack flake, where nix-update finds their files.
-          dir=.
-          case "${{ matrix.package }}" in coreruleset | n8n-chat) dir=ai ;; esac
-          (cd "$dir" && nix run nixpkgs#nix-update -- \
-            --flake --version=stable --build "${{ matrix.package }}")
+          nix run nixpkgs#nix-update -- \
+            --flake --version=stable --build "${{ matrix.package }}"
           # The release version is shared; refresh the Mac archive hash too.
           if [ "${{ matrix.package }}" = linear-cli ]; then
             old=$(nix eval --raw .#packages.aarch64-darwin.linear-cli.src.outputHash)

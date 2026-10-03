@@ -1,8 +1,0 @@
-# The operator's key plus each server's age key (ssh-to-age of its host key).
-keys:
-  - &operator age1operatorpublickey
-  - &test-kunde age1testkundepublickey
-creation_rules:
-  - path_regex: secrets/test-kunde\.yaml$
-    key_groups:
-      - age: [*operator, *test-kunde]

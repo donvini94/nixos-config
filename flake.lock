@@ -13,14 +13,19 @@
         ]
       },
       "locked": {
-        "path": "./ai",
-        "type": "path"
+        "lastModified": 1791062050,
+        "narHash": "sha256-UUY2KwftGkFWCfqdHkbStLplgWGBkcFU7cN2aC0xyi0=",
+        "ref": "main",
+        "rev": "4b4e2f1e7635941adde335ae423489eee3378285",
+        "revCount": 35,
+        "type": "git",
+        "url": "ssh://git@github.com/donvini94/ai-stack"
       },
       "original": {
-        "path": "./ai",
-        "type": "path"
-      },
-      "parent": []
+        "ref": "main",
+        "type": "git",
+        "url": "ssh://git@github.com/donvini94/ai-stack"
+      }
     },
     "aquamarine": {
       "inputs": {
