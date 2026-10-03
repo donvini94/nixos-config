@@ -154,6 +154,7 @@ in
           secret_key = "$__file{${config.sops.secrets."grafana/secret_key".path}}";
         };
         users.allow_sign_up = false;
+        plugins.preinstall_disabled = true;
         analytics = {
           reporting_enabled = false;
           check_for_updates = false;
