@@ -60,9 +60,10 @@ not depend on =ai/= except =coding-agents= reading =services.requesty= through
 
 * Known couplings and problems to resolve during extraction
 
-- =services.aiStack.public= is implemented and VM-tested but not enabled on Alucard: the
-  operator sets up a domain (e.g. =agent.<primary domain>=) first. Then set
-  =public.domain= and =acmeEmail= in =hosts/alucard/ai.nix= and verify the paths live.
+- Alucard serves =agent.istbereit.de= through =services.aiStack.public= (verified
+  2026-10-03). Its restic jobs run through =services.aiStack.backup= from 2026-10-04
+  03:30; confirm the first night's runs (journal and
+  =restic_backup_last_success_timestamp_seconds=) before relying on them.
 
 - Alucard's PostgreSQL went from 14 to 17 on 2026-10-03 (Keycloak, Mattermost, Atuin and
   n8n verified). Once the operator accepts it, remove =hosts/alucard/postgresql-upgrade.nix=

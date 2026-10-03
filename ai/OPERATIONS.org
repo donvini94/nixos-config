@@ -17,3 +17,20 @@ may be absent.
 - Values that need more than an edit: =n8n/encryption_key= (re-encrypts every n8n
   credential; needs n8n's export/import), and anything saved in the Hermes dashboard,
   which overrides the file until cleared in the UI.
+
+* Public domain
+
+The customer's domain carries n8n's production webhooks, forms and hosted chat only.
+
+1. Ask the customer's IT to point an A record (and AAAA if the host has IPv6) for the
+   chosen name, e.g. =agent.kunde.de=, at the host. Check with =dig +short NAME=.
+2. Set =services.aiStack.public = { domain = "NAME"; acmeEmail = "OPERATOR-ADDRESS"; };=
+   and deploy. =acme-NAME.service= obtains the certificate over HTTP-01.
+3. Verify from outside with a handful of requests:
+   - =curl -s https://NAME/webhook/x= returns n8n's JSON "not registered" 404;
+   - =curl -s -o /dev/null -w '%{http_code}' https://NAME/rest/login= returns 404;
+   - =openssl s_client -connect NAME:443 -servername NAME= shows a Let's Encrypt issuer.
+
+Do not loop over many 404 paths from one address: CrowdSec bans it for four hours
+(=crowdsecurity/http-probing=), and with it every public service on the host. Lift a
+ban on the host with =crowdsec-admin decisions delete --ip ADDRESS=.
