@@ -77,6 +77,10 @@ paths. Personal configuration stays in =hosts/= and =coding-agents/=.
     including the editor, =/rest/=, test endpoints, =/metrics= and =/healthz=.
   - Paperless and Onyx on their own subdomains with the applications' own logins, for
     customer staff.
+  - Public pages make visitors' browsers contact no third party (GDPR; e.g. remotely
+    embedded Google Fonts are unlawful in Germany): a Content-Security-Policy limits
+    them to the host, and assets n8n's chat pages fetch from jsDelivr are served from a
+    pinned local copy. Fonts fall back to system fonts.
 - Hermes has no public surface. Dashboard and API stay on the tailnet; customers chat
   through messaging gateways (outbound connections) or an n8n hosted chat that calls
   Hermes.
