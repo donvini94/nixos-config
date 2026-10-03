@@ -80,11 +80,12 @@ Linux Pi/OMP model lists refresh every 15 minutes; =sync-ai-models= refreshes th
 manually. Additional providers and client settings are preserved. Local model serving
 metadata and the initial remote default remain declarative.
 
-Hermes settings and MCP credentials survive activation. Initial preferences are seeded;
-approval policy, filesystem roots, service authentication and network exposure stay
-managed. Operator-installed MCP packages may use the approved npm, PyPI and GitHub
-hosts. Other remote MCP destinations need an explicit entry in
-=services.aiStack.hermes.egressHosts=. This policy is not a hostile-agent isolation boundary.
+Hermes runs the upstream image (=modules/hermes.nix=) as one host-network container
+with its data in =/var/lib/hermes-agent=. Nix pins the image and supplies the initial
+credentials, mounts and loopback bindings; settings, MCP servers and tools are managed in
+the dashboard and persist in that directory, where saved values override the SOPS ones.
+The agent has unrestricted network access and can reach host loopback services; the
+container is not a security boundary against it.
 
 Base images and application packages are pinned. UI-installed tools and workflow edits
 are mutable state, not automatically reproducible builds: record their versions and
@@ -130,7 +131,7 @@ and use their supported migration/update procedures, not generic image restarts.
 =ai-usage-summary= reports usage without printing payloads. Raw ingress logs
 (=/var/lib/llama/logs/=) contain prompts and responses; keep them out of Git/sync.
 Hermes sessions are separate but memory/workspace are shared by the founders;
-this is not a tenant boundary. Its credentials are SOPS-owned, not dashboard-owned.
+this is not a tenant boundary.
 
 * Secrets and recovery
 
@@ -139,7 +140,7 @@ never in the Nix store. Keep age private keys backed up separately.
 - n8n/Langfuse encryption keys, Langfuse salt and restic passwords require a
   supported migration, not just an edited SOPS value.
 - Database and administrator bootstrap passwords do not update existing accounts.
-- Hermes' =.env= is rewritten on activation; rotate its credentials in SOPS.
+- Hermes values saved in the UI override the SOPS ones; clear them there to rotate via SOPS.
 - Paperless private YAML uses records, not names as map keys (SOPS leaves keys visible).
   After changing an IMAP password run =sudo paperless-provision --sync-passwords=.
 

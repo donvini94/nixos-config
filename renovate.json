@@ -31,7 +31,7 @@
       "customType": "regex",
       "managerFilePatterns": [
         "/^modules/(n8n|vulnerability-scan)\\.nix$/",
-        "/^lib/hermes-agent\\.nix$/"
+        "/^modules/hermes\\.nix$/"
       ],
       "matchStrings": [
         "(?:default|image|trivyImage)\\s*=\\s*\\\"(?<depName>(?:[\\w.-]+/)*[\\w.-]+):(?<currentValue>[\\w.-]+)(?:@(?<currentDigest>sha256:[a-f0-9]{64}))?\\\""

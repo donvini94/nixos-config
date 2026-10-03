@@ -1,4 +1,4 @@
-"""Startup model discovery and Hermes activation tests; no real credentials or services."""
+"""Startup model discovery tests; no real credentials or services."""
 
 import http.server
 import importlib.util
@@ -29,7 +29,6 @@ def load(name, path):
 
 
 sync = load("sync_models", ROOT / "scripts/sync-ai-models.py")
-state = load("hermes_state", ROOT / "scripts/hermes-state.py")
 MODEL = {
     "id": "vendor/new-model",
     "input_price": 0.000002,
@@ -250,57 +249,6 @@ class ModelsTest(unittest.TestCase):
         self.assertEqual(result["providers"]["alucard-requesty"]["models"], [])
         self.assertEqual(set(self.config["clients"]), {"pi"})
         self.assertFalse((self.root / "omp.yml").exists())
-
-
-class HermesTest(unittest.TestCase):
-    def test_activation_preserves_ui_state_and_rotates_only_managed_env(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            home, policy, scratch = (
-                Path(temporary) / name for name in ("home", "policy", "scratch")
-            )
-            home.mkdir()
-            policy.mkdir()
-            (home / "config.yaml").write_text(
-                "model:\n  default: user-choice\nmcp_servers:\n  personal:\n    url: http://localhost/mcp\n"
-            )
-            values = {
-                "API_SERVER_KEY": "old",
-                "REMOVED_PIN": "gone",
-                "MCP_KEY": "ui secret 'quoted'\\value\nmore",
-            }
-            (home / ".env").write_text(state.render_env(values))
-            (home / ".nix-env-keys.json").write_text(
-                json.dumps(["API_SERVER_KEY", "REMOVED_PIN"])
-            )
-            for _ in range(2):
-                state.capture(home, scratch)
-                # Upstream regenerates its env and deep-merges a fixed working directory.
-                (home / ".env").write_text("API_SERVER_KEY=new\nHERMES_MANAGED=false\n")
-                state.restore(
-                    home, scratch, {"model": {"default": "initial-choice"}}, policy
-                )
-                self.assertEqual(
-                    state.environment(home / ".env"),
-                    {
-                        "API_SERVER_KEY": "new",
-                        "HERMES_MANAGED": "false",
-                        "MCP_KEY": values["MCP_KEY"],
-                    },
-                )
-                self.assertNotIn("MCP_KEY", state.environment(policy / ".env"))
-                config = yaml.safe_load((home / "config.yaml").read_text())
-                self.assertEqual(config["model"]["default"], "user-choice")
-                self.assertIn("personal", config["mcp_servers"])
-                self.assertEqual((home / ".managed").read_text(), "false\n")
-                self.assertFalse(scratch.exists())
-
-    def test_invalid_configuration_refuses_capture(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            home = Path(temporary)
-            (home / "config.yaml").write_text("invalid")
-            with self.assertRaises(ValueError):
-                state.capture(home, home / "scratch")
-            self.assertEqual((home / "config.yaml").read_text(), "invalid")
 
 
 if __name__ == "__main__":

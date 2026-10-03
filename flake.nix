@@ -12,6 +12,7 @@
     sops-nix.url = "github:Mic92/sops-nix";
     disko.url = "github:nix-community/disko";
     hosts.url = "github:StevenBlack/hosts";
+    # Only Dracula's desktop client; the server runs the pinned container in modules/hermes.nix.
     hermes-agent.url = "github:NousResearch/hermes-agent/v2026.9.24";
 
     # Keep hyprlang until Home Manager supports Hyprland's Lua configuration.
@@ -76,9 +77,7 @@
           inputs.hosts.nixosModule
           { nixpkgs.overlays = [ inputs.emacs-overlay.overlay ]; }
         ];
-        alucard = mkLinuxHost "alucard" ./hosts/alucard/home.nix [
-          inputs.hermes-agent.nixosModules.default
-        ];
+        alucard = mkLinuxHost "alucard" ./hosts/alucard/home.nix [ ];
       };
 
       darwinConfigurations."AC-0137" = inputs.nix-darwin.lib.darwinSystem {
@@ -155,7 +154,7 @@
                 touch "$out"
               '';
           python-lint = pkgs.runCommand "check-python-lint" { nativeBuildInputs = [ pkgs.ruff ]; } ''
-            ruff check --no-cache --select F ${./ai-ingress} ${./local-transcription}/server.py ${./paperless}/provision.py ${./scripts/tests} ${./scripts}/sync-ai-models.py ${./scripts}/hermes-state.py
+            ruff check --no-cache --select F ${./ai-ingress} ${./local-transcription}/server.py ${./paperless}/provision.py ${./scripts/tests} ${./scripts}/sync-ai-models.py
             touch "$out"
           '';
           model-download =
@@ -215,12 +214,7 @@
           startup-state-tests =
             pkgs.runCommand "check-startup-state"
               {
-                nativeBuildInputs = [
-                  (pkgs.python3.withPackages (ps: [
-                    ps.pyyaml
-                    ps.python-dotenv
-                  ]))
-                ];
+                nativeBuildInputs = [ (pkgs.python3.withPackages (ps: [ ps.pyyaml ])) ];
               }
               ''
                 PYTHONDONTWRITEBYTECODE=1 python3 ${./scripts/tests}/test_startup_state.py ${./.}
