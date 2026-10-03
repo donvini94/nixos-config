@@ -19,7 +19,6 @@
     ./users.nix
     ./syncthing.nix
     ./ai.nix
-    ./postgresql-upgrade.nix
     ../../modules/packages.nix
     ./paperless.nix
     ../../mail/nixos/mailcow-tls.nix
@@ -64,6 +63,12 @@
     loader.efi.canTouchEfiVariables = true;
     supportedFilesystems = [ "cifs" ];
   };
+
+  # Removes the pre-upgrade PostgreSQL 14 cluster and its dump; delete after one switch.
+  systemd.tmpfiles.rules = [
+    "R /var/lib/postgresql/14 - - - - -"
+    "R /var/backup/postgresql-upgrade - - - - -"
+  ];
 
   # Shared base lives in configuration.nix.
   # Keep local rebuilds below the host's steady-state service demand.

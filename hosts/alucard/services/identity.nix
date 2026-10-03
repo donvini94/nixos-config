@@ -6,7 +6,11 @@
 }:
 {
   services = {
-    postgresql.enable = true;
+    postgresql = {
+      enable = true;
+      # Pinned: a major version change needs pg_upgrade, not just a new package.
+      package = pkgs.postgresql_17;
+    };
 
     keycloak = {
       enable = true;

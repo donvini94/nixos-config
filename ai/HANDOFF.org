@@ -70,14 +70,6 @@ by digest on deploy.
 - First nightly restic runs through the flake: 2026-10-04 03:30. Check the journal and
   =restic_backup_last_success_timestamp_seconds= for n8n, Hermes, Paperless, Onyx,
   Keycloak, Jellyfin.
-- PostgreSQL 14 -> 17 (2026-10-03, verified). On acceptance: remove
-  =hosts/alucard/postgresql-upgrade.nix= (pin =services.postgresql.package= to 17
-  instead), =/var/lib/postgresql/14= and =/var/backup/postgresql-upgrade=.
-- n8n on PostgreSQL (2026-10-03, counts verified). On acceptance: remove
-  =n8n-sqlite-migration= from =hosts/alucard/ai.nix= and =sqlite-archive=,
-  =sqlite-export= under =/var/lib/n8n-container=.
-- Onyx on the flake module (2026-10-03). The old rootless containers are down; their
-  volumes remain in the operator's rootless Docker until the operator removes them.
 - Alertmanager Telegram: needs a bot token (sops) and chat id.
 
 * Remaining work
