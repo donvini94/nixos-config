@@ -142,7 +142,7 @@
       "targets": [
         {
           "expr": "sum by (name) (container_memory_working_set_bytes{name!=\"\"})",
-          "legendFormat": "GPU",
+          "legendFormat": "{{name}}",
           "refId": "A"
         }
       ]
