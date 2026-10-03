@@ -19,6 +19,7 @@
     ./users.nix
     ./syncthing.nix
     ./ai.nix
+    ./postgresql-upgrade.nix
     ../../modules/packages.nix
     ../../modules/paperless.nix
     ../../mail/nixos/mailcow-tls.nix
