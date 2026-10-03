@@ -131,6 +131,8 @@ Dracula runs no company infrastructure: no monitoring, scanning or Hermes.
 | private-access.nix                | Tailscale Serve endpoints                                 |
 | security.nix, networking.nix      | WAF, CrowdSec, SSH, firewall                               |
 
+Alucard is =tag:monitoring= in the tailnet; the tailnet policy lives in the private
+=donvini94/fleet= repository (=tailnet/policy.hujson=, applied on merge).
 Admin interfaces bind loopback and are published through Tailscale Serve; inspect
 =tailscale serve status= for addresses. Do not enable Funnel. Docker wildcard
 port publishing can bypass the host firewall; firewall assertions cannot prove
