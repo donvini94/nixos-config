@@ -4,7 +4,7 @@
 {
   options.home.aiStack.checkout = lib.mkOption {
     type = lib.types.str;
-    default = "${config.home.homeDirectory}/nixos-config/ai";
-    description = "Writable checkout of the ai/ tree that out-of-store links point into.";
+    default = "${config.home.homeDirectory}/nixos-config/coding-agents";
+    description = "Writable checkout of the coding-agents/ tree that out-of-store links point into.";
   };
 }

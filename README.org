@@ -14,9 +14,11 @@ Features that span NixOS, home-manager and packages live in one folder:
 
 | Folder          | Contents                                                              |
 |-----------------+-----------------------------------------------------------------------|
-| ai/             | AI stack: nixos/ (llama, n8n, Hermes, Requesty), home/ (OMP, Pi, skills), transcription/ (local ASR), packages/, scripts/, skills/, guidance/ |
+| ai/             | The deployable AI stack for customer servers: n8n, Hermes, Requesty, ai-stack.target |
+| coding-agents/  | Personal OMP and Pi clients: home/, packages/, scripts/, skills/, guidance/ |
+| transcription/  | Local ASR on Dracula's GPU: server module, client, Rust crate         |
 | mail/           | nixos/ (credentials, Mailcow TLS), home/ (hub, Mac client), stateful config |
-| modules/        | Shared system modules: desktop/, observability/, vulnerability-scan/, nvidia, gpu-mode |
+| modules/        | Shared system modules: desktop/, observability/, vulnerability-scan/, llama, nvidia, gpu-mode |
 | hm-modules/     | Shared user tools; base.nix is what every host imports               |
 
 Package lists are in =modules/packages.nix=, =modules/desktop/programming.nix=,
@@ -43,28 +45,28 @@ model-download, agent-tool and client-independence checks on Linux or macOS.
 CI runs these checks, evaluates host build plans and builds exposed local packages;
 a plan is not a full build.
 Renovate owns flake inputs, OCI digests and action pins. =package-update.yml= owns
-=packages/= and =ai/packages/= version/hash updates, including OMP on Linux.
+=packages/= and =coding-agents/packages/= version/hash updates, including OMP on Linux.
 =update-skills check|apply [SKILL...]= refreshes vendored skill files from
-=ai/skills/sources.json=; it changes neither package versions nor client state.
+=coding-agents/skills/sources.json=; it changes neither package versions nor client state.
 Linear's skill follows its flake package version; Zotero's version is declared in
-=ai/skills/sources.json= and used by =hm-modules/zotero-cli.nix=.
+=coding-agents/skills/sources.json= and used by =hm-modules/zotero-cli.nix=.
 Locally authored skills are not updater targets.
 
 * Agent clients
 
 =programs.ompClient.enable= and =programs.piClient.enable= independently select
 OMP and Pi in each host's home configuration. OMP remains available for research.
-=ai/home/omp.nix= and =ai/home/omp-clients.nix= own OMP configuration;
-=ai/home/pi.nix= owns Pi configuration. Neither launches the other.
+=coding-agents/home/omp.nix= and =coding-agents/home/omp-clients.nix= own OMP configuration;
+=coding-agents/home/pi.nix= owns Pi configuration. Neither launches the other.
 Settings, authentication, sessions and memory remain in each client's own directory
 (=~/.omp/agent/= or =~/.pi/agent/=). Pi's MCP configuration and writable
 =AGENTS.md=/=MEMORY.md= are not replaced by activation.
 
 Mentor, learning and prompt-snippet source packages live under
-=~/.local/share/agent-content/=, managed by =ai/home/agent-content.nix=.
+=~/.local/share/agent-content/=, managed by =coding-agents/home/agent-content.nix=.
 Their Pi and OMP entry points use separate client state. Activation fast-forwards
 clean source checkouts and leaves dirty or diverged ones untouched.
-Shared engineering and scoped domain instructions are in =ai/guidance/=. OMP
+Shared engineering and scoped domain instructions are in =coding-agents/guidance/=. OMP
 links rules for automatic loading within their declared scopes. Other clients
 read the same files through shared skills without OMP rule URLs.
 Pi deliberately excludes the automatic =~/.agents/skills/= tree.
@@ -73,7 +75,7 @@ Pi settings are seeded as defaults; existing native selections win on activation
 Declared model definitions are refreshed without removing extra user providers.
 Use =pi install/remove= and =pi update --extensions= for Pi packages, and OMP's
 native plugin manager for OMP plugins. =update-skills= manages neither client.
-Pi's binary version is pinned in =ai/home/pi.nix=. The Mac's OMP binary is its native
+Pi's binary version is pinned in =coding-agents/home/pi.nix=. The Mac's OMP binary is its native
 Bun installation; its wrapper scopes the managed settings to OMP invocations.
 
 * Startup applications

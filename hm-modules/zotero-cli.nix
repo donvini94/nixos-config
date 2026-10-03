@@ -6,7 +6,7 @@
 
 # `zotero-cli` (shipped by the zotero-mcp-server package) reaches the local Zotero library, so it
 # belongs only on hosts that run the Zotero desktop app. The skill that teaches agents to use it
-# is vendored in ai/skills/shared/zotero-cli and reaches every host through agent-skills.nix.
+# is vendored in coding-agents/skills/shared/zotero-cli and reaches every host through agent-skills.nix.
 #
 # The package is a `uv tool`, not a nix package, so the pinned version is installed idempotently.
 #
@@ -14,7 +14,7 @@
 # `zotero-mcp authorize-local`. The granted key is stored in ~/.config/zotero-mcp and is never copied
 # between hosts.
 let
-  version = (builtins.fromJSON (builtins.readFile ../ai/skills/sources.json)).skills.zotero-cli.version;
+  version = (builtins.fromJSON (builtins.readFile ../coding-agents/skills/sources.json)).skills.zotero-cli.version;
 in
 {
   home.activation.zoteroCli = lib.hm.dag.entryAfter [ "writeBoundary" ] ''

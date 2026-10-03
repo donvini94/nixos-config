@@ -1,7 +1,7 @@
 # The shell, editor and agent setup every host shares.
 {
   imports = [
-    ../ai/home
+    ../coding-agents/home
     ./git.nix
     # fish's cd abbreviation needs shell.nix's zoxide.
     ./fish.nix

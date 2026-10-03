@@ -8,7 +8,7 @@
     ../../hm-modules/zellij
     ../../hm-modules/zed.nix
     ../../hm-modules/doom.nix
-    ../../ai/home/claude.nix
+    ../../coding-agents/home/claude.nix
     ../../hm-modules/zotero-cli.nix
     ./fish.nix
     ./apps.nix

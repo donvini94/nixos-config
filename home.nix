@@ -22,9 +22,9 @@
     ./hm-modules/zellij
     ./hm-modules/caelestia.nix
     ./hm-modules/services.nix
-    ./ai/transcription/home.nix
+    ./transcription/home.nix
     ./mail/home/email.nix
-    ./ai/home/claude.nix
+    ./coding-agents/home/claude.nix
     ./hm-modules/zotero-cli.nix
     inputs.caelestia-shell.homeManagerModules.default
   ];

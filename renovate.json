@@ -14,7 +14,7 @@
   ],
   "ignorePaths": [
     "packages/**",
-    "ai/packages/**"
+    "coding-agents/packages/**"
   ],
   "prHourlyLimit": 2,
   "prConcurrentLimit": 5,
@@ -38,37 +38,18 @@
         "(?:default|image|trivyImage)\\s*=\\s*\\\"(?<depName>(?:[\\w.-]+/)*[\\w.-]+):(?<currentValue>[\\w.-]+)(?:@(?<currentDigest>sha256:[a-f0-9]{64}))?\\\""
       ],
       "datasourceTemplate": "docker"
-    },
-    {
-      "customType": "regex",
-      "managerFilePatterns": ["/^flake\\.nix$/"],
-      "matchStrings": [
-        "hermes-agent\\.url\\s*=\\s*\"github:NousResearch/hermes-agent/(?<currentValue>v[0-9]{4}\\.[0-9]+\\.[0-9]+)\""
-      ],
-      "depNameTemplate": "hermes-agent",
-      "packageNameTemplate": "NousResearch/hermes-agent",
-      "datasourceTemplate": "github-releases",
-      "versioningTemplate": "regex:^v(?<major>[0-9]{4})\\.(?<minor>[0-9]+)\\.(?<patch>[0-9]+)$"
     }
   ],
   "packageRules": [
     {
-      "description": "Hermes stable releases are tracked by the release manager, not the fixed Git ref.",
-      "matchManagers": ["nix"],
-      "matchDepNames": ["hermes-agent"],
-      "enabled": false
-    },
-    {
-      "description": "Use a predictable branch for the Hermes flake-lock refresh workflow.",
-      "matchManagers": ["custom.regex"],
-      "matchDepNames": ["hermes-agent"],
-      "branchTopic": "hermes-agent-stable",
-      "ignoreUnstable": true
-    },
-    {
       "description": "Update n8n and its task runners together.",
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["docker.io/n8nio/n8n", "docker.io/n8nio/runners"],
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "docker.io/n8nio/n8n",
+        "docker.io/n8nio/runners"
+      ],
       "groupName": "n8n and task runners"
     }
   ]

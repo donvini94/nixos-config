@@ -13,7 +13,6 @@ in
     ./ai-stack-target.nix
     ./n8n.nix
     ./hermes.nix
-    ./container-updates.nix
   ];
 
   options.services.aiStack = {
@@ -88,11 +87,5 @@ in
       enable = true;
       inherit (cfg) orgDirectory;
     };
-
-    services.containerUpdates.units = [
-      "docker-n8n.service"
-      "docker-n8n-runners.service"
-      "docker-hermes-agent.service"
-    ];
   };
 }

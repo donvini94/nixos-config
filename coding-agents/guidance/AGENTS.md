@@ -1,6 +1,6 @@
 # Working with me
 
-Communication preferences live in `~/nixos-config/ai/guidance/RULES.md`.
+Communication preferences live in `~/nixos-config/coding-agents/guidance/RULES.md`.
 Load language and domain guidance only for the work it applies to.
 Project instructions and existing constraints take precedence over these defaults.
 

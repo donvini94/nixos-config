@@ -5,8 +5,8 @@ description: "SailPoint ISC Java or XML rule development in rule-development-kit
 
 Read and follow the current authored rules before working:
 
-- `~/nixos-config/ai/guidance/rules/isc-rule.md`
-- `~/nixos-config/ai/guidance/rules/isc-rule-divergence.md`
+- `~/nixos-config/coding-agents/guidance/rules/isc-rule.md`
+- `~/nixos-config/coding-agents/guidance/rules/isc-rule-divergence.md`
 
 Use these client-neutral files directly. Read the engagement's own instructions for kit
 paths, build commands, toolchains and client-specific policy.

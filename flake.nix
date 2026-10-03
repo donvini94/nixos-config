@@ -12,8 +12,6 @@
     sops-nix.url = "github:Mic92/sops-nix";
     disko.url = "github:nix-community/disko";
     hosts.url = "github:StevenBlack/hosts";
-    # Only Dracula's desktop client; the server runs the pinned container in ai/nixos/hermes.nix.
-    hermes-agent.url = "github:NousResearch/hermes-agent/v2026.9.24";
 
     # Keep hyprlang until Home Manager supports Hyprland's Lua configuration.
     hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/v0.54.3";
@@ -115,13 +113,13 @@
           pkgs = nixpkgs.legacyPackages.${packageSystem};
         in
         {
-          lathe = pkgs.callPackage ./ai/packages/lathe.nix { };
+          lathe = pkgs.callPackage ./coding-agents/packages/lathe.nix { };
           linear-cli = pkgs.callPackage ./packages/linear-cli.nix { };
         }
         // nixpkgs.lib.optionalAttrs (packageSystem == "x86_64-linux") {
-          omp = pkgs.callPackage ./ai/packages/omp.nix { };
+          omp = pkgs.callPackage ./coding-agents/packages/omp.nix { };
           tika = pkgs.callPackage ./packages/tika.nix { };
-          local-transcription-client = pkgs.callPackage ./ai/transcription/client.nix { };
+          local-transcription-client = pkgs.callPackage ./transcription/client.nix { };
         }
       );
 
@@ -143,10 +141,10 @@
                 }
               ];
             }).config;
-          piOnly = clientConfig ./ai/home/pi.nix "piClient" true;
-          ompOnly = clientConfig ./ai/home/omp.nix "ompClient" true;
-          piDisabled = clientConfig ./ai/home/pi.nix "piClient" false;
-          ompDisabled = clientConfig ./ai/home/omp.nix "ompClient" false;
+          piOnly = clientConfig ./coding-agents/home/pi.nix "piClient" true;
+          ompOnly = clientConfig ./coding-agents/home/omp.nix "ompClient" true;
+          piDisabled = clientConfig ./coding-agents/home/pi.nix "piClient" false;
+          ompDisabled = clientConfig ./coding-agents/home/omp.nix "ompClient" false;
           owns =
             prefix: cfg: builtins.any (n: nixpkgs.lib.hasPrefix prefix n) (builtins.attrNames cfg.home.file);
         in
@@ -154,11 +152,11 @@
           shell-scripts =
             pkgs.runCommand "check-shell-scripts" { nativeBuildInputs = [ pkgs.shellcheck ]; }
               ''
-                shellcheck ${./ai/scripts}/*.sh ${./mail/bin}/* ${./mail/nixos}/*.sh ${./modules/vulnerability-scan}/*.sh ${./hosts/alucard/services}/*.sh
+                shellcheck ${./coding-agents/scripts}/*.sh ${./mail/bin}/* ${./mail/nixos}/*.sh ${./modules/vulnerability-scan}/*.sh ${./hosts/alucard/services}/*.sh
                 touch "$out"
               '';
           python-lint = pkgs.runCommand "check-python-lint" { nativeBuildInputs = [ pkgs.ruff ]; } ''
-            ruff check --no-cache --select F ${./ai/transcription}/server.py ${./ai/scripts/tests}
+            ruff check --no-cache --select F ${./transcription}/server.py ${./coding-agents/scripts/tests}
             touch "$out"
           '';
           model-download =
@@ -171,7 +169,7 @@
                 ];
               }
               ''
-                script=${./ai/scripts/download-model-file.sh}
+                script=${./scripts/download-model-file.sh}
                 printf 'test model\n' > source
                 hash=$(sha256sum source | cut -d ' ' -f 1)
                 bash "$script" "$PWD/model/file" "$hash" "file://$PWD/source"
@@ -211,8 +209,8 @@
                 ];
               }
               ''
-                PYTHONDONTWRITEBYTECODE=1 python3 ${./ai/scripts/tests}/test_update_skills.py ${./ai/scripts/update-skills.sh}
-                PYTHONDONTWRITEBYTECODE=1 python3 ${./ai/scripts/tests}/test_bootstrap_pi.py ${./ai/scripts/bootstrap-pi.sh}
+                PYTHONDONTWRITEBYTECODE=1 python3 ${./coding-agents/scripts/tests}/test_update_skills.py ${./coding-agents/scripts/update-skills.sh}
+                PYTHONDONTWRITEBYTECODE=1 python3 ${./coding-agents/scripts/tests}/test_bootstrap_pi.py ${./coding-agents/scripts/bootstrap-pi.sh}
                 touch "$out"
               '';
         }

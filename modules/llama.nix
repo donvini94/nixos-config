@@ -178,7 +178,7 @@ let
     ++ m.serverArgs;
 in
 {
-  imports = [ ./ai-stack-target.nix ];
+  imports = [ ../ai/nixos/ai-stack-target.nix ];
 
   options.services.localLlama = {
     enable = lib.mkEnableOption "local OpenAI-compatible inference (llama.cpp/GGUF)";

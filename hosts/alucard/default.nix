@@ -26,6 +26,7 @@
     ../../modules/vulnerability-scan/container.nix
     ../../modules/vulnerability-scan/host.nix
     ../../mail/nixos/credentials.nix
+    ../../modules/container-updates.nix
     ../../secrets/secrets.nix
   ];
 
@@ -35,7 +36,12 @@
 
   services.containerUpdates = {
     enable = true;
-    units = [ "media-stack.service" ];
+    units = [
+      "media-stack.service"
+      "docker-n8n.service"
+      "docker-n8n-runners.service"
+      "docker-hermes-agent.service"
+    ];
   };
 
   services.containerVulnerabilityScan = {

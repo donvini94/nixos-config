@@ -5,8 +5,8 @@ description: "Rust coding and Cargo work; load the shared Rust engineering and r
 
 Read and follow the current authored rules before working:
 
-- `~/nixos-config/ai/guidance/rules/rust.md`
-- `~/nixos-config/ai/guidance/rules/rust-runtime-hazard.md`
+- `~/nixos-config/coding-agents/guidance/rules/rust.md`
+- `~/nixos-config/coding-agents/guidance/rules/rust-runtime-hazard.md`
 
 Use these client-neutral files directly. Apply the guide to the current project and its
 constraints; use the runtime-hazard checklist as a review aid, not proof of a defect.

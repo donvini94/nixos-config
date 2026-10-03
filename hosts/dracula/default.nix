@@ -8,15 +8,6 @@
 }:
 
 let
-  hermesDesktop = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.desktop;
-  hermesDesktopLauncher = pkgs.makeDesktopItem {
-    name = "hermes-desktop";
-    desktopName = "Hermes";
-    comment = "Hermes Agent desktop client";
-    exec = "${hermesDesktop}/bin/hermes-desktop";
-    icon = "${hermesDesktop}/share/hermes-desktop/dist/hermes.png";
-    categories = [ "Development" ];
-  };
   # Keep CUDA scoped to inference and compile only for the RTX 3090.
   cudaPkgs = import inputs.nixpkgs {
     system = pkgs.stdenv.hostPlatform.system;
@@ -37,10 +28,10 @@ in
     ../../modules/nvidia.nix
     ../../modules/desktop/gaming.nix
     ../../modules/observability
-    ../../ai/nixos/llama.nix
+    ../../modules/llama.nix
     ../../mail/nixos/credentials.nix
     ../../ai/nixos/requesty.nix
-    ../../ai/transcription/nixos.nix
+    ../../transcription/nixos.nix
     ../../modules/gpu-mode.nix
     ../../modules/vulnerability-scan/host.nix
     ./hardware.nix
@@ -165,13 +156,11 @@ in
         "https://hyprland.cachix.org"
         "https://nix-community.cachix.org"
         "https://nixpkgs-wayland.cachix.org"
-        "https://hermes-agent.cachix.org"
       ];
       extra-trusted-public-keys = [
         "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
         "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
         "nixpkgs-wayland.cachix.org-1:3lwxaILxMRkVhehr5StQprHdEo4IrE8sRho9R9HOLYA="
-        "hermes-agent.cachix.org-1:jN3pjR50Mxi4SESKC/FIMNM6/LCosvPk2VUwzVvebzU="
       ];
     };
     gc.automatic = lib.mkForce false;
@@ -190,8 +179,6 @@ in
     ];
     packages = [
       pkgs.firefox
-      hermesDesktop
-      hermesDesktopLauncher
     ];
     openssh.authorizedKeys.keys = [
       "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCPlhh/4miDPy8MD7ckimo0ZlEyRIIQymAeNrpvbURg+H0G+kztFgr2x0muzAVwy5noz7511zQBkG9q+lJfWHzjGvVibew5HhcdlECkzpStrkRkupM0l7Ql1ILlQb/lME1v4TM+JM1nCbOgIqkjKJ/dzE3WqHz8CfJ6ilf5QedKHnAFbMu6miOGHMJxDje+0t/51QPul513d2oyIjtUBjtW0Yo77PgSuopFbhEI//cn0P7QVJArbmv7YZqGNifVzMyzQBlvXQtJC0CR/bGTJwspCCU2xIangzHrkKxRqkZJrk1zC5JyMbW1oRUZ3ah7MbUq/ivAUfjvzvkrZS5DbigMmSIbGmoK9d/k6pQjj4gyL1Q5KZRq4g2JKkV6Uhaqr2yfG2F0T6FGKnhGO6P5PK2bkAobfCfLL5IGkceK/WB0InMKfdbii971CeUY0qk+1ad7Fn9txuR5omttkEtM9Hh9Afz1kGxa4ia9+d71OV4KoXVykqr/bD284rhOooX4/mU= vincenzo@dracula"
