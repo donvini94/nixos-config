@@ -8,7 +8,7 @@
 }:
 
 let
-  requesty = import ../../lib/requesty-models.nix;
+  requesty = import ../../lib/requesty.nix;
   hermesDesktop = inputs.hermes-agent.packages.${pkgs.stdenv.hostPlatform.system}.desktop;
   hermesDesktopLauncher = pkgs.makeDesktopItem {
     name = "hermes-desktop";
@@ -142,7 +142,7 @@ in
   # No Requesty credential is copied to Dracula. Interactive clients reach the
   # authenticated Alucard ingress privately over Tailscale.
   services.remoteOpenAI = {
-    inherit (requesty) models defaultModel;
+    inherit (requesty) defaultModel;
   };
 
   services.localObservability = {

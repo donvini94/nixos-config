@@ -66,6 +66,31 @@ native plugin manager for OMP plugins. =update-skills= manages neither client.
 Pi's binary version is pinned in =hm-modules/pi.nix=. The Mac's OMP binary is its native
 Bun installation; its wrapper scopes the managed settings to OMP invocations.
 
+* Startup applications
+
+The stack stays in this repository. Nix owns deployment, service identities, private
+listeners, approved egress and secrets. Application preferences and authored state
+remain writable; exporting/restoring that state is part of moving an instance.
+
+Requesty's authenticated organization-approved catalog supplies available models,
+capabilities, limits and prices. The ingress caches metadata privately; stale metadata
+can be served during an outage, but completion requests still require upstream
+authorization. Prices are estimates unless the provider reports actual cost.
+Linux Pi/OMP model lists refresh every 15 minutes; =sync-ai-models= refreshes them
+manually. Additional providers and client settings are preserved. Local model serving
+metadata and the initial remote default remain declarative.
+
+Hermes settings and MCP credentials survive activation. Initial preferences are seeded;
+approval policy, filesystem roots, service authentication and network exposure stay
+managed. Operator-installed MCP packages may use the approved npm, PyPI and GitHub
+hosts. Other remote MCP destinations need an explicit entry in
+=services.aiStack.hermes.egressHosts=. This policy is not a hostile-agent isolation boundary.
+
+Base images and application packages are pinned. UI-installed tools and workflow edits
+are mutable state, not automatically reproducible builds: record their versions and
+configuration before relying on them in another deployment. The n8n state directory
+and Docker subnet/gateway are configurable rather than tied to Alucard.
+
 * Dracula
 
 =gpu-mode transcription|ai|gaming= selects the exclusive GPU workload;

@@ -2,6 +2,7 @@
 {
   config,
   lib,
+  pkgs,
   username,
   ...
 }:
@@ -9,6 +10,29 @@
 let
   cfg = config.services.aiStack;
   hermes = import ../lib/hermes-agent.nix;
+  hermesHome = "${config.services.hermes-agent.stateDir}/.hermes";
+  policyDirectory = "${config.services.hermes-agent.stateDir}/policy";
+  ingressUrl = "http://127.0.0.1:8080/v1";
+  defaults = pkgs.writeText "hermes-defaults.json" (
+    builtins.toJSON (
+      hermes.mkDefaults {
+        inherit (cfg.hermes) providerName defaultModel;
+      }
+    )
+  );
+  policy = pkgs.writeText "hermes-policy.json" (
+    builtins.toJSON (
+      hermes.mkPolicy {
+        inherit (cfg.hermes) providerName;
+        inherit ingressUrl;
+      }
+    )
+  );
+  python = pkgs.python3.withPackages (ps: [
+    ps.pyyaml
+    ps.python-dotenv
+  ]);
+  stateTool = "${python}/bin/python3 ${../scripts/hermes-state.py}";
 in
 {
   imports = [
@@ -38,6 +62,23 @@ in
     };
 
     hermes = {
+      egressHosts = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [
+          "api.telegram.org"
+          "setup.hermes-agent.nousresearch.com"
+          "registry.npmjs.org"
+          "pypi.org"
+          "files.pythonhosted.org"
+          "github.com"
+          "api.github.com"
+          "raw.githubusercontent.com"
+          "codeload.github.com"
+          "objects.githubusercontent.com"
+          "release-assets.githubusercontent.com"
+        ];
+        description = "Exact HTTPS hosts approved for messaging and operator-installed MCP dependencies.";
+      };
       providerName = lib.mkOption {
         type = lib.types.str;
         description = "Name Hermes gives the ingress-backed provider.";
@@ -48,10 +89,6 @@ in
         description = "Model Hermes requests from the ingress.";
       };
 
-      contextLength = lib.mkOption {
-        type = lib.types.int;
-        description = "Context window Hermes assumes for the default model.";
-      };
     };
   };
 
@@ -113,10 +150,8 @@ in
       enable = true;
       addToSystemPackages = true;
       workingDirectory = "/var/lib/hermes/workspace";
-      settings = hermes.mkSettings {
-        inherit (cfg.hermes) providerName defaultModel contextLength;
-        ingressUrl = "http://127.0.0.1:8080/v1";
-      };
+      # Preferences are seeded after upstream activation; policy lives in a separate managed scope.
+      settings = { };
       documents = {
         "AGENTS.md" = ../hermes/workspace/AGENTS.md;
       };
@@ -136,7 +171,32 @@ in
       };
     };
 
+    system.activationScripts.hermes-state-capture = {
+      deps = [ "users" ];
+      text = ''
+        ${stateTool} capture ${hermesHome} /run/hermes-state-activation
+      '';
+    };
+    system.activationScripts.hermes-agent-setup.deps = [ "hermes-state-capture" ];
+    system.activationScripts.hermes-state-restore = {
+      deps = [ "hermes-agent-setup" ];
+      text = ''
+        install -d -o root -g ${config.services.hermes-agent.group} -m 0750 ${policyDirectory}
+        ln -sfn ${policy} ${policyDirectory}/config.yaml
+        ${stateTool} restore ${hermesHome} /run/hermes-state-activation \
+          --defaults ${defaults} --policy ${policyDirectory}
+      '';
+    };
+
     services.hermesDashboard.enable = true;
+    systemd.services.hermes-dashboard.restartTriggers = [ policy ];
+    systemd.services.hermes-agent.restartTriggers = [
+      policy
+      defaults
+      (pkgs.writeText "hermes-runtime-env.json" (
+        builtins.toJSON config.services.hermes-agent.environment
+      ))
+    ];
 
     # Upstream wants multi-user.target; this stack is gated behind
     # ai-stack.target and must not start before the ingress it talks to.

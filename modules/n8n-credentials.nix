@@ -9,7 +9,7 @@
 let
   cfg = config.services.n8nCredentials;
   n8nCfg = config.services.localN8n;
-  stateDirectory = "/var/lib/n8n-container";
+  stateDirectory = n8nCfg.stateDirectory;
 
   syncScript = pkgs.writeShellApplication {
     name = "n8n-credentials-sync";

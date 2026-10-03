@@ -7,17 +7,19 @@
 }:
 
 let
-  requesty = import ../../lib/requesty-models.nix;
+  requesty = import ../../lib/requesty.nix;
   hermes = import ../../lib/hermes-agent.nix;
   hermesN8nHandoff = pkgs.callPackage ../../packages/hermes-n8n-handoff.nix { };
-  inherit (requesty) defaultModel models;
+  inherit (requesty) defaultModel;
   secretFile = ../../secrets/alucard-ai.yaml;
   hermesProxyPort = 18084;
   hermesProxyUrl = "http://127.0.0.1:${toString hermesProxyPort}";
-  hermesEgressAllowlist = pkgs.writeText "hermes-egress-allowlist" ''
-    ^api\.telegram\.org$
-    ^setup\.hermes-agent\.nousresearch\.com$
-  '';
+  hermesEgressAllowlist = pkgs.writeText "hermes-egress-allowlist" (
+    lib.concatMapStringsSep "\n" (
+      host: "^${lib.escapeRegex host}$"
+    ) config.services.aiStack.hermes.egressHosts
+    + "\n"
+  );
 in
 {
   imports = [
@@ -109,7 +111,6 @@ in
     hermes = {
       providerName = "alucard-requesty";
       inherit defaultModel;
-      contextLength = models.${defaultModel}.context;
     };
   };
 
@@ -129,7 +130,7 @@ in
 
   services.remoteOpenAI = {
     enable = true;
-    inherit models defaultModel;
+    inherit defaultModel;
   };
 
   # Both credentials are provisioned by n8n's own CLI so they land encrypted
@@ -173,9 +174,8 @@ in
     restartTriggers = [ config.sops.templates."hermes.env".file ];
   };
 
-  # Supported Hermes messaging adapters egress through this domain-filtered
-  # proxy; agent policy separately limits tool-driven calls to localhost n8n
-  # webhooks.
+  # Messaging and approved MCP package downloads use this domain-filtered proxy.
+  # New remote MCP destinations require an explicit host allowlist entry.
   services.tinyproxy = {
     enable = true;
     settings = {

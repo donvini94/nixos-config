@@ -155,7 +155,7 @@
                 touch "$out"
               '';
           python-lint = pkgs.runCommand "check-python-lint" { nativeBuildInputs = [ pkgs.ruff ]; } ''
-            ruff check --no-cache --select F ${./ai-ingress} ${./local-transcription}/server.py ${./paperless}/provision.py ${./scripts/tests}
+            ruff check --no-cache --select F ${./ai-ingress} ${./local-transcription}/server.py ${./paperless}/provision.py ${./scripts/tests} ${./scripts}/sync-ai-models.py ${./scripts}/hermes-state.py
             touch "$out"
           '';
           model-download =
@@ -210,6 +210,20 @@
               ''
                 PYTHONDONTWRITEBYTECODE=1 python3 ${./scripts/tests}/test_update_skills.py ${./scripts/update-skills.sh}
                 PYTHONDONTWRITEBYTECODE=1 python3 ${./scripts/tests}/test_bootstrap_pi.py ${./scripts/bootstrap-pi.sh}
+                touch "$out"
+              '';
+          startup-state-tests =
+            pkgs.runCommand "check-startup-state"
+              {
+                nativeBuildInputs = [
+                  (pkgs.python3.withPackages (ps: [
+                    ps.pyyaml
+                    ps.python-dotenv
+                  ]))
+                ];
+              }
+              ''
+                PYTHONDONTWRITEBYTECODE=1 python3 ${./scripts/tests}/test_startup_state.py ${./.}
                 touch "$out"
               '';
           ai-ingress-tests =

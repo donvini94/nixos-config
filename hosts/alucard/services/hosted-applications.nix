@@ -64,7 +64,7 @@
     after = [ "docker-n8n.service" ];
     prepare = ''
       install -d -m 0700 "$stage"
-      sqlite3 /var/lib/n8n-container/database.sqlite \
+      sqlite3 ${lib.escapeShellArg "${config.services.localN8n.stateDirectory}/database.sqlite"} \
         ".backup '$stage/database.sqlite'"
       test -s "$stage/database.sqlite"
     '';

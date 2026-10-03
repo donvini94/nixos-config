@@ -16,8 +16,7 @@ let
     endpoint = "http://127.0.0.1:8080/v1";
     provider = "dracula-local";
     disableStrictTools = true;
-    # llama.nix names these fields for the serving side; clients consume the OpenAI-shaped
-    # names that services.remoteOpenAI.models already exposes.
+    # Local serving metadata is declared; remote metadata comes from the ingress.
     models = lib.mapAttrs (_id: model: {
       name = model.displayName;
       context = model.contextSize;
@@ -30,7 +29,7 @@ let
     provider = "alucard-requesty";
     defaultModel = osConfig.services.remoteOpenAI.defaultModel;
     disableStrictTools = false;
-    models = osConfig.services.remoteOpenAI.models;
+    models = { }; # The runtime catalog fills this provider.
   };
   profiles =
     if isDracula then
@@ -47,7 +46,11 @@ let
   # Custom-provider selectors only; the harness package adds the scopes for
   # OMP's bundled subscription-authenticated providers.
   profileModels = lib.concatMap (
-    profile: map (modelSelector profile) (builtins.attrNames profile.models)
+    profile:
+    if profile.provider == requestyProfile.provider then
+      [ "${profile.provider}/*" ]
+    else
+      map (modelSelector profile) (builtins.attrNames profile.models)
   ) profiles;
   ompProviders = lib.listToAttrs (
     map (profile: {
@@ -119,20 +122,30 @@ let
   };
 in
 {
+  imports = [ ./ai-model-catalog.nix ];
   config = lib.mkIf active {
+    home.aiModelCatalog = {
+      enable = true;
+      endpoint = requestyProfile.endpoint;
+      clients.omp = {
+        path = "${config.home.homeDirectory}/.omp/agent/models.yml";
+        defaults.providers = ompProviders;
+        modelDefaults.compat = {
+          supportsStore = false;
+          supportsDeveloperRole = false;
+          supportsReasoningEffort = false;
+          maxTokensField = "max_tokens";
+        };
+      };
+    };
     home.packages = [ omp ];
 
-    home.file = {
-      ".omp/agent/models.yml".source = yaml.generate "omp-models.yml" {
-        providers = ompProviders;
-      };
-    }
     # A named profile sees only its own user-level config — never ~/.omp/agent — so the
     # local profile needs its own copy of the provider it is allowed to reach (the local
     # one alone) and its own AGENTS.md. The AGENTS.md is a link to the default profile's
     # file, which is itself an out-of-store link into this repository: one authored file,
     # editable without a rebuild, visible to both profiles.
-    // lib.optionalAttrs isDracula {
+    home.file = lib.optionalAttrs isDracula {
       ".omp/profiles/local/agent/models.yml".source = yaml.generate "omp-local-models.yml" {
         providers.${localProfile.provider} = ompProviders.${localProfile.provider};
       };

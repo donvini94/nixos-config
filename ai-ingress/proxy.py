@@ -13,6 +13,8 @@ import urllib.request
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from catalog import ModelCatalog
+
 BACKEND = os.environ["LLAMA_BACKEND"]
 BACKEND_HEALTH_PATH = os.environ.get("LLAMA_BACKEND_HEALTH_PATH", "/health")
 LOG_PATH = os.environ["LLAMA_REQUEST_LOG"]
@@ -87,6 +89,15 @@ def load_credential(environment_name):
 
 
 UPSTREAM_BEARER_TOKEN = load_credential("LLAMA_UPSTREAM_BEARER_CREDENTIAL")
+CATALOG = (
+    ModelCatalog(
+        BACKEND + "/v1/models",
+        UPSTREAM_BEARER_TOKEN,
+        os.environ["LLAMA_MODEL_CATALOG_CACHE"],
+    )
+    if os.environ.get("LLAMA_MODEL_CATALOG_CACHE")
+    else None
+)
 
 
 def upstream_headers(headers):
@@ -305,7 +316,11 @@ def extract_output(body, document=None):
 
 def compute_cost(model, usage, price_map=None):
     """Provider billing and list-price estimate; neither substitutes for the other."""
-    prices = PRICE_MAP if price_map is None else price_map
+    prices = (
+        (CATALOG.price_map if CATALOG is not None else PRICE_MAP)
+        if price_map is None
+        else price_map
+    )
     actual = None
     estimated = None
     if isinstance(usage, dict):
@@ -527,7 +542,11 @@ class Proxy(BaseHTTPRequestHandler):
             return self._metrics()
         if self.path == "/health" and self.command == "GET":
             return self._health()
-        if self.path == "/v1/models" and self.command == "GET" and ALLOWED_MODELS:
+        if (
+            self.path == "/v1/models"
+            and self.command == "GET"
+            and (ALLOWED_MODELS or CATALOG)
+        ):
             return self._models()
 
         started = time.monotonic()
@@ -539,7 +558,25 @@ class Proxy(BaseHTTPRequestHandler):
         except json.JSONDecodeError:
             request_json = None
         model = request_json.get("model") if isinstance(request_json, dict) else None
-        if ALLOWED_MODELS and model and model not in ALLOWED_MODELS:
+        if model is not None and not isinstance(model, str):
+            return self._reject_model(started, request_json, "<invalid model>")
+        if CATALOG is not None and (
+            model is not None or self.path in LANGFUSE_ENDPOINTS
+        ):
+            try:
+                permitted = {entry["id"] for entry in CATALOG.get()["data"]}
+            except RuntimeError:
+                return self._reject_model(
+                    started,
+                    request_json,
+                    model,
+                    status=503,
+                    error_type="model_catalog_unavailable",
+                    message="Approved model catalog unavailable",
+                )
+            if model not in permitted:
+                return self._reject_model(started, request_json, model)
+        elif ALLOWED_MODELS and model and model not in ALLOWED_MODELS:
             return self._reject_model(started, request_json, model)
         headers = upstream_headers(self.headers)
         request = urllib.request.Request(
@@ -654,12 +691,20 @@ class Proxy(BaseHTTPRequestHandler):
                 )
             self.close_connection = True
 
-    def _reject_model(self, started, request_json, model):
-        status = 403
+    def _reject_model(
+        self,
+        started,
+        request_json,
+        model,
+        status=403,
+        error_type="model_not_allowed",
+        message=None,
+    ):
         response_json = {
             "error": {
-                "message": f"model {model!r} is not registered on this ingress",
-                "type": "model_not_allowed",
+                "message": message
+                or f"model {model!r} is not registered on this ingress",
+                "type": error_type,
             }
         }
         payload = json.dumps(response_json, separators=(",", ":")).encode()
@@ -687,7 +732,7 @@ class Proxy(BaseHTTPRequestHandler):
                 "cost": cost,
                 "stream_completed": None,
                 "client_disconnected": False,
-                "proxy_error": "model_not_allowed",
+                "proxy_error": error_type,
                 "request": request_json,
                 "response": response_json,
                 "response_content_type": "application/json",
@@ -698,6 +743,19 @@ class Proxy(BaseHTTPRequestHandler):
         self.close_connection = True
 
     def _models(self):
+        if CATALOG is not None:
+            try:
+                payload = json.dumps(CATALOG.get()).encode()
+                status = 200
+            except RuntimeError:
+                payload = b'{"error":{"message":"Model catalog unavailable"}}'
+                status = 503
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+            return
         request = urllib.request.Request(
             BACKEND + "/v1/models",
             headers=upstream_headers(self.headers),
@@ -776,6 +834,13 @@ class Proxy(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    if CATALOG is not None:
+        try:
+            CATALOG.get()
+        except RuntimeError:
+            logging.warning(
+                "Starting ingress without model metadata; discovery will retry"
+            )
     os.makedirs(os.path.dirname(LOG_PATH), exist_ok=True)
     server = ThreadingHTTPServer(
         (os.environ["LLAMA_PROXY_HOST"], int(os.environ["LLAMA_PROXY_PORT"])), Proxy

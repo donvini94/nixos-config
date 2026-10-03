@@ -22,7 +22,11 @@ let
 
   # The proxy needs the Langfuse SDK, so it gets its own interpreter.
   python = pkgs.python3.withPackages (ps: [ ps.langfuse ]);
-  proxy = pkgs.writeText "ai-ingress-proxy.py" (builtins.readFile ../ai-ingress/proxy.py);
+  proxy = pkgs.runCommand "ai-ingress" { } ''
+    mkdir -p "$out"
+    cp ${../ai-ingress/proxy.py} "$out/proxy.py"
+    cp ${../ai-ingress/catalog.py} "$out/catalog.py"
+  '';
   usageSummary = pkgs.writeText "ai-usage-summary.py" (
     builtins.readFile ../ai-ingress/usage-summary.py
   );
@@ -84,6 +88,12 @@ in
       type = lib.types.listOf lib.types.str;
       default = [ ];
       description = "Model allowlist; empty disables filtering (local backends route by name).";
+    };
+
+    discoverModels = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Cache the authenticated upstream model catalog and estimate prices from its metadata.";
     };
 
     priceMap = lib.mkOption {
@@ -186,6 +196,9 @@ in
         LLAMA_ENVIRONMENT = config.networking.hostName;
         LLAMA_PRICE_MAP = builtins.toJSON billablePrices;
       }
+      // lib.optionalAttrs cfg.discoverModels {
+        LLAMA_MODEL_CATALOG_CACHE = "${stateDirectory}/models.json";
+      }
       // lib.optionalAttrs (cfg.allowedModels != [ ]) {
         LLAMA_ALLOWED_MODELS = builtins.toJSON cfg.allowedModels;
       }
@@ -204,7 +217,7 @@ in
         StateDirectory = "llama";
         StateDirectoryMode = "0750";
         ExecStartPre = cfg.extraPreStart ++ [ prepareLogs ];
-        ExecStart = "${python}/bin/python3 ${proxy}";
+        ExecStart = "${python}/bin/python3 ${proxy}/proxy.py";
         LoadCredential =
           lib.optional (
             cfg.upstreamBearerCredentialFile != null

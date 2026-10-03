@@ -1,14 +1,4 @@
-# Hermes operator dashboard.
-#
-# WHY THIS EXISTS: the dashboard is a second process, not part of `hermes
-# gateway run`. The official nousresearch image supervises it as an s6 longrun
-# (docker/s6-rc.d/dashboard) gated on $HERMES_DASHBOARD; the upstream NixOS
-# module's OCI mode uses a plain base image with no s6, so nothing starts it.
-# Everything else about the deployment is upstream's.
-#
-# DELETE THIS when services.hermes-agent supervises the dashboard itself. The
-# check is one command: with this unit masked, confirm container-mode Hermes
-# listens on $HERMES_DASHBOARD_PORT by itself.
+# The upstream container module starts the gateway, but not the dashboard.
 {
   config,
   lib,

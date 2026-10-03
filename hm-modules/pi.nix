@@ -11,7 +11,6 @@ let
   agentDir = "${home}/.pi/agent";
   repo = "${home}/nixos-config";
   link = config.lib.file.mkOutOfStoreSymlink;
-  requesty = import ../lib/requesty-models.nix;
   isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
   isDracula = !isDarwin && (osConfig.networking.hostName or "") == "dracula";
   requestyEndpoint =
@@ -32,18 +31,6 @@ let
   amosWebFetchPackage = upstream "extensions/web-fetch/package.json" "sha256-4lYfuZ56pzSpuDexodOa4ZiADnreQ/fhNab+0INNhC4=";
   amosWebFetchLock = upstream "extensions/web-fetch/package-lock.json" "sha256-3/ofJOqI8pLzHQjEgMoaMA4sw1WFljpGVUQ/hPyI7qo=";
 
-  toPiModel = id: model: {
-    inherit id;
-    name = model.name;
-    reasoning = model.reasoning;
-    input = [ "text" ];
-    contextWindow = model.context;
-    maxTokens = model.output;
-    cost = model.cost // {
-      cacheRead = 0;
-      cacheWrite = 0;
-    };
-  };
   requestyProvider = {
     name = "Alucard Requesty";
     baseUrl = requestyEndpoint;
@@ -53,7 +40,7 @@ let
     # The ingress authenticates this host; Pi must not invent an Authorization header.
     authHeader = false;
     headers.X-AI-Caller = "pi";
-    models = lib.mapAttrsToList toPiModel requesty.models;
+    models = [ ]; # Filled from the private ingress, not during Nix evaluation.
   };
   localProvider = {
     name = "Dracula local llama.cpp";
@@ -86,10 +73,7 @@ let
       if isDarwin || !(isDracula || (osConfig.services.remoteOpenAI.enable or false)) then
         { }
       else
-        {
-          alucard-requesty = requestyProvider;
-        }
-        // lib.optionalAttrs isDracula {
+        lib.optionalAttrs isDracula {
           dracula-local = localProvider;
         };
   };
@@ -141,11 +125,24 @@ let
   };
 in
 {
-  imports = [ ./agent-content.nix ];
+  imports = [
+    ./agent-content.nix
+    ./ai-model-catalog.nix
+  ];
   options.programs.piClient.enable = lib.mkEnableOption "Pi coding client";
 
   config = lib.mkIf config.programs.piClient.enable {
     home.agentContent.enable = true;
+    home.aiModelCatalog =
+      lib.mkIf (!isDarwin && (isDracula || (osConfig.services.remoteOpenAI.enable or false)))
+        {
+          enable = true;
+          endpoint = requestyEndpoint;
+          clients.pi = {
+            path = "${agentDir}/models.json";
+            defaults.providers.alucard-requesty = requestyProvider;
+          };
+        };
     home.file = {
       # AGENTS.md and MEMORY.md are agent-owned writable files, not Nix resources.
       ".pi/agent/skills/mentor".source = link "${home}/.local/share/agent-content/mentor/skills/mentor";

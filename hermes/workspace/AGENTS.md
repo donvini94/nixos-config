@@ -1,6 +1,6 @@
 # Hermes sandbox
 
-`/workspace` is the agent's versioned task workspace. `/org` is the shared Org-mode
+`/data/workspace` is the agent's task workspace. `/org` is the shared Org-mode
 knowledge and coordination tree used by the operator, Hermes, and n8n.
 
 - You may read and update files under `/org` when the task calls for it. Make focused,
@@ -17,9 +17,7 @@ knowledge and coordination tree used by the operator, Hermes, and n8n.
   make focused commits after verified milestones.
 - Apart from configured messaging adapters and approved localhost n8n webhooks, treat
   network access as unavailable. Stop and report when a task needs another external
-  destination, credentials, or a path outside `/workspace`, `/opt/data`, and `/org`.
-- Record unexpected behavior or unsafe proposals in `SURPRISES.md` with the date, task,
-  attempted action, outcome, and whether the boundary prevented it.
+  destination, credentials, or a path outside `/data/workspace`, `/data/.hermes`, and `/org`.
 
 Favor reversible file-oriented work with deterministic verification. These integration
 surfaces grant specific capabilities; they are not permission to operate the host.

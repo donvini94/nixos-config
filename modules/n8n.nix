@@ -10,11 +10,11 @@ let
   port = 5678;
   n8nUrl = "http://${cfg.bindAddress}:${toString port}";
   executionRetentionHours = 2160;
-  stateDirectory = "/var/lib/n8n-container";
-  dockerNetwork = "n8n-local";
-  dockerBridge = "n8n-local0";
-  dockerSubnet = "172.30.0.0/24";
-  dockerGateway = "172.30.0.1";
+  inherit (cfg) stateDirectory;
+  dockerNetwork = cfg.network.name;
+  dockerBridge = cfg.network.bridge;
+  dockerSubnet = cfg.network.subnet;
+  dockerGateway = cfg.network.gateway;
 
   # Mirrors API_SERVER_PORT in lib/hermes-agent.nix: the proxy must target the port
   # Hermes listens on.
@@ -28,6 +28,35 @@ let
       exit 1
     fi
   '';
+
+  privateSocket = targetPort: {
+    wantedBy = [ "ai-stack.target" ];
+    partOf = [ "ai-stack.target" ];
+    after = [ "n8n-docker-network.service" ];
+    requires = [ "n8n-docker-network.service" ];
+    # The bridge starts after basic.target; default sockets.target ordering would create a cycle.
+    unitConfig.DefaultDependencies = false;
+    listenStreams = [ "${dockerGateway}:${toString targetPort}" ];
+  };
+  privateProxy = targetPort: upstreamUnit: {
+    partOf = [ "ai-stack.target" ];
+    after = [ upstreamUnit ];
+    requires = [ upstreamUnit ];
+    serviceConfig = {
+      ExecStart = "${pkgs.systemd}/lib/systemd/systemd-socket-proxyd 127.0.0.1:${toString targetPort}";
+      DynamicUser = true;
+      NoNewPrivileges = true;
+      PrivateDevices = true;
+      PrivateTmp = true;
+      ProtectSystem = "strict";
+      ProtectHome = true;
+      RestrictAddressFamilies = [
+        "AF_UNIX"
+        "AF_INET"
+        "AF_INET6"
+      ];
+    };
+  };
 
   containerHardening = [
     "--read-only"
@@ -45,6 +74,30 @@ in
       type = lib.types.str;
       default = "docker.io/n8nio/n8n:2.40.3@sha256:e397d0aab215cc1a3ed865bd0c2d7982dff9390fa298f3c188d084425cd6fb16";
       description = "Digest-pinned official n8n OCI image.";
+    };
+
+    stateDirectory = lib.mkOption {
+      type = lib.types.str;
+      default = "/var/lib/n8n-container";
+      description = "Persistent n8n state, also used by credential import and backups.";
+    };
+    network = {
+      name = lib.mkOption {
+        type = lib.types.str;
+        default = "n8n-local";
+      };
+      bridge = lib.mkOption {
+        type = lib.types.str;
+        default = "n8n-local0";
+      };
+      subnet = lib.mkOption {
+        type = lib.types.str;
+        default = "172.30.0.0/24";
+      };
+      gateway = lib.mkOption {
+        type = lib.types.str;
+        default = "172.30.0.1";
+      };
     };
 
     bindAddress = lib.mkOption {
@@ -239,71 +292,17 @@ in
       '';
     };
 
-    systemd.sockets.n8n-ai-ingress = {
+    systemd.sockets.n8n-ai-ingress = privateSocket 8080 // {
       description = "Container-only socket for the local AI ingress";
-      wantedBy = [ "ai-stack.target" ];
-      partOf = [ "ai-stack.target" ];
-      after = [ "n8n-docker-network.service" ];
-      requires = [ "n8n-docker-network.service" ];
-      # The Docker bridge is created by a service that starts after basic.target.
-      # A socket's default Before=sockets.target ordering would otherwise make
-      # activation cyclic: basic -> sockets -> this socket -> bridge -> basic.
-      unitConfig.DefaultDependencies = false;
-      listenStreams = [ "${dockerGateway}:8080" ];
     };
-
-    systemd.services.n8n-ai-ingress = {
+    systemd.services.n8n-ai-ingress = privateProxy 8080 "local-llama-logger.service" // {
       description = "Proxy n8n container traffic to the loopback AI ingress";
-      partOf = [ "ai-stack.target" ];
-      after = [ "local-llama-logger.service" ];
-      requires = [ "local-llama-logger.service" ];
-      serviceConfig = {
-        ExecStart = "${pkgs.systemd}/lib/systemd/systemd-socket-proxyd 127.0.0.1:8080";
-        DynamicUser = true;
-        NoNewPrivileges = true;
-        PrivateDevices = true;
-        PrivateTmp = true;
-        ProtectSystem = "strict";
-        ProtectHome = true;
-        RestrictAddressFamilies = [
-          "AF_UNIX"
-          "AF_INET"
-          "AF_INET6"
-        ];
-      };
     };
-
-    # Hermes itself only listens on host loopback. This socket gives n8n a
-    # route to that authenticated API without publishing it on a host NIC.
-    systemd.sockets.n8n-hermes-api = {
+    systemd.sockets.n8n-hermes-api = privateSocket hermesApiPort // {
       description = "Container-only socket for the Hermes agent API";
-      wantedBy = [ "ai-stack.target" ];
-      partOf = [ "ai-stack.target" ];
-      after = [ "n8n-docker-network.service" ];
-      requires = [ "n8n-docker-network.service" ];
-      unitConfig.DefaultDependencies = false;
-      listenStreams = [ "${dockerGateway}:${toString hermesApiPort}" ];
     };
-
-    systemd.services.n8n-hermes-api = {
+    systemd.services.n8n-hermes-api = privateProxy hermesApiPort "hermes-agent.service" // {
       description = "Proxy n8n container traffic to the Hermes agent API";
-      partOf = [ "ai-stack.target" ];
-      after = [ "hermes-agent.service" ];
-      requires = [ "hermes-agent.service" ];
-      serviceConfig = {
-        ExecStart = "${pkgs.systemd}/lib/systemd/systemd-socket-proxyd 127.0.0.1:${toString hermesApiPort}";
-        DynamicUser = true;
-        NoNewPrivileges = true;
-        PrivateDevices = true;
-        PrivateTmp = true;
-        ProtectSystem = "strict";
-        ProtectHome = true;
-        RestrictAddressFamilies = [
-          "AF_UNIX"
-          "AF_INET"
-          "AF_INET6"
-        ];
-      };
     };
 
     systemd.services.docker-n8n = {
