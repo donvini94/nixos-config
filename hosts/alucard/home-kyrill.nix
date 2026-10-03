@@ -8,6 +8,6 @@
     username = site.partner;
     homeDirectory = "/home/${site.partner}";
     stateVersion = "25.11";
-    packages = [ (pkgs.callPackage ../../packages/omp-harness.nix { }) ];
+    packages = [ (pkgs.callPackage ../../ai/packages/omp-harness.nix { }) ];
   };
 }

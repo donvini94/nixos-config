@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
   echo 'Usage: update-skills {check|apply} [SKILL...]'
-  echo 'Refresh vendored skills from skills/sources.json; package versions and client state are untouched.'
+  echo 'Refresh vendored skills from ai/skills/sources.json; package versions and client state are untouched.'
 }
 
 mode=${1:-check}
@@ -15,7 +15,7 @@ case "$mode" in
 esac
 
 repo=${SKILLS_REPO:-$HOME/nixos-config}
-manifest="$repo/skills/sources.json"
+manifest="$repo/ai/skills/sources.json"
 jq -e '.skills | type == "object"' "$manifest" >/dev/null
 if [ "$#" -gt 0 ]; then
   names=("$@")
@@ -70,7 +70,7 @@ for name in "${names[@]}"; do
       ;;
     *) echo "Unsupported source type for $name" >&2; exit 2 ;;
   esac
-  destination="$repo/skills/shared/$name"
+  destination="$repo/ai/skills/shared/$name"
   if [ -L "$destination" ]; then
     echo "Refusing to replace a symlink: $destination" >&2
     exit 1
@@ -91,7 +91,7 @@ done
 # Fetch and verify every source before writing to the checkout.
 if [ "$mode" = apply ]; then
   for name in "${changed[@]}"; do
-    mkdir -p "$repo/skills/shared/$name"
-    rsync -a --checksum --delete "$tmp/fresh/$name/" "$repo/skills/shared/$name/"
+    mkdir -p "$repo/ai/skills/shared/$name"
+    rsync -a --checksum --delete "$tmp/fresh/$name/" "$repo/ai/skills/shared/$name/"
   done
 fi

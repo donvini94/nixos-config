@@ -10,7 +10,7 @@
 # update-skills refreshes only vendored sources; native client package managers own plugins.
 # Pi opts out of this tree in its own settings.
 let
-  repo = "${config.home.homeDirectory}/nixos-config/skills";
+  repo = "${config.home.homeDirectory}/nixos-config/ai/skills";
   # Out-of-store links keep every authored file writable and editable without a rebuild.
   link = config.lib.file.mkOutOfStoreSymlink;
   lathe = pkgs.callPackage ../packages/lathe.nix { };

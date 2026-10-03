@@ -30,11 +30,9 @@
     ./hm-modules/services.nix
     ./hm-modules/transcription.nix
     ./hm-modules/email.nix
-    ./hm-modules/claude.nix
-    ./hm-modules/omp.nix
+    ./ai/home/claude.nix
+    ./ai/home
     ./hm-modules/lsp.nix
-    ./hm-modules/pi.nix
-    ./hm-modules/agent-skills.nix
     ./hm-modules/zotero-cli.nix
     inputs.caelestia-shell.homeManagerModules.default
   ];

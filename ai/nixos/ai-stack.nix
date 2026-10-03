@@ -15,7 +15,7 @@ in
     ./ai-stack-target.nix
     ./n8n.nix
     ./hermes.nix
-    ./container-updates.nix
+    ../../modules/container-updates.nix
   ];
 
   options.services.aiStack = {

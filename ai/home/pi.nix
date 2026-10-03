@@ -122,7 +122,7 @@ in
     home.file = {
       # AGENTS.md and MEMORY.md are agent-owned writable files, not Nix resources.
       ".pi/agent/skills/mentor".source = link "${home}/.local/share/agent-content/mentor/skills/mentor";
-      ".pi/agent/skills/meeting-minutes".source = link "${repo}/pi/skills/meeting-minutes";
+      ".pi/agent/skills/meeting-minutes".source = link "${repo}/ai/pi/skills/meeting-minutes";
       ".pi/agent/agents/researcher.md".source =
         link "${home}/.local/share/agent-content/learning/pi/agents/researcher.md";
       ".pi/agent/agents/mermaid-maker.md".source =

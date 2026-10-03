@@ -12,7 +12,7 @@
     sops-nix.url = "github:Mic92/sops-nix";
     disko.url = "github:nix-community/disko";
     hosts.url = "github:StevenBlack/hosts";
-    # Only Dracula's desktop client; the server runs the pinned container in modules/hermes.nix.
+    # Only Dracula's desktop client; the server runs the pinned container in ai/nixos/hermes.nix.
     hermes-agent.url = "github:NousResearch/hermes-agent/v2026.9.24";
 
     # Keep hyprlang until Home Manager supports Hyprland's Lua configuration.
@@ -115,11 +115,11 @@
           pkgs = nixpkgs.legacyPackages.${packageSystem};
         in
         {
-          lathe = pkgs.callPackage ./packages/lathe.nix { };
+          lathe = pkgs.callPackage ./ai/packages/lathe.nix { };
           linear-cli = pkgs.callPackage ./packages/linear-cli.nix { };
         }
         // nixpkgs.lib.optionalAttrs (packageSystem == "x86_64-linux") {
-          omp = pkgs.callPackage ./packages/omp.nix { };
+          omp = pkgs.callPackage ./ai/packages/omp.nix { };
           tika = pkgs.callPackage ./packages/tika.nix { };
           local-transcription-client = pkgs.callPackage ./packages/local-transcription-client.nix { };
         }
@@ -143,10 +143,10 @@
                 }
               ];
             }).config;
-          piOnly = clientConfig ./hm-modules/pi.nix "piClient" true;
-          ompOnly = clientConfig ./hm-modules/omp.nix "ompClient" true;
-          piDisabled = clientConfig ./hm-modules/pi.nix "piClient" false;
-          ompDisabled = clientConfig ./hm-modules/omp.nix "ompClient" false;
+          piOnly = clientConfig ./ai/home/pi.nix "piClient" true;
+          ompOnly = clientConfig ./ai/home/omp.nix "ompClient" true;
+          piDisabled = clientConfig ./ai/home/pi.nix "piClient" false;
+          ompDisabled = clientConfig ./ai/home/omp.nix "ompClient" false;
           owns =
             prefix: cfg: builtins.any (n: nixpkgs.lib.hasPrefix prefix n) (builtins.attrNames cfg.home.file);
         in
@@ -154,11 +154,11 @@
           shell-scripts =
             pkgs.runCommand "check-shell-scripts" { nativeBuildInputs = [ pkgs.shellcheck ]; }
               ''
-                shellcheck ${./scripts}/*.sh ${./mail/bin}/*
+                shellcheck ${./scripts}/*.sh ${./ai/scripts}/*.sh ${./mail/bin}/*
                 touch "$out"
               '';
           python-lint = pkgs.runCommand "check-python-lint" { nativeBuildInputs = [ pkgs.ruff ]; } ''
-            ruff check --no-cache --select F ${./local-transcription}/server.py ${./scripts/tests}
+            ruff check --no-cache --select F ${./local-transcription}/server.py ${./ai/scripts/tests}
             touch "$out"
           '';
           model-download =
@@ -211,8 +211,8 @@
                 ];
               }
               ''
-                PYTHONDONTWRITEBYTECODE=1 python3 ${./scripts/tests}/test_update_skills.py ${./scripts/update-skills.sh}
-                PYTHONDONTWRITEBYTECODE=1 python3 ${./scripts/tests}/test_bootstrap_pi.py ${./scripts/bootstrap-pi.sh}
+                PYTHONDONTWRITEBYTECODE=1 python3 ${./ai/scripts/tests}/test_update_skills.py ${./ai/scripts/update-skills.sh}
+                PYTHONDONTWRITEBYTECODE=1 python3 ${./ai/scripts/tests}/test_bootstrap_pi.py ${./ai/scripts/bootstrap-pi.sh}
                 touch "$out"
               '';
         }

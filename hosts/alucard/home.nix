@@ -5,9 +5,7 @@
 
 {
   imports = [
-    ../../hm-modules/omp.nix
-    ../../hm-modules/pi.nix
-    ../../hm-modules/agent-skills.nix
+    ../../ai/home
     ../../hm-modules/lsp.nix
     ./zellij.nix
 

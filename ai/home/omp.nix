@@ -6,7 +6,7 @@
 }:
 
 let
-  repo = "${config.home.homeDirectory}/nixos-config/omp";
+  repo = "${config.home.homeDirectory}/nixos-config/ai/omp";
   # Out-of-store links keep the authored files writable and editable without a rebuild.
   link = config.lib.file.mkOutOfStoreSymlink;
 
@@ -82,19 +82,19 @@ in
     };
 
     home.file = {
-      ".omp/agent/AGENTS.md".source = link "${config.home.homeDirectory}/nixos-config/guidance/AGENTS.md";
-      ".omp/agent/RULES.md".source = link "${config.home.homeDirectory}/nixos-config/guidance/RULES.md";
+      ".omp/agent/AGENTS.md".source = link "${config.home.homeDirectory}/nixos-config/ai/guidance/AGENTS.md";
+      ".omp/agent/RULES.md".source = link "${config.home.homeDirectory}/nixos-config/ai/guidance/RULES.md";
       ".omp/agent/mcp.json".text = builtins.toJSON mcpConfig;
       ".omp/agent/skills/mentor".source = link "${mentorRepo}/skills/mentor";
       ".omp/agent/commands/mentor.md".source = link "${mentorRepo}/commands/mentor.md";
     }
-    // linkEach "rules" ruleNames "${config.home.homeDirectory}/nixos-config/guidance/rules"
+    // linkEach "rules" ruleNames "${config.home.homeDirectory}/nixos-config/ai/guidance/rules"
     // linkEach "agents" agentNames "${repo}/agents"
     // lib.listToAttrs (
       map
         (name: {
           name = ".omp/agent/managed-skills/${name}";
-          value.source = link "${config.home.homeDirectory}/nixos-config/skills/managed/${name}";
+          value.source = link "${config.home.homeDirectory}/nixos-config/ai/skills/managed/${name}";
         })
         [
           "calendar-to-org-agenda"

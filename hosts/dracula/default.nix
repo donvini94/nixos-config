@@ -37,9 +37,9 @@ in
     ../../modules/nvidia.nix
     ../../modules/gaming.nix
     ../../modules/observability
-    ../../modules/llama.nix
+    ../../ai/nixos/llama.nix
     ../../modules/mail-credentials.nix
-    ../../modules/requesty.nix
+    ../../ai/nixos/requesty.nix
     ../../modules/transcription.nix
     ../../modules/gpu-mode.nix
     ../../modules/host-vulnerability-scan.nix

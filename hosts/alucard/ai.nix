@@ -10,8 +10,8 @@ let
 in
 {
   imports = [
-    ../../modules/ai-stack.nix
-    ../../modules/requesty.nix
+    ../../ai/nixos/ai-stack.nix
+    ../../ai/nixos/requesty.nix
   ];
 
   assertions = [

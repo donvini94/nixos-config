@@ -22,7 +22,7 @@ class UpdateSkillsTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.repo = self.root / "config"
-        self.destination = self.repo / "skills/shared/demo"
+        self.destination = self.repo / "ai/skills/shared/demo"
         self.destination.mkdir(parents=True)
         (self.destination / "SKILL.md").write_text("old\n")
         (self.destination / "obsolete").write_text("remove me\n")
@@ -63,7 +63,7 @@ class UpdateSkillsTests(unittest.TestCase):
         self.env["PATH"] = f"{self.bin}{os.pathsep}{self.env['PATH']}"
 
     def invoke(self, mode: str, *names: str) -> subprocess.CompletedProcess[str]:
-        (self.repo / "skills/sources.json").write_text(
+        (self.repo / "ai/skills/sources.json").write_text(
             json.dumps({"skills": self.sources})
         )
         return subprocess.run(
@@ -83,7 +83,7 @@ class UpdateSkillsTests(unittest.TestCase):
         self.assertTrue((self.destination / "obsolete").exists())
 
     def test_apply_replaces_only_declared_skill(self) -> None:
-        authored = self.repo / "skills/shared/authored"
+        authored = self.repo / "ai/skills/shared/authored"
         authored.mkdir()
         (authored / "SKILL.md").write_text("local\n")
         result = self.invoke("apply", "demo")
@@ -102,7 +102,7 @@ class UpdateSkillsTests(unittest.TestCase):
         }
         self.assertNotEqual(self.invoke("apply").returncode, 0)
         self.assertEqual((self.destination / "SKILL.md").read_text(), "old\n")
-        self.assertFalse((self.repo / "skills/shared/z-broken").exists())
+        self.assertFalse((self.repo / "ai/skills/shared/z-broken").exists())
 
     def test_package_version_selects_tag_without_editing_pin(self) -> None:
         self.sources["demo"]["packageAttribute"] = "linear-cli"
