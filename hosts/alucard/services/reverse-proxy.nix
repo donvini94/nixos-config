@@ -35,7 +35,9 @@ let
         proxyWebsockets = true;
       };
     };
-  gone = tls // { locations."/".return = "404"; };
+  gone = tls // {
+    locations."/".return = "404";
+  };
   # nginx evaluates the server-level `modsecurity` directive before a nested
   # location can turn it off, so the WAF is disabled for the server and
   # re-enabled on the catch-all; `exempt` locations stay uncovered.
@@ -45,7 +47,9 @@ let
     // {
       extraConfig = "modsecurity off;";
       locations = lib.mapAttrs (_: loc: loc // { extraConfig = "modsecurity off;"; }) exempt // {
-        "/" = catchAll // { extraConfig = "modsecurity on;"; };
+        "/" = catchAll // {
+          extraConfig = "modsecurity on;\n" + (catchAll.extraConfig or "");
+        };
       };
     };
 in
@@ -138,12 +142,18 @@ in
           exempt."^~ /SOGo/dav/".proxyPass = "http://127.0.0.1:880";
           catchAll.proxyPass = "http://127.0.0.1:880";
         };
-        "chat.${domain2}" = proxyWs 8065 // {
-          extraConfig = ''
-            # Mattermost needs PUT/DELETE/PATCH. A server-level setvar runs after
-            # the inherited method check; removing that check is order-independent.
-            modsecurity_rules 'SecRuleRemoveById 911100';
-          '';
+        # Mattermost clients post performance telemetry to client_perf about once a
+        # minute; CRS scores the payload CRITICAL and 949110 answers 403. The endpoint
+        # requires a session; the rest of the API keeps the WAF.
+        "chat.${domain2}" = wafOffExcept {
+          exempt."= /api/v4/client_perf".proxyPass = "http://127.0.0.1:8065";
+          catchAll = {
+            proxyPass = "http://127.0.0.1:8065";
+            proxyWebsockets = true;
+            # Mattermost needs PUT/DELETE/PATCH; removing CRS's method check is
+            # order-independent, unlike a setvar.
+            extraConfig = "modsecurity_rules 'SecRuleRemoveById 911100';";
+          };
         };
         "comics.${domain2}" = proxyWs 25600;
         "requests.${domain}" = proxyWs 5055;
