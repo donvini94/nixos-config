@@ -2,6 +2,7 @@
   config,
   inputs,
   pkgs,
+  site,
   username,
   ...
 }:
@@ -27,6 +28,10 @@ in
   services.aiStack = {
     enable = true;
     secretsFile = secretFile;
+    public = {
+      domain = "agent.${site.domains.secondary}";
+      acmeEmail = site.owner.mail;
+    };
     hermes = {
       dashboardUser = "demo";
       telegram = true;
