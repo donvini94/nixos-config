@@ -209,8 +209,9 @@ in
     # ensureUsers creates the role without a password; n8n authenticates over loopback.
     systemd.services.n8n-database-password = {
       description = "Set the n8n PostgreSQL role's password";
-      after = [ "postgresql.service" ];
-      requires = [ "postgresql.service" ];
+      # postgresql-setup creates the role from ensureUsers.
+      after = [ "postgresql-setup.service" ];
+      requires = [ "postgresql-setup.service" ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
