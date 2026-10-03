@@ -55,7 +55,7 @@
                   ./nixos
                   ./nixos/observability/server.nix
                   {
-                    system.stateVersion = "25.05";
+                    system.stateVersion = "26.05";
                     boot.loader.grub.enable = false;
                     fileSystems."/" = {
                       device = "/dev/vda";
