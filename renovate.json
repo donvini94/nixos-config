@@ -65,17 +65,6 @@
       "ignoreUnstable": true
     },
     {
-      "description": "Keep the coupled Langfuse application pair in one reviewable PR.",
-      "matchDatasources": [
-        "docker"
-      ],
-      "matchPackageNames": [
-        "docker.io/langfuse/langfuse",
-        "docker.io/langfuse/langfuse-worker"
-      ],
-      "groupName": "Langfuse application"
-    },
-    {
       "description": "Update n8n and its task runners together.",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["docker.io/n8nio/n8n", "docker.io/n8nio/runners"],

@@ -28,7 +28,7 @@ sudo darwin-rebuild switch --flake .#AC-0137
 
 The agent commits, pushes, synchronizes the checkouts and switches affected Linux hosts.
 The exact commands above are passwordless; relative flake paths do not match sudo policy.
-=nix flake check= runs shell lint, Python undefined/unused-name checks, ingress tests,
+=nix flake check= runs shell lint, Python undefined/unused-name checks,
 model-download, agent-tool and client-independence checks on Linux or macOS.
 CI runs these checks, evaluates host build plans and builds exposed local packages;
 a plan is not a full build.
@@ -72,13 +72,11 @@ The stack stays in this repository. Nix owns deployment, service identities, pri
 listeners, approved egress and secrets. Application preferences and authored state
 remain writable; exporting/restoring that state is part of moving an instance.
 
-Requesty's authenticated organization-approved catalog supplies available models,
-capabilities, limits and prices. The ingress caches metadata privately; stale metadata
-can be served during an outage, but completion requests still require upstream
-authorization. Prices are estimates unless the provider reports actual cost.
-Linux Pi/OMP model lists refresh every 15 minutes; =sync-ai-models= refreshes them
-manually. Additional providers and client settings are preserved. Local model serving
-metadata and the initial remote default remain declarative.
+Clients talk to Requesty directly with a per-host key (=services.requesty.apiKeyFile=,
+SOPS-owned); spend, access and the approved-model catalog are managed in Requesty.
+OMP discovers models natively (=openai-models-list=), Pi through the pinned
+=pi-requesty= extension, Hermes through its provider config. The initial default model
+is in =lib/requesty.nix=; local model metadata stays declarative.
 
 Hermes runs the upstream image (=modules/hermes.nix=) as one host-network container
 with its data in =/var/lib/hermes-agent=. Nix pins the image and supplies the initial
@@ -97,8 +95,8 @@ is configurable rather than tied to Alucard. n8n runs as one host-network contai
 
 =gpu-mode transcription|ai|gaming= selects the exclusive GPU workload;
 =gpu-mode status= reports it. Transcription starts at boot; inference does not.
-=omp-local= and =omp-chat= use the local model. AI requests go through
-=127.0.0.1:8080= to llama.cpp on =:18080=.
+=omp-local= and =omp-chat= use the local model. The local model is llama.cpp
+on =127.0.0.1:8080= (metrics at =/metrics=).
 Python projects own their dependencies through uv, not a global ML environment.
 
 Monitoring is independent of GPU mode, off at boot on Dracula and on at boot on
@@ -113,7 +111,7 @@ Alucard: =sudo systemctl start|stop observability-stack=, =observability-status=
 | services/media-services.nix        | Jellyfin, Navidrome, Calibre-Web                           |
 | services/hosted-applications.nix   | Paperless, Mailcow TLS, registry, Mattermost, Atuin         |
 | media-stack/docker-compose.yml    | Gluetun/qBittorrent, *arr, SABnzbd, Seerr, Komga, Kapowarr   |
-| ai.nix                            | Requesty ingress, Hermes, n8n                              |
+| ai.nix                            | Hermes, n8n, Requesty key                                  |
 | private-access.nix                | Tailscale Serve endpoints                                 |
 | security.nix, networking.nix      | WAF, CrowdSec, SSH, firewall                               |
 
@@ -127,9 +125,7 @@ Mailcow (=/opt/mailcow-dockerized=), Onyx (=~/.config/onyx/deployment=) and Actu
 Budget (=~/actual_budget=) are maintained outside this repository. Back up first
 and use their supported migration/update procedures, not generic image restarts.
 
-=ai-stack-start|stop|health= controls Alucard's ingress, Hermes and n8n.
-=ai-usage-summary= reports usage without printing payloads. Raw ingress logs
-(=/var/lib/llama/logs/=) contain prompts and responses; keep them out of Git/sync.
+=ai-stack-start|stop|health= controls Alucard's Hermes and n8n.
 Hermes sessions are separate but memory/workspace are shared by the founders;
 this is not a tenant boundary.
 
@@ -137,7 +133,7 @@ this is not a tenant boundary.
 
 Edit =secrets/*.yaml= with =sops=; runtime plaintext belongs under =/run/secrets=,
 never in the Nix store. Keep age private keys backed up separately.
-- n8n/Langfuse encryption keys, Langfuse salt and restic passwords require a
+- n8n encryption keys and restic passwords require a
   supported migration, not just an edited SOPS value.
 - Database and administrator bootstrap passwords do not update existing accounts.
 - Hermes values saved in the UI override the SOPS ones; clear them there to rotate via SOPS.
