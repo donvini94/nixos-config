@@ -1,6 +1,7 @@
 # A single n8n container on the host network: it must reach Hermes on loopback and the
 # internet, and nothing but Tailscale Serve exposes it. Code nodes run in n8n's
-# internal task runner.
+# internal task runner, which n8n has deprecated: once an image drops it, add the
+# separate runners container back instead of pinning around it.
 {
   config,
   lib,
