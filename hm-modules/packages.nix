@@ -31,7 +31,8 @@ in
     zed-editor
     zeal
     bruno
-    aider-chat
+    # Its test suite currently fails against nixpkgs' litellm; see whether the tool runs.
+    (aider-chat.overridePythonAttrs { doCheck = false; })
     warp-terminal
     claude-agent-acp
     chromium
