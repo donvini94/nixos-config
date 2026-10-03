@@ -24,7 +24,7 @@ gaps), =AGENTS.md= (repository rules, deployment rules), =README.org=.
   for dracula and alucard, =.#darwinConfigurations.AC-0137.system.drvPath= for the Mac.
 - New files are invisible to flake evaluation until =git add=.
 - The Mac is macOS with fish and BSD sed: use python or the edit tool for rewrites.
-  Commands sent over ssh run in bash on the Linux hosts.
+  Over ssh, Alucard's shell is fish and Dracula's is bash; wrap bash syntax in =bash -c=.
 - Read runtime logs before diagnosing; a successful evaluation proves nothing about a
   running service. Never print secrets. Decrypting with =sops -d= works on the Mac.
 - Do not delete application data or retire live services without approval.
