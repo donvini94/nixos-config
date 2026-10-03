@@ -21,6 +21,11 @@
     home = "/Users/${username}";
   };
 
+  # Exact command match, like the Linux hosts: rebuilding a writable checkout is root-equivalent.
+  security.sudo.extraConfig = ''
+    ${username} ALL = (root) NOPASSWD: /run/current-system/sw/bin/darwin-rebuild switch --flake /Users/${username}/nixos-config\#AC-0137
+  '';
+
   # The installer still owns the Determinate Nix runtime and main nix.conf. This module
   # makes its supported custom and daemon policy files declarative through nix-darwin.
   determinateNix = {
