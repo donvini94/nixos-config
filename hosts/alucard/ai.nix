@@ -132,7 +132,20 @@ in
     # The canary runs the library's items that every customer gets.
     library = {
       revision = inputs.ai-library.rev or "unknown";
-      workflows = [ "${inputs.ai-library}/workflows/smoke-test.json" ];
+      workflows = map (id: "${inputs.ai-library}/workflows/${id}.json") [
+        "smoke-test"
+        "aiStackTriage001"
+        "aiStackIntake001"
+        "aiStackLeads0001"
+      ];
+      # The test mailbox and the operator's chat stand in for a customer's.
+      settings = {
+        approvalChatId = "935728023";
+        mailboxAddress = "agent-test@istbereit.de";
+        senderName = site.owner.fullName;
+        companyName = "Bereit";
+        paperlessUrl = "http://127.0.0.1:${toString config.services.aiStack.features.paperless.port}";
+      };
       hermesSkills = [ "${inputs.ai-library}/skills/human-approval" ];
     };
     sharedDirectory = {
