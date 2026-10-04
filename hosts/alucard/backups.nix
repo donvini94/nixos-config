@@ -1,6 +1,6 @@
 # Alucard's backups: the stack's jobs (n8n, Hermes) plus this host's applications, in
-# per-job restic repositories on the Hetzner share. Repository paths and passwords are
-# unchanged from earlier job runners, so existing snapshots stay readable.
+# per-job restic repositories on the Storage Box, reached over SFTP. Repositories and
+# passwords are unchanged from earlier job runners, so existing snapshots stay readable.
 {
   config,
   lib,
@@ -15,8 +15,9 @@
   };
 
   services.aiStack.backup = {
-    repository = "/mnt/hetzner/restic";
-    requiresMountsFor = [ "/mnt/hetzner" ];
+    # Sub-account whose home is the share's restic/ folder, where the repositories were
+    # created through the SMB mount.
+    repository = "sftp:u487137-sub6@u487137.your-storagebox.de:";
     jobs = {
       # Keycloak: a database dump; realm exports do not preserve all database state.
       keycloak = {
