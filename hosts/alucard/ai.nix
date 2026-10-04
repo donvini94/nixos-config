@@ -98,7 +98,7 @@ in
     serviceConfig = {
       Type = "oneshot";
       User = username;
-      WorkingDirectory = "/home/${username}/fleet";
+      WorkingDirectory = "/home/${username}/code/fleet";
       ExecStartPre = "${pkgs.git}/bin/git pull --ff-only -q";
       ExecStart = "${config.nix.package}/bin/nix develop --command bin/release-gate";
       TimeoutStartSec = "3h";
