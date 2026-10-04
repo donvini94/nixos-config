@@ -77,6 +77,12 @@ in
     restartUnits = [ "alertmanager.service" ];
   };
 
+  sops.secrets."monitoring/heartbeat_curl_config" = {
+    sopsFile = secretFile;
+    mode = "0400";
+    restartUnits = [ "monitoring-heartbeat.service" ];
+  };
+
   # Weekly release gate for the fleet (Sunday evening, before Monday's Release updates
   # PR): tags the canary's revisions when they pass. It runs as the operator, whose
   # checkout, SSH key and age key it uses.
@@ -163,6 +169,7 @@ in
       enable = true;
       secretsFile = secretFile;
       localTargets.n8n = 5678;
+      heartbeat.curlConfigFile = config.sops.secrets."monitoring/heartbeat_curl_config".path;
       alerting.telegram = {
         botTokenFile = config.sops.secrets."alertmanager/telegram_bot_token".path;
         # The operator's private chat with @bereit_alert_bot.
