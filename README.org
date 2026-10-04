@@ -8,6 +8,8 @@
 | AC-0137 | Personal Mac: AeroSpace, SketchyBar, Doom, Ghostty | hosts/ac-0137/       | hosts/ac-0137/home.nix     |
 | alucard | Media/torrent server and startup infrastructure    | hosts/alucard/       | hosts/alucard/home.nix     |
 
+The startup's infrastructure handbook (customer servers, Alucard's role, releases,
+agent guides) lives in the private =donvini94/fleet= repository under =docs/=.
 The customer AI stack is the private flake =donvini94/ai-stack= (=inputs.ai-stack=,
 fetched over SSH); Alucard imports it as the canary. Change it in its own checkout, then
 run =nix flake update ai-stack= here.
