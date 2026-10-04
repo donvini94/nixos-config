@@ -30,9 +30,11 @@ current packages, services, ports and paths. Do not duplicate those inventories 
 - Host-specific wiring: `hosts/<host>/`. Shared system functionality: `modules/`.
   Features spanning NixOS, home-manager and packages get one folder: `coding-agents/`
   (personal OMP/Pi tooling), `transcription/` and `mail/`.
-- The customer AI stack is the private flake `donvini94/ai-stack` (checkout `~/ai-stack`
-  on the Mac), consumed as `inputs.ai-stack`; change it there, then
-  `nix flake update ai-stack` here. Alucard is its canary; only Alucard imports it.
+- The customer AI stack is the private flake `donvini94/ai-stack` (checkout
+  `~/code/ai-stack` on the Mac; `ai-library`, `fleet` and `handbook` sit beside it),
+  consumed as `inputs.ai-stack`; change it there, then `nix flake update ai-stack` here.
+  Alucard is its canary; only Alucard imports it. The startup's technical documentation
+  is the `handbook` repository.
 - User configuration: `hm-modules/`; home files are import manifests plus identity.
 - Cross-platform CLI packages: `hm-modules/cli-tools.nix`. Linux GUI packages:
   `hm-modules/packages.nix`. System packages are for integration/toolchains.
