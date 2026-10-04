@@ -77,7 +77,7 @@ let
       "${home}/.local/share/agent-content/mentor"
       "${home}/.local/share/agent-content/prompt-snippets"
       "${home}/.local/share/agent-content/learning"
-      "git:github.com/HazAT/pi-interactive-subagents@c100577ebf7393a11d098ad9810ec6c269dcfc30"
+      "npm:pi-subagents"
       "npm:pi-claude-bridge"
       "git:github.com/requestyai/pi-requesty@c28e2f8208eb467d248a7dc33bfb5cb04f310575"
     ];
@@ -132,14 +132,6 @@ in
       ".pi/agent/agents/svg-maker.md".source =
         link "${home}/.local/share/agent-content/learning/agents/svg-maker.md";
       ".pi/agent/upstream/amos-ask-user-question.ts".source = amosAskUserQuestion;
-    };
-
-    # Scope HazAT's multiplexer choice to Pi invocations.
-    programs.fish.functions.pi = {
-      body = ''
-        set -lx PI_SUBAGENT_MUX zellij
-        command pi $argv
-      '';
     };
 
     home.activation.piAgentBootstrap = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
