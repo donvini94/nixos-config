@@ -76,9 +76,6 @@ in
       domain = "chat.${site.domains.primary}";
     };
     hermes = {
-      # Keeps the provider and model chosen in Alucard's dashboard until the operator
-      # moves it to the managed Requesty provider.
-      manageProvider = false;
       dashboardUser = "demo";
       telegram = true;
     };
