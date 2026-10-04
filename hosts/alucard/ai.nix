@@ -50,6 +50,12 @@ in
     '';
   };
 
+  sops.secrets."alertmanager/telegram_bot_token" = {
+    sopsFile = secretFile;
+    mode = "0400";
+    restartUnits = [ "alertmanager.service" ];
+  };
+
   # This host's interactive clients (Pi, OMP) use their own key, not the stack's.
   sops.secrets."requesty/operator_api_key" = {
     sopsFile = secretFile;
@@ -92,6 +98,11 @@ in
       enable = true;
       secretsFile = secretFile;
       localTargets.n8n = 5678;
+      alerting.telegram = {
+        botTokenFile = config.sops.secrets."alertmanager/telegram_bot_token".path;
+        # The operator's private chat with @bereit_alert_bot.
+        chatId = 935728023;
+      };
     };
   };
 
