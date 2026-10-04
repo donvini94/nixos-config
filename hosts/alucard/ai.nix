@@ -90,6 +90,7 @@ in
     };
     # The canary runs the library's items that every customer gets.
     library = {
+      revision = inputs.ai-library.rev or "unknown";
       workflows = [ "${inputs.ai-library}/workflows/smoke-test.json" ];
       hermesSkills = [ "${inputs.ai-library}/skills/human-approval" ];
     };
