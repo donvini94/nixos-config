@@ -105,6 +105,7 @@ in
     };
   };
   systemd.timers.release-gate = {
+    enable = false;
     wantedBy = [ "timers.target" ];
     timerConfig = {
       OnCalendar = "Sun 20:00";
