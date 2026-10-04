@@ -12,6 +12,9 @@ in
       "1.1.1.1"
       "9.9.9.9"
     ];
+    # The provider's DHCP search domain (goodsrv.de) made bare names like "staging"
+    # resolve to unrelated public hosts before MagicDNS; tailnet names must win.
+    dhcpcd.extraConfig = "nooption domain_name domain_search";
     firewall = {
       enable = true;
       allowedTCPPorts = [
