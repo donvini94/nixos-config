@@ -23,6 +23,15 @@ in
   sops.secrets = {
     "github/ai_stack_deploy_key".mode = "0400";
     "github/ai_library_deploy_key".mode = "0400";
+    # Alucard is the fleet's deploy host; the fleet's helpers read these API credentials.
+    "fleet/tailscale_oauth" = {
+      owner = username;
+      mode = "0400";
+    };
+    "fleet/hetzner_token" = {
+      owner = username;
+      mode = "0400";
+    };
   };
   programs.git = {
     enable = true;
