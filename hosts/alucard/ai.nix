@@ -137,6 +137,7 @@ in
         "aiStackTriage001"
         "aiStackIntake001"
         "aiStackLeads0001"
+        "aiStackErrors001"
       ];
       # The test mailbox and the operator's chat stand in for a customer's.
       settings = {

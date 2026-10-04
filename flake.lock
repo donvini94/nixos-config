@@ -3,11 +3,11 @@
     "ai-library": {
       "flake": false,
       "locked": {
-        "lastModified": 1791120009,
-        "narHash": "sha256-VYL9mksTPdBWKZFf46PgIuZiLRUVv6veXZV0CqNwAJg=",
+        "lastModified": 1791120429,
+        "narHash": "sha256-By2KyARmZn2JbqXITbKNoUXbw5qgLBKAWRXvCp82pp8=",
         "ref": "main",
-        "rev": "1f6b845049941379750fae23d6e57239f71e2998",
-        "revCount": 6,
+        "rev": "3bf738e9b819d7c1d5be68fa656bc960bb896c9d",
+        "revCount": 7,
         "type": "git",
         "url": "ssh://git@github.com/donvini94/ai-library"
       },
