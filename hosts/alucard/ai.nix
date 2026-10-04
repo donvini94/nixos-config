@@ -170,6 +170,7 @@ in
       enable = true;
       secretsFile = secretFile;
       localTargets.n8n = 5678;
+      hosts.staging.address = "staging.tailf117a1.ts.net";
       heartbeat.curlConfigFile = config.sops.secrets."monitoring/heartbeat_curl_config".path;
       alerting.telegram = {
         botTokenFile = config.sops.secrets."alertmanager/telegram_bot_token".path;
