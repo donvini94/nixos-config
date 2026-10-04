@@ -22,6 +22,8 @@ merge() {
 merge "$PI_AGENT_DIR/settings.json" "$PI_DEFAULT_SETTINGS" '.[1] * .[0]'
 # Declared model definitions win; additional user-defined providers remain intact.
 merge "$PI_AGENT_DIR/models.json" "$PI_DECLARED_MODELS" '.[0] * .[1]'
+# Claude Bridge requires portable inheritance; preserve other subagent settings.
+merge "$PI_AGENT_DIR/subagents.json" "$PI_DECLARED_SUBAGENTS" '.[0] * .[1]'
 
 if [ -n "${PI_REQUESTY_KEY_FILE:-}" ]; then
   # The pi-requesty extension reads the key from models.json and discovers models itself.

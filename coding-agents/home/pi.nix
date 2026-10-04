@@ -77,7 +77,7 @@ let
       "${home}/.local/share/agent-content/mentor"
       "${home}/.local/share/agent-content/prompt-snippets"
       "${home}/.local/share/agent-content/learning"
-      "npm:pi-subagents"
+      "npm:@gotgenes/pi-subagents"
       "npm:pi-claude-bridge"
       "git:github.com/requestyai/pi-requesty@c28e2f8208eb467d248a7dc33bfb5cb04f310575"
     ];
@@ -100,6 +100,9 @@ let
       PI_AGENT_DIR = agentDir;
       PI_DEFAULT_SETTINGS = pkgs.writeText "pi-settings.json" (builtins.toJSON piSettings);
       PI_DECLARED_MODELS = pkgs.writeText "pi-models.json" (builtins.toJSON piModels);
+      PI_DECLARED_SUBAGENTS = pkgs.writeText "pi-subagents.json" (
+        builtins.toJSON { promptInheritance.claude-bridge = "portable"; }
+      );
       PI_WEB_INDEX = amosWebFetchIndex;
       PI_WEB_PACKAGE = amosWebFetchPackage;
       PI_WEB_LOCK = amosWebFetchLock;

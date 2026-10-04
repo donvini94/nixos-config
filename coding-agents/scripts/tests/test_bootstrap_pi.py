@@ -2,12 +2,12 @@
 
 import json
 import os
-from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 SCRIPT = Path(sys.argv.pop(1)).resolve()
 BASH = shutil.which("bash")
@@ -46,6 +46,9 @@ class BootstrapPiTests(unittest.TestCase):
             },
             "PI_DECLARED_MODELS": {
                 "providers": {"managed": {"baseUrl": "https://declared.invalid"}}
+            },
+            "PI_DECLARED_SUBAGENTS": {
+                "promptInheritance": {"claude-bridge": "portable"}
             },
             "PI_WEB_PACKAGE": {"name": "fixture"},
             "PI_WEB_LOCK": {"lockfileVersion": 3},
@@ -117,6 +120,27 @@ class BootstrapPiTests(unittest.TestCase):
         self.assertIn("personal", providers)
         for file in state:
             self.assertEqual(file.read_text(), "private fixture\n")
+
+    def test_bridge_compatibility_preserves_subagent_settings(self) -> None:
+        file = self.agent / "subagents.json"
+        expected = {"promptInheritance": {"claude-bridge": "portable"}}
+        self.assertEqual(self.invoke().returncode, 0)
+        self.assertEqual(json.loads(file.read_text()), expected)
+        file.write_text(
+            json.dumps(
+                {
+                    "maxConcurrent": 2,
+                    "promptInheritance": {"claude-bridge": "full", "other": "full"},
+                }
+            )
+        )
+        expected["promptInheritance"]["other"] = "full"
+        expected["maxConcurrent"] = 2
+        for _ in range(2):
+            result = self.invoke()
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(json.loads(file.read_text()), expected)
+            self.assertEqual(file.stat().st_mode & 0o777, 0o600)
 
     def test_requesty_provider_gets_key_and_keeps_discovered_models(self) -> None:
         key = self.root / "key"
