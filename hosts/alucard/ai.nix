@@ -16,17 +16,37 @@ in
     ../../coding-agents/nixos/requesty.nix
   ];
 
-  # nixos-rebuild evaluates as root, which fetches the private ai-stack with a read-only
-  # deploy key; users keep their own GitHub keys.
-  sops.secrets."github/ai_stack_deploy_key".mode = "0400";
+  # nixos-rebuild evaluates as root, which fetches the private ai-stack and ai-library
+  # with read-only deploy keys; users keep their own GitHub keys. GitHub accepts any valid
+  # deploy key before it knows the repository, so each repository gets its own host
+  # name: git rewrites ai-library's URL to an alias whose only key is its own.
+  sops.secrets = {
+    "github/ai_stack_deploy_key".mode = "0400";
+    "github/ai_library_deploy_key".mode = "0400";
+  };
+  programs.git = {
+    enable = true;
+    config.url."ssh://git@github-ai-library/donvini94/ai-library".insteadOf =
+      "ssh://git@github.com/donvini94/ai-library";
+  };
   programs.ssh = {
     knownHosts.github = {
-      hostNames = [ "github.com" ];
+      hostNames = [
+        "github.com"
+        "github-ai-library"
+      ];
       publicKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
     };
     extraConfig = ''
-      Match localuser root host github.com
+      Host github-ai-library
+        HostName github.com
+        HostKeyAlias github-ai-library
+      Match localuser root originalhost github-ai-library
+        IdentityFile ${config.sops.secrets."github/ai_library_deploy_key".path}
+        IdentitiesOnly yes
+      Match localuser root originalhost github.com
         IdentityFile ${config.sops.secrets."github/ai_stack_deploy_key".path}
+        IdentitiesOnly yes
     '';
   };
 
@@ -52,6 +72,11 @@ in
     hermes = {
       dashboardUser = "demo";
       telegram = true;
+    };
+    # The canary runs the library's items that every customer gets.
+    library = {
+      workflows = [ "${inputs.ai-library}/workflows/smoke-test.json" ];
+      hermesSkills = [ "${inputs.ai-library}/skills/human-approval" ];
     };
     sharedDirectory = {
       path = "/home/${username}/org";

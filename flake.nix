@@ -32,6 +32,10 @@
       inputs.sops-nix.follows = "sops-nix";
       inputs.disko.follows = "disko";
     };
+    ai-library = {
+      url = "git+ssh://git@github.com/donvini94/ai-library?ref=main";
+      flake = false;
+    };
   };
 
   outputs =
