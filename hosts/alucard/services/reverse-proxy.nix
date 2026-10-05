@@ -130,7 +130,6 @@ in
             client_max_body_size 10g;
           '';
         };
-        "budget.${domain2}" = proxy 5006;
         "read.${domain2}" = proxy 8083 // {
           extraConfig = "client_max_body_size 2g;";
         };

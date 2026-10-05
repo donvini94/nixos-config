@@ -20,8 +20,8 @@ The old =secrets/htpasswd= remains in Git history. Replace =nginx/htpasswd= in
 does not remove the offline cracking target.
 
 * TODO Bring external stacks and backups under review
-Mailcow, Onyx and Actual Budget remain outside Nix management. Verify actual
-loopback port bindings and backup coverage, then use supported upstream upgrades.
+Mailcow remains outside Nix management. Verify actual loopback port bindings
+and backup coverage, then use supported upstream upgrades.
 Do not replace Mailcow images individually. Media app configurations, Mattermost,
 Hermes and observability state also need an explicit recovery decision.
 
