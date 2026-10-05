@@ -33,6 +33,38 @@
         "ai-stack"
       ],
       "enabled": false
+    },
+    {
+      "description": "Track stable LinuxServer application releases and image rebuilds.",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "lscr.io/linuxserver/sonarr",
+        "lscr.io/linuxserver/radarr",
+        "lscr.io/linuxserver/prowlarr"
+      ],
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)\\.(?<build>\\d+)-ls(?<revision>\\d+)$"
+    },
+    {
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "lscr.io/linuxserver/bazarr",
+        "lscr.io/linuxserver/sabnzbd"
+      ],
+      "versioning": "regex:^v?(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-ls(?<build>\\d+)$"
+    },
+    {
+      "description": "Track stable qBittorrent releases and rebuilds within the same libtorrent major; libtorrent minor/patch updates travel with the image build.",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "lscr.io/linuxserver/qbittorrent"
+      ],
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)_v(?<compatibility>\\d+)\\.\\d+\\.\\d+-ls(?<build>\\d+)$"
     }
   ]
 }
