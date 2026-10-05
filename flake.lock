@@ -30,11 +30,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1791189661,
-        "narHash": "sha256-n9adX0oU/g+zAurUTegsaQftpijT/roSMAJS1+8iQ5E=",
+        "lastModified": 1791207841,
+        "narHash": "sha256-DxBwjjPybGrhKVOO1IsmEBL3zx0wtaT3B1mFGIZvIpU=",
         "ref": "main",
-        "rev": "d7d40300af48cc51c95993ae7071cbd8006a004a",
-        "revCount": 93,
+        "rev": "e0a5cd8a3bc611328598d2e1adc939f8731e1545",
+        "revCount": 94,
         "type": "git",
         "url": "ssh://git@github.com/donvini94/ai-stack"
       },

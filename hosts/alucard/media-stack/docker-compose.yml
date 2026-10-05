@@ -1,7 +1,7 @@
 services:
   # VPN container - all torrent traffic goes through this
   gluetun:
-    image: qmcgaw/gluetun:latest@sha256:89e3cbe22e0d6f09a18d3e86269392fd9f7f08e8991040741e577f8f127cdfe4
+    image: qmcgaw/gluetun:latest@sha256:2733bb22b27e3efa7a9f2cef9057ec12791b8b225793fcd3dbfd0508404dfc25
     container_name: gluetun
     cap_add:
       - NET_ADMIN
@@ -37,7 +37,7 @@ services:
 
   # qBittorrent - uses Gluetun's network stack (VPN-isolated)
   qbittorrent:
-    image: lscr.io/linuxserver/qbittorrent:latest@sha256:8d48fa8c619caadfb103f04efea8747e2a2762d6c7551690919cffb987e61cee
+    image: lscr.io/linuxserver/qbittorrent:latest@sha256:b522f9f4b769f8f36d49d22d5eb6a92e9aa18904c6a1830b1439df511ec21983
     container_name: qbittorrent
     network_mode: "service:gluetun"  # Share Gluetun's network (VPN)
     environment:
@@ -57,7 +57,7 @@ services:
 
   # Sonarr - TV show automation (uses regular internet)
   sonarr:
-    image: lscr.io/linuxserver/sonarr:latest@sha256:4d9df314875e1249ab7d6170c2b9b3dc1d8e6383f168ceb10dc9a5ad9b324739
+    image: lscr.io/linuxserver/sonarr:latest@sha256:f247545d23ba8b233d6604575347e48a623fe6ad75dda02348bf81917f3b5c06
     container_name: sonarr
     environment:
       - PUID=1001
@@ -75,7 +75,7 @@ services:
 
   # Radarr - Movie automation (uses regular internet)
   radarr:
-    image: lscr.io/linuxserver/radarr:latest@sha256:95ba0801df4d9d1d79d0d9a3849f656542497dab061d91b87ad4f53a71aff3ef
+    image: lscr.io/linuxserver/radarr:latest@sha256:7dfd049e79c00b16fbc29c3f5d96a9e7b9e73a23930b4c5b3c4541d60b366814
     container_name: radarr
     environment:
       - PUID=1001
@@ -93,7 +93,7 @@ services:
 
   # Prowlarr - Indexer management (uses regular internet)
   prowlarr:
-    image: lscr.io/linuxserver/prowlarr:latest@sha256:c96b56d94d116a9f4de94bc23d3381689492e6c3cfb7435320e8d982e406f99a
+    image: lscr.io/linuxserver/prowlarr:latest@sha256:f2b26429893d4c4cb71941b7ee50b1bdecd9d5f9f9e02d5410615e9f4f7c8d95
     container_name: prowlarr
     environment:
       - PUID=1001
@@ -109,7 +109,7 @@ services:
 
     # Bazarr - Subtitle management for TV shows and movies (uses regular internet)
   bazarr:
-    image: lscr.io/linuxserver/bazarr:latest@sha256:d24bd0048c759a468970989e9df11a6b96a7628d556d00f923e60a35ba59237b
+    image: lscr.io/linuxserver/bazarr:latest@sha256:8b30e81c4aec2991f469e78fae8afaa89ecc9b21a80e3897f50427216b55470c
     container_name: bazarr
     environment:
       - PUID=1001
@@ -130,7 +130,7 @@ services:
 
   # Jellyseerr - User request interface for Jellyfin (publicly accessible)
   jellyseerr:
-    image: ghcr.io/seerr-team/seerr:latest@sha256:f4768de5f616248d723e05891f3345a1402123775d03bf0890dbfedc0831bda1
+    image: ghcr.io/seerr-team/seerr:latest@sha256:27602401178d54f1964442287b9f23f67a3fa2252645ee8065839ea1c3f69e45
     init: true
     container_name: jellyseerr
     user: "1001:987"  # match host dir owner (jellyfin:jellyfin)
@@ -153,7 +153,7 @@ services:
       - media-network
 
   sabnzbd:
-    image: lscr.io/linuxserver/sabnzbd:latest@sha256:7f173ced3541b46c57c4eb6854765243095c8c8a7563a878044fa0ccfb1f4004
+    image: lscr.io/linuxserver/sabnzbd:latest@sha256:793828eab1722556131d37187115a9d3e3b9703e03a55731a07f2e0fe4edc2c7
     container_name: sabnzbd
     environment:
       - PUID=1001  # jellyfin user ID
@@ -171,7 +171,7 @@ services:
 
   # Komga - Comic/manga reader (publicly accessible via nginx)
   komga:
-    image: gotson/komga:latest@sha256:6c2a967bbe9acefd05933b2eb498f34afe96a83c6f7f8ab0acb512a1bb3ab50f
+    image: gotson/komga:latest@sha256:d8f772dce7b3dcd8baa0ce7481bd890e68446065ab6c8eb2cb5b24df62fb3c4f
     container_name: komga
     environment:
       - TZ=Europe/Berlin
@@ -197,7 +197,7 @@ services:
 
   # Kapowarr - Comic book management (uses regular internet)
   kapowarr:
-    image: mrcas/kapowarr:latest@sha256:d455797e4f2c5b1a8ccc5ce05c427f1af2179451bb1af195ca3fa8c3e928623b
+    image: mrcas/kapowarr:latest@sha256:cd3f004caff59636dde73b06df5b2f8068b485b47ff5fe82f6129562c0f2ac3b
     container_name: kapowarr
     environment:
       - PUID=1001
