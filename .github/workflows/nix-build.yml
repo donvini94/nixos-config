@@ -53,7 +53,7 @@ jobs:
             IdentitiesOnly yes
           EOF
           git config --global url."ssh://git@github-ai-library/donvini94/ai-library".insteadOf ssh://git@github.com/donvini94/ai-library
-      - uses: DeterminateSystems/determinate-nix-action@8d87e8d5e5b8a8309d4281094560f127d9a265f1 # v3
+      - uses: DeterminateSystems/determinate-nix-action@d0c908e6cbe9f89f36ed8205a3ab6f092636916a # v3
       # Full host closures exceed hosted runner storage; these are build plans.
       - run: nix build --dry-run --no-link .#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel
 
@@ -62,7 +62,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: DeterminateSystems/determinate-nix-action@8d87e8d5e5b8a8309d4281094560f127d9a265f1 # v3
+      - uses: DeterminateSystems/determinate-nix-action@d0c908e6cbe9f89f36ed8205a3ab6f092636916a # v3
       - run: nix build --dry-run --no-link '.#darwinConfigurations."AC-0137".system'
 
   packages:
@@ -78,7 +78,7 @@ jobs:
             runner: macos-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: DeterminateSystems/determinate-nix-action@8d87e8d5e5b8a8309d4281094560f127d9a265f1 # v3
+      - uses: DeterminateSystems/determinate-nix-action@d0c908e6cbe9f89f36ed8205a3ab6f092636916a # v3
       # Realize package sources: a build plan cannot detect stale hashes.
       - name: Build every hash-pinned package
         run: |
@@ -120,5 +120,5 @@ jobs:
             IdentitiesOnly yes
           EOF
           git config --global url."ssh://git@github-ai-library/donvini94/ai-library".insteadOf ssh://git@github.com/donvini94/ai-library
-      - uses: DeterminateSystems/determinate-nix-action@8d87e8d5e5b8a8309d4281094560f127d9a265f1 # v3
+      - uses: DeterminateSystems/determinate-nix-action@d0c908e6cbe9f89f36ed8205a3ab6f092636916a # v3
       - run: nix flake check
