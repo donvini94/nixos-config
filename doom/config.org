@@ -51,6 +51,7 @@ Comprehensive performance tuning for snappy Emacs on macOS.
 (when (native-comp-available-p)
   (setq native-comp-async-report-warnings-errors nil ; Silence async compilation warnings
         native-comp-jit-compilation t                ; Compile in background (renamed from native-comp-deferred-compilation in Emacs 29)
+        native-comp-async-jobs-number 2              ; Default is ncpu/2; that starved the whole desktop at startup
         native-comp-speed 2))                        ; Optimization level (2 = max safe)
 
 ;; === File Handling ===
@@ -654,11 +655,20 @@ every save so a newly tagged heading is covered before the first write.
 #+end_src
 
 ** Org Roam
+Das People-Capture (=P=) legt eine dauerhafte Kontakt-Node in =roam/people/= an.
+Kunden-Nodes verlinken dieselbe Person, statt projektweise Kopien zu führen.
+Profil und Zusammenarbeit enthalten belegte Rollen; Gesprächsnotizen tragen Datum
+und Quellenlink. Kontaktfelder und freiwillig bekannte persönliche Anknüpfungspunkte
+bleiben leer, solange keine Angaben vorliegen. Zusagen und Wiedervorlagen werden
+manuell gepflegt; das Template erzeugt keine automatischen Agenda-Termine.
+
 #+begin_src emacs-lisp
 (use-package! org-roam
   :after org
   :config
   (advice-remove 'org-roam-db-query '+org-roam-try-init-db-a)
+
+  (setq org-roam-directory (expand-file-name "roam/" org-directory))
 
   (setq org-roam-capture-templates
         '(("m" "main" plain
@@ -676,7 +686,8 @@ every save so a newly tagged heading is covered before the first write.
 
           ("P" "people" plain "%?"
            :if-new
-           (file+head "people/${slug}.org" "#+title: ${title}\n#+filetags: \n* Company\n* Contact Info\n* Job title\n ")
+           (file+head "people/${slug}.org"
+                      "#+title: ${title}\n#+filetags:\n\n* Profil\n- Organisation / Team: \n- Rolle / Verantwortlichkeit: \n- Projekte / Mandate: \n- Kennengelernt über / am: \n\n* Kontakt\n- E-Mail: \n- Telefon: \n- LinkedIn: \n- Weitere Profile: \n- Standort / Zeitzone: \n- Bevorzugter Kontaktweg: \n- Geburtstag (freiwillig bekannt; ohne erfundenes Jahr): \n\n* Zusammenarbeit\n- Zuständigkeit / Entscheidungsmandat: \n- Fachliche Themen / Erfahrung: \n- Ziele / aktuelle Herausforderungen: \n- Absprachen / Arbeitsweise: \n\n* Beziehung und Netzwerk\n- Gemeinsame Themen / Anknüpfungspunkte: \n- Wie ich unterstützen kann: \n- Relevante Kontakte / mögliche Vorstellungen: \n- Persönliches (freiwillig geteilt, relevant): \n\n* Gesprächsnotizen\n#+begin_comment\nPro Eintrag Datum und Quelle oder Meeting-Link festhalten. Fakten und eigene Einschätzung trennen; Rollenwechsel datieren. Nur relevante, freiwillig bekannte persönliche Angaben, keine sensiblen Spekulationen oder Zugangsdaten.\n#+end_comment\n\n* Nächster Kontakt / Zusagen\n- Anlass / nächster Schritt: \n- Meine Zusagen: \n- Zusagen der Person: \n- Wiedervorlage: \n\n* Quellen\n")
            :immediate-finish t
            :unnarrowed t)
 
