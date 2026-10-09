@@ -16,7 +16,7 @@ let
   requestyKeyFile = requesty.apiKeyFile or null;
 
   # npm installs the pinned binary into the writable ~/.local prefix.
-  piVersion = "1.0.0";
+  piVersion = "1.1.0";
 
   upstreamRevision = "f82da563ab05d66729492d64c7ed4e96db3663f3";
   upstream =
@@ -62,7 +62,7 @@ let
   };
 
   piSettings = {
-    # Initial defaults; existing settings and native package selections take precedence.
+    # Portable fields are declared here; Pi's device identity stays state-owned.
     defaultProjectTrust = "ask";
     defaultProvider = "claude-bridge";
     defaultModel = "claude-sonnet-5-5";
@@ -76,10 +76,12 @@ let
     packages = [
       "${home}/.local/share/agent-content/mentor"
       "${home}/.local/share/agent-content/prompt-snippets"
-      "${home}/.local/share/agent-content/learning"
-      "npm:@gotgenes/pi-subagents"
-      "npm:pi-claude-bridge"
-      "git:github.com/requestyai/pi-requesty@c28e2f8208eb467d248a7dc33bfb5cb04f310575"
+      "npm:pi-claude-bridge@0.9.2"
+      "git:github.com/DietrichGebert/ponytail@9cc65d03aa2da1db7121b912d03596409ee340b8"
+      "npm:@gotgenes/pi-subagents@23.2.0"
+      "npm:pi-openai-long-context@0.7.0"
+      "npm:pi-web-search@1.7.0"
+      "git:github.com/donvini94/omp-learn@465fecc0b65e7a45112f00895c0be1e367eb3e44"
     ];
     extensions = [
       "${agentDir}/upstream/amos-ask-user-question.ts"

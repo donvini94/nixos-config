@@ -18,8 +18,9 @@ merge() {
   fi
 }
 
-# Settings are defaults; Pi owns all existing choices, including native packages.
-merge "$PI_AGENT_DIR/settings.json" "$PI_DEFAULT_SETTINGS" '.[1] * .[0]'
+# Managed portable settings replace only the fields declared above; Pi-owned identity
+# and release metadata remain in the existing document.
+merge "$PI_AGENT_DIR/settings.json" "$PI_DEFAULT_SETTINGS" '.[0] * .[1]'
 # Declared model definitions win; additional user-defined providers remain intact.
 merge "$PI_AGENT_DIR/models.json" "$PI_DECLARED_MODELS" '.[0] * .[1]'
 # Claude Bridge requires portable inheritance; preserve other subagent settings.
