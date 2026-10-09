@@ -36,6 +36,8 @@
       url = "git+ssh://git@github.com/donvini94/ai-library?ref=main";
       flake = false;
     };
+    # Private; root fetches it with its own read-only deploy key (hosts/alucard/yt-pipeline.nix).
+    yt-pipeline.url = "git+ssh://git@github.com/donvini94/yt-pipeline?ref=master";
   };
 
   outputs =

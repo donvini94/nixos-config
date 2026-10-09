@@ -855,6 +855,22 @@
         "type": "github"
       }
     },
+    "nixpkgs_11": {
+      "locked": {
+        "lastModified": 1791426274,
+        "narHash": "sha256-MWhktfFtFE8Jl7bf9Pkp7TR5MSdYCjCswSo0Gkb4ywc=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "7c8764b7c7b09b34f632464276218ef9090eaa11",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-26.05",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "nixpkgs_2": {
       "locked": {
         "lastModified": 1788752844,
@@ -1035,7 +1051,8 @@
         "nil": "nil",
         "nix-darwin": "nix-darwin",
         "nixpkgs": "nixpkgs_9",
-        "sops-nix": "sops-nix"
+        "sops-nix": "sops-nix",
+        "yt-pipeline": "yt-pipeline"
       }
     },
     "sops-nix": {
@@ -1110,6 +1127,25 @@
         "owner": "hyprwm",
         "repo": "xdg-desktop-portal-hyprland",
         "type": "github"
+      }
+    },
+    "yt-pipeline": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_11"
+      },
+      "locked": {
+        "lastModified": 1791557252,
+        "narHash": "sha256-5xeqAZY2s4VJH8K8IQ+5k40nCs145mbINbj293rKwWw=",
+        "ref": "master",
+        "rev": "af53e9dbefb514ad613ad0244910b021b4f90ca2",
+        "revCount": 32,
+        "type": "git",
+        "url": "ssh://git@github.com/donvini94/yt-pipeline"
+      },
+      "original": {
+        "ref": "master",
+        "type": "git",
+        "url": "ssh://git@github.com/donvini94/yt-pipeline"
       }
     }
   },

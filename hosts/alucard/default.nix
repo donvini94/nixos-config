@@ -19,6 +19,7 @@
     ./users.nix
     ./syncthing.nix
     ./ai.nix
+    ./yt-pipeline.nix
     ../../modules/packages.nix
     ./paperless.nix
     ../../mail/nixos/mailcow-tls.nix
