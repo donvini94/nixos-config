@@ -60,6 +60,7 @@ Locally authored skills are not updater targets.
 Dracula's account shell is declared as Fish in =hosts/dracula/default.nix=.
 Home Manager supplies its abbreviations, completions, Zoxide and Atuin integration;
 enabling Fish there alone does not select it as the login shell.
+Kitty selects Fish explicitly so a running desktop's stale =$SHELL= cannot override it.
 Existing terminals keep their shell after a switch; open a new terminal or run =exec fish=.
 If commands were recorded only in another shell's history, =atuin import bash= or
 =atuin import fish= merges them into Atuin without replacing its database.

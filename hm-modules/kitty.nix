@@ -14,6 +14,8 @@
       "LANG" = "en_US.UTF-8";
     };
     settings = {
+      # An already-running desktop can still export the previous login shell.
+      shell = "${pkgs.fish}/bin/fish";
       # Let Hyprland tile new windows; kitty 0.49 also restores cached maximization.
       remember_window_size = false;
       scrollback_lines = 10000; # bare-kitty mouse scroll still uses this
