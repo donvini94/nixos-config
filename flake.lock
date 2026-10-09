@@ -1134,11 +1134,11 @@
         "nixpkgs": "nixpkgs_11"
       },
       "locked": {
-        "lastModified": 1791569543,
-        "narHash": "sha256-P7fShvNiUsrBvzalLX08QkgxFIcyBnAPghx/Gmq+UfY=",
+        "lastModified": 1791574552,
+        "narHash": "sha256-qGdi2ODuopLk22POh63S5TsWMor3Yjv6ebuBdNhuqlo=",
         "ref": "master",
-        "rev": "85980452316b6723e76c2ab1120b22d12f86fcd2",
-        "revCount": 39,
+        "rev": "504e98c02609ffde703beff446f5c1518de30756",
+        "revCount": 40,
         "type": "git",
         "url": "ssh://git@github.com/donvini94/yt-pipeline"
       },
