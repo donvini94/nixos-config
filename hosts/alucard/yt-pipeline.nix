@@ -45,6 +45,8 @@ in
 
   services.yt-pipeline = {
     enable = true;
+    # Code and resources from a git checkout: deploy with scripts/deploy.sh in the repo (seconds).
+    source = "/var/lib/yt-pipeline/src";
     wikimediaContact = "vincenzo@istbereit.de";
     maxUsdPerJob = 3;
     linksBaseUrl = "http://${site.server}.${site.tailnet}:${toString tailnetPort}";
