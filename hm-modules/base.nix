@@ -11,6 +11,7 @@
     ./yazi.nix
     ./lsp.nix
     ./cli-tools.nix
+    ./syncthing-ignores.nix
   ];
 
   programs.home-manager.enable = true;
