@@ -158,8 +158,11 @@ in
 
   sops.age.keyFile = "/home/${username}/.config/sops/age/keys.txt";
 
+  programs.fish.enable = true;
+
   users.users."${username}" = {
     isNormalUser = true;
+    shell = pkgs.fish;
     extraGroups = [
       "networkmanager"
       "wheel"

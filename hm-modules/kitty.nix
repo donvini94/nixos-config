@@ -14,6 +14,8 @@
       "LANG" = "en_US.UTF-8";
     };
     settings = {
+      # Let Hyprland tile new windows; kitty 0.49 also restores cached maximization.
+      remember_window_size = false;
       scrollback_lines = 10000; # bare-kitty mouse scroll still uses this
       cursor_shape = "beam";
       window_padding_width = 8;
