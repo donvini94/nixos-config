@@ -26,6 +26,8 @@ in
     "yt_pipeline/telegram_token".sopsFile = secretFile;
     "yt_pipeline/telegram_chat_id".sopsFile = secretFile;
     "yt_pipeline/higgsfield_api_key".sopsFile = secretFile;
+    # cookies.txt of a throwaway Google account: YouTube refuses downloads from netcup IPs.
+    "yt_pipeline/youtube_cookies".sopsFile = secretFile;
   };
 
   # root fetches the private flake input with its own read-only deploy key (see ai.nix).
@@ -59,6 +61,7 @@ in
       telegramTokenFile = config.sops.secrets."yt_pipeline/telegram_token".path;
       telegramChatIdFile = config.sops.secrets."yt_pipeline/telegram_chat_id".path;
       higgsfieldApiKeyFile = config.sops.secrets."yt_pipeline/higgsfield_api_key".path;
+      youtubeCookiesFile = config.sops.secrets."yt_pipeline/youtube_cookies".path;
     };
   };
 
