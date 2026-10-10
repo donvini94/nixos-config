@@ -49,6 +49,8 @@ in
     enable = true;
     # Code and resources from a git checkout: deploy with scripts/deploy.sh in the repo (seconds).
     source = "/var/lib/yt-pipeline/src";
+    # One video per night, done by ~05:00: no load while people stream (owner 2026-10-10).
+    schedule = "*-*-* 03:00:00";
     wikimediaContact = "vincenzo@istbereit.de";
     maxUsdPerJob = 3;
     linksBaseUrl = "http://${site.server}.${site.tailnet}:${toString tailnetPort}";
