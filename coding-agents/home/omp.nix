@@ -37,6 +37,7 @@ let
   '';
 
   lathe = pkgs.callPackage ../packages/lathe.nix { };
+  nativeRuntime = pkgs.callPackage ../packages/omp.nix { };
 
   # Rules and commands are linked file by file, never as a directory: OMP enumerates
   # <agent-dir>/rules/*.md and commands/*.md with a glob, and a glob does not traverse
@@ -88,6 +89,8 @@ in
       ".omp/agent/mcp.json".text = builtins.toJSON mcpConfig;
       ".omp/agent/skills/mentor".source = link "${mentorRepo}/skills/mentor";
       ".omp/agent/commands/mentor.md".source = link "${mentorRepo}/commands/mentor.md";
+      ".omp/agent/extensions/prompt-snippets".source =
+        link "${config.home.homeDirectory}/.local/share/agent-content/prompt-snippets";
     }
     // linkEach "rules" ruleNames "${config.home.aiStack.checkout}/guidance/rules"
     // linkEach "agents" agentNames "${repo}/agents"
@@ -103,8 +106,15 @@ in
         ]
     );
 
+    # Refresh the native stable release; no activation can reinstall an old Nix-pinned binary.
+    home.activation.ompNativeUpdate = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      if [ -z "''${DRY_RUN:-}" ]; then
+        ${lib.getExe nativeRuntime} update --stable
+      fi
+    '';
+
     # OMP owns plugin state; bootstrap missing plugins without failing offline activation.
-    home.activation.ompLearningPlugin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    home.activation.ompLearningPlugin = lib.hm.dag.entryAfter [ "writeBoundary" "ompNativeUpdate" ] ''
       export PATH="$HOME/.bun/bin:$HOME/.nix-profile/bin:/etc/profiles/per-user/$USER/bin:/run/current-system/sw/bin:$PATH"
       if [ -z "''${DRY_RUN:-}" ] && command -v omp >/dev/null 2>&1; then
         if ! omp plugin list 2>/dev/null | grep -q 'omp-learn-org@omp-learn'; then

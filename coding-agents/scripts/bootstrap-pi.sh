@@ -21,6 +21,9 @@ merge() {
 # Managed portable settings replace only the fields declared above; Pi-owned identity
 # and release metadata remain in the existing document.
 merge "$PI_AGENT_DIR/settings.json" "$PI_DEFAULT_SETTINGS" '.[0] * .[1]'
+if [ -n "${PI_DECLARED_CLAUDE_BRIDGE:-}" ]; then
+  merge "$PI_AGENT_DIR/claude-bridge.json" "$PI_DECLARED_CLAUDE_BRIDGE" '.[0] * .[1]'
+fi
 # Declared model definitions win; additional user-defined providers remain intact.
 merge "$PI_AGENT_DIR/models.json" "$PI_DECLARED_MODELS" '.[0] * .[1]'
 # Claude Bridge requires portable inheritance; preserve other subagent settings.
@@ -52,7 +55,10 @@ if [ "$needs_install" -eq 1 ]; then
 fi
 
 export PATH="$HOME/.local/bin:$PATH"
-if [ "$(pi --version 2>/dev/null || true)" != "$PI_VERSION" ]; then
-  npm install -g --prefix "$HOME/.local" --ignore-scripts "@earendil-works/pi-coding-agent@$PI_VERSION" \
-    || echo "Cannot install Pi $PI_VERSION (offline?)" >&2
+# Native self-update follows the latest stable release and never enforces an old Nix pin.
+if command -v pi >/dev/null 2>&1; then
+  pi update self
+else
+  npm install -g --prefix "$HOME/.local" --ignore-scripts \
+    "@earendil-works/pi-coding-agent@latest"
 fi

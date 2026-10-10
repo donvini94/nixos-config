@@ -20,19 +20,11 @@ let
     ];
     text = builtins.readFile ../scripts/sync-agent-content.sh;
   };
-  agentHandoff = pkgs.writeShellApplication {
-    name = "agent-handoff";
-    runtimeInputs = [ pkgs.python3 ];
-    text = ''
-      exec ${lib.getExe pkgs.python3} ${lib.escapeShellArg "${config.home.aiStack.checkout}/scripts/agent-handoff.py"} "$@"
-    '';
-  };
 in
 {
   options.home.agentContent.enable = lib.mkEnableOption "shared mentor, learning and prompt source packages";
 
   config = lib.mkIf config.home.agentContent.enable {
-    home.packages = [ agentHandoff ];
     home.activation.agentContentRepos = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       if [ -z "''${DRY_RUN:-}" ]; then
         ${lib.getExe sync} ${lib.escapeShellArg "${config.home.homeDirectory}/.local/share/agent-content"} \

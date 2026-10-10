@@ -87,12 +87,23 @@ links rules for automatic loading within their declared scopes. Other clients
 read the same files through shared skills without OMP rule URLs.
 Pi deliberately excludes the automatic =~/.agents/skills/= tree.
 
-Pi settings are seeded as defaults; existing native selections win on activation.
+Pi's declared portable settings replace those fields on activation; host identity,
+release metadata, credentials and writable instructions remain state-owned.
 Declared model definitions are refreshed without removing extra user providers.
 Use =pi install/remove= and =pi update --extensions= for Pi packages, and OMP's
 native plugin manager for OMP plugins. =update-skills= manages neither client.
-Pi's binary version is pinned in =coding-agents/home/pi.nix=. The Mac's OMP binary is its native
-Bun installation; its wrapper scopes the managed settings to OMP invocations.
+Pi and OMP follow the latest stable native releases, without Nix runtime version pins.
+Activation runs =pi update self= and =omp update --stable=; missing installations
+are bootstrapped from =@latest=. OMP's Nix adapter supplies Bun and Linux runtime
+libraries, then delegates to =~/.bun/bin/omp= so native updates stay writable.
+
+Alucard has a one-time copy of the Mac's Pi instructions and memory. Its new OMP
+sessions use the imported Mac memory at
+=~/.omp/agent/memories/mac-import-20261009/mnemopi.db=; the legacy memory remains
+untouched for the existing running process. Project bank identities are translated
+to Alucard's home paths. These memories and sessions are not automatically synchronized.
+On Alucard, Claude Bridge uses the system =claude= executable rather than the
+SDK's generic Linux binary; authentication remains client-owned.
 
 * Startup applications
 

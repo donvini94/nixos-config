@@ -11,6 +11,7 @@
   modelRoles ? { },
   cycleOrder ? [ "default" ],
   localModel ? null,
+  mnemopiDbPath ? null,
 }:
 
 let
@@ -26,8 +27,11 @@ let
         "anthropic/*"
         "openai-codex/*"
       ];
-      # Host-specific: nix owns this binary, so OMP must not offer to replace it.
-      startup.checkUpdate = false;
+      mnemopi = lib.optionalAttrs (mnemopiDbPath != null) {
+        dbPath = mnemopiDbPath;
+      };
+      # Runtime updates are native and writable, not pinned by Nix.
+      startup.checkUpdate = true;
       tools.approvalMode = "always-ask";
     }
   );

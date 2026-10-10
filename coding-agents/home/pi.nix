@@ -14,9 +14,11 @@ let
   hasLocalModel = osConfig.services.localLlama.enable or false;
   requesty = osConfig.services.requesty or null;
   requestyKeyFile = requesty.apiKeyFile or null;
+  isAlucard = (osConfig.networking.hostName or null) == "alucard";
+  claudeBridgeSettings = {
+    provider.pathToClaudeCodeExecutable = "/run/current-system/sw/bin/claude";
+  };
 
-  # npm installs the pinned binary into the writable ~/.local prefix.
-  piVersion = "1.1.0";
 
   upstreamRevision = "f82da563ab05d66729492d64c7ed4e96db3663f3";
   upstream =
@@ -76,12 +78,12 @@ let
     packages = [
       "${home}/.local/share/agent-content/mentor"
       "${home}/.local/share/agent-content/prompt-snippets"
-      "npm:pi-claude-bridge@0.9.2"
-      "git:github.com/DietrichGebert/ponytail@9cc65d03aa2da1db7121b912d03596409ee340b8"
-      "npm:@gotgenes/pi-subagents@23.2.0"
-      "npm:pi-openai-long-context@0.7.0"
-      "npm:pi-web-search@1.7.0"
-      "git:github.com/donvini94/omp-learn@465fecc0b65e7a45112f00895c0be1e367eb3e44"
+      "npm:pi-claude-bridge"
+      "git:github.com/DietrichGebert/ponytail"
+      "npm:@gotgenes/pi-subagents"
+      "npm:pi-openai-long-context"
+      "npm:pi-web-search"
+      "git:github.com/donvini94/omp-learn"
     ];
     extensions = [
       "${agentDir}/upstream/amos-ask-user-question.ts"
@@ -98,22 +100,28 @@ let
       pkgs.jq
       pkgs.nodejs
     ];
-    runtimeEnv = {
-      PI_AGENT_DIR = agentDir;
-      PI_DEFAULT_SETTINGS = pkgs.writeText "pi-settings.json" (builtins.toJSON piSettings);
-      PI_DECLARED_MODELS = pkgs.writeText "pi-models.json" (builtins.toJSON piModels);
-      PI_DECLARED_SUBAGENTS = pkgs.writeText "pi-subagents.json" (
-        builtins.toJSON { promptInheritance.claude-bridge = "portable"; }
-      );
-      PI_WEB_INDEX = amosWebFetchIndex;
-      PI_WEB_PACKAGE = amosWebFetchPackage;
-      PI_WEB_LOCK = amosWebFetchLock;
-      PI_VERSION = piVersion;
-    }
-    // lib.optionalAttrs (requestyKeyFile != null) {
-      PI_REQUESTY_KEY_FILE = requestyKeyFile;
-      PI_REQUESTY_URL = requesty.endpoint;
-    };
+    runtimeEnv =
+      {
+        PI_AGENT_DIR = agentDir;
+        PI_DEFAULT_SETTINGS = pkgs.writeText "pi-settings.json" (builtins.toJSON piSettings);
+        PI_DECLARED_MODELS = pkgs.writeText "pi-models.json" (builtins.toJSON piModels);
+        PI_DECLARED_SUBAGENTS = pkgs.writeText "pi-subagents.json" (
+          builtins.toJSON { promptInheritance.claude-bridge = "portable"; }
+        );
+        PI_WEB_INDEX = amosWebFetchIndex;
+        PI_WEB_PACKAGE = amosWebFetchPackage;
+        PI_WEB_LOCK = amosWebFetchLock;
+      }
+      // lib.optionalAttrs (requestyKeyFile != null) {
+        PI_REQUESTY_KEY_FILE = requestyKeyFile;
+        PI_REQUESTY_URL = requesty.endpoint;
+      }
+      // lib.optionalAttrs isAlucard {
+        # The SDK-bundled Claude Code executable is not Nix-compatible on Alucard.
+        PI_DECLARED_CLAUDE_BRIDGE = pkgs.writeText "pi-claude-bridge.json" (
+          builtins.toJSON claudeBridgeSettings
+        );
+      };
     text = builtins.readFile ../scripts/bootstrap-pi.sh;
   };
 in

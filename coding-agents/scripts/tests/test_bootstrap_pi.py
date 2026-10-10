@@ -35,7 +35,6 @@ class BootstrapPiTests(unittest.TestCase):
             os.environ,
             HOME=str(self.root),
             PI_AGENT_DIR=str(self.agent),
-            PI_VERSION="1.0.0",
         )
         self.env["PATH"] = f"{self.bin}{os.pathsep}{self.env['PATH']}"
         declarations = {
@@ -85,12 +84,13 @@ class BootstrapPiTests(unittest.TestCase):
         self.assertEqual(self.invoke().returncode, 0)
         self.assertEqual(len(self.calls.read_text().splitlines()), 2)
 
-    def test_native_settings_and_other_client_state_are_preserved(self) -> None:
+    def test_portable_settings_replace_stale_fields_without_touching_private_state(self) -> None:
         settings = {
             "packages": ["native"],
             "extensions": ["custom.ts"],
             "defaultModel": "chosen",
             "skills": ["personal"],
+            "deviceId": "host-owned",
         }
         (self.agent / "settings.json").write_text(json.dumps(settings))
         (self.agent / "models.json").write_text(
@@ -114,7 +114,17 @@ class BootstrapPiTests(unittest.TestCase):
         result = self.invoke()
         self.assertEqual(result.returncode, 0, result.stderr)
         actual = json.loads((self.agent / "settings.json").read_text())
-        self.assertEqual(actual, settings | {"defaultTools": ["read"]})
+        self.assertEqual(
+            actual,
+            {
+                "packages": ["managed"],
+                "extensions": ["custom.ts"],
+                "defaultModel": "default",
+                "skills": ["personal"],
+                "deviceId": "host-owned",
+                "defaultTools": ["read"],
+            },
+        )
         providers = json.loads((self.agent / "models.json").read_text())["providers"]
         self.assertEqual(providers["managed"]["baseUrl"], "https://declared.invalid")
         self.assertIn("personal", providers)

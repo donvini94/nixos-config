@@ -13,6 +13,14 @@ let
   requestyKeyFile = requesty.apiKeyFile or null;
   isRemote = requestyKeyFile != null;
   active = config.programs.ompClient.enable && (hasLocalModel || isRemote);
+  isAlucard = (osConfig.networking.hostName or null) == "alucard";
+  # Alucard imports the Mac snapshot into a dedicated bank; its live legacy bank remains
+  # untouched for the already-running OMP process.
+  mnemopiDbPath =
+    if isAlucard then
+      "${config.home.homeDirectory}/.omp/agent/memories/mac-import-20261009/mnemopi.db"
+    else
+      null;
   localProfile = {
     endpoint = "http://127.0.0.1:8080/v1";
     provider = "dracula-local";
@@ -115,14 +123,14 @@ let
     }) profiles
   );
   yaml = pkgs.formats.yaml { };
-  # `smol` backs session titles and prewalk, so both hosts point it at Requesty's cheap
-  # default rather than dracula's local model: the role must not break whenever llama.cpp is down.
+  # Dracula's title/prewalk model must not depend on llama.cpp being up.
+  # Alucard keeps the model roles copied into its native settings.
   smolModel = modelSelector requestyProfile requestyProfile.defaultModel;
   omp = pkgs.callPackage ../packages/omp-harness.nix {
     extraEnabledModels = profileModels;
-    modelRoles.smol = smolModel;
-    inherit localModel;
-    cycleOrder = [
+    modelRoles = lib.optionalAttrs (!isAlucard) { smol = smolModel; };
+    inherit localModel mnemopiDbPath;
+    cycleOrder = if isAlucard then [ "smol" "slow" ] else [
       "smol"
       "default"
       "slow"

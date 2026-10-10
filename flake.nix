@@ -124,7 +124,7 @@
         ];
       };
 
-      # Expose hash-pinned packages so CI realizes sources, not just build plans.
+      # Expose packaged tools for CI builds.
       packages = nixpkgs.lib.genAttrs systems (
         packageSystem:
         let

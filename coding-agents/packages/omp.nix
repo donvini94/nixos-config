@@ -1,46 +1,22 @@
-# Upstream's pinned single-file release binary.
-#
-# The interpreter is patched into the binary with autoPatchelfHook rather than launched
-# through a `ld-linux --library-path … $out/libexec/omp` wrapper. OMP is a Bun standalone
-# executable and its own worker host: every worker (mnemopi embeddings, stats activity,
-# tiny inference, js eval) re-enters the CLI entrypoint by spawning `Bun.main` with a
-# hidden `__omp_worker_*` argv selector. Under a loader wrapper `Bun.main` is the loader's
-# argv[0], so every spawn died with "cannot open shared object file" and memory,
-# statistics and local inference silently degraded. A patched ELF makes the binary its own
-# valid re-entry point; `omp --smoke-test` is upstream's probe for exactly this contract.
+# Nix supplies the runtime environment; OMP owns its writable, latest-release installation.
 {
-  fetchurl,
-  autoPatchelfHook,
+  bun,
   lib,
   stdenv,
+  writeShellApplication,
 }:
 
-stdenv.mkDerivation (finalAttrs: {
-  pname = "oh-my-pi";
-  version = "18.8.4";
-
-  src = fetchurl {
-    url = "https://github.com/can1357/oh-my-pi/releases/download/v${finalAttrs.version}/omp-linux-x64";
-    hash = "sha256-stuiI/va4nrL2Zvi8+droQuq4XaPnFfO4wxEDzCN6k4=";
-  };
-
-  dontUnpack = true;
-  dontStrip = true;
-  nativeBuildInputs = [ autoPatchelfHook ];
-  buildInputs = [ stdenv.cc.cc.lib ];
-
-  installPhase = ''
-    runHook preInstall
-    install -Dm755 "$src" "$out/bin/omp"
-    runHook postInstall
+writeShellApplication {
+  name = "omp";
+  runtimeInputs = [ bun ];
+  text = ''
+    ${lib.optionalString stdenv.hostPlatform.isLinux ''
+      export LD_LIBRARY_PATH="${lib.makeLibraryPath [ stdenv.cc.cc.lib ]}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    ''}
+    if [[ ! -x "$HOME/.bun/bin/omp" ]]; then
+      bun install --global @oh-my-pi/pi-coding-agent@latest
+    fi
+    exec "$HOME/.bun/bin/omp" "$@"
   '';
-
-  meta = {
-    description = "Terminal coding agent with hash-anchored edits and tool integrations";
-    homepage = "https://github.com/can1357/oh-my-pi";
-    license = lib.licenses.mit;
-    mainProgram = "omp";
-    platforms = [ "x86_64-linux" ];
-    sourceProvenance = [ lib.sourceTypes.binaryNativeCode ];
-  };
-})
+  meta.mainProgram = "omp";
+}
