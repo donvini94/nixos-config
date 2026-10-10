@@ -107,9 +107,12 @@ in
     );
 
     # Refresh the native stable release; no activation can reinstall an old Nix-pinned binary.
+    # The updater verifies the new release through PATH, where bun installs it (~/.bun/bin).
     home.activation.ompNativeUpdate = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+      export PATH="$HOME/.bun/bin:$PATH"
       if [ -z "''${DRY_RUN:-}" ]; then
-        ${lib.getExe nativeRuntime} update --stable
+        ${lib.getExe nativeRuntime} update --stable \
+          || echo "ompNativeUpdate: updating OMP failed (offline?)" >&2
       fi
     '';
 
