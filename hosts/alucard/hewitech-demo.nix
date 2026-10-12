@@ -46,7 +46,7 @@ in
       User = "hewitech-demo";
       Group = "hewitech-demo";
       WorkingDirectory = src;
-      ExecStart = "${python}/bin/gunicorn --bind 127.0.0.1:${toString port} --workers 1 --threads 8 --access-logfile - 'hewidash:create_app()'";
+      ExecStart = "${python}/bin/gunicorn --bind 127.0.0.1:${toString port} --workers 1 --threads 8 --no-control-socket --access-logfile - 'hewidash:create_app()'";
       Restart = "on-failure";
       RestartSec = 5;
       ReadWritePaths = [ "${stateDir}/data" ];
