@@ -153,8 +153,10 @@ in
           };
         };
         "comics.${domain2}" = proxyWs 25600;
-        # Client demo (hewitech-demo.nix): synthetic figures, kept out of search engines.
-        "demo.${domain2}" = proxy 8097 // {
+        # Client demo (hewitech-demo.nix): version 1 at /, version 2 at /v2/. Synthetic
+        # figures, kept out of search engines.
+        "demo.${domain2}" = lib.recursiveUpdate (proxy 8097) {
+          locations."/v2/".proxyPass = "http://127.0.0.1:8099";
           extraConfig = ''add_header X-Robots-Tag "noindex, nofollow" always;'';
         };
         "requests.${domain}" = proxyWs 5055;
