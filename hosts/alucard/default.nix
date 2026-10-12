@@ -20,6 +20,7 @@
     ./syncthing.nix
     ./ai.nix
     ./yt-pipeline.nix
+    ./hewitech-demo.nix
     ../../modules/packages.nix
     ./paperless.nix
     ../../mail/nixos/mailcow-tls.nix

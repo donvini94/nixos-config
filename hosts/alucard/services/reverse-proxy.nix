@@ -153,6 +153,10 @@ in
           };
         };
         "comics.${domain2}" = proxyWs 25600;
+        # Client demo (hewitech-demo.nix): synthetic figures, kept out of search engines.
+        "demo.${domain2}" = proxy 8097 // {
+          extraConfig = ''add_header X-Robots-Tag "noindex, nofollow" always;'';
+        };
         "requests.${domain}" = proxyWs 5055;
         "webdav.${domain2}" = tls // {
           extraConfig = "modsecurity off;";
