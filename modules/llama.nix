@@ -242,9 +242,15 @@ in
     };
 
     systemd.services.ai-stack-resume = {
-      description = "Recover an active local AI stack after suspend";
-      wantedBy = [ "suspend.target" ];
-      after = [ "suspend.target" ];
+      description = "Recover an active local AI stack after sleep";
+      wantedBy = [
+        "suspend.target"
+        "hibernate.target"
+      ];
+      after = [
+        "suspend.target"
+        "hibernate.target"
+      ];
       serviceConfig = {
         Type = "oneshot";
         ExecStart = pkgs.writeShellScript "restart-active-ai-stack-after-suspend" ''

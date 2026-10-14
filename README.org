@@ -143,6 +143,10 @@ server model data are preserved.
 on =127.0.0.1:8080=.
 Python projects own their dependencies through uv, not a global ML environment.
 
+=systemctl hibernate= saves Dracula's session to disk; power it on to resume.
+Boot the current generation before first use, and resume with the same kernel.
+The swapfile is on the unencrypted root filesystem, so saved memory is not encrypted.
+
 Dracula runs no company infrastructure: no monitoring, scanning or Hermes.
 
 * Alucard

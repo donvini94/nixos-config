@@ -52,6 +52,18 @@
     };
   };
 
+  # systemd records the swapfile's resume location in EFI before hibernating.
+  swapDevices = [
+    {
+      device = "/var/swapfile";
+      size = 64 * 1024;
+      priority = 0;
+    }
+  ];
+
+  # /tmp is RAM-backed; the 24 GiB GPU's saved allocations need disk space.
+  boot.kernelParams = [ "nvidia.NVreg_TemporaryFilePath=/var/tmp" ];
+
   zramSwap = {
     enable = true;
     algorithm = "zstd";
