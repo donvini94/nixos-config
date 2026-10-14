@@ -30,7 +30,6 @@ in
     ../../modules/llama.nix
     ../../mail/nixos/credentials.nix
     ../../coding-agents/nixos/requesty.nix
-    ../../transcription/nixos.nix
     ../../modules/gpu-mode.nix
     ./hardware.nix
     ./services.nix
@@ -95,19 +94,7 @@ in
     };
   };
 
-  services.localTranscription = {
-    enable = true;
-    operators = [ username ];
-  };
-
-  # The ASR engine and the LLM backend each want most of the 24 GiB card, and
-  # games want all of it: `gpu-mode gaming` clears both.
   services.gpuMode.modes = {
-    transcription = {
-      unit = "local-transcription.service";
-      start = "transcription-start";
-      stop = "transcription-stop";
-    };
     ai = {
       unit = "ai-stack.target";
       start = "ai-stack-start";

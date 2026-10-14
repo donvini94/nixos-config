@@ -136,7 +136,7 @@
         }
         // nixpkgs.lib.optionalAttrs (packageSystem == "x86_64-linux") {
           omp = pkgs.callPackage ./coding-agents/packages/omp.nix { };
-          local-transcription-client = pkgs.callPackage ./transcription/client.nix { };
+          inherit (pkgs) handy;
         }
       );
 
@@ -173,7 +173,7 @@
                 touch "$out"
               '';
           python-lint = pkgs.runCommand "check-python-lint" { nativeBuildInputs = [ pkgs.ruff ]; } ''
-            ruff check --no-cache --select F ${./transcription}/server.py ${./coding-agents/scripts/tests}
+            ruff check --no-cache --select F ${./coding-agents/scripts/tests}
             touch "$out"
           '';
           model-download =
