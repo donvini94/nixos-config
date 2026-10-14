@@ -137,6 +137,13 @@
         // nixpkgs.lib.optionalAttrs (packageSystem == "x86_64-linux") {
           omp = pkgs.callPackage ./coding-agents/packages/omp.nix { };
           inherit (pkgs) handy;
+          zotero =
+            (import nixpkgs {
+              system = packageSystem;
+              config.allowUnfree = true;
+            }).callPackage
+              ./packages/zotero.nix
+              { };
         }
       );
 
