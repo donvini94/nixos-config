@@ -84,7 +84,11 @@ in
       recommendedProxySettings = true;
       recommendedTlsSettings = true;
       virtualHosts = harden {
-        "${domain}" = gone;
+        # bereit. website mockup; content is rsynced by the website repo's scripts/deploy.sh.
+        "${domain}" = tls // {
+          root = "/var/www/${domain}";
+          extraConfig = ''add_header X-Robots-Tag "noindex, nofollow" always;'';
+        };
         # CRS scores the admin REST API's writes (`PUT
         # /admin/realms/{realm}/clients/{id}` with a full client
         # representation) as attacks and answers with nginx's HTML 403, which
