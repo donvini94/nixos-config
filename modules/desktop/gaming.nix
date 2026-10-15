@@ -25,6 +25,8 @@
   hardware.xone.enable = true; # Xbox controller USB dongle.
   environment.systemPackages = with pkgs; [
     mangohud
+    lsfg-vk
+    lsfg-vk-ui
     protonup-ng
     wine-wayland
     winetricks
@@ -36,8 +38,6 @@
     STEAM_EXTRA_COMPAT_TOOLS_PATHS = "\${HOME}/.steam/root/compatibilitytools.d";
   };
 
-  services.lsfg-vk = {
-    enable = true;
-    ui.enable = true;
-  };
+  environment.etc."vulkan/implicit_layer.d/VkLayer_LSFGVK_frame_generation.json".source =
+    "${pkgs.lsfg-vk}/share/vulkan/implicit_layer.d/VkLayer_LSFGVK_frame_generation.json";
 }

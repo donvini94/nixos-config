@@ -25,6 +25,8 @@
   # No battery to report, but caelestia-shell queries UPower for AC/idle-inhibitor state.
   services.upower.enable = true;
 
+  services.lact.enable = true;
+
   # The P1102w needs HP's proprietary plugin despite models.dat's plugin=0.
   services.printing.drivers = [ pkgs.hplipWithPlugin ];
   hardware.printers = {
@@ -60,7 +62,6 @@
     droidcam
 
     piper
-    lact
     undervolt
     s-tui
     stress
