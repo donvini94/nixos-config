@@ -128,7 +128,10 @@
       packages = nixpkgs.lib.genAttrs systems (
         packageSystem:
         let
-          pkgs = nixpkgs.legacyPackages.${packageSystem};
+          pkgs = import nixpkgs {
+            system = packageSystem;
+            config.allowUnfree = true;
+          };
         in
         {
           lathe = pkgs.callPackage ./coding-agents/packages/lathe.nix { };
@@ -137,13 +140,8 @@
         // nixpkgs.lib.optionalAttrs (packageSystem == "x86_64-linux") {
           omp = pkgs.callPackage ./coding-agents/packages/omp.nix { };
           inherit (pkgs) handy;
-          zotero =
-            (import nixpkgs {
-              system = packageSystem;
-              config.allowUnfree = true;
-            }).callPackage
-              ./packages/zotero.nix
-              { };
+          tapeback = pkgs.callPackage ./transcription/package.nix { };
+          zotero = pkgs.callPackage ./packages/zotero.nix { };
         }
       );
 
@@ -176,7 +174,20 @@
           shell-scripts =
             pkgs.runCommand "check-shell-scripts" { nativeBuildInputs = [ pkgs.shellcheck ]; }
               ''
-                shellcheck ${./coding-agents/scripts}/*.sh ${./mail/bin}/* ${./mail/nixos}/*.sh ${./hosts/alucard/services}/*.sh
+                shellcheck ${./coding-agents/scripts}/*.sh ${./mail/bin}/* ${./mail/nixos}/*.sh ${./hosts/alucard/services}/*.sh ${./transcription}/*.sh ${./transcription}/tests/*.sh
+                touch "$out"
+              '';
+          tapeback-local =
+            pkgs.runCommand "check-tapeback-local"
+              {
+                nativeBuildInputs = [
+                  pkgs.bash
+                  pkgs.coreutils
+                  pkgs.gnugrep
+                ];
+              }
+              ''
+                bash ${./transcription}/tests/local-only.sh
                 touch "$out"
               '';
           python-lint = pkgs.runCommand "check-python-lint" { nativeBuildInputs = [ pkgs.ruff ]; } ''

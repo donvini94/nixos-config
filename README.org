@@ -137,8 +137,12 @@ is configurable rather than tied to Alucard. n8n runs as one host-network contai
 =gpu-mode status= reports it. Inference does not start at boot.
 Handy starts with Hyprland; =Super+`= toggles dictation. Choose and download a
 model in Handy before first use; language selection is managed there.
-The former meeting-recording commands are retired; existing recordings and
-server model data are preserved.
+Tapeback is separate from Handy: its tray menu records meetings, or use
+=tapeback start= and =tapeback stop=. =tapeback process recording.wav= processes
+an existing recording. Processing is local and offline; cloud summaries are disabled.
+Speaker labels distinguish voices, not people's names. The Hugging Face download
+credential stays in =~/.config/tapeback/.env= (mode =0600=), never in Git.
+The former custom server's recordings and model data remain preserved.
 =omp-local= and =omp-chat= use the local model. The local model is llama.cpp
 on =127.0.0.1:8080=.
 Python projects own their dependencies through uv, not a global ML environment.

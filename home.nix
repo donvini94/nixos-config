@@ -23,6 +23,7 @@
     ./hm-modules/caelestia.nix
     ./hm-modules/services.nix
     ./transcription/home.nix
+    ./transcription/meeting.nix
     ./mail/home/email.nix
     ./coding-agents/home/claude.nix
     ./hm-modules/zotero-cli.nix
