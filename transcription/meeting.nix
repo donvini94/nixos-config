@@ -1,6 +1,8 @@
-{ pkgs, ... }:
+{ pkgs, inputs, ... }:
 let
-  tapeback = pkgs.callPackage ./package.nix { };
+  tapeback = pkgs.callPackage ./package.nix {
+    cudaNixpkgs = inputs.tapeback-nixpkgs;
+  };
   localTapeback = pkgs.writeShellApplication {
     name = "tapeback";
     runtimeInputs = [ tapeback ];

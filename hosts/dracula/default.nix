@@ -114,7 +114,6 @@ in
   };
   services.requesty.apiKeyFile = config.sops.secrets."requesty/api_key".path;
 
-
   determinate.enable = true;
 
   # Determinate Nixd owns garbage collection on this pilot. Keep its policy explicit and

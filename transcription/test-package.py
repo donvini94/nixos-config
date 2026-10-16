@@ -21,6 +21,7 @@ from tapeback.settings import Settings
 assert diarization_available()
 assert const.PYANNOTE_MODEL == "pyannote/speaker-diarization-community-1"
 assert ctranslate2.get_supported_compute_types("cpu")
+assert torch.version.cuda is not None
 
 # Exercise both audio decoders and the torch/torchaudio ABI without models.
 with tempfile.TemporaryDirectory() as directory:
@@ -34,11 +35,11 @@ with tempfile.TemporaryDirectory() as directory:
     assert AudioDecoder(str(audio)).get_all_samples().data.shape == (1, 16000)
     assert torchaudio.functional.resample(torch.zeros(1, 16000), 16000, 8000).shape == (1, 8000)
 
-    # A CUDA Whisper setting must not send the CPU-only diarizer to CUDA.
+    # Package checks run without a GPU; verify Tapeback still selects CUDA.
     with patch("pyannote.audio.Pipeline.from_pretrained") as load, patch(
-        "torch.cuda.is_available", return_value=False
+        "tapeback.diarizer.get_free_vram_mib", return_value=4096
     ):
         Diarizer(Settings(vault_path=Path(directory), hf_token="offline-test", device="cuda"))
-        load.return_value.to.assert_not_called()
+        load.return_value.to.assert_called_once_with(torch.device("cuda"))
 
-print("Offline imports, audio decoding, and CPU diarization fallback passed.")
+print("Offline imports, audio decoding, and GPU diarization selection passed.")

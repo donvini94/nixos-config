@@ -4,6 +4,8 @@ set -euo pipefail
 script=$(realpath "$(dirname "$0")/../tapeback-local.sh")
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
+# Expand variables in the generated executable, not while creating it.
+# shellcheck disable=SC2016
 printf '#!/bin/sh\ntouch "$TEST_OUTPUT"\nprintf "%%s\\n" "$TAPEBACK_STT_BACKEND" "$TAPEBACK_STT_MODEL" "$TAPEBACK_LANGUAGE" "$TAPEBACK_COMPUTE_TYPE" "$TAPEBACK_SUMMARIZE" "$TAPEBACK_DIARIZE" "$HF_HUB_OFFLINE" "$PYANNOTE_METRICS_ENABLED" "$*"\n' > "$tmp/tapeback"
 chmod +x "$tmp/tapeback"
 export PATH="$tmp:$PATH"
