@@ -107,13 +107,7 @@ in
           };
         };
         "git.${domain}" = gone;
-        "registry.${domain}" = proxy 5000 // {
-          extraConfig = ''
-            modsecurity off;
-            client_max_body_size 0;
-          '';
-          basicAuthFile = config.sops.secrets."nginx/htpasswd".path;
-        };
+        "registry.${domain}" = gone;
         "stream.${domain}" = wafOffExcept {
           exempt = {
             # CRS 4.25.1 lists `config.json` in both `restricted-files.data` and

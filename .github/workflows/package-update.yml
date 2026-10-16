@@ -34,13 +34,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # The hash-pinned attributes of packages.x86_64-linux in flake.nix (handy and
-        # tapeback follow nixpkgs). lathe is built for both systems but its hashes are
+        # The hash-pinned attributes of packages.x86_64-linux in flake.nix (omp installs
+        # its own latest release; handy and tapeback follow nixpkgs). lathe is built for both systems but its hashes are
         # platform-independent, so bumping it here covers the Mac as well. zotero tracks
         # its pinned Firefox ESR line, which nix-update cannot see.
         package:
           - lathe
-          - omp
           - linear-cli
           - zotero
     concurrency:

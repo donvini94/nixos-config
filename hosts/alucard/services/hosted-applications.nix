@@ -13,11 +13,6 @@
       domain = "mail.${site.domains.secondary}";
     };
 
-    dockerRegistry = {
-      enable = true;
-      openFirewall = false;
-    };
-
     # Keep UI-managed settings, with Nix taking precedence for domain and theme policy.
     mattermost = {
       enable = true;

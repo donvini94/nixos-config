@@ -16,7 +16,7 @@ were disclosed in a transcript. The services have already been removed.
 
 * TODO Rotate nginx basic authentication if not already done
 The old =secrets/htpasswd= remains in Git history. Replace =nginx/htpasswd= in
-=secrets/dmbs.yaml= and update registry/WebDAV clients. Removing a tracked hash
+=secrets/dmbs.yaml= and update WebDAV clients. Removing a tracked hash
 does not remove the offline cracking target.
 
 * TODO Bring external stacks and backups under review
@@ -35,3 +35,9 @@ Do not treat earlier version numbers or compatibility checks as current evidence
 Automated jobs restore files and check presence, not application behavior. Restore
 Keycloak into a scratch database and verify login; do the equivalent for each
 critical state store before relying on its backup.
+
+* TODO Rotate the fleet credentials that lived on Alucard
+The Tailscale OAuth client, Hetzner token and GitHub release token were readable on
+Alucard until the deploy role moved to Dracula; Alucard's age key still decrypts them in
+the history of =secrets/dmbs.yaml=. Issue new ones, store them in =secrets/fleet.yaml=
+(and the Mac's password store), then revoke the old ones.

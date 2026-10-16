@@ -31,6 +31,7 @@ in
     ../../mail/nixos/credentials.nix
     ../../coding-agents/nixos/requesty.nix
     ./hardware.nix
+    ./fleet.nix
     ./services.nix
   ];
 

@@ -1,7 +1,6 @@
 {
   config,
   inputs,
-  pkgs,
   site,
   username,
   ...
@@ -24,26 +23,6 @@ in
   sops.secrets = {
     "github/ai_stack_deploy_key".mode = "0400";
     "github/ai_library_deploy_key".mode = "0400";
-    # Alucard is the fleet's deploy host; the fleet's helpers read these API credentials.
-    "fleet/tailscale_oauth" = {
-      owner = username;
-      mode = "0400";
-    };
-    "fleet/hetzner_token" = {
-      owner = username;
-      mode = "0400";
-    };
-    "fleet/github_release_token" = {
-      owner = username;
-      mode = "0400";
-    };
-    # The alert bot, also used by the release gate to report.
-    "fleet/telegram_bot_token" = {
-      sopsFile = secretFile;
-      key = "alertmanager/telegram_bot_token";
-      owner = username;
-      mode = "0400";
-    };
   };
   programs.git = {
     enable = true;
@@ -81,35 +60,6 @@ in
     sopsFile = secretFile;
     mode = "0400";
     restartUnits = [ "monitoring-heartbeat.service" ];
-  };
-
-  # Weekly release gate for the fleet (Sunday evening, before Monday's Release updates
-  # PR): tags the canary's revisions when they pass. It runs as the operator, whose
-  # checkout, SSH key and age key it uses.
-  systemd.services.release-gate = {
-    description = "Release gate for ai-stack and ai-library";
-    after = [ "network-online.target" ];
-    wants = [ "network-online.target" ];
-    path = [
-      config.nix.package
-      pkgs.git
-      pkgs.openssh
-    ];
-    serviceConfig = {
-      Type = "oneshot";
-      User = username;
-      WorkingDirectory = "/home/${username}/code/fleet";
-      ExecStartPre = "${pkgs.git}/bin/git pull --ff-only -q";
-      ExecStart = "${config.nix.package}/bin/nix develop --command bin/release-gate";
-      TimeoutStartSec = "3h";
-    };
-  };
-  systemd.timers.release-gate = {
-    wantedBy = [ "timers.target" ];
-    timerConfig = {
-      OnCalendar = "Sun 20:00";
-      Persistent = true;
-    };
   };
 
   # This host's interactive clients (Pi, OMP) use their own key, not the stack's.

@@ -1,12 +1,8 @@
 # Alucard's own administration ports on the tailnet, published by the ai-stack's
 # Tailscale Serve unit alongside n8n, Hermes, Grafana and Prometheus. The media ports
 # match dracula's media-admin SSH forwards.
-{ site, username, ... }:
+{ site, ... }:
 {
-  # The operator may run Tailscale without root: the staging run and customer installs
-  # pre-sign their join keys with this node's Tailnet Lock key.
-  services.tailscale.extraSetFlags = [ "--operator=${username}" ];
-
   services.aiStack.tailnet = {
     domain = site.tailnet;
     tcp = {
