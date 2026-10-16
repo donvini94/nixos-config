@@ -3,11 +3,11 @@
     "ai-library": {
       "flake": false,
       "locked": {
-        "lastModified": 1791132041,
-        "narHash": "sha256-EnoJvQqY5fI35KxjWnLJk4oTNnqplvw5HYWKA07IZws=",
+        "lastModified": 1792184251,
+        "narHash": "sha256-vZhAQPn91hSrxg+W93xzwOQtQ6YWxmAXwGe8ULs+Cho=",
         "ref": "main",
-        "rev": "80d7f2bb7a4d3ab9109d02599eea61aa264c22c7",
-        "revCount": 13,
+        "rev": "e14264c245b2dcdda1849d54e20e1d01110ff059",
+        "revCount": 26,
         "type": "git",
         "url": "ssh://git@github.com/donvini94/ai-library"
       },
@@ -30,11 +30,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1791222330,
-        "narHash": "sha256-sF7GBZ+bjXjwt+DggIO3IW7dADQr3YfYsfVM7hGRH1s=",
+        "lastModified": 1792186547,
+        "narHash": "sha256-ftdoAUXxHULQSnqgjtYIwDEFEOc+/uFNn2gZSOlxt98=",
         "ref": "main",
-        "rev": "bb62dda0a896885b7596feb766e71c69b72cd912",
-        "revCount": 96,
+        "rev": "83e0f1393a50b07e8b595b34f45995fb3a50c8b1",
+        "revCount": 97,
         "type": "git",
         "url": "ssh://git@github.com/donvini94/ai-stack"
       },
@@ -1169,11 +1169,11 @@
         "nixpkgs": "nixpkgs_11"
       },
       "locked": {
-        "lastModified": 1791738259,
-        "narHash": "sha256-mKvWJIU27EJn5ZmEskbBcspVnqOpH1nc3FX7gVT82Do=",
+        "lastModified": 1792186536,
+        "narHash": "sha256-H5TOi8CCRWSYBYuOzvtWxxTCK7a2nSbdA7cXqWIm86o=",
         "ref": "master",
-        "rev": "322992c549e37c2ab67dece1929b181a62df35b8",
-        "revCount": 81,
+        "rev": "8df5b42903a955361b821a2935dfa5ce2fb1bbad",
+        "revCount": 89,
         "type": "git",
         "url": "ssh://git@github.com/donvini94/yt-pipeline"
       },

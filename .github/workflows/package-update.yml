@@ -93,6 +93,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "$branch"
           git commit -am "$title"
+          # An earlier run may have pushed this branch; the lease needs its current tip.
+          git fetch -q origin "+refs/heads/$branch:refs/remotes/origin/$branch" 2>/dev/null || true
           git push --force-with-lease -u origin "$branch"
 
           if [ -n "$(gh pr list --head "$branch" --state open --json number --jq '.[].number')" ]; then

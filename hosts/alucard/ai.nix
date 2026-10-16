@@ -133,4 +133,14 @@ in
     uid = 985;
     gid = 981;
   };
+
+  # n8n's image defaults to UID 1000, which here is the operator: a dedicated UID lets the
+  # stack's egress limits apply to n8n as on customer servers.
+  services.localN8n.uid = 975;
+  users.users.n8n = {
+    isSystemUser = true;
+    uid = 975;
+    group = "n8n";
+  };
+  users.groups.n8n.gid = 975;
 }

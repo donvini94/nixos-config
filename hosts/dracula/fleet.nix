@@ -28,6 +28,8 @@
 
   # `tailscale lock sign` for customer join keys runs without root.
   services.tailscale.extraSetFlags = [ "--operator=${username}" ];
+  # Upstream applies these only when tailscaled starts; a switch should apply them too.
+  systemd.services.tailscaled-set.wantedBy = [ "multi-user.target" ];
 
   # Weekly release gate (Sunday evening, before Monday's Release updates PR): tags the
   # canary's revisions when they pass. Persistent, because the desktop may be off.
