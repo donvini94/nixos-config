@@ -51,14 +51,19 @@ install -m 600 "$PI_WEB_INDEX" "$web/index.ts"
 install -m 600 "$PI_WEB_PACKAGE" "$web/package.json"
 install -m 600 "$PI_WEB_LOCK" "$web/package-lock.json"
 if [ "$needs_install" -eq 1 ]; then
-  (cd "$web" && npm ci --ignore-scripts)
+  # A failed install must not satisfy the node_modules check on the next activation.
+  (cd "$web" && npm ci --ignore-scripts) || {
+    rm -rf "$web/node_modules"
+    echo "piAgentBootstrap: installing web-fetch dependencies failed (offline?)" >&2
+  }
 fi
 
 export PATH="$HOME/.local/bin:$PATH"
 # Native self-update follows the latest stable release and never enforces an old Nix pin.
 if command -v pi >/dev/null 2>&1; then
-  pi update self
+  pi update self || echo "piAgentBootstrap: updating Pi failed (offline?)" >&2
 else
   npm install -g --prefix "$HOME/.local" --ignore-scripts \
-    "@earendil-works/pi-coding-agent@latest"
+    "@earendil-works/pi-coding-agent@latest" \
+    || echo "piAgentBootstrap: installing Pi failed (offline?)" >&2
 fi

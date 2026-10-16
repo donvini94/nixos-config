@@ -217,7 +217,7 @@
                   echo "A mismatched checksum was accepted" >&2
                   exit 1
                 fi
-                test ! -e bad
+                test ! -e bad && test ! -e bad.partial
                 rm source
                 bash "$script" "$PWD/model/file" "$hash" "file://$PWD/source"
                 touch "$out"

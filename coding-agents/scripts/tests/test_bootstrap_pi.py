@@ -176,6 +176,19 @@ class BootstrapPiTests(unittest.TestCase):
         self.assertEqual(providers["requesty"]["models"], [{"id": "discovered"}])
         self.assertEqual(file.stat().st_mode & 0o777, 0o600)
 
+    def test_offline_activation_succeeds_and_retries(self) -> None:
+        for name in ("pi", "npm"):
+            (self.bin / name).write_text(
+                f'#!{BASH}\necho "$*" >> "{self.calls}"\nmkdir -p node_modules\nexit 1\n'
+            )
+        result = self.invoke()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("offline?", result.stderr)
+        web = self.agent / "upstream/amos-web-fetch"
+        self.assertFalse((web / "node_modules").exists())
+        self.invoke()
+        self.assertEqual(self.calls.read_text().count("ci --ignore-scripts"), 2)
+
     def test_invalid_settings_are_not_overwritten(self) -> None:
         file = self.agent / "settings.json"
         file.write_text("not json\n")

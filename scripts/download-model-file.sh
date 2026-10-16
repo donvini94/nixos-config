@@ -18,5 +18,9 @@ if [ -f "$destination" ] && printf '%s  %s\n' "$expected_sha256" "$destination" 
 fi
 
 curl --fail --location --retry 5 --continue-at - --output "$partial" "$source_url"
-printf '%s  %s\n' "$expected_sha256" "$partial" | sha256sum --check
+# A corrupt partial would otherwise be resumed, and rejected, on every later run.
+printf '%s  %s\n' "$expected_sha256" "$partial" | sha256sum --check || {
+  rm -f "$partial"
+  exit 1
+}
 mv "$partial" "$destination"

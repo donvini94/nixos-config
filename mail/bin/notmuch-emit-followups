@@ -13,13 +13,15 @@ PATH=$HOME/.local/bin:$HOME/.nix-profile/bin:/etc/profiles/per-user/$USER/bin:/o
 export PATH
 
 OUT=$HOME/org/mail-followups.org
-TMP=$(mktemp -t mail-followups.org.XXXXXX)
 NOW=$(date +%s)
 
 # Ensure the parent dir exists. On a fresh machine (especially the NixOS
 # bootstrap before syncthing has accepted the org folder) this saves the
 # script from silently failing at the final mv.
-mkdir -p "$(dirname "$OUT")"
+mkdir -p "$(dirname "$OUT")" "$HOME/.local/state"
+# Same filesystem as ~/org, so the mv is atomic; outside it, so Syncthing never sees it.
+TMP=$(mktemp "$HOME/.local/state/mail-followups.XXXXXX")
+trap 'rm -f "$TMP"' EXIT
 
 # Map an age tag back to a property value the agenda can sort by.
 # Lower = more urgent in agenda sort. We bias by recency, then by age bucket.
@@ -130,10 +132,13 @@ cat > "$TMP" <<'HEADER'
 # ============================================================================
 HEADER
 
-printf '#+updated: %s\n' "$(date '+%Y-%m-%d %H:%M:%S %Z')" >> "$TMP"
-
 emit_section "Owed reply (they sent, you haven't replied)" "tag:owed/reply" "owed"
 emit_section "Waiting (you sent, they haven't replied)"    "tag:s/waiting"  "waiting"
 
-mv "$TMP" "$OUT"
-echo "[emit-followups] wrote $OUT"
+# Unchanged content must not touch the file: Syncthing and open Emacs buffers react to every write.
+if cmp -s "$TMP" "$OUT"; then
+    echo "[emit-followups] $OUT unchanged"
+else
+    mv "$TMP" "$OUT"
+    echo "[emit-followups] wrote $OUT"
+fi

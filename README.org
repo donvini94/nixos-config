@@ -23,7 +23,7 @@ Features that span NixOS, home-manager and packages live in one folder:
 | coding-agents/  | Personal OMP and Pi clients: home/, nixos/ (Requesty key option), packages/, scripts/, skills/, guidance/ |
 | transcription/  | Handy offline dictation integration for Dracula         |
 | mail/           | nixos/ (credentials, Mailcow TLS), home/ (hub, Mac client), stateful config |
-| modules/        | Shared system modules: desktop/, container-updates, llama, ai-stack-target (Dracula's GPU switch), nvidia, gpu-mode |
+| modules/        | Shared system modules: desktop/, container-updates, llama, ai-stack-target (Dracula's GPU switch), nvidia |
 | hm-modules/     | Shared user tools; base.nix is what every host imports               |
 
 Package lists are in =modules/packages.nix=, =modules/desktop/programming.nix=,
@@ -133,8 +133,8 @@ is configurable rather than tied to Alucard. n8n runs as one host-network contai
 
 * Dracula
 
-=gpu-mode ai|gaming= selects the exclusive GPU workload;
-=gpu-mode status= reports it. Inference does not start at boot.
+=ai-stack-start= takes the GPU for inference, =gaming-mode= (=ai-stack-stop=) frees it;
+=ai-stack-health= reports it. Inference does not start at boot.
 Handy starts with Hyprland; =Super+`= toggles dictation. Choose and download a
 model in Handy before first use; language selection is managed there.
 Tapeback is separate from Handy: its tray menu records meetings, or use

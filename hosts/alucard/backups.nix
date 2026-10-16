@@ -33,6 +33,21 @@
         '';
       };
 
+      # Mattermost: the database dump plus config, uploaded files and plugins.
+      mattermost = {
+        runtimeInputs = [
+          config.services.postgresql.package
+          pkgs.util-linux
+        ];
+        after = [ "postgresql.service" ];
+        requires = [ "postgresql.service" ];
+        prepare = ''
+          runuser -u postgres -- pg_dump --format=custom --no-owner ${config.services.mattermost.database.name} > "$stage/mattermost.dump"
+          test -s "$stage/mattermost.dump"
+        '';
+        paths = [ config.services.mattermost.dataDir ];
+      };
+
       # Jellyfin: consistent database copies plus config and authored playlists; the rest
       # is rebuilt by a library scan.
       jellyfin = {

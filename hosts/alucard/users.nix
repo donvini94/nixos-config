@@ -14,10 +14,6 @@ let
     vincenzoNixos
     vincenzoDracula
   ];
-  adminKeys = vincenzoKeys ++ [
-    marius
-    kyrill
-  ];
 in
 {
   users.users = {
@@ -32,14 +28,6 @@ in
         "docker"
       ];
       openssh.authorizedKeys.keys = vincenzoKeys;
-    };
-    nix = {
-      isNormalUser = true;
-      extraGroups = [
-        "wheel"
-        "docker"
-      ];
-      openssh.authorizedKeys.keys = adminKeys;
     };
     marius = {
       isNormalUser = true;

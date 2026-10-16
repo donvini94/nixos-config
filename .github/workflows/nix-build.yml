@@ -30,17 +30,20 @@ jobs:
           - alucard
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      # Alucard imports the private ai-stack and ai-library; read-only deploy keys fetch
-      # them. GitHub takes the first valid deploy key, so ai-library gets a host alias.
-      - name: Access ai-stack and ai-library
+      # Alucard imports private flakes; each has its own read-only deploy key. GitHub takes
+      # the first valid deploy key, so every repository but ai-stack gets a host alias.
+      - &private-inputs
+        name: Access private flake inputs
         env:
           STACK_KEY: ${{ secrets.AI_STACK_DEPLOY_KEY }}
           LIBRARY_KEY: ${{ secrets.AI_LIBRARY_DEPLOY_KEY }}
+          YT_PIPELINE_KEY: ${{ secrets.YT_PIPELINE_DEPLOY_KEY }}
         run: |
           install -d -m 700 ~/.ssh
           printf '%s\n' "$STACK_KEY" > ~/.ssh/ai-stack
           printf '%s\n' "$LIBRARY_KEY" > ~/.ssh/ai-library
-          chmod 600 ~/.ssh/ai-stack ~/.ssh/ai-library
+          printf '%s\n' "$YT_PIPELINE_KEY" > ~/.ssh/yt-pipeline
+          chmod 600 ~/.ssh/ai-stack ~/.ssh/ai-library ~/.ssh/yt-pipeline
           echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' >> ~/.ssh/known_hosts
           cat >> ~/.ssh/config <<'EOF'
           Host github-ai-library
@@ -48,11 +51,17 @@ jobs:
             HostKeyAlias github.com
             IdentityFile ~/.ssh/ai-library
             IdentitiesOnly yes
+          Host github-yt-pipeline
+            HostName github.com
+            HostKeyAlias github.com
+            IdentityFile ~/.ssh/yt-pipeline
+            IdentitiesOnly yes
           Host github.com
             IdentityFile ~/.ssh/ai-stack
             IdentitiesOnly yes
           EOF
           git config --global url."ssh://git@github-ai-library/donvini94/ai-library".insteadOf ssh://git@github.com/donvini94/ai-library
+          git config --global url."ssh://git@github-yt-pipeline/donvini94/yt-pipeline".insteadOf ssh://git@github.com/donvini94/yt-pipeline
       - uses: DeterminateSystems/determinate-nix-action@8d87e8d5e5b8a8309d4281094560f127d9a265f1 # v3
       # Full host closures exceed hosted runner storage; these are build plans.
       - run: nix build --dry-run --no-link .#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel
@@ -101,28 +110,6 @@ jobs:
         runner: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      # Alucard imports the private ai-stack and ai-library; read-only deploy keys fetch
-      # them. GitHub takes the first valid deploy key, so ai-library gets a host alias.
-      - name: Access ai-stack and ai-library
-        env:
-          STACK_KEY: ${{ secrets.AI_STACK_DEPLOY_KEY }}
-          LIBRARY_KEY: ${{ secrets.AI_LIBRARY_DEPLOY_KEY }}
-        run: |
-          install -d -m 700 ~/.ssh
-          printf '%s\n' "$STACK_KEY" > ~/.ssh/ai-stack
-          printf '%s\n' "$LIBRARY_KEY" > ~/.ssh/ai-library
-          chmod 600 ~/.ssh/ai-stack ~/.ssh/ai-library
-          echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' >> ~/.ssh/known_hosts
-          cat >> ~/.ssh/config <<'EOF'
-          Host github-ai-library
-            HostName github.com
-            HostKeyAlias github.com
-            IdentityFile ~/.ssh/ai-library
-            IdentitiesOnly yes
-          Host github.com
-            IdentityFile ~/.ssh/ai-stack
-            IdentitiesOnly yes
-          EOF
-          git config --global url."ssh://git@github-ai-library/donvini94/ai-library".insteadOf ssh://git@github.com/donvini94/ai-library
+      - *private-inputs
       - uses: DeterminateSystems/determinate-nix-action@8d87e8d5e5b8a8309d4281094560f127d9a265f1 # v3
       - run: nix flake check

@@ -63,7 +63,6 @@ in
       ExecStartPre = [
         "${pkgs.coreutils}/bin/mkdir -p /var/lib/media-stack"
         "${pkgs.coreutils}/bin/cp ${./media-stack/docker-compose.yml} /var/lib/media-stack/docker-compose.yml"
-        "${pkgs.docker-compose}/bin/docker-compose pull"
       ];
       ExecStart = "${pkgs.docker-compose}/bin/docker-compose up -d";
       ExecStop = "${pkgs.docker-compose}/bin/docker-compose down";

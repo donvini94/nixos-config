@@ -34,6 +34,8 @@
           EnableOpenServer = true;
           RestrictCreationToDomains = site.domains.secondary;
         };
+        # The domain restriction means nothing unless the address is proven.
+        EmailSettings.RequireEmailVerification = true;
         ThemeSettings.DefaultTheme = "onyx";
       };
       database = {

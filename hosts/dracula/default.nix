@@ -30,7 +30,6 @@ in
     ../../modules/llama.nix
     ../../mail/nixos/credentials.nix
     ../../coding-agents/nixos/requesty.nix
-    ../../modules/gpu-mode.nix
     ./hardware.nix
     ./services.nix
   ];
@@ -94,18 +93,11 @@ in
     };
   };
 
-  services.gpuMode.modes = {
-    ai = {
-      unit = "ai-stack.target";
-      start = "ai-stack-start";
-      stop = "ai-stack-stop";
-    };
-  };
-
   services.aiStackTarget = {
     operators = [ username ];
     autoStart = false;
   };
+  environment.systemPackages = [ (pkgs.writeShellScriptBin "gaming-mode" "exec ai-stack-stop") ];
 
   sops.secrets."requesty/api_key" = {
     sopsFile = ../../secrets/dracula-ai.yaml;
