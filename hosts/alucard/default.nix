@@ -59,7 +59,8 @@
       "virtio_blk"
     ];
     initrd.kernelModules = [ ];
-    kernelModules = [ ];
+    # Wine game servers use the kernel synchronization device through Docker.
+    kernelModules = [ "ntsync" ];
     extraModulePackages = [ ];
     loader.systemd-boot.enable = true;
     loader.efi.canTouchEfiVariables = true;
