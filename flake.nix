@@ -195,9 +195,36 @@
                 touch "$out"
               '';
           python-lint = pkgs.runCommand "check-python-lint" { nativeBuildInputs = [ pkgs.ruff ]; } ''
-            ruff check --no-cache --select F ${./coding-agents/scripts/tests}
+            ruff check --no-cache --select F ${./coding-agents/scripts/tests} ${./hosts/alucard/scripts}
             touch "$out"
           '';
+          jellyfin-maintenance =
+            pkgs.runCommand "check-jellyfin-maintenance" { nativeBuildInputs = [ pkgs.python3 ]; }
+              ''
+                PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s ${./hosts/alucard/scripts} -p 'test_*.py' -v
+                touch "$out"
+              '';
+          alucard-maintenance =
+            let
+              cfg = inputs.self.nixosConfigurations.alucard.config;
+              backups = builtins.attrNames cfg.services.restic.backups;
+              timers = cfg.systemd.timers;
+              backupTimers = map (name: timers."restic-backups-${name}".timerConfig) backups;
+              checkTimers = map (name: timers."restic-check-${name}".timerConfig) backups;
+              calendars = map (timer: timer.OnCalendar) (backupTimers ++ checkTimers);
+            in
+            assert cfg.nix.gc.dates == [ "*-*-* 01:00:00 Europe/Berlin" ];
+            assert
+              cfg.services.yt-pipeline.claimWindow == {
+                startHour = 1;
+                endHour = 6;
+                timeZone = "Europe/Berlin";
+              };
+            assert builtins.all (timer: timer.Persistent && timer.RandomizedDelaySec == 0) backupTimers;
+            assert builtins.all (timer: !timer.Persistent && timer.RandomizedDelaySec == 0) checkTimers;
+            assert builtins.all (calendar: nixpkgs.lib.hasSuffix " Europe/Berlin" calendar) calendars;
+            assert builtins.length calendars == builtins.length (nixpkgs.lib.unique calendars);
+            pkgs.writeText "check-alucard-maintenance" "Overnight maintenance schedules and backup catch-up verified.\n";
           model-download =
             pkgs.runCommand "check-model-download"
               {

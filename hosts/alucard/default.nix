@@ -16,6 +16,7 @@
     ./security.nix
     ./services/default.nix
     ./media.nix
+    ./maintenance.nix
     ./users.nix
     ./syncthing.nix
     ./ai.nix
@@ -76,7 +77,6 @@
       cores = 4;
       download-buffer-size = lib.mkForce 1048576;
     };
-    gc.dates = "23:00";
     optimise.automatic = lib.mkForce false;
   };
 
