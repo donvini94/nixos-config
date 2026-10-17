@@ -211,9 +211,17 @@
               timers = cfg.systemd.timers;
               backupTimers = map (name: timers."restic-backups-${name}".timerConfig) backups;
               checkTimers = map (name: timers."restic-check-${name}".timerConfig) backups;
-              calendars = map (timer: timer.OnCalendar) (backupTimers ++ checkTimers);
+              calendars = nixpkgs.lib.concatMap (timer: builtins.filter (value: value != "") timer.OnCalendar) (
+                backupTimers ++ checkTimers
+              );
             in
             assert cfg.nix.gc.dates == [ "*-*-* 01:00:00 Europe/Berlin" ];
+            assert
+              timers.fstrim.timerConfig.OnCalendar == [
+                ""
+                "Mon *-*-* 01:50:00 Europe/Berlin"
+              ];
+            assert timers.fstrim.timerConfig.AccuracySec == "1s";
             assert
               cfg.services.yt-pipeline.claimWindow == {
                 startHour = 1;
