@@ -29,6 +29,15 @@ in
       ];
       openssh.authorizedKeys.keys = vincenzoKeys;
     };
+    nix = {
+      isNormalUser = true;
+      # Existing rootless Docker data and Enshrouded require these exact IDs.
+      uid = 1005;
+      subUidRanges = [ { startUid = 100000; count = 65536; } ];
+      subGidRanges = [ { startGid = 100000; count = 65536; } ];
+      linger = true;
+      openssh.authorizedKeys.keys = vincenzoKeys;
+    };
     marius = {
       isNormalUser = true;
       extraGroups = [ "wheel" ];
