@@ -125,6 +125,11 @@ in
           omp plugin install omp-learn-org@omp-learn \
             || echo "ompLearningPlugin: installing omp-learn-org failed (offline?)" >&2
         fi
+        if ! omp plugin list 2>/dev/null | grep -q 'mattpocock-skills@mattpocock'; then
+          omp plugin marketplace add mattpocock/skills >/dev/null 2>&1 || true
+          omp plugin install mattpocock-skills@mattpocock \
+            || echo "ompLearningPlugin: installing mattpocock-skills failed (offline?)" >&2
+        fi
       fi
     '';
   };

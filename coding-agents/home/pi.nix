@@ -84,6 +84,7 @@ let
       "npm:pi-openai-long-context"
       "npm:pi-web-search"
       "git:github.com/donvini94/omp-learn"
+      "git:github.com/mattpocock/skills"
     ];
     extensions = [
       "${agentDir}/upstream/amos-ask-user-question.ts"
