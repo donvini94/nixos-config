@@ -91,6 +91,7 @@
       master.new_status = "inherit";
 
       misc = {
+        vrr = 2; # Fullscreen only, to avoid desktop flicker.
         enable_swallow = true;
         force_default_wallpaper = 0;
       };
