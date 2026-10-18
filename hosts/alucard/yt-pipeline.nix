@@ -51,11 +51,8 @@ in
     source = "/var/lib/yt-pipeline/src";
     # Start production early enough to leave room for the other overnight jobs.
     schedule = "Wed *-*-* 01:30:00 Europe/Berlin";
-    claimWindow = {
-      startHour = 1;
-      endHour = 6;
-      timeZone = "Europe/Berlin";
-    };
+    # Temporarily open (2026-10-18: Ali video for the 17:00 upload); restore 1-6 Europe/Berlin.
+    claimWindow = null;
     wikimediaContact = "vincenzo@istbereit.de";
     maxUsdPerJob = 3;
     linksBaseUrl = "http://${site.server}.${site.tailnet}:${toString tailnetPort}";
