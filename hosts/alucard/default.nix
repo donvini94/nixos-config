@@ -22,6 +22,7 @@
     ./ai.nix
     ./yt-pipeline.nix
     ./hewitech-demo.nix
+    ./twenty.nix
     ../../modules/packages.nix
     ./paperless.nix
     ../../mail/nixos/mailcow-tls.nix
