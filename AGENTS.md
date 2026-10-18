@@ -24,6 +24,11 @@ current packages, services, ports and paths. Do not duplicate those inventories 
 - Questions are not authorization to edit. Answer "how/why/should" questions and stop;
   wait for an explicit request to apply the change.
 - Do not retire live services or delete application data without approval.
+- Before removing a user, group or service, inventory what it owns on the running host:
+  processes, lingering user manager, user units and timers, rootless containers, files
+  outside its home, and config that references it (firewall ports, sudo, cron). Workloads
+  outside Nix (e.g. game servers) only show up there. Freed UIDs/GIDs get reused, so
+  orphaned files need a pinned ID or a decision. Report findings and ask before removing.
 
 ## Placement
 
