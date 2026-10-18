@@ -98,7 +98,7 @@ in
       };
     };
     twenty-db = {
-      image = "postgres:16.15@sha256:ca0bd484cb98bf4b24eb1010e73fb3fcbd6714d240fbc1a10eea5b7dbecb641d";
+      image = "postgres:16.10@sha256:21f6013073bc6b92830a2129570e2f5ec42a6c734b5a985a41e83aa58f54c3c1";
       environment = {
         POSTGRES_USER = "twenty";
         POSTGRES_DB = "twenty";
@@ -118,7 +118,7 @@ in
       log-driver = "journald";
     };
     twenty-redis = {
-      image = "redis:7.4.11-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499";
+      image = "redis:7.4.6-alpine@sha256:3b73847e72874be07e6657b129a94761662b79bc0f679273757d4218573b2a98";
       cmd = [
         "redis-server"
         "--maxmemory-policy"
