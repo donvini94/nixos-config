@@ -78,7 +78,9 @@ in
         "twenty-redis"
       ];
       ports = [ "127.0.0.1:13000:3000" ];
+      # Docker publishes no ports for internal-only containers; the ingress network has NAT off, so no egress.
       extraOptions = common.extraOptions ++ [
+        "--network=twenty-ingress"
         "--health-cmd=curl --fail http://localhost:3000/healthz"
         "--health-interval=15s"
         "--health-timeout=5s"
@@ -158,6 +160,8 @@ in
       };
       script = ''
         ${docker} network inspect twenty >/dev/null 2>&1 || ${docker} network create --internal twenty
+        ${docker} network inspect twenty-ingress >/dev/null 2>&1 \
+          || ${docker} network create -o com.docker.network.bridge.enable_ip_masquerade=false twenty-ingress
       '';
     };
     docker-twenty-db = {
