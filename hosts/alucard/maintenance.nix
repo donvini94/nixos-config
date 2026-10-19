@@ -1,4 +1,9 @@
-{ lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   backups = [
     {
@@ -68,7 +73,7 @@ let
     crowdsec-update-hub = "*-*-* 01:45:00";
     fstrim = "Mon *-*-* 01:50:00";
     paperless-exporter = "*-*-* 03:20:00";
-    yt-pipeline-schedule = "Wed *-*-* 01:30:00";
+    yt-pipeline-schedule = config.services.yt-pipeline.schedule;
   };
   batchUnits =
     builtins.attrNames timers
@@ -77,10 +82,9 @@ let
   nightly = calendar: {
     timerConfig = {
       # Reset vendor calendars as well as Nix definitions (notably fstrim).
-      OnCalendar = lib.mkForce [
-        ""
-        "${calendar} Europe/Berlin"
-      ];
+      OnCalendar = lib.mkForce (
+        [ "" ] ++ map (slot: "${slot} Europe/Berlin") (lib.toList calendar)
+      );
       AccuracySec = "1s";
       RandomizedDelaySec = lib.mkForce 0;
       # Catch-up must not start optional heavy work during daytime activation.

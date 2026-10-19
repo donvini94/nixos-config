@@ -49,8 +49,11 @@ in
     enable = true;
     # Code and resources from a git checkout: deploy with scripts/deploy.sh in the repo (seconds).
     source = "/var/lib/yt-pipeline/src";
-    # Start production early enough to leave room for the other overnight jobs.
-    schedule = "Wed *-*-* 01:30:00 Europe/Berlin";
+    # Use the discounted ElevenLabs month; stop automatic production before November 9.
+    schedule = [
+      "2026-10-20..31 01:30:00"
+      "2026-11-01..08 01:30:00"
+    ];
     claimWindow = {
       startHour = 1;
       endHour = 6;

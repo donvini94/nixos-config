@@ -222,6 +222,12 @@
                 "Mon *-*-* 01:50:00 Europe/Berlin"
               ];
             assert timers.fstrim.timerConfig.AccuracySec == "1s";
+            assert timers.yt-pipeline-schedule.timerConfig.OnCalendar == [
+              ""
+              "2026-10-20..31 01:30:00 Europe/Berlin"
+              "2026-11-01..08 01:30:00 Europe/Berlin"
+            ];
+            assert !timers.yt-pipeline-schedule.timerConfig.Persistent;
             assert
               cfg.services.yt-pipeline.claimWindow == {
                 startHour = 1;
