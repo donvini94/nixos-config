@@ -1,11 +1,18 @@
 {
   config,
+  lib,
   pkgs,
   username,
   ...
 }:
 
 {
+  # Compromised eMudhra intermediates (https://emudhra.we-have-a-problem.com/); cacert 3.131.1 drops them.
+  security.pki.caCertificateBlacklist = lib.optionals (lib.versionOlder pkgs.cacert.version "3.131.1") [
+    "Comodo AAA Services root"
+    "emSign ECC Root CA - G3"
+  ];
+
   environment.shells = with pkgs; [
     bash
     fish
