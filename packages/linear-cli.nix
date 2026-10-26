@@ -11,18 +11,18 @@ let
     {
       x86_64-linux = {
         target = "x86_64-unknown-linux-gnu";
-        hash = "sha256-u8udNlMIvDcooeyZE60YgPiMDOaHZzgyl+NIwFfzW40=";
+        hash = "sha256-v3cSCXzmoB6KN53oNX7KZtV0gFAgHTNrp4e2rTaH8+c=";
       };
       aarch64-darwin = {
         target = "aarch64-apple-darwin";
-        hash = "sha256-uavdS1rsFEWeQ0oomSA3V96K6EfwVerk8frue7H7wHg=";
+        hash = "sha256-u6gc884Z80hvGtpSz5hBqNdJ/KcWM46mhOazsIpwaVQ=";
       };
     }
     .${stdenv.hostPlatform.system};
 in
 stdenv.mkDerivation (finalAttrs: {
   pname = "linear-cli";
-  version = "2.6.0";
+  version = "3.1.0";
   src = fetchurl {
     url = "https://github.com/schpet/linear-cli/releases/download/v${finalAttrs.version}/linear-${source.target}.tar.xz";
     inherit (source) hash;
