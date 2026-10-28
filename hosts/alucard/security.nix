@@ -3,7 +3,7 @@
 {
   services.crowdsec = {
     hub.collections = [ "LePresidente/jellyfin" ];
-    localConfig = {
+    settings = {
       acquisitions = [
         {
           source = "journalctl";

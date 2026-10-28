@@ -13,8 +13,6 @@ let
     '';
   });
 
-  zotero = pkgs.callPackage ../packages/zotero.nix { };
-
   # The unmodified Deno binary needs nix-ld; see packages/linear-cli.nix.
   linear-cli = pkgs.callPackage ../packages/linear-cli.nix { };
 in

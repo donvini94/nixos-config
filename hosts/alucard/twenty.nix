@@ -1,4 +1,4 @@
-# Upstream compose: twentyhq/twenty sdk/v2.48.0, packages/twenty-docker/docker-compose.yml.
+# Upstream compose: twentyhq/twenty twenty/v2.52.0, packages/twenty-docker/docker-compose.yml.
 {
   config,
   lib,
@@ -7,7 +7,7 @@
   ...
 }:
 let
-  image = "twentycrm/twenty:v2.48.0@sha256:43fab4bffacdcd63ff3c9257b7f8985a4424d81e9eb43982b9c16a841d555e52";
+  image = "twentycrm/twenty:v2.52.0@sha256:20b1010a975c42954d9f90698564795daf106da964bc95028836b09a8f424839";
   docker = "${pkgs.docker}/bin/docker --host=unix:///var/run/docker.sock";
   storage = "/app/packages/twenty-server/.local-storage";
   serve = pkgs.writeShellScript "twenty-private-https" ''
@@ -100,7 +100,7 @@ in
       };
     };
     twenty-db = {
-      image = "postgres:16.15@sha256:ca0bd484cb98bf4b24eb1010e73fb3fcbd6714d240fbc1a10eea5b7dbecb641d";
+      image = "postgres:16.15@sha256:1beaa3084eee2676f20a9cd9928f0bf2c5bf674f8e49f81017912183d377c61c";
       environment = {
         POSTGRES_USER = "twenty";
         POSTGRES_DB = "twenty";
@@ -120,7 +120,7 @@ in
       log-driver = "journald";
     };
     twenty-redis = {
-      image = "redis:7.4.11-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499";
+      image = "redis:7.4.12-alpine@sha256:338fbfc036dc5517ac0b04d6de21521085935336e565f223406180e9d84166e2";
       cmd = [
         "redis-server"
         "--maxmemory-policy"

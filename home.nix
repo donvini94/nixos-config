@@ -30,7 +30,12 @@
     inputs.caelestia-shell.homeManagerModules.default
   ];
 
-  nixpkgs.config.allowUnfree = true;
+  nixpkgs.config = {
+    allowUnfree = true;
+    # Zotero 10 still embeds Firefox ESR 140, which went EOL on 2026-10-13. Zotero opens
+    # only its own UI and connector traffic; revisit when Zotero moves to ESR 153.
+    permittedInsecurePackages = [ "firefox-esr-140-bin-unwrapped-140.17.0esr" ];
+  };
 
   home = {
     username = "${username}";

@@ -30,11 +30,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792189315,
-        "narHash": "sha256-SPUldp1Rr/AxYcSVWebrCGFkZcIUd+hzPbTXMYomG8Q=",
+        "lastModified": 1793180854,
+        "narHash": "sha256-CwDs4WNN9ELxhBStcSIgpO+B7i8l2dKLdNHOOIJlNaw=",
         "ref": "main",
-        "rev": "61678a82b4e30349df60b10786d17b7e4c128fc8",
-        "revCount": 101,
+        "rev": "61e83f442ca20f9a959bf8b4c397b9478f6ace90",
+        "revCount": 102,
         "type": "git",
         "url": "ssh://git@github.com/donvini94/ai-stack"
       },
@@ -857,6 +857,23 @@
         "type": "github"
       }
     },
+    "nixpkgs-tailscale": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793150745,
+        "narHash": "sha256-v7jqXDLn6hcZSMqLYqkGpku85i9iDZU+OLZ/LDiPfuI=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "c766862f70d4a909bfc78b09ff970ebf19906f0b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "c766862f70d4a909bfc78b09ff970ebf19906f0b",
+        "type": "github"
+      }
+    },
     "nixpkgs_10": {
       "locked": {
         "lastModified": 1791487292,
@@ -996,11 +1013,11 @@
     },
     "nixpkgs_9": {
       "locked": {
-        "lastModified": 1791734076,
-        "narHash": "sha256-i5qk1kLiit98rRbh1AXmWBNT9QXC/y4l5Wk/u5EdpDQ=",
+        "lastModified": 1793110635,
+        "narHash": "sha256-dhoW6VgFWlaodSY5jrBn+CF2FLmaUvDVgM7+C7T2+NM=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "7fd4004d0511991fff3a0524856a9be09e28c5f0",
+        "rev": "31ecbaca1bdefa45dffc409f0250bd8039ea0010",
         "type": "github"
       },
       "original": {
@@ -1069,6 +1086,7 @@
         "nil": "nil",
         "nix-darwin": "nix-darwin",
         "nixpkgs": "nixpkgs_9",
+        "nixpkgs-tailscale": "nixpkgs-tailscale",
         "sops-nix": "sops-nix",
         "tapeback-nixpkgs": "tapeback-nixpkgs",
         "yt-pipeline": "yt-pipeline"
