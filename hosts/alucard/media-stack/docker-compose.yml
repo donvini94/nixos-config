@@ -111,7 +111,7 @@ services:
 
     # Bazarr - Subtitle management for TV shows and movies (uses regular internet)
   bazarr:
-    image: lscr.io/linuxserver/bazarr:v1.6.2-ls366@sha256:8b30e81c4aec2991f469e78fae8afaa89ecc9b21a80e3897f50427216b55470c
+    image: lscr.io/linuxserver/bazarr:v1.6.2-ls370@sha256:9a625883f054e722795affe5e3ca71057e6ed817ecdf99f4a99624346fcc509c
     container_name: bazarr
     environment:
       - PUID=1001
