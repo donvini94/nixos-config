@@ -9,9 +9,6 @@
   :recipe (:host github :repo "minad/org-modern"))
 (package! org-super-agenda)
 
-;; macOS: pull real PATH from the login shell (daemon launched by launchd gets
-;; only the bare /usr/bin:/bin:... PATH, missing /opt/homebrew/bin etc.)
-(package! exec-path-from-shell)
 
 ;; Themes
 (package! modus-themes)
@@ -45,8 +42,6 @@
 (package! ansible)
 (package! ansible-doc)
 
-;; Git: delta integration for magit
-(package! magit-delta)
 
 ;; Evil: tree-sitter text objects (vaf = select function, vic = select class)
 (package! evil-textobj-tree-sitter

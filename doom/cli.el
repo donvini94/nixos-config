@@ -17,3 +17,12 @@
 ;; Pre-loading compile.el keeps the macro `fboundp', so the buggy load path is never taken
 ;; and the autoload stub is generated correctly. Drop this once Emacs ships the fix.
 (require 'compile)
+
+;; `doom sync --env' snapshots the calling shell into the profile's envvar file, which
+;; GUI Emacs loads at startup (the Dock gives Emacs.app only /usr/bin:/bin:…). Keep
+;; the snapshot to paths and locale: the shell also exports credentials (OS_PASSWORD)
+;; and agent session state, which must not land in a plaintext file.
+(setq doom-env-deny '(".")
+      doom-env-allow '("^PATH$" "^MANPATH$" "^LANG$" "^LC_" "^NIX_SSL_CERT_FILE$"
+                       "^SSL_CERT_FILE$" "^NIX_PROFILES$" "^XDG_DATA_DIRS$"
+                       "^TERMINFO_DIRS$" "^SOPS_AGE_KEY_FILE$" "^EDITOR$" "^VISUAL$"))

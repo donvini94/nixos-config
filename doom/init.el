@@ -41,26 +41,26 @@
 
  :term
  eshell            ; the elisp shell that works everywhere
- vterm
+ ghostel           ; libghostty terminal; replaces vterm
 
  :checkers
  syntax              ; tasing you for every semicolon you forget
  ;;spell             ; replaced by jinx (faster, async, enchant-based)
 
  :tools
- (debugger +lsp)          ; FIXME stepping through code, to help you add bugs
+ debugger          ; dape: stepping through code, to help you add bugs
  direnv
  (docker +lsp)
  editorconfig      ; let someone else argue about tabs vs spaces
  ;;ein               ; tame Jupyter notebooks with emacs
  (eval +overlay)     ; run code, run (also, repls)
+ llm               ; gptel: chat, rewrite and ask about code
  (lookup +dictionary + offline +docsets)              ; navigate your code and its documentation
  (lsp +peek)               ; M-x vscode
  magit              ; a git porcelain for Emacs
  (pass +auth)              ; password manager for nerds
  ;;pdf             ; replaced by emacs-reader (supports PDF, EPUB, MOBI, etc.)
  tree-sitter
- ;;llm             ; replaced by agent-shell (ACP-based agentic interface)
 
  :os
  (:if IS-MAC macos)  ; improve compatibility with macOS

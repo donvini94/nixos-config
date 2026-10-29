@@ -72,20 +72,6 @@
       global-auto-revert-non-file-buffers nil)       ; Only revert file buffers
 ;; Performance Optimizations:1 ends here
 
-;; [[file:config.org::*Shell Environment (PATH)][Shell Environment (PATH):1]]
-(use-package! exec-path-from-shell
-  :when (eq system-type 'darwin)
-  :demand t
-  :config
-  (when (or (daemonp) (display-graphic-p))
-    (setq exec-path-from-shell-shell-name "/run/current-system/sw/bin/fish")
-    (exec-path-from-shell-initialize)
-    ;; Doom resolved these before the PATH import; without them projectile lists
-    ;; files with `find', which ignores .gitignore (e.g. a project's .venv).
-    (setq doom-fd-executable (executable-find "fd")
-          doom-ripgrep-executable (executable-find "rg"))))
-;; Shell Environment (PATH):1 ends here
-
 ;; [[file:config.org::*Defaults][Defaults:1]]
 (setq user-full-name "Vincenzo Pace"
       user-mail-address "vincenzo@istbereit.de")
@@ -123,7 +109,8 @@
 
 ;; Use POSIX shell internally (fish causes issues with TRAMP, diff-hl, subprocesses)
 (setq shell-file-name (executable-find "bash"))
-(setq-default vterm-shell (executable-find "fish"))
+(setq ghostel-shell (executable-find "fish")
+      ghostel-module-auto-install 'download)          ; prebuilt module, no Zig toolchain
 (setq-default explicit-shell-file-name (executable-find "fish"))
 
 ;; Frameless window
@@ -200,9 +187,14 @@
 ;; native .eln: ~3 s on first use, and each loaded .eln slows every later dlopen.
 ;; Keep it to the servers of the +lsp modules in init.el.
 (setq lsp-client-packages
-      '(lsp-bash lsp-docker lsp-dockerfile lsp-go lsp-java lsp-nix lsp-ruff lsp-rust
-        lsp-typst lsp-yaml))
+      '(lsp-bash lsp-docker lsp-dockerfile lsp-go lsp-nix lsp-ruff lsp-rust lsp-typst
+        lsp-yaml))
 (doom-load-packages-incrementally lsp-client-packages)
+
+;; lsp-java's autoloads require dap-java, and with it dap-mode, as soon as lsp-java
+;; loads, so it is loaded for Java buffers only, ahead of Doom's appended `lsp!' hook.
+(add-hook! '(java-mode-local-vars-hook java-ts-mode-local-vars-hook)
+  (require 'lsp-java))
 
 (after! lsp-mode
   ;; Performance settings
@@ -212,6 +204,7 @@
         lsp-enable-folding nil
         lsp-enable-text-document-color nil
         lsp-enable-on-type-formatting nil
+        lsp-enable-dap-auto-configure nil              ; dape (Doom's debugger) replaces dap-mode
 
         ;; Completion settings (use corfu)
         lsp-completion-provider :none
@@ -337,10 +330,6 @@
   (setq lsp-rust-analyzer-cargo-watch-command "clippy"
         lsp-rust-analyzer-display-chaining-hints t
         lsp-rust-analyzer-display-parameter-hints t))
-
-;;; NOTE: dap-gdb-lldb-setup downloads binaries on first call — run M-x dap-gdb-lldb-setup manually when needed
-(after! dap-mode
-  (require 'dap-gdb-lldb))
 ;; Rust Configuration:1 ends here
 
 ;; [[file:config.org::*Typst Configuration (tinymist)][Typst Configuration (tinymist):1]]
@@ -377,8 +366,7 @@
 ;; late. Resolved with `executable-find' rather than a hardcoded prefix: this used to be
 ;; "/opt/homebrew/bin/git", and when AC-0137 moved to nix-darwin that formula was
 ;; uninstalled, leaving magit pointing at a path that no longer existed. git now comes
-;; from the per-user nix profile there. The `exec-path-from-shell' block above has already
-;; imported the login shell's PATH by this point, which is what makes the lookup see it.
+;; from the per-user nix profile there; Doom's envvar file supplies that PATH.
 (when (eq system-type 'darwin)
   (setq magit-git-executable (or (executable-find "git") "git")))
 
@@ -397,34 +385,6 @@
   (setq magit-clone-default-directory "~/code/")
   (setq auto-revert-buffer-list-filter 'magit-auto-revert-repository-buffer-p))
 ;; Magit:1 ends here
-
-;; [[file:config.org::*Debugger][Debugger:1]]
-(use-package dap-mode
-  :after lsp-mode
-  :commands dap-debug
-  :hook ((python-mode . dap-ui-mode) (python-mode . dap-mode))
-  :config
-  (require 'dap-python)
-  (setq dap-python-debugger 'debugpy)
-  (defun dap-python--pyenv-executable-find (command)
-    (if (bound-and-true-p pyvenv-virtual-env)
-        (executable-find "python")
-      (executable-find command)))
-
-  (add-hook 'dap-stopped-hook
-            (lambda (arg) (call-interactively #'dap-hydra))))
-
-(map! :map dap-mode-map
-      :leader
-      :prefix ("d" . "dap")
-      :desc "dap next"          "n" #'dap-next
-      :desc "dap step in"       "i" #'dap-step-in
-      :desc "dap step out"      "o" #'dap-step-out
-      :desc "dap continue"      "c" #'dap-continue
-      :desc "dap hydra"         "h" #'dap-hydra
-      :desc "dap debug restart" "r" #'dap-debug-restart
-      :desc "dap debug"         "s" #'dap-debug)
-;; Debugger:1 ends here
 
 ;; [[file:config.org::*Theming][Theming:1]]
 (setq doom-theme 'modus-vivendi-tinted)
@@ -598,6 +558,23 @@
           (lambda ()
             (my/org-crypt-harden-buffer)
             (add-hook 'before-save-hook #'my/org-crypt-harden-buffer nil t)))
+
+(defun my/org-crypt-entry ()
+  "Tag the entry at point :crypt: and encrypt it.
+Without the tag, a later decrypt and save would write the entry back in plaintext."
+  (interactive)
+  (require 'org-crypt)
+  (org-toggle-tag org-crypt-tag-matcher 'on)
+  (org-encrypt-entry))
+
+(map! :after org
+      :map org-mode-map
+      :localleader
+      (:prefix ("z" . "crypt")
+       :desc "Encrypt entry (tags :crypt:)" "e" #'my/org-crypt-entry
+       :desc "Decrypt entry"                "d" #'org-decrypt-entry
+       :desc "Decrypt all in buffer"        "D" #'org-decrypt-entries
+       :desc "Re-encrypt all in buffer"     "E" #'org-encrypt-entries))
 ;; Org Crypt:1 ends here
 
 ;; [[file:config.org::*Org Roam][Org Roam:1]]
@@ -1041,7 +1018,9 @@ rg finds them, so the agenda only visits those files instead of all of ~/org."
 
 ;; [[file:config.org::*Claude Code IDE][Claude Code IDE:1]]
 (use-package! claude-code-ide
+  :defer t
   :config
+  (setq claude-code-ide-terminal-backend 'ghostel)
   (claude-code-ide-emacs-tools-setup))
 
 (map! :leader
@@ -1050,6 +1029,7 @@ rg finds them, so the agenda only visits those files instead of all of ~/org."
 
 ;; [[file:config.org::*Agent Shell][Agent Shell:1]]
 (use-package! agent-shell
+  :defer t
   :config
   (setq agent-shell-anthropic-authentication
         (agent-shell-anthropic-make-authentication :login t)))
@@ -1061,6 +1041,12 @@ rg finds them, so the agenda only visits those files instead of all of ~/org."
        :desc "Send file" "f" #'agent-shell-send-file
        :desc "Interrupt" "x" #'agent-shell-interrupt))
 ;; Agent Shell:1 ends here
+
+;; [[file:config.org::*gptel (ChatGPT subscription)][gptel (ChatGPT subscription):1]]
+(after! gptel
+  (setq gptel-backend (gptel-make-openai-oauth "ChatGPT")
+        gptel-model 'gpt-5.5))
+;; gptel (ChatGPT subscription):1 ends here
 
 ;; [[file:config.org::*Document Reader (emacs-reader)][Document Reader (emacs-reader):1]]
 (use-package! reader
@@ -1203,12 +1189,6 @@ rg finds them, so the agenda only visits those files instead of all of ~/org."
   (setf (alist-get 'python-ts-mode apheleia-mode-alist) '(ruff))
   (setf (alist-get 'ruff apheleia-formatters) '("ruff" "format" "-")))
 ;; Ruff (Python linting + formatting):1 ends here
-
-;; [[file:config.org::*Magit-delta][Magit-delta:1]]
-;;; NOTE: Requires delta binary in PATH (already installed in NixOS config).
-(use-package! magit-delta
-  :hook (magit-mode . magit-delta-mode))
-;; Magit-delta:1 ends here
 
 ;; [[file:config.org::*Evil Tree-sitter Text Objects][Evil Tree-sitter Text Objects:1]]
 ;;; Adds tree-sitter powered text objects to Evil:
