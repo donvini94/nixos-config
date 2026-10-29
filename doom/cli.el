@@ -25,4 +25,5 @@
 (setq doom-env-deny '(".")
       doom-env-allow '("^PATH$" "^MANPATH$" "^LANG$" "^LC_" "^NIX_SSL_CERT_FILE$"
                        "^SSL_CERT_FILE$" "^NIX_PROFILES$" "^XDG_DATA_DIRS$"
-                       "^TERMINFO_DIRS$" "^SOPS_AGE_KEY_FILE$" "^EDITOR$" "^VISUAL$"))
+                       "^TERMINFO_DIRS$" "^SOPS_AGE_KEY_FILE$" "^EDITOR$" "^VISUAL$"
+                       "^LIBRARY_PATH$"))
