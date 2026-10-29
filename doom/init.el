@@ -8,7 +8,6 @@
  :ui
  doom              ; what makes DOOM look the way it does
  dashboard         ; a nifty splash screen for Emacs
- (emoji +unicode)  ; 🙂
  hl-todo           ; highlight TODO/FIXME/NOTE/DEPRECATED/HACK/REVIEW
  (ligatures +extra); ligatures and symbols to make your code pretty again
  modeline          ; snazzy, Atom-inspired modeline, plus API
