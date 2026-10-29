@@ -489,6 +489,16 @@
             (when (bound-and-true-p flycheck-mode)
               (flycheck-mode -1))))
 
+;; org-indent's agent leaves its repeating idle timer running after the last
+;; buffer is initialized; the next `org-indent-mode' starts a new one and orphans
+;; it. Every background org buffer (CalDAV sync, agenda) leaked one, and
+;; thousands of 0.2 s idle timers made every pause in typing sluggish.
+(after! org-indent
+  (defadvice! my/org-indent-cancel-idle-agent-a (&rest _)
+    :before #'org-indent-mode
+    (when (and (null org-indent-agentized-buffers) (timerp org-indent-agent-timer))
+      (cancel-timer org-indent-agent-timer))))
+
 (after! org-download
   (setq org-download-method 'directory
         org-download-image-org-width 600
@@ -741,11 +751,20 @@ note whose filename is today's date, so an older daily is never re-dated."
                 (active-minibuffer-window)
                 (and buffer (buffer-modified-p buffer)))
       (let ((my/bereit-caldav-syncing t)
-            (org-caldav-show-sync-results nil))
-        (condition-case err
-            (org-caldav-sync)
-          (error (message "Bereit calendar sync failed: %s"
-                          (error-message-string err))))))))
+            (org-caldav-show-sync-results nil)
+            (old-buffers (buffer-list)))
+        (unwind-protect
+            (condition-case err
+                (org-caldav-sync)
+              (error (message "Bereit calendar sync failed: %s"
+                              (error-message-string err))))
+          ;; org-caldav never kills some url.el response buffers (and their
+          ;; connections); one leaked per sync.
+          (let (kill-buffer-query-functions)
+            (dolist (b (buffer-list))
+              (when (and (not (memq b old-buffers))
+                         (string-prefix-p " *http " (buffer-name b)))
+                (kill-buffer b)))))))))
 
 (defun my/bereit-caldav-sync-after-save ()
   "Push a saved edit of the Bereit calendar file shortly after saving."
