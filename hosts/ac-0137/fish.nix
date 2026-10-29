@@ -8,9 +8,8 @@
 #   * the abbreviations already in hm-modules/fish.nix (vim, e, nano, bereit, arr, dr,
 #     py, lg, cheat, c, ccs, cct) and `y`, which programs.yazi's shellWrapperName provides.
 #
-# Still stateful and NOT declared here: conf.d/leafcloud.fish holds a plaintext OpenStack
-# password and must never enter the repo, and conf.d/{_tide_init,autopair,done,fzf,z}.fish
-# belong to fisher.
+# Still stateful and NOT declared here: conf.d/{_tide_init,autopair,done,fzf,z}.fish belong
+# to fisher.
 { ... }:
 
 {
