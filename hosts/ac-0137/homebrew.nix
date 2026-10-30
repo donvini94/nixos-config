@@ -73,7 +73,6 @@
       "notmuch"
       "nushell"
       "openjdk@17"
-      "openstackclient"
       "pass"
       "pigz"
       "pinentry-mac"

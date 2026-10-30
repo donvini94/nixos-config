@@ -1,3 +1,7 @@
+config-version = 2
+# Kept alive while empty; sketchybar creates its workspace items from this list at startup.
+persistent-workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+
 after-startup-command = []
 
 exec-on-workspace-change = ['/bin/bash', '-c',

@@ -29,8 +29,6 @@
   };
 
   programs.fish.shellAbbrs = {
-    acgpt-up = "openstack server unshelve d94fd33f-6907-4d47-9929-ea785a78676d";
-    acgpt-down = "openstack server shelve d94fd33f-6907-4d47-9929-ea785a78676d";
     zayi = "yazi";
   };
 

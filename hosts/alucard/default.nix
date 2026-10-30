@@ -167,7 +167,6 @@
     keycloak
     ffmpeg
     yt-dlp
-    openstackclient
     inetutils
     claude-code
     nodejs_22
