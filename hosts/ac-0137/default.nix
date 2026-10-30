@@ -26,6 +26,13 @@
     ${username} ALL = (root) NOPASSWD: /run/current-system/sw/bin/darwin-rebuild switch --flake /Users/${username}/nixos-config\#AC-0137
   '';
 
+  # Spotlight indexing had been switched off locally (MDM only blocks
+  # internet results). Keep it on; mdutil is idempotent and leaves an existing index alone.
+  system.activationScripts.postActivation.text = ''
+    /usr/bin/mdutil -i on / >/dev/null
+    /usr/bin/mdutil -i on /System/Volumes/Data >/dev/null
+  '';
+
   # The installer still owns the Determinate Nix runtime and main nix.conf. This module
   # makes its supported custom and daemon policy files declarative through nix-darwin.
   determinateNix = {

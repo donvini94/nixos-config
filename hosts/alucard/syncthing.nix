@@ -40,6 +40,8 @@ let
       label = folder.label or name;
       path = "${home}/${name}";
       type = "sendreceive";
+      # The filesystem watcher reports changes; the full rescan is only a safety net.
+      rescanIntervalS = 86400;
     }
     // lib.optionalAttrs (folder ? versioning) { inherit (folder) versioning; };
 in
@@ -116,11 +118,6 @@ in
         };
         documents = {
           id = "baqfs-svyhe";
-          devices = workstations;
-        };
-        doom-config = {
-          id = "doom-config";
-          label = "";
           devices = workstations;
         };
         nixos-config = {
