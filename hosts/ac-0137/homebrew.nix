@@ -48,6 +48,10 @@
       "dockerfmt"
       "feh"
       "ffmpegthumbnailer"
+      # emacs-plus-app's native compilation links against these. They are cask
+      # dependencies, which `cleanup = "uninstall"` does not count, so it removes them.
+      "gcc"
+      "libgccjit"
       "ghostscript"
       "gomodifytags"
       "gopls"
@@ -100,7 +104,7 @@
     casks = [
       "aerospace"
       "copilot-cli"
-      "emacs-plus-app"
+      "d12frosted/emacs-plus/emacs-plus-app" # tap-qualified so brew bundle trusts it
       "iina"
       "libreoffice"
       "music-decoy"

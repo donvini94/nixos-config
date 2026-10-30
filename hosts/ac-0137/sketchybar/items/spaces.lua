@@ -65,38 +65,56 @@ local function highlight(new_focused)
   end
 end
 
-local function refresh_workspace(i, workspace)
-  sbar.exec(
-    "/opt/homebrew/bin/aerospace list-windows --workspace " .. workspace .. " --format '%{app-name}' --json",
-    function(apps)
-      local is_selected = focused_workspace == workspace
-      local has_windows = #apps > 0
-      local visible = is_selected or has_windows
+local last_icons = {}
 
-      local icon_line = ""
-      for _, app in ipairs(apps) do
-        local lookup = app_icons[app["app-name"]]
-        icon_line = icon_line .. " " .. (lookup or app_icons["Default"])
-      end
-      if not has_windows then
-        icon_line = " —"
-      end
+local function render(i, workspace, apps)
+  local visible = focused_workspace == workspace or #apps > 0
+  local icon_line = ""
+  for _, app in ipairs(apps) do
+    icon_line = icon_line .. " " .. (app_icons[app] or app_icons["Default"])
+  end
+  if #apps == 0 then icon_line = " —" end
 
-      sbar.animate("tanh", 10, function()
-        spaces[i]:set({ drawing = visible, label = icon_line })
-        brackets[i]:set({ drawing = visible })
-        paddings[i]:set({ drawing = visible })
-      end)
-    end
-  )
+  local state = icon_line .. (visible and "+" or "-")
+  if last_icons[workspace] == state then return end
+  last_icons[workspace] = state
+  sbar.animate("tanh", 10, function()
+    spaces[i]:set({ drawing = visible, label = icon_line })
+    brackets[i]:set({ drawing = visible })
+    paddings[i]:set({ drawing = visible })
+  end)
 end
 
+-- One AeroSpace query covers every workspace. AeroSpace answers queries on the thread
+-- that handles keybindings, so a query per workspace on every focus change delayed the
+-- next keypress. Focus events that arrive while a query is running collapse into one
+-- follow-up refresh.
+local refreshing, dirty = false, false
 local function refresh_all()
-  for i, workspace in ipairs(workspaces) do
-    if workspace ~= "0" and spaces[i] then
-      refresh_workspace(i, workspace)
+  if refreshing then dirty = true return end
+  refreshing = true
+  sbar.exec(
+    "/opt/homebrew/bin/aerospace list-windows --all --format '%{workspace}%{app-name}%{workspace-is-focused}' --json",
+    function(windows)
+      local apps = {}
+      local focused = nil
+      if type(windows) == "table" then
+        for _, w in ipairs(windows) do
+          apps[w.workspace] = apps[w.workspace] or {}
+          table.insert(apps[w.workspace], w["app-name"])
+          if w["workspace-is-focused"] then focused = w.workspace end
+        end
+      end
+      -- An empty focused workspace has no window to report it; the workspace-change
+      -- event has already set the highlight in that case.
+      if focused and focused ~= focused_workspace then highlight(focused) end
+      for i, workspace in ipairs(workspaces) do
+        if workspace ~= "0" and spaces[i] then render(i, workspace, apps[workspace] or {}) end
+      end
+      refreshing = false
+      if dirty then dirty = false refresh_all() end
     end
-  end
+  )
 end
 
 workspaces = get_workspaces()
@@ -184,6 +202,11 @@ local observer = sbar.add("item", {
 
 observer:subscribe("aerospace_workspace_change", function(env)
   highlight(env.FOCUSED_WORKSPACE)
+  refresh_all()
+end)
+
+sbar.add("event", "aerospace_focus_change")
+observer:subscribe("aerospace_focus_change", function(_)
   refresh_all()
 end)
 

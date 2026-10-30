@@ -3,7 +3,9 @@ after-startup-command = []
 exec-on-workspace-change = ['/bin/bash', '-c',
     '@sketchybar@ --trigger aerospace_workspace_change FOCUSED_WORKSPACE=$AEROSPACE_FOCUSED_WORKSPACE']
 
-on-focus-changed = ['exec-and-forget @sketchybar@ --trigger aerospace_workspace_change FOCUSED_WORKSPACE=$(/opt/homebrew/bin/aerospace list-workspaces --focused)']
+# Window opens, closes and moves only show up as focus changes; the bar finds the
+# focused workspace itself, so this hook starts no aerospace query of its own.
+on-focus-changed = ['exec-and-forget @sketchybar@ --trigger aerospace_focus_change']
 start-at-login = true
 enable-normalization-flatten-containers = true
 enable-normalization-opposite-orientation-for-nested-containers = true
