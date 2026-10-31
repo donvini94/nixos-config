@@ -1,4 +1,10 @@
-{ pkgs, inputs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  inputs,
+  ...
+}:
 let
   # Nix path literal: the clip MUST be git-tracked or the flake won't see it.
   greeterWallpaper = ../../wallpapers/goku-shadow-sunset-dragon-ball-moewalls-com.mp4;
@@ -123,6 +129,9 @@ in
       thunar-volman
     ];
   };
+
+  # The flake's bin/Hyprland is a wrapProgram script; capability wrappers must target the ELF.
+  security.wrappers.Hyprland.source = lib.mkForce "${config.programs.hyprland.package}/bin/.Hyprland-wrapped";
 
   environment.sessionVariables.NIXOS_OZONE_WL = "1";
 
