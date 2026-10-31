@@ -860,17 +860,17 @@
     "nixpkgs-tailscale": {
       "flake": false,
       "locked": {
-        "lastModified": 1793150745,
-        "narHash": "sha256-v7jqXDLn6hcZSMqLYqkGpku85i9iDZU+OLZ/LDiPfuI=",
+        "lastModified": 1793433936,
+        "narHash": "sha256-bs9tuWC7JnXmTIDtYiWsdvdQT3TxjoTrxNhzlZl3klQ=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "c766862f70d4a909bfc78b09ff970ebf19906f0b",
+        "rev": "5772e19988afd8bb223da0e260075f69205ea0d6",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "c766862f70d4a909bfc78b09ff970ebf19906f0b",
+        "rev": "5772e19988afd8bb223da0e260075f69205ea0d6",
         "type": "github"
       }
     },
