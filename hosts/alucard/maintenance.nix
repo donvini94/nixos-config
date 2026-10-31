@@ -5,64 +5,47 @@
   ...
 }:
 let
-  backups = [
+  # One entry per restic job; a job missing here keeps upstream's randomized schedule.
+  jobs = [
     {
       name = "paperless";
-      time = "03:30";
+      backup = "03:30";
+      check = "05:00";
     }
     {
       name = "jellyfin";
-      time = "03:35";
+      backup = "03:35";
+      check = "05:06";
     }
     {
       name = "onyx";
-      time = "03:40";
+      backup = "03:40";
+      check = "05:12";
     }
     {
       name = "n8n";
-      time = "03:45";
+      backup = "03:45";
+      check = "05:18";
     }
     {
       name = "mattermost";
-      time = "03:50";
+      backup = "03:50";
+      check = "05:24";
     }
     {
       name = "hermes";
-      time = "03:55";
+      backup = "03:55";
+      check = "05:30";
     }
     {
       name = "keycloak";
-      time = "04:00";
-    }
-  ];
-  checks = [
-    {
-      name = "paperless";
-      time = "05:00";
+      backup = "04:00";
+      check = "05:36";
     }
     {
-      name = "jellyfin";
-      time = "05:06";
-    }
-    {
-      name = "onyx";
-      time = "05:12";
-    }
-    {
-      name = "n8n";
-      time = "05:18";
-    }
-    {
-      name = "mattermost";
-      time = "05:24";
-    }
-    {
-      name = "hermes";
-      time = "05:30";
-    }
-    {
-      name = "keycloak";
-      time = "05:36";
+      name = "twenty";
+      backup = "04:05";
+      check = "05:42";
     }
   ];
   timers = {
@@ -77,14 +60,12 @@ let
   };
   batchUnits =
     builtins.attrNames timers
-    ++ map (job: "restic-backups-${job.name}") backups
-    ++ map (job: "restic-check-${job.name}") checks;
+    ++ map (job: "restic-backups-${job.name}") jobs
+    ++ map (job: "restic-check-${job.name}") jobs;
   nightly = calendar: {
     timerConfig = {
       # Reset vendor calendars as well as Nix definitions (notably fstrim).
-      OnCalendar = lib.mkForce (
-        [ "" ] ++ map (slot: "${slot} Europe/Berlin") (lib.toList calendar)
-      );
+      OnCalendar = lib.mkForce ([ "" ] ++ map (slot: "${slot} Europe/Berlin") (lib.toList calendar));
       AccuracySec = "1s";
       RandomizedDelaySec = lib.mkForce 0;
       # Catch-up must not start optional heavy work during daytime activation.
@@ -104,18 +85,18 @@ in
         value.timerConfig = {
           OnCalendar = lib.mkForce [
             ""
-            "*-*-* ${job.time}:00 Europe/Berlin"
+            "*-*-* ${job.backup}:00 Europe/Berlin"
           ];
           AccuracySec = "1s";
           RandomizedDelaySec = lib.mkForce 0;
         };
-      }) backups
+      }) jobs
     )
     // builtins.listToAttrs (
       map (job: {
         name = "restic-check-${job.name}";
-        value = nightly "Sun *-*-* ${job.time}:00";
-      }) checks
+        value = nightly "Sun *-*-* ${job.check}:00";
+      }) jobs
     );
 
   systemd.slices.maintenance.sliceConfig = {

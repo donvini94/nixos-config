@@ -203,7 +203,4 @@ in
       config.sops.templates."twenty.env".path
     }";
   };
-  # Exercise the new job and its verification shortly after initial activation, too.
-  systemd.timers.restic-backups-twenty.timerConfig.OnActiveSec = "2min";
-  systemd.timers.restic-check-twenty.timerConfig.OnActiveSec = "5min";
 }

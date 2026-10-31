@@ -35,6 +35,14 @@
       "enabled": false
     },
     {
+      "description": "Deliberate commit pins: tapeback's cached CUDA evaluation, and Tailscale until nixos-unstable ships 1.104.4.",
+      "matchDepNames": [
+        "tapeback-nixpkgs",
+        "nixpkgs-tailscale"
+      ],
+      "enabled": false
+    },
+    {
       "description": "Track stable LinuxServer application releases and image rebuilds.",
       "matchDatasources": [
         "docker"

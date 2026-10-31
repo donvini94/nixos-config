@@ -35,11 +35,21 @@ in
         9876 # Bereit Rising (V Rising)
         9877 # Bereit Rising (V Rising)
       ];
-      extraCommands =
-        lib.concatMapStrings (
-          port: "iptables -A OUTPUT -p tcp --dport ${toString port} -j DROP\n"
-        ) mining.ports
-        + lib.concatMapStrings (host: "iptables -A OUTPUT -d ${host} -j DROP\n") mining.hosts;
+      # Rootful Docker bridge egress bypasses OUTPUT; Docker keeps DOCKER-USER's rules and
+      # evaluates them before its own accepts. CrowdSec's bouncer also hooks that chain, so
+      # it is never flushed here.
+      extraCommands = ''
+        iptables -w -N mining-egress 2>/dev/null || iptables -w -F mining-egress
+        ${lib.concatMapStrings (
+          port: "iptables -w -A mining-egress -p tcp --dport ${toString port} -j DROP\n"
+        ) mining.ports}
+        ${lib.concatMapStrings (host: "iptables -w -A mining-egress -d ${host} -j DROP\n") mining.hosts}
+        iptables -w -N DOCKER-USER 2>/dev/null || true
+        for chain in OUTPUT DOCKER-USER; do
+          iptables -w -C "$chain" -j mining-egress 2>/dev/null \
+            || iptables -w -I "$chain" -j mining-egress
+        done
+      '';
     };
   };
 
