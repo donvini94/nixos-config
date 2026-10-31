@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Pin the cached PyTorch/pyannote CUDA stack from Hydra evaluation 45851.
-    tapeback-nixpkgs.url = "github:NixOS/nixpkgs/7993f34ee47e28a3d607a525aadc6c94b73be728";
+    tapeback-nixpkgs.url = "github:NixOS/nixpkgs/5772e19988afd8bb223da0e260075f69205ea0d6";
     # Tailscale 1.104.4 (TS-2026-014..017) until nixos-unstable ships it; see configuration.nix.
     nixpkgs-tailscale = {
       url = "github:NixOS/nixpkgs/c766862f70d4a909bfc78b09ff970ebf19906f0b";
