@@ -74,6 +74,7 @@
       "nushell"
       "openjdk@17"
       "pass"
+      "pass-otp"
       "pigz"
       "pinentry-mac"
       "pipenv"

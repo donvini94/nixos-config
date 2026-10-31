@@ -131,7 +131,7 @@ in
   environment.systemPackages = with pkgs; [
     sddm-astronaut # provides the themed greeter at share/sddm/themes
     wl-clipboard
-    pass-wayland
+    (pass-wayland.withExtensions (exts: [ exts.pass-otp ]))
     wofi # needed for wofi-pass
     egl-wayland
     wf-recorder
