@@ -22,7 +22,7 @@
 ;;   belt-and-suspenders for in-process links.
 ;;
 ;; PRIMARY fix lives at the SHELL level, not here:
-;;   ~/.config/fish/conf.d/emacs-libgccjit-fix.fish exports LIBRARY_PATH before
+;;   fish's interactiveShellInit in hosts/ac-0137/fish.nix exports LIBRARY_PATH before
 ;;   `doom'/Emacs launch.  That's required because subr trampolines compile in
 ;;   child processes DURING Doom core boot, before any user Lisp (this file,
 ;;   config.el, cli.el) loads -- too early for a Lisp hook to help.
@@ -53,9 +53,11 @@
                                (append dirs (list existing))
                              dirs)
                            ":")))
-      ;; (2) Secondary: explicit -L for in-process libgccjit links.
+      ;; (2) Secondary: explicit -L for in-process libgccjit links. Appended to, not
+      ;;     replacing, the darwin default ("-Wl,-w", which silences ld warnings).
       (setq native-comp-driver-options
-            (mapcar (lambda (d) (concat "-L" d)) dirs)))))
+            (delete-dups (append (mapcar (lambda (d) (concat "-L" d)) dirs)
+                                 native-comp-driver-options))))))
 
 (provide 'native-comp-driver-fix)
 ;;; native-comp-driver-fix.el ends here

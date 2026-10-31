@@ -55,7 +55,7 @@
  ;;ein               ; tame Jupyter notebooks with emacs
  (eval +overlay)     ; run code, run (also, repls)
  llm               ; gptel: chat, rewrite and ask about code
- (lookup +dictionary + offline +docsets)              ; navigate your code and its documentation
+ (lookup +dictionary +offline +docsets)              ; navigate your code and its documentation
  (lsp +peek)               ; M-x vscode
  magit              ; a git porcelain for Emacs
  (pass +auth)              ; password manager for nerds
@@ -63,7 +63,7 @@
  tree-sitter
 
  :os
- (:if IS-MAC macos)  ; improve compatibility with macOS
+ (:if (featurep :system 'macos) macos)  ; improve compatibility with macOS
  tty               ; improve the terminal Emacs experience
 
  :lang

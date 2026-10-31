@@ -2,7 +2,7 @@
 
 - `config.org` is the literate source; `config.el` is generated. Edit Org source
   blocks, never the generated file. Prose-only edits need no tangle.
-- Saving in Emacs runs `org-auto-tangle`. Outside Emacs, run Org Babel tangling
+- Saving in Emacs tangles via Doom's `literate` module. Outside Emacs, run Org Babel tangling
   explicitly after changing code blocks, then review the generated diff.
 - `init.el` selects modules; `packages.el` declares additional packages;
   `custom.el` is Emacs-generated state.
