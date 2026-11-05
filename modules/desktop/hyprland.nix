@@ -130,9 +130,6 @@ in
     ];
   };
 
-  # The flake's bin/Hyprland is a wrapProgram script; capability wrappers must target the ELF.
-  security.wrappers.Hyprland.source = lib.mkForce "${config.programs.hyprland.package}/bin/.Hyprland-wrapped";
-
   environment.sessionVariables.NIXOS_OZONE_WL = "1";
 
   # caelestia-shell already provides waybar, dunst, swww, swayidle, wlogout and the
