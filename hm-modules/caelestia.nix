@@ -1,8 +1,18 @@
-{ config, pkgs, ... }:
+{
+  config,
+  options,
+  osConfig,
+  pkgs,
+  ...
+}:
 
 {
   programs.caelestia = {
     enable = true;
+    # Bundled hyprctl must match the running compositor, not nixpkgs' Hyprland.
+    package = options.programs.caelestia.package.default.override {
+      hyprland = osConfig.programs.hyprland.package;
+    };
     systemd.enable = true;
     settings = {
       paths.wallpaperDir = "${config.home.homeDirectory}/nixos-config/wallpapers";

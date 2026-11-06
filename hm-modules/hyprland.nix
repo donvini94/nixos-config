@@ -2,6 +2,9 @@
 {
   wayland.windowManager.hyprland = {
     enable = true;
+    # Use the NixOS module's flake-pinned Hyprland; HM's nixpkgs default would shadow it on PATH.
+    package = null;
+    portalPackage = null;
     # HM's default configType flipped to "lua"; the config below is hyprlang.
     configType = "hyprlang";
     settings = {
