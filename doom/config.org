@@ -384,6 +384,14 @@ it is the only Python client loaded, so it wins without a priority override.
 ;;; lsp-mode ships lsp-typst.el with full tinymist client registration.
 (use-package! typst-ts-mode
   :mode "\\.typ\\'"
+  :init
+  (after! treesit
+    (add-to-list 'treesit-language-source-alist
+                 '(typst "https://github.com/Ziqi-Yang/tree-sitter-typst")))
+  ;; Entered via :mode, not a Doom remap, so Doom's grammar auto-install never runs.
+  (defadvice! my/typst-ensure-grammar-a (&rest _)
+    :before #'typst-ts-mode
+    (treesit-ensure-installed 'typst))
   :config
   (after! lsp-mode
     (add-to-list 'lsp-language-id-configuration '(typst-ts-mode . "typst")))
