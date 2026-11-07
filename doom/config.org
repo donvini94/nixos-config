@@ -757,6 +757,7 @@ Escape hatch: =:NOSCHEDULE: t= in an entry's properties leaves it unscheduled.
 FILE defaults to the file behind the current buffer, following indirect
 capture buffers to their base buffer."
   (when-let* ((file (or file (buffer-file-name (buffer-base-buffer))))
+              ((require 'org-roam-dailies nil t)) ; defines the directory var; not loaded by plain captures
               (dir (expand-file-name org-roam-dailies-directory org-roam-directory)))
     (and (string-match-p my/org-daily-file-regexp (file-name-nondirectory file))
          (file-equal-p (file-name-directory (expand-file-name file)) dir))))

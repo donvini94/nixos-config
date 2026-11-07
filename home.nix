@@ -8,6 +8,7 @@
 {
   imports = [
     ./hm-modules/base.nix
+    ./hm-modules/passff.nix
     ./hm-modules/ssh.nix
     ./hm-modules/hyprland.nix
     ./hm-modules/kitty.nix

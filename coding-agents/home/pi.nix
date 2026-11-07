@@ -85,7 +85,9 @@ let
       "npm:pi-web-search"
       "git:github.com/donvini94/omp-learn"
       "git:github.com/mattpocock/skills"
-    ];
+    ]
+    # Tern is a macOS terminal; the extension is inert elsewhere.
+    ++ lib.optional pkgs.stdenv.hostPlatform.isDarwin "npm:pi-tern";
     extensions = [
       "${agentDir}/upstream/amos-ask-user-question.ts"
       "${agentDir}/upstream/amos-web-fetch"
