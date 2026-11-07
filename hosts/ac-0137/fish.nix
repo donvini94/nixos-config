@@ -33,6 +33,9 @@
   };
 
   programs.fish.interactiveShellInit = ''
+    # Rex prepends its own bin dir to PATH and exports REX_BIN_DIR; Nix's fish setup reorders PATH.
+    set -q REX_BIN_DIR; and fish_add_path --global --prepend --move $REX_BIN_DIR
+
     # OrbStack CLI integration (installed by the app, not by nix).
     test -r ~/.orbstack/shell/init2.fish; and source ~/.orbstack/shell/init2.fish
 
