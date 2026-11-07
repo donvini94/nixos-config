@@ -86,8 +86,12 @@ let
       "git:github.com/donvini94/omp-learn"
       "git:github.com/mattpocock/skills"
     ]
-    # Tern is a macOS terminal; the extension is inert elsewhere.
-    ++ lib.optional pkgs.stdenv.hostPlatform.isDarwin "npm:pi-tern";
+    # Tern and Rex are macOS terminals; these extensions are inert elsewhere.
+    ++ lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
+      "npm:pi-tern"
+      "npm:@tian.zuo/pi-rex"
+      "npm:pi-rex-adapter"
+    ];
     extensions = [
       "${agentDir}/upstream/amos-ask-user-question.ts"
       "${agentDir}/upstream/amos-web-fetch"
