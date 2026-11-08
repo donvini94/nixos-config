@@ -53,5 +53,6 @@ in
     signal-desktop
     teams-for-linux
     mattermost-desktop
+    zapfast
   ];
 }
