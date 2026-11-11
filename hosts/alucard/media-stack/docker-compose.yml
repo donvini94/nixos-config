@@ -77,7 +77,7 @@ services:
 
   # Radarr - Movie automation (uses regular internet)
   radarr:
-    image: lscr.io/linuxserver/radarr:6.4.4.10685-ls324@sha256:084b3b2ab1d0ef930660727259546a241f2bdf67c9ed085d54bf1486a6887c9b
+    image: lscr.io/linuxserver/radarr:6.4.4.10685-ls326@sha256:51a9ac2a9eb47afc833541e5fd6c11b86eb9f810694c22fa2429e3078e9194b2
     container_name: radarr
     environment:
       - PUID=1001
