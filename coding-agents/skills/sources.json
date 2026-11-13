@@ -3,7 +3,6 @@
   "skills": {
     "find-skills": { "type": "git", "repo": "https://github.com/vercel-labs/skills.git", "path": "skills/find-skills" },
     "linear-cli": { "type": "git", "repo": "https://github.com/schpet/linear-cli.git", "path": "skills/linear-cli", "packageAttribute": "linear-cli" },
-    "socratic-tutor": { "type": "git", "repo": "https://github.com/janestreet/agent_skills.git", "path": "socratic-tutor" },
     "zotero-cli": { "type": "pypi", "package": "zotero-mcp-server", "path": "zotero_mcp/skills/zotero-cli", "version": "0.13.1" }
   }
 }

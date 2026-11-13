@@ -22,7 +22,8 @@ let
     "find-skills"
     "linear-cli"
     "zotero-cli"
-    "socratic-tutor"
+    "tutor"
+    "examiner"
   ];
   updateSkills = pkgs.writeShellApplication {
     name = "update-skills";
