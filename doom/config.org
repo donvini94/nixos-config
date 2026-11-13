@@ -1211,57 +1211,47 @@ The token is a plain file in Doom's cache directory, like the Codex CLI's.
 Replaces pdf-tools with a modern reader supporting PDF, EPUB, MOBI, FB2, XPS, CBZ, and Office documents.
 
 #+begin_src emacs-lisp
-(use-package! emureader
-  :mode (("\\.pdf\\'" . emureader-mode)
-         ("\\.epub\\'" . emureader-mode)
-         ("\\.mobi\\'" . emureader-mode)
-         ("\\.fb2\\'" . emureader-mode)
-         ("\\.xps\\'" . emureader-mode)
-         ("\\.cbz\\'" . emureader-mode)
-         ("\\.odt\\'" . emureader-mode)
-         ("\\.docx\\'" . emureader-mode)
-         ("\\.pptx\\'" . emureader-mode)
-         ("\\.xlsx\\'" . emureader-mode))
+(use-package! reader
   :config
   ;; Suppress the EmacsWinState warning on startup
-  (advice-add 'emureader-current-doc-pagenumber :around
+  (advice-add 'reader-current-doc-pagenumber :around
               (lambda (fn &rest args)
                 (ignore-errors (apply fn args))))
 
   ;; Fix page counter not updating - use post-command-hook for reliable updates
   (defun my/reader-update-modeline ()
-    "Update modeline in emureader-mode after commands."
-    (when (eq major-mode 'emureader-mode)
+    "Update modeline in reader-mode after commands."
+    (when (eq major-mode 'reader-mode)
       (force-mode-line-update t)))
 
-  (add-hook 'emureader-mode-hook
+  (add-hook 'reader-mode-hook
             (lambda ()
               (add-hook 'post-command-hook #'my/reader-update-modeline nil t)))
 
   ;; NOTE: reader-dark-mode works but toggling back to light crashes Emacs (native code bug)
 
-  ;; Use evil keybindings in emureader-mode
-  (evil-set-initial-state 'emureader-mode 'normal)
+  ;; Use evil keybindings in reader-mode
+  (evil-set-initial-state 'reader-mode 'normal)
 
   ;; Evil-friendly navigation (package defaults: n/p for pages, H/W for fit)
-  (map! :map emureader-mode-map
-        :n "j" #'emureader-scroll-down-or-next-page
-        :n "k" #'emureader-scroll-up-or-prev-page
-        :n "h" #'emureader-scroll-left
-        :n "l" #'emureader-scroll-right
-        :n "gg" #'emureader-first-page
-        :n "G" #'emureader-last-page
-        :n "+" #'emureader-enlarge-size
-        :n "-" #'emureader-shrink-size
-        :n "0" #'emureader-reset-size
-        :n "W" #'emureader-fit-to-width
-        :n "H" #'emureader-fit-to-height
-        :n ":" #'emureader-goto-page
+  (map! :map reader-mode-map
+        :n "j" #'reader-scroll-down-or-next-page
+        :n "k" #'reader-scroll-up-or-prev-page
+        :n "h" #'reader-scroll-left
+        :n "l" #'reader-scroll-right
+        :n "gg" #'reader-first-page
+        :n "G" #'reader-last-page
+        :n "+" #'reader-enlarge-size
+        :n "-" #'reader-shrink-size
+        :n "0" #'reader-reset-size
+        :n "W" #'reader-fit-to-width
+        :n "H" #'reader-fit-to-height
+        :n ":" #'reader-goto-page
         :n "q" #'kill-current-buffer))
 
 ;; Handle old pdf-view bookmarks - redirect to reader
 (defun my/pdf-view-bookmark-jump-handler (bookmark)
-  "Handle old pdf-view bookmarks by opening in emureader-mode."
+  "Handle old pdf-view bookmarks by opening in reader-mode."
   (let ((file (bookmark-get-filename bookmark)))
     (when (and file (file-exists-p file))
       (find-file file))))

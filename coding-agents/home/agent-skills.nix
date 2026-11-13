@@ -15,8 +15,6 @@ let
   lathe = pkgs.callPackage ../packages/lathe.nix { };
 
   sharedNames = [
-    "aisec"
-    "isc-rules"
     "python"
     "rust"
     "debt-ledger"
@@ -24,6 +22,7 @@ let
     "find-skills"
     "linear-cli"
     "zotero-cli"
+    "socratic-tutor"
   ];
   updateSkills = pkgs.writeShellApplication {
     name = "update-skills";

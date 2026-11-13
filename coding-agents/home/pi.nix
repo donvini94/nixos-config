@@ -76,22 +76,25 @@ let
     ];
     externalEditor = "emacsclient -c -a emacs";
     packages = [
-      "${home}/.local/share/agent-content/mentor"
       "${home}/.local/share/agent-content/prompt-snippets"
       "npm:pi-claude-bridge"
       "git:github.com/DietrichGebert/ponytail"
-      "npm:@gotgenes/pi-subagents"
       "npm:pi-openai-long-context"
       "npm:pi-web-search"
-      "git:github.com/donvini94/omp-learn"
       "git:github.com/mattpocock/skills"
     ]
-    # Tern and Rex are macOS terminals; these extensions are inert elsewhere.
-    ++ lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
-      "npm:pi-tern"
-      "npm:@tian.zuo/pi-rex"
-      "npm:pi-rex-adapter"
-    ];
+    # pi-rex-adapter and pi-subagents both register `subagent`, so Pi refuses to load both.
+    # Rex is macOS-only; elsewhere use pi-subagents.
+    ++ (
+      if pkgs.stdenv.hostPlatform.isDarwin then
+        [
+          "npm:pi-tern"
+          "npm:@tian.zuo/pi-rex"
+          "npm:pi-rex-adapter"
+        ]
+      else
+        [ "npm:@gotgenes/pi-subagents" ]
+    );
     extensions = [
       "${agentDir}/upstream/amos-ask-user-question.ts"
       "${agentDir}/upstream/amos-web-fetch"
@@ -143,14 +146,8 @@ in
     home.agentContent.enable = true;
     home.file = {
       # AGENTS.md and MEMORY.md are agent-owned writable files, not Nix resources.
-      ".pi/agent/skills/mentor".source = link "${home}/.local/share/agent-content/mentor/skills/mentor";
+      ".pi/agent/skills/socratic-tutor".source = link "${repo}/skills/shared/socratic-tutor";
       ".pi/agent/skills/meeting-minutes".source = link "${repo}/skills/managed/meeting-minutes";
-      ".pi/agent/agents/researcher.md".source =
-        link "${home}/.local/share/agent-content/learning/pi/agents/researcher.md";
-      ".pi/agent/agents/mermaid-maker.md".source =
-        link "${home}/.local/share/agent-content/learning/agents/mermaid-maker.md";
-      ".pi/agent/agents/svg-maker.md".source =
-        link "${home}/.local/share/agent-content/learning/agents/svg-maker.md";
       ".pi/agent/upstream/amos-ask-user-question.ts".source = amosAskUserQuestion;
     };
 

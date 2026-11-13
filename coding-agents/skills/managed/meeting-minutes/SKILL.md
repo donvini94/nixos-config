@@ -1,6 +1,7 @@
 ---
 name: meeting-minutes
 description: "Turn meeting transcripts or notes, especially noisy MacWhisper exports, into factual Org-mode minutes with decisions, owned actions, and explicit attribution uncertainty."
+disable-model-invocation: true
 ---
 
 # Purpose

@@ -63,6 +63,10 @@ buildGoModule (finalAttrs: {
     fi
     mkdir -p "$out/share/lathe"
     cp -r "$stage/.claude/skills" "$out/share/lathe/skills"
+    # Command-only: tutorials start from /skill:lathe*, so the prompt need not list them.
+    for f in "$out"/share/lathe/skills/*/SKILL.md; do
+      sed -i '1a disable-model-invocation: true' "$f"
+    done
   '';
 
   meta = {

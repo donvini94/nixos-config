@@ -78,7 +78,7 @@ Settings, authentication, sessions and memory remain in each client's own direct
 (=~/.omp/agent/= or =~/.pi/agent/=). Pi's MCP configuration and writable
 =AGENTS.md=/=MEMORY.md= are not replaced by activation.
 
-Mentor, learning and prompt-snippet source packages live under
+Prompt-snippet source packages live under
 =~/.local/share/agent-content/=, managed by =coding-agents/home/agent-content.nix=.
 Their Pi and OMP entry points use separate client state. Activation fast-forwards
 clean source checkouts and leaves dirty or diverged ones untouched.

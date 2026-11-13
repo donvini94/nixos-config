@@ -17,16 +17,13 @@ let
     "python-silent-failure"
     "isc-rule"
     "isc-rule-divergence"
-    "aisec-prose"
   ];
 
   agentNames = [
     "slop"
     "intent-check"
-    "evidence-check"
   ];
 
-  mentorRepo = "${config.home.homeDirectory}/.local/share/agent-content/mentor";
   isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
   managed = (pkgs.formats.yaml { }).generate "omp-managed-config.yml" (
     import ../omp/config-common.nix
@@ -59,6 +56,8 @@ let
         type = "stdio";
         command = lib.getExe pkgs.mcp-nixos;
         args = [ ];
+        # The tool description already carries the same intent-to-call table.
+        instructions = false;
       };
       # OMP owns the interactive OAuth login and token storage.
       linear = {
@@ -87,8 +86,8 @@ in
       ".omp/agent/AGENTS.md".source = link "${config.home.aiStack.checkout}/guidance/AGENTS.md";
       ".omp/agent/RULES.md".source = link "${config.home.aiStack.checkout}/guidance/RULES.md";
       ".omp/agent/mcp.json".text = builtins.toJSON mcpConfig;
-      ".omp/agent/skills/mentor".source = link "${mentorRepo}/skills/mentor";
-      ".omp/agent/commands/mentor.md".source = link "${mentorRepo}/commands/mentor.md";
+      # Ponytail reads its default level here; the plugin installs the skill, not the level.
+      ".config/ponytail/config.json".text = builtins.toJSON { defaultMode = "ultra"; };
       ".omp/agent/extensions/prompt-snippets".source =
         link "${config.home.homeDirectory}/.local/share/agent-content/prompt-snippets";
     }
@@ -101,7 +100,6 @@ in
           value.source = link "${config.home.aiStack.checkout}/skills/managed/${name}";
         })
         [
-          "calendar-to-org-agenda"
           "meeting-minutes"
         ]
     );
@@ -120,15 +118,15 @@ in
     home.activation.ompLearningPlugin = lib.hm.dag.entryAfter [ "writeBoundary" "ompNativeUpdate" ] ''
       export PATH="$HOME/.bun/bin:$HOME/.nix-profile/bin:/etc/profiles/per-user/$USER/bin:/run/current-system/sw/bin:$PATH"
       if [ -z "''${DRY_RUN:-}" ] && command -v omp >/dev/null 2>&1; then
-        if ! omp plugin list 2>/dev/null | grep -q 'omp-learn-org@omp-learn'; then
-          omp plugin marketplace add donvini94/omp-learn >/dev/null 2>&1 || true
-          omp plugin install omp-learn-org@omp-learn \
-            || echo "ompLearningPlugin: installing omp-learn-org failed (offline?)" >&2
-        fi
         if ! omp plugin list 2>/dev/null | grep -q 'mattpocock-skills@mattpocock'; then
           omp plugin marketplace add mattpocock/skills >/dev/null 2>&1 || true
           omp plugin install mattpocock-skills@mattpocock \
             || echo "ompLearningPlugin: installing mattpocock-skills failed (offline?)" >&2
+        fi
+        if ! omp plugin list 2>/dev/null | grep -q 'ponytail@ponytail'; then
+          omp plugin marketplace add DietrichGebert/ponytail >/dev/null 2>&1 || true
+          omp plugin install ponytail@ponytail \
+            || echo "ompLearningPlugin: installing ponytail failed (offline?)" >&2
         fi
       fi
     '';

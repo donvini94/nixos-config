@@ -21,8 +21,10 @@
     llmMode = "smol";
     # Save only deliberately retained facts, not raw conversation chunks.
     autoRetain = false;
+    # Recalled fragments cost prompt space every session; query memory on demand instead.
+    autoRecall = false;
   };
-  autolearn.enabled = true;
+  autolearn.enabled = false;
 
   theme.dark = "titanium";
   symbolPreset = "unicode";

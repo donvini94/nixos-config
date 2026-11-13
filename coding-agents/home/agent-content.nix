@@ -7,8 +7,6 @@
 
 let
   sources = {
-    mentor = "https://github.com/donvini94/omp-mentor.git";
-    learning = "https://github.com/donvini94/omp-learn.git";
     prompt-snippets = "https://github.com/donvini94/omp-prompt-snippets.git";
   };
   sync = pkgs.writeShellApplication {
@@ -22,7 +20,7 @@ let
   };
 in
 {
-  options.home.agentContent.enable = lib.mkEnableOption "shared mentor, learning and prompt source packages";
+  options.home.agentContent.enable = lib.mkEnableOption "shared prompt source packages";
 
   config = lib.mkIf config.home.agentContent.enable {
     home.activation.agentContentRepos = lib.hm.dag.entryAfter [ "writeBoundary" ] ''

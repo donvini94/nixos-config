@@ -4,11 +4,6 @@
 These are unresolved items from earlier work, not a current-state inventory.
 Verify each before acting; keep completed history in Git, not here.
 
-* TODO Replace the shared =nix= shell account
-=hosts/alucard/users.nix= grants several people's keys one identity with Docker
-access (root-equivalent). Give people separate accounts; keep game workloads
-under a service identity. Review who still needs Docker and wheel access.
-
 * TODO Check retired OpenBao/Teleport state
 Inspect =/var/lib/openbao=, =/var/lib/teleport= and =/var/lib/teleport-tls= on
 Alucard. Delete only after confirming no live dependency; earlier unseal shares

@@ -21,9 +21,7 @@ the file.
 
 ## The banned list
 
-Read `rule://aisec-prose` and treat its bullet list as the canonical set. Do not restate
-it from memory and do not invent additions. If that rule does not resolve, say so in one
-line and check only the three constructions named here:
+Check exactly these three constructions and nothing else; do not invent additions:
 
 - the "X, not Y" antithesis used as a headline, a refrain, or a closing line
 - "structurally" as a filler intensifier
