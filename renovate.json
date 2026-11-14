@@ -73,6 +73,30 @@
         "lscr.io/linuxserver/qbittorrent"
       ],
       "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)_v(?<compatibility>\\d+)\\.\\d+\\.\\d+-ls(?<build>\\d+)$"
+    },
+    {
+      "description": "Merge on green CI after a soak period; alucard's nightly auto-deploy picks the result up. gluetun, qbittorrent (VPN path), flake inputs and the nix action stay manual.",
+      "matchDatasources": [
+        "docker",
+        "github-tags"
+      ],
+      "matchPackageNames": [
+        "lscr.io/linuxserver/sonarr",
+        "lscr.io/linuxserver/radarr",
+        "lscr.io/linuxserver/prowlarr",
+        "lscr.io/linuxserver/bazarr",
+        "lscr.io/linuxserver/sabnzbd"
+      ],
+      "minimumReleaseAge": "3 days",
+      "automerge": true
+    },
+    {
+      "description": "Pinned action digests only run in CI, never on a host.",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "minimumReleaseAge": "3 days",
+      "automerge": true
     }
   ]
 }

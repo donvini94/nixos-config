@@ -17,6 +17,7 @@
     ./services/default.nix
     ./media.nix
     ./maintenance.nix
+    ./auto-deploy.nix
     ./users.nix
     ./syncthing.nix
     ./ai.nix

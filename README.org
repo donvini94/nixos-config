@@ -49,7 +49,11 @@ The exact commands above are passwordless; relative flake paths do not match sud
 model-download, agent-tool and client-independence checks on Linux or macOS.
 CI runs these checks, evaluates host build plans and builds exposed local packages;
 a plan is not a full build.
-Renovate owns flake inputs, OCI digests and action pins. =package-update.yml= owns
+Renovate owns flake inputs, OCI digests and action pins. It automerges green PRs for the
+LinuxServer arr images and action pins after three days; gluetun, qBittorrent and flake
+inputs wait for manual merge. Alucard's =auto-deploy.timer= (04:30 Berlin) switches to
+origin's =master=, runs a health check (no new failed units, gluetun healthy, qBittorrent
+running), rolls back on failure and reports to Telegram. =package-update.yml= owns
 =packages/= and =coding-agents/packages/= version/hash updates, including OMP on Linux.
 =update-skills check|apply [SKILL...]= refreshes vendored skill files from
 =coding-agents/skills/sources.json=; it changes neither package versions nor client state.
