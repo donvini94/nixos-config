@@ -58,9 +58,12 @@
   :recipe `(:host nil
             :type git
             :repo "https://codeberg.org/divyaranjan/emacs-reader"
-            :files ("*.el" "render-core.dylib" "render-core.so")
-            :pre-build ,(when (eq system-type 'darwin)
-                          '(("make" "clean" "all")))))
+            :files ("*.el" "emureader-dyn.dylib" "emureader-dyn.so")
+            :pre-build ,(if (eq system-type 'darwin)
+                            '(("make" "clean" "all"))
+                          ;; Nix's Makefile path needs mupdf headers/libs from a shell.
+                          '(("nix-shell" "-p" "mupdf.dev" "mupdf" "gcc" "gnumake"
+                             "--run" "make module")))))
 
 ;; Typst: tree-sitter major mode + tinymist LSP
 (package! typst-ts-mode
