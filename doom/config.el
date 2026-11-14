@@ -1047,42 +1047,42 @@ rg finds them, so the agenda only visits those files instead of all of ~/org."
 ;; gptel (ChatGPT subscription):1 ends here
 
 ;; [[file:config.org::*Document Reader (emacs-reader)][Document Reader (emacs-reader):1]]
-(use-package! reader
+(use-package! emureader
   :config
   ;; Suppress the EmacsWinState warning on startup
-  (advice-add 'reader-current-doc-pagenumber :around
+  (advice-add 'emureader-current-doc-pagenumber :around
               (lambda (fn &rest args)
                 (ignore-errors (apply fn args))))
 
   ;; Fix page counter not updating - use post-command-hook for reliable updates
-  (defun my/reader-update-modeline ()
-    "Update modeline in reader-mode after commands."
-    (when (eq major-mode 'reader-mode)
+  (defun my/emureader-update-modeline ()
+    "Update modeline in emureader-mode after commands."
+    (when (eq major-mode 'emureader-mode)
       (force-mode-line-update t)))
 
-  (add-hook 'reader-mode-hook
+  (add-hook 'emureader-mode-hook
             (lambda ()
-              (add-hook 'post-command-hook #'my/reader-update-modeline nil t)))
+              (add-hook 'post-command-hook #'my/emureader-update-modeline nil t)))
 
-  ;; NOTE: reader-dark-mode works but toggling back to light crashes Emacs (native code bug)
+  ;; NOTE: emureader-dark-mode works but toggling back to light crashes Emacs (native code bug)
 
-  ;; Use evil keybindings in reader-mode
-  (evil-set-initial-state 'reader-mode 'normal)
+  ;; Use evil keybindings in emureader-mode
+  (evil-set-initial-state 'emureader-mode 'normal)
 
   ;; Evil-friendly navigation (package defaults: n/p for pages, H/W for fit)
-  (map! :map reader-mode-map
-        :n "j" #'reader-scroll-down-or-next-page
-        :n "k" #'reader-scroll-up-or-prev-page
-        :n "h" #'reader-scroll-left
-        :n "l" #'reader-scroll-right
-        :n "gg" #'reader-first-page
-        :n "G" #'reader-last-page
-        :n "+" #'reader-enlarge-size
-        :n "-" #'reader-shrink-size
-        :n "0" #'reader-reset-size
-        :n "W" #'reader-fit-to-width
-        :n "H" #'reader-fit-to-height
-        :n ":" #'reader-goto-page
+  (map! :map emureader-mode-map
+        :n "j" #'emureader-scroll-down-or-next-page
+        :n "k" #'emureader-scroll-up-or-prev-page
+        :n "h" #'emureader-scroll-left
+        :n "l" #'emureader-scroll-right
+        :n "gg" #'emureader-first-page
+        :n "G" #'emureader-last-page
+        :n "+" #'emureader-enlarge-size
+        :n "-" #'emureader-shrink-size
+        :n "0" #'emureader-reset-size
+        :n "W" #'emureader-fit-to-width
+        :n "H" #'emureader-fit-to-height
+        :n ":" #'emureader-goto-page
         :n "q" #'kill-current-buffer))
 
 ;; Handle old pdf-view bookmarks - redirect to reader
