@@ -19,7 +19,6 @@
     enable = true;
     blockFakenews = true;
     blockGambling = true;
-    blockSocial = true;
   };
 
   environment.systemPackages = with pkgs; [
