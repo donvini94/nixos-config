@@ -1,5 +1,5 @@
-# Build artifacts in the synced code folders stay per machine: they are large, often
-# platform-specific (a macOS .venv is useless on Linux) and every tool regenerates them.
+# Build artifacts and runtime state (.runtime: VM disks, caches) in the synced code folders
+# stay per machine: they are large, often platform-specific (a macOS .venv is useless on Linux) and every tool regenerates them.
 # Syncthing reads .stignore per device, so every host writes the same file. A regular file,
 # not a home.file symlink: Syncthing on macOS refuses to open a symlinked .stignore (ELOOP).
 { lib, pkgs, ... }:
@@ -17,6 +17,7 @@ let
     (?d)result
     (?d)result-*
     (?d).DS_Store
+    (?d).runtime
   '';
 in
 {
