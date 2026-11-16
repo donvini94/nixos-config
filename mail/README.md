@@ -74,7 +74,7 @@ The same Mailcow app password, in authinfo format, in two places:
   installed by `mail/nixos/credentials.nix` at `/run/secrets/mail/bereit_authinfo`
   (owner vincenzo, 0400). Read by the hub's mbsync and dracula's msmtp. No GPG unlock
   involved, so timers never block on a prompt.
-- **Mac:** `~/.authinfo.gpg` (GPG key `F40515934D278A5E`) with
+- **Mac:** `~/.authinfo.gpg` (GPG key `4233D381EF834F97`) with
   `machine mail.istbereit.de login vincenzo@istbereit.de password …`.
 
 Rotating the password: `SOPS_AGE_KEY_FILE=~/.config/sops/age/keys.txt sops secrets/mail.yaml`,

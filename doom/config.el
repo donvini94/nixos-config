@@ -528,7 +528,7 @@
   ;; Doom defaults this to nil, which forces symmetric (passphrase-per-entry)
   ;; encryption. Encrypt to the main key instead; a heading can still override
   ;; it with a CRYPTKEY property.
-  (setq org-crypt-key "4475AC365BEA2ADCFCB6D334E380C2D2C6ABD84F"
+  (setq org-crypt-key "2FDF7B97739B387C36D213F01470752C01581F22"
         ;; Decrypting with auto-save on leaks plaintext to the auto-save file;
         ;; switch it off for that buffer instead of asking every time.
         org-crypt-disable-auto-save t))

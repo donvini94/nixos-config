@@ -2,7 +2,8 @@ config-version = 2
 # Kept alive while empty; sketchybar creates its workspace items from this list at startup.
 persistent-workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
 
-after-startup-command = []
+# The sketchybar agent usually starts before AeroSpace, when the workspace list is still empty.
+after-startup-command = ['exec-and-forget @sketchybar@ --reload']
 
 exec-on-workspace-change = ['/bin/bash', '-c',
     '@sketchybar@ --trigger aerospace_workspace_change FOCUSED_WORKSPACE=$AEROSPACE_FOCUSED_WORKSPACE']
