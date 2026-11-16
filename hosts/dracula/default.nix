@@ -155,6 +155,7 @@ in
       pkgs.firefox
     ];
     openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEbNjs+cT/dtyAYjYkrMcLeqBdCDbDTSPTafnSO3APKr vincenzopace@AC-0137-2026-11"
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOzARAhbqDrpWUQKC18u5yy4Q+aqumo06DJvimHkDwRB vincenzo@dracula-2026-11"
     ];
   };
