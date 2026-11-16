@@ -66,6 +66,7 @@
     fira-code
     hack
     symbols-only
+    pkgs.sketchybar-app-font # app icons in sketchybar's workspace items
   ];
 
   # Leave AppleInterfaceStyle unset so activation does not override automatic switching.
