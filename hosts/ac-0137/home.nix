@@ -55,9 +55,10 @@
     shellcheck
     shfmt
 
-    # Toolchains dracula gets from modules/desktop/programming.nix; rustup and cmake come
-    # from Homebrew, the debuggers and sqlite from Xcode.
+    # Toolchains dracula gets from modules/desktop/programming.nix; cmake comes from
+    # Homebrew, the debuggers and sqlite from Xcode.
     python313
+    rustup
     uv
     cargo-watch
     nodejs_22

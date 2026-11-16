@@ -79,7 +79,6 @@
       "pipx"
       "pngpaste"
       "pytest"
-      "rustup"
       "sevenzip"
       "sqlcmd"
       "wget"
