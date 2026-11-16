@@ -16,7 +16,7 @@
     onActivation = {
       autoUpdate = false;
       upgrade = false;
-      cleanup = "uninstall";
+      cleanup = "none";
     };
     global = {
       brewfile = true;
@@ -38,7 +38,6 @@
       "ansible"
       "autojump"
       "automake"
-      "azure-cli"
       "clang-format"
       "cloudflared"
       "cmake"
@@ -69,7 +68,6 @@
       "mu"
       "mupdf"
       "nmap"
-      "nnn"
       "notmuch"
       "nushell"
       "openjdk@17"
@@ -87,7 +85,6 @@
       "wget"
       "wordnet"
       "wtf"
-      "dhth/tap/hours"
       "ldayton/dippy/dippy"
       "sailpoint-oss/tap/sailpoint-cli"
     ];
