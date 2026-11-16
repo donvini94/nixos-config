@@ -1,4 +1,4 @@
-{ pkgs, username, ... }:
+{ pkgs, inputs, username, ... }:
 
 {
   imports = [
@@ -22,6 +22,8 @@
     stateVersion = "26.11";
   };
 
+
+  nixpkgs.config.allowUnfree = true;
 
   # Private host blocks stay outside Git; earlier SSH options win.
   programs.ssh.includes = [
@@ -52,6 +54,18 @@
 
     shellcheck
     shfmt
+
+    # Toolchains dracula gets from modules/desktop/programming.nix; rustup and cmake come
+    # from Homebrew, the debuggers and sqlite from Xcode.
+    python313
+    uv
+    cargo-watch
+    nodejs_22
+    jdk21
+    editorconfig-core-c
+    inputs.nil.packages.${pkgs.stdenv.hostPlatform.system}.default
+    claude-code
+    codex
 
     magic-wormhole
     resvg

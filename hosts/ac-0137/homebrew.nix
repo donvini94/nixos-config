@@ -89,7 +89,7 @@
       "sailpoint-oss/tap/sailpoint-cli"
     ];
 
-    # Hand-downloaded apps in /Applications (Ghostty, Zed, Chrome, Slack, Firefox
+    # Hand-downloaded apps in /Applications (Zed, Chrome, Slack, Firefox
     # Developer Edition, …) are not adopted: `brew install --cask` fails against a
     # pre-existing unmanaged app bundle.
     #
@@ -102,6 +102,7 @@
       "aerospace"
       "copilot-cli"
       "d12frosted/emacs-plus/emacs-plus-app" # tap-qualified so brew bundle trusts it
+      "ghostty"
       "iina"
       "libreoffice"
       "music-decoy"
