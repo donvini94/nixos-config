@@ -12,6 +12,7 @@
     ../../hm-modules/zotero-cli.nix
     ./fish.nix
     ./apps.nix
+    ./syncthing.nix
   ];
 
   home = {

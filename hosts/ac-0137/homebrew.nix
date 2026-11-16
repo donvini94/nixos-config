@@ -111,6 +111,7 @@
       "musiver"
       "sf-symbols"
       "submariner"
+      "tailscale-app"
       "wave"
       "font-iosevka"
       "font-sf-mono"
