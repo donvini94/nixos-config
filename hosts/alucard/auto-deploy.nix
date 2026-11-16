@@ -39,6 +39,8 @@ in
 
   # After the 04:05 backups, before the Sunday 05:00 restic checks.
   systemd.timers.auto-deploy = {
+    # Paused: GitHub push access may have leaked with the compromised Mac; re-enable once credentials are rotated.
+    enable = false;
     wantedBy = [ "timers.target" ];
     timerConfig = {
       OnCalendar = "*-*-* 04:30:00 Europe/Berlin";
