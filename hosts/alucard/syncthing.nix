@@ -3,6 +3,7 @@ let
   home = "/home/${username}";
 
   claudePeers = [
+    "bereitbook-pro-m4"
     "marius-macbook-pro"
   ];
   cloudPeers = [
@@ -26,6 +27,7 @@ let
     "marius-macbook-pro"
   ];
   workstations = [
+    "bereitbook-pro-m4"
     "dracula"
     "marius-macbook-pro"
   ];
@@ -57,6 +59,7 @@ in
     overrideFolders = true;
     settings = {
       devices = lib.mapAttrs (_: id: { inherit id; }) {
+        bereitbook-pro-m4 = "3LO3AKE-FT5YHIM-MDQPQ55-QKBWKLW-ZAJBPNP-5RAAJ4K-4BQ2ZDM-EPXYGQY";
         dracula = "QGVRLBK-OZX7PIM-JMGKYHF-KSFI5VS-FJH6RGI-4YGB6H6-EYAJ27S-TM5LTQ6";
         kyrill-thinkpad-t495 = "DULG3KX-PYY3RT7-4CW2JVC-64F5J2T-24JRG3J-IDDKBJN-X535SHF-5IBO3QZ";
         kyrill-handy = "VKWKKOP-4ZNV7AY-MSDT3EA-LOJQFAS-BJ7MPWT-ZJ353LV-7HRXYA3-3763VAH";
