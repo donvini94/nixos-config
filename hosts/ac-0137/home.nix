@@ -58,7 +58,7 @@
     # Toolchains dracula gets from modules/desktop/programming.nix; cmake comes from
     # Homebrew, the debuggers and sqlite from Xcode.
     python313
-    rustup
+    (lib.lowPrio rustup) # its rust-analyzer proxy yields to the pinned one from lsp.nix
     uv
     cargo-watch
     nodejs_22
