@@ -4,6 +4,7 @@
   imports = [
     ../../hm-modules/base.nix
     ../../hm-modules/ssh.nix
+    ../../hm-modules/starship.nix
     ../../hm-modules/mpv.nix
     ../../hm-modules/zellij
     ../../hm-modules/zed.nix

@@ -21,7 +21,7 @@
   environment.variables.EDITOR = "nvim";
 
   programs.bash.interactiveShellInit = ''
-    export PATH="$PATH:$HOME/bin:$HOME/.local/bin:$HOME/go/bin:$HOME/.config/emacs/bin/doom"
+    export PATH="$PATH:$HOME/bin:$HOME/.local/bin:$HOME/go/bin:$HOME/.config/emacs/bin"
   '';
   programs.gnupg.agent = {
     enable = true;

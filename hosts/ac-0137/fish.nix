@@ -8,11 +8,23 @@
 #   * the abbreviations already in hm-modules/fish.nix (vim, e, nano, bereit, arr, dr,
 #     py, lg, cheat, c, ccs, cct) and `y`, which programs.yazi's shellWrapperName provides.
 #
-# Still stateful and NOT declared here: conf.d/{_tide_init,autopair,done,fzf,z}.fish belong
-# to fisher.
-{ ... }:
+# The prompt is starship (hm-modules/starship.nix). The former fisher plugins come from
+# nixpkgs; `z` is left out because zoxide owns `z`.
+{ pkgs, ... }:
 
 {
+  programs.fish.plugins =
+    map
+      (name: {
+        inherit name;
+        inherit (pkgs.fishPlugins.${name}) src;
+      })
+      [
+        "fzf-fish" # Ctrl-R history and Ctrl-Alt-F file search; atuin yields Ctrl-R on Darwin
+        "autopair"
+        "done"
+      ];
+
   home.sessionPath = [
     "$HOME/.bun/bin"
     "$HOME/.lmstudio/bin"
