@@ -1,10 +1,6 @@
 # Rebuilds the prompt picked in Tern (Catppuccin Powerline, Tokyo Night palette, rounded
-# blocks, λ, git counts, repo-relative directory) so every host and terminal shares it.
+# start with arrow joins, λ, git counts, repo-relative directory) for every host and terminal.
 { ... }:
-let
-  # A rounded block: opening cap, content, closing cap; hidden when its modules are empty.
-  block = bg: content: "([](fg:${bg})${content}[ ](fg:${bg}))";
-in
 {
   programs.starship = {
     enable = true;
@@ -21,16 +17,20 @@ in
         purple = "#bb9af7";
       };
 
+      # Rounded start, arrows between the blocks and at the end; the clock sits at the
+      # right edge of the first line, mirrored.
       format = builtins.concatStringsSep "" [
-        (block "red" "$os$username")
-        (block "orange" "$directory")
-        (block "yellow" "$git_branch$git_status")
-        (block "green" "$c$rust$golang$nodejs$java$haskell$python$nix_shell")
-        (block "purple" "$time")
-        "$cmd_duration"
+        "[](fg:red)$os$username"
+        "[](fg:red bg:orange)$directory"
+        "[](fg:orange bg:yellow)$git_branch$git_status"
+        "[](fg:yellow bg:green)$c$rust$golang$nodejs$java$haskell$python$nix_shell"
+        "[ ](fg:green)$cmd_duration"
+        "$fill"
+        "[](fg:purple)$time[](fg:purple)"
         "$line_break"
         "$character"
       ];
+      fill.symbol = " ";
 
       os = {
         disabled = false;
@@ -46,23 +46,23 @@ in
         show_always = true;
         style_user = "bg:red fg:text";
         style_root = "bg:red fg:text";
-        format = "[$user]($style)";
+        format = "[$user ]($style)";
       };
       directory = {
         style = "bg:orange fg:text";
-        format = "[$path$read_only]($style)";
+        format = "[ $path$read_only ]($style)";
         truncate_to_repo = true;
         truncation_length = 3;
         truncation_symbol = "";
       };
       git_branch = {
         style = "bg:yellow fg:text";
-        format = "[$symbol$branch]($style)";
+        format = "[ $symbol$branch ]($style)";
         symbol = " ";
       };
       git_status = {
         style = "bg:yellow fg:text";
-        format = "[( $all_status$ahead_behind)]($style)";
+        format = "[($all_status$ahead_behind )]($style)";
         conflicted = "=\${count}";
         ahead = "⇡\${count}";
         behind = "⇣\${count}";
@@ -78,7 +78,7 @@ in
         disabled = false;
         time_format = "%R";
         style = "bg:purple fg:text";
-        format = "[ $time]($style)";
+        format = "[  $time ]($style)";
       };
       cmd_duration = {
         format = "[ $duration]($style) ";
@@ -103,7 +103,7 @@ in
           inherit name;
           value = {
             style = "bg:green fg:text";
-            format = "[ $symbol($version)]($style)";
+            format = "[  $time ]($style)";
           };
         })
         [
@@ -117,7 +117,7 @@ in
     // {
       nix_shell = {
         style = "bg:green fg:text";
-        format = "[ $symbol$name]($style)";
+        format = "[ $symbol$name ]($style)";
         symbol = " ";
       };
     };
