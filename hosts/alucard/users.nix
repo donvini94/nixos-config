@@ -49,9 +49,14 @@ in
       extraGroups = [ "wheel" ];
       openssh.authorizedKeys.keys = [ kyrill ];
     };
+    # Same spend boundary as Kyrill: bare harnesses, own subscription logins, no Requesty.
     jannis = {
       isNormalUser = true;
       openssh.authorizedKeys.keys = [ jannis ];
+      packages = [
+        (pkgs.callPackage ../../coding-agents/packages/omp-harness.nix { })
+        pkgs.pi-coding-agent
+      ];
     };
   };
 }
