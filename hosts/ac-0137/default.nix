@@ -15,13 +15,6 @@
   system.stateVersion = 7;
   system.primaryUser = username;
 
-  # macOS reads /etc/hosts directly; StevenBlack unified list (includes the localhost entries).
-  # view-localhost was a pre-existing local entry.
-  environment.etc.hosts.source = pkgs.concatText "hosts" [
-    (pkgs.writeText "hosts-local" "127.0.0.1 view-localhost\n")
-    "${pkgs.stevenblack-blocklist}/hosts"
-  ];
-
   # Do not add this existing macOS account to users.knownUsers.
   users.users.${username} = {
     name = username;
@@ -35,9 +28,24 @@
 
   # Spotlight indexing had been switched off locally (MDM only blocks
   # internet results). Keep it on; mdutil is idempotent and leaves an existing index alone.
+  # /etc/hosts: StevenBlack unified list (includes the localhost entries) plus the
+  # pre-existing view-localhost entry. Copied, not environment.etc: nix-darwin's networking
+  # activation moves hosts.before-nix-darwin back over /etc/hosts on every switch.
   system.activationScripts.postActivation.text = ''
     /usr/bin/mdutil -i on / >/dev/null
     /usr/bin/mdutil -i on /System/Volumes/Data >/dev/null
+
+    hosts=${
+      pkgs.concatText "hosts" [
+        (pkgs.writeText "hosts-local" "127.0.0.1 view-localhost\n")
+        "${pkgs.stevenblack-blocklist}/hosts"
+      ]
+    }
+    if ! /usr/bin/cmp -s "$hosts" /etc/hosts; then
+      /usr/bin/install -m 0644 "$hosts" /etc/hosts
+      /usr/bin/dscacheutil -flushcache
+      /usr/bin/killall -HUP mDNSResponder
+    fi
   '';
 
   # The installer still owns the Determinate Nix runtime and main nix.conf. This module
