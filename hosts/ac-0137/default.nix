@@ -15,6 +15,13 @@
   system.stateVersion = 7;
   system.primaryUser = username;
 
+  # macOS reads /etc/hosts directly; StevenBlack unified list (includes the localhost entries).
+  # view-localhost was a pre-existing local entry.
+  environment.etc.hosts.source = pkgs.concatText "hosts" [
+    (pkgs.writeText "hosts-local" "127.0.0.1 view-localhost\n")
+    "${pkgs.stevenblack-blocklist}/hosts"
+  ];
+
   # Do not add this existing macOS account to users.knownUsers.
   users.users.${username} = {
     name = username;
