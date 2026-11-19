@@ -78,7 +78,8 @@ automatically-unhide-macos-hidden-apps = false
     alt-shift-s = 'exec-and-forget open /Applications/Signal.app'
     alt-shift-d = 'exec-and-forget open /Applications/Discord.app'
     alt-s = 'exec-and-forget screencapture -i -c'
-    alt-a = 'exec-and-forget open /Applications/Anki.app'
+    # shortcut: Anki 26.09.3+ ignores its UI size preference; drop the env once 26.11 is installed.
+    alt-a = 'exec-and-forget open --env QT_SCALE_FACTOR=2 /Applications/Anki.app'
     alt-z = 'exec-and-forget open /Applications/Zotero.app'
     alt-t = 'exec-and-forget open /Applications/Termius.app'
     alt-o = 'exec-and-forget open /Applications/Microsoft Outlook.app'
