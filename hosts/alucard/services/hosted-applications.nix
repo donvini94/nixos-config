@@ -30,7 +30,17 @@
           RestrictCreationToDomains = site.domains.secondary;
         };
         # The domain restriction means nothing unless the address is proven.
-        EmailSettings.RequireEmailVerification = true;
+        # Mailcow trusts loopback senders, so plain unauthenticated SMTP needs no secret.
+        EmailSettings = {
+          RequireEmailVerification = true;
+          SendEmailNotifications = true;
+          FeedbackName = "Bereit Chat";
+          FeedbackEmail = "noreply@${site.domains.secondary}";
+          SMTPServer = "127.0.0.1";
+          SMTPPort = "25";
+          ConnectionSecurity = "";
+          EnableSMTPAuth = false;
+        };
         ThemeSettings.DefaultTheme = "onyx";
       };
       database = {
