@@ -16,6 +16,7 @@
     # Keep UI-managed settings, with Nix taking precedence for domain and theme policy.
     mattermost = {
       enable = true;
+      package = pkgs.mattermostLatest;
       siteName = "Bereit Chat";
       siteUrl = "https://chat.${site.domains.secondary}";
       host = "127.0.0.1";
