@@ -54,4 +54,38 @@ in
     }
     // lib.optionalAttrs isDarwin { stop-screensaver = false; };
   };
+
+  # yazi's preset plays media through `open`/`xdg-open`; send videos to mpv directly.
+  programs.yazi.settings = {
+    opener.mpv = [
+      {
+        run = "mpv %s";
+        orphan = true;
+        desc = "mpv";
+      }
+    ];
+    open.prepend_rules = [
+      {
+        mime = "video/*";
+        use = [
+          "mpv"
+          "reveal"
+        ];
+      }
+    ];
+  };
+
+  # macOS: make mpv.app the LaunchServices handler for media files (Linux gets this from
+  # xdg.mimeApps in home.nix). Bound by extension, not by mpv.app's declared UTIs: duti
+  # resolves each extension to the UTI LaunchServices actually assigns, and other apps
+  # export their own (.mkv is io.iina.mkv while IINA is installed, .webm is Chrome's).
+  # shortcut: extensions not listed keep their current handler; add them here as needed.
+  home.activation.mpvDefaultPlayer = lib.mkIf isDarwin (
+    lib.hm.dag.entryAfter [ "copyApps" ] ''
+      for ext in mp4 m4v mkv webm mov avi wmv flv mpg mpeg m2ts mts 3gp ogv vob \
+                 mp3 m4a aac flac wav aiff ogg oga opus wma mka; do
+        run ${lib.getExe pkgs.duti} -s io.mpv "$ext" all
+      done
+    ''
+  );
 }

@@ -1267,7 +1267,11 @@ rg finds them, so the agenda only visits those files instead of all of ~/org."
         notmuch-fcc-dirs '(("vincenzo@istbereit.de" . "bereit/Sent +sent -new -unread -inbox"))
 
         notmuch-identities '("Vincenzo Pace <vincenzo@istbereit.de>")
-        notmuch-always-prompt-for-sender nil))
+        notmuch-always-prompt-for-sender nil
+
+        ;; Doom's default sync backend (gmi in ~/.mail/account.gmail) doesn't exist
+        ;; here; `u' in notmuch must sync from the hub instead.
+        +notmuch-sync-backend "mail-replica-sync"))
 ;; Identity and sending (msmtp):1 ends here
 
 ;; [[file:config.org::*General behavior][General behavior:1]]

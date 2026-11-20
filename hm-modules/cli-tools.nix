@@ -18,6 +18,8 @@
     tldr
 
     bun
+    # Doom :term ghostel compiles its native module with zig (M-x ghostel-module-compile).
+    zig
     # lazygit backs the `lg` abbreviation in hm-modules/fish.nix.
     lazygit
     delta
