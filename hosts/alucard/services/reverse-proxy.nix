@@ -133,10 +133,23 @@ in
         };
         # CRS treats CalDAV verbs (PROPFIND/REPORT/PUT) as attacks. Exempt only
         # SOGo's authenticated DAV subtree; keep the web UI behind the WAF.
-        "mail.${domain2}" = wafOffExcept {
-          exempt."^~ /SOGo/dav/".proxyPass = "http://127.0.0.1:880";
-          catchAll.proxyPass = "http://127.0.0.1:880";
-        };
+        # 930130 substring-matches `config.php` from restricted-files.data, so it
+        # blocks mailcow's Apple profile download; drop only that rule there.
+        "mail.${domain2}" =
+          lib.recursiveUpdate
+            (wafOffExcept {
+              exempt."^~ /SOGo/dav/".proxyPass = "http://127.0.0.1:880";
+              catchAll.proxyPass = "http://127.0.0.1:880";
+            })
+            {
+              locations."= /mobileconfig.php" = {
+                proxyPass = "http://127.0.0.1:880";
+                extraConfig = ''
+                  modsecurity on;
+                  modsecurity_rules 'SecRuleRemoveById 930130';
+                '';
+              };
+            };
         # Mattermost clients post performance telemetry to client_perf about once a
         # minute; CRS scores the payload CRITICAL and 949110 answers 403. The endpoint
         # requires a session; the rest of the API keeps the WAF.
