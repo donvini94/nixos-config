@@ -13,3 +13,8 @@ eval/drafts/
 n8n/exports/
 tmp/
 .stfolder
+# Machine-local: Claude Code's per-project permission grants, Syncthing temp and conflict files
+# (Nix's flake evaluation would otherwise stage them as intent-to-add).
+.claude/settings.local.json
+.syncthing.*.tmp
+*.sync-conflict-*
