@@ -1,19 +1,11 @@
 {
   config,
-  inputs,
-  lib,
   pkgs,
   username,
   ...
 }:
 
 {
-  # Tailworm (TS-2026-014..017) is fixed in 1.104.4, which is on nixpkgs master but not yet
-  # on nixos-unstable. Build master's expression against this nixpkgs until the channel catches up.
-  services.tailscale.package = lib.mkIf (lib.versionOlder pkgs.tailscale.version "1.104.4") (
-    pkgs.callPackage "${inputs.nixpkgs-tailscale}/pkgs/by-name/ta/tailscale/package.nix" { }
-  );
-
   environment.shells = with pkgs; [
     bash
     fish

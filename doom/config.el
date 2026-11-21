@@ -1170,7 +1170,14 @@ rg finds them, so the agenda only visits those files instead of all of ~/org."
 ;;; NOTE: Requires nixd installed. On NixOS add to environment.systemPackages or devShell.
 ;;; nixd provides completions, diagnostics, goto-def, and flake option evaluation.
 (after! lsp-mode
-  (setq lsp-nix-nixd-server-path "nixd"))
+  (setq lsp-nix-nixd-server-path "nixd")
+  ;; Build outputs and the store are huge symlink trees, not project content.
+  (dolist (re '("[/\\\\]result\\(-[^/\\\\]+\\)?\\'" "[/\\\\]\\.direnv\\'" "\\`/nix/store"))
+    (add-to-list 'lsp-file-watch-ignored-directories re)))
+
+(after! projectile
+  (dolist (dir '(".direnv" "result"))
+    (add-to-list 'projectile-globally-ignored-directories dir)))
 ;; Nix LSP:1 ends here
 
 ;; [[file:config.org::*Ruff (Python linting + formatting)][Ruff (Python linting + formatting):1]]

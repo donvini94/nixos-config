@@ -10,6 +10,7 @@
     rust-analyzer
     rustup
     cargo-watch
+    dioxus-cli
 
     lldb
     gdb

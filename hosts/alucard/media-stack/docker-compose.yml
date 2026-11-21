@@ -3,7 +3,7 @@ services:
   gluetun:
     # Snapshot exception: stable has older vulnerable crypto/network dependencies.
     # Return to a release tag when a patched stable image passes the scan.
-    image: qmcgaw/gluetun:latest@sha256:4af0c804003481e100180e1f8d4d5e9c48163fedc0f88d061881b615aef9d183
+    image: qmcgaw/gluetun:latest@sha256:3c43ec327d7ab2b5f1dc798b92a7640de9a1e1b74a81c9a5143adb383c03d28b
     container_name: gluetun
     cap_add:
       - NET_ADMIN
@@ -113,7 +113,7 @@ services:
   bazarr:
     # Development channel: GHSA-2876-64fx-p4m9 (critical path traversal) is fixed only in
     # 1.6.3 betas. Return to the stable tag once 1.6.3 ships.
-    image: lscr.io/linuxserver/bazarr:development-v1.6.3-beta.22-ls31@sha256:1ee154277cb74285df43048712af15e1662970a955e5990d59c4dd6dc6e64934
+    image: lscr.io/linuxserver/bazarr:development-v1.6.3-beta.37-ls38@sha256:329f9971a78c98a4569bd6018d098dd937e4879d53a60df34160c5475754c27d
     container_name: bazarr
     environment:
       - PUID=1001
@@ -134,7 +134,7 @@ services:
 
   # Jellyseerr - User request interface for Jellyfin (publicly accessible)
   jellyseerr:
-    image: ghcr.io/seerr-team/seerr:v3.5.1@sha256:d8fab675b55ad293ded98fd71efcfd46054cbad9746534ae1cc4794a88c0b3be
+    image: ghcr.io/seerr-team/seerr:v3.5.2@sha256:aadee014b40e28cf9aa4928bc9d1183a6eb08f8c44d543cddc9efdcb16549be2
     init: true
     container_name: jellyseerr
     user: "1001:987"  # match host dir owner (jellyfin:jellyfin)
@@ -175,7 +175,7 @@ services:
 
   # Komga - Comic/manga reader (publicly accessible via nginx)
   komga:
-    image: gotson/komga:1.29.2@sha256:1d89b79f6cee732438c0c51f876373ad1c6a0d6cdae47c008bfa24e1d1bed748
+    image: gotson/komga:1.30.1@sha256:d43bb3b57aeeafd274ea805214f5da71ff9306accf012fb14cc13dedc3307212
     container_name: komga
     environment:
       - TZ=Europe/Berlin
