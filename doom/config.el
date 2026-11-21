@@ -1178,6 +1178,38 @@ rg finds them, so the agenda only visits those files instead of all of ~/org."
   (dolist (re '("[/\\\\]result\\(-[^/\\\\]+\\)?\\'" "[/\\\\]\\.direnv\\'" "\\`/nix/store"))
     (add-to-list 'lsp-file-watch-ignored-directories re)))
 
+;; statix and deadnix are plain CLIs, not language servers: chain them after lsp's checker.
+(after! (flycheck lsp-diagnostics)
+  (flycheck-define-checker nix-statix
+    "Nix anti-pattern lints from statix."
+    :command ("statix" "check" "--stdin" "--format" "errfmt")
+    :standard-input t
+    :error-patterns ((warning line-start "<stdin>>" line ":" column ":W:" (id (+ digit)) ":"
+                              (message) line-end)
+                     (error line-start "<stdin>>" line ":" column ":E:" (id (+ digit)) ":"
+                            (message) line-end))
+    :modes (nix-mode nix-ts-mode))
+
+  (defun my/deadnix-parse (output checker buffer)
+    "Parse deadnix JSON OUTPUT into flycheck errors."
+    (when-let* ((start (string-match "{" output))
+                (json (json-parse-string (substring output start) :object-type 'alist)))
+      (mapcar (lambda (r)
+                (flycheck-error-new-at (alist-get 'line r) (alist-get 'column r) 'warning
+                                       (alist-get 'message r)
+                                       :checker checker :buffer buffer :filename (buffer-file-name buffer)))
+              (alist-get 'results json))))
+  (flycheck-define-checker nix-deadnix
+    "Unused Nix bindings from deadnix."
+    :command ("deadnix" "--output-format" "json" source)
+    :error-parser my/deadnix-parse
+    :modes (nix-mode nix-ts-mode))
+
+  (add-to-list 'flycheck-checkers 'nix-statix t)
+  (add-to-list 'flycheck-checkers 'nix-deadnix t)
+  (flycheck-add-next-checker 'lsp 'nix-statix)
+  (flycheck-add-next-checker 'nix-statix 'nix-deadnix))
+
 (after! projectile
   (dolist (dir '(".direnv" "result"))
     (add-to-list 'projectile-globally-ignored-directories dir)))

@@ -9,6 +9,8 @@
     ruff
 
     nixd
+    statix
+    deadnix
 
     # SailPoint ISC Java rule development.
     jdt-language-server
