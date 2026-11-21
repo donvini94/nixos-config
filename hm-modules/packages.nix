@@ -1,6 +1,6 @@
 # Linux-desktop package set: Wayland/GTK-bound, GUI-only, or deliberately Linux-only.
 # Cross-platform CLI tooling lives in cli-tools.nix, which the Mac imports too.
-{ pkgs, lib, ... }:
+{ pkgs, lib, inputs, ... }:
 
 let
   # Bundled koffi.node lacks a libstdc++ runpath. Remove this wrapper when nixpkgs fixes it.
@@ -18,6 +18,8 @@ let
 in
 {
   home.packages = with pkgs; [
+    inputs.claude-desktop.packages.${pkgs.stdenv.hostPlatform.system}.claude-desktop
+
     mupdf
 
     # The hledger closure is Haskell-heavy (~900 MiB download, ~6 GiB unpacked);

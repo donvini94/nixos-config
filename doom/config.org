@@ -1339,6 +1339,8 @@ Replaces pdf-tools with a modern reader supporting PDF, EPUB, MOBI, FB2, XPS, CB
 ;;; NOTE: Requires nixd installed. On NixOS add to environment.systemPackages or devShell.
 ;;; nixd provides completions, diagnostics, goto-def, and flake option evaluation.
 (after! lsp-mode
+  ;; lsp-mode ranks nil above nixd (priority 0 vs -1); only nixd reads the flake options.
+  (setq lsp-disabled-clients '((nix-mode . nix-nil) (nix-ts-mode . nix-nil)))
   (setq lsp-nix-nixd-server-path "nixd"
         lsp-nix-nixd-formatting-command ["nixfmt"])
   ;; Build outputs and the store are huge symlink trees, not project content.

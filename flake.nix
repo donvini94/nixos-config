@@ -6,6 +6,11 @@
     # Pin the cached PyTorch/pyannote CUDA stack from Hydra evaluation 45851.
     tapeback-nixpkgs.url = "github:NixOS/nixpkgs/7993f34ee47e28a3d607a525aadc6c94b73be728";
     home-manager.url = "github:nix-community/home-manager/master";
+    # Unofficial repackaging of Anthropic's Linux .deb; there is no nixpkgs package.
+    claude-desktop = {
+      url = "github:aaddrick/claude-desktop-debian";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     nix-darwin = {
       url = "github:nix-darwin/nix-darwin/master";
       inputs.nixpkgs.follows = "nixpkgs";
