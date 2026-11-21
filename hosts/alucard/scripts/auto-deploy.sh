@@ -12,6 +12,12 @@ notify() {
 failed_units() { systemctl --failed --plain --no-legend | awk '{print $1}' | sort; }
 
 rollback() {
+  # A fetch, evaluation or build failure leaves the running generation in place;
+  # --rollback would then step below it.
+  if [ "$(readlink -f "$profile")" = "$before" ]; then
+    notify "$1; system unchanged"
+    exit 1
+  fi
   notify "$1; rolling back"
   nix-env --profile "$profile" --rollback
   /nix/var/nix/profiles/system/bin/switch-to-configuration switch

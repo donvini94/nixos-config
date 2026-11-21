@@ -2,8 +2,8 @@
 # (Mac, dracula) so the three databases index and query identically.
 #
 # Path is absolute (notmuch doesn't expand $HOME). On macOS this file is
-# symlinked from ~/.notmuch-config directly. On NixOS, hm-modules/email.nix and
-# hm-modules/mail-hub.nix rewrite `database.path` to `/home/<user>/Maildir`.
+# symlinked from ~/.notmuch-config directly. On NixOS, mail/home/email.nix and
+# mail/home/mail-hub.nix rewrite `database.path` to `/home/<user>/Maildir`.
 #
 # The database root contains separate Maildir account directories. Initially
 # only ~/Maildir/bereit/ is synchronized.
@@ -32,7 +32,7 @@ exclude_tags=bulk;deleted;spam;trash
 [maildir]
 # Replicas: off. muchsync replicates tags directly, and flag sync would only rename
 # files for nothing (muchsync(1) recommends disabling it). The hub turns it on
-# (hm-modules/mail-hub.nix): there tags must become maildir flags so mbsync carries
+# (mail/home/mail-hub.nix): there tags must become maildir flags so mbsync carries
 # read/flagged/replied state to IMAP, and flags set elsewhere (webmail) come back.
 synchronize_flags=false
 

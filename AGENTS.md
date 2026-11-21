@@ -60,8 +60,9 @@ current packages, services, ports and paths. Do not duplicate those inventories 
 
 - Never patch installed third-party files in venvs/site-packages. Fix the environment
   reproducibly. Use conventional Nix overrides when needed; test the resulting package.
-- Mac Homebrew is declarative (`cleanup = "uninstall"`); imperative installs disappear
-  on rebuild. Existing GnuPG/pass and the mail setup remain stateful.
+- Mac Homebrew only adds what `homebrew.nix` lists (`cleanup = "none"`); imperative
+  installs and removed entries persist until uninstalled by hand. Existing GnuPG/pass
+  and the mail setup remain stateful.
 - Determinate owns the Mac Nix runtime; configure its supported module, not `nix.settings`.
 - `doom/config.org` is the source; `doom/config.el` is tangled output. Read
   `doom/CLAUDE.md` before changing Emacs configuration.

@@ -5,7 +5,7 @@
 #
 # Triggered every 5 minutes by:
 #   - macOS:   ~/Library/LaunchAgents/de.istbereit.mail-sync.plist
-#   - dracula: systemd user timer (hm-modules/email.nix)
+#   - dracula: systemd user timer (mail/home/email.nix)
 #
 # Tag conflicts (both sides changed one message between syncs) merge per
 # muchsync(1): tags in muchsync.and_tags (default new.tags = new;unread) survive

@@ -6,8 +6,12 @@
 }:
 
 let
+  # Bump rev to roll out upstream changes; activation never moves past it.
   sources = {
-    prompt-snippets = "https://github.com/donvini94/omp-prompt-snippets.git";
+    prompt-snippets = {
+      url = "https://github.com/donvini94/omp-prompt-snippets.git";
+      rev = "d90b608a84fbd96030cad517a832749e1a701100";
+    };
   };
   sync = pkgs.writeShellApplication {
     name = "sync-agent-content";
@@ -26,7 +30,7 @@ in
     home.activation.agentContentRepos = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       if [ -z "''${DRY_RUN:-}" ]; then
         ${lib.getExe sync} ${lib.escapeShellArg "${config.home.homeDirectory}/.local/share/agent-content"} \
-          ${lib.escapeShellArgs (lib.mapAttrsToList (name: url: "${name}=${url}") sources)}
+          ${lib.escapeShellArgs (lib.mapAttrsToList (name: s: "${name}=${s.rev}=${s.url}") sources)}
       fi
     '';
   };

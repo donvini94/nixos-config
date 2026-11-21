@@ -6,7 +6,7 @@
 # against "today's baseline" (this file) to surface "what arrived since the
 # start of the day".
 #
-# Invoked once per day at 03:00 on the alucard mail hub (notmuch-daily in hm-modules/mail-hub.nix).
+# Invoked once per day at 03:00 on the alucard mail hub (notmuch-daily in mail/home/mail-hub.nix).
 # Safe to re-run: writes only if today's file doesn't already exist.
 
 set -u
@@ -31,12 +31,13 @@ fi
 # delta line. Add tags here as they earn the dashboard real estate.
 TAGS="inbox owed/reply s/waiting s/follow-up reading sent bulk f/partner f/sales t/IGA t/AI"
 
-{
-    printf 'tag,count\n'
-    for t in $TAGS; do
-        c=$(notmuch count "tag:$t" 2>/dev/null || echo 0)
-        printf '%s,%d\n' "$t" "$c"
-    done
-} > "$OUT"
+# A failed count aborts without a baseline, so the next run retries instead of
+# recording a false 0.
+csv='tag,count'
+for t in $TAGS; do
+    c=$(notmuch count "tag:$t") || { echo "[snapshot-counts] count failed for $t" >&2; exit 1; }
+    csv=$(printf '%s\n%s,%d' "$csv" "$t" "$c")
+done
+printf '%s\n' "$csv" > "$OUT"
 
 echo "[snapshot-counts] wrote $OUT"

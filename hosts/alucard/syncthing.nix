@@ -2,34 +2,20 @@
 let
   home = "/home/${username}";
 
-  claudePeers = [
-    "bereitbook-pro-m4"
-    "marius-macbook-pro"
-  ];
+  claudePeers = [ "bereitbook-pro-m4" ];
   cloudPeers = [
     "kyrill-thinkpad-t495"
     "kyrill-macbook"
-    "marius-macbook-pro"
     "kyrill-tablet"
     "kyrill-handy"
     "kyrill-mint-laptop"
   ];
-  mariusWindows = [
-    "marius-macbook-pro"
-    "mariusbox11"
-  ];
-  mariusMobile = [
-    "marius-macbook-pro"
-    "marius-handy"
-  ];
-  nixsilden = [
-    "marius-notebook-nixsilden"
-    "marius-macbook-pro"
-  ];
+  mariusWindows = [ "mariusbox11" ];
+  mariusMobile = [ "marius-handy" ];
+  nixsilden = [ "marius-notebook-nixsilden" ];
   workstations = [
     "bereitbook-pro-m4"
     "dracula"
-    "marius-macbook-pro"
   ];
 
   # Folder name is the label and the last path component; both are overridable.
@@ -66,7 +52,6 @@ in
         kyrill-tablet = "T7SVLB6-ZWQM7DO-ZDULZNB-I6QGSQZ-JJUFPO2-7N3GVP7-HONELH2-3GDJSAE";
         kyrill-mint-laptop = "X6J6CVJ-K7BTU4D-5VIYQ6I-VEMAAF6-EV7CLXN-5XD4277-AKFOZLB-X66Y6A4";
         kyrill-macbook = "J7G2USF-UU35NDR-4AWVN7M-DPV7FLX-7IZFPQ2-I3JOU7R-3KCJ73I-2JRBUAU";
-        marius-macbook-pro = "TD6EE2L-NYXXBBC-TNERZDG-D25X2OS-EBK6BHO-STJEUNS-PG5WD6Y-M4XPKA5";
         marius-notebook-nixsilden = "BUSMJXH-QLT4K4O-4LE4XDF-2A7YH7W-6LXA3TM-E7E3OWL-PWXOLGP-5V25YAY";
         mariusbox11 = "3MUCAXD-FOBQVWY-FAZEBM2-MV3TVG7-6RA6V5N-WCO34SU-YFFZKXK-BDHQIAQ";
         marius-handy = "YJKXWDI-QKUHP3F-FQHQ3YG-KRQNN7U-EHOASUO-6V6II2W-SB3NTH3-D5FJEA5";

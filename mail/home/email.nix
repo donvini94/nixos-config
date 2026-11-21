@@ -6,11 +6,11 @@
 # A replica never talks IMAP. Every 5 minutes mail-replica-sync runs `muchsync alucard`,
 # which makes this Maildir + notmuch database identical to the hub's (mail, tags,
 # directory placement) and pushes local tag changes and Fcc'd sent mail back. The hub
-# (hm-modules/mail-hub.nix) owns IMAP, tagging, and every mail-derived file in ~/org, so
+# (mail/home/mail-hub.nix) owns IMAP, tagging, and every mail-derived file in ~/org, so
 # nothing here writes into Syncthing-shared folders.
 #
 # Sending is local: msmtp reads the mailbox password from the sops-nix secret in
-# modules/mail-credentials.nix, so no GPG prompt is involved.
+# mail/nixos/credentials.nix, so no GPG prompt is involved.
 
 let
   mailDir = ./..;

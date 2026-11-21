@@ -18,7 +18,8 @@ writeShellApplication {
       export LD_LIBRARY_PATH="${lib.makeLibraryPath [ stdenv.cc.cc.lib ]}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     ''}
     if [[ ! -x "$HOME/.bun/bin/omp" ]]; then
-      bun install --global @oh-my-pi/pi-coding-agent@latest
+      # The package and its dependencies need no lifecycle scripts; skip running them.
+      bun install --global --ignore-scripts @oh-my-pi/pi-coding-agent@latest
     fi
     exec "$HOME/.bun/bin/omp" "$@"
   '';

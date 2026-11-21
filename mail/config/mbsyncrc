@@ -2,7 +2,7 @@
 #
 # Replicas (Mac, dracula) never talk IMAP; they muchsync with alucard. Add another
 # IMAPAccount/Store/Channel here for each future mailbox. The password comes from
-# the sops-nix secret in modules/mail-credentials.nix; no secret in this file.
+# the sops-nix secret in mail/nixos/credentials.nix; no secret in this file.
 
 # ── Global defaults ──────────────────────────────────────────────────────
 Create     Both

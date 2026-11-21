@@ -28,7 +28,7 @@ Features that span NixOS, home-manager and packages live in one folder:
 
 Package lists are in =modules/packages.nix=, =modules/desktop/programming.nix=,
 =hm-modules/{cli-tools,packages}.nix= and =hosts/ac-0137/homebrew.nix=.
-Homebrew cleanup removes undeclared formulae/casks, but does not zap application data.
+Homebrew cleanup is off: undeclared formulae/casks stay installed until removed by hand.
 
 * Build and deploy
 

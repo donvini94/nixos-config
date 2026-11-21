@@ -58,6 +58,11 @@ in
     };
   };
 
+  # Pinned, not allocated: the media-stack compose file runs its containers as
+  # PUID/PGID 1001:987, and existing media files carry these IDs.
+  users.users.jellyfin.uid = 1001;
+  users.groups.jellyfin.gid = 987;
+
   # Jellyfin SSO-Auth 4.x follows the provider's advertised PAR endpoint, but
   # Keycloak rejects this confidential client's pushed request, so PAR is
   # disabled here before Jellyfin starts; the code flow keeps state and PKCE.

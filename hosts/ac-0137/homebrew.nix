@@ -2,12 +2,12 @@
 # wins wherever both could supply one; Homebrew keeps toolchains, macOS-integrated tools,
 # GUI casks and anything with no nixpkgs equivalent.
 #
-# cleanup = "uninstall" makes this file the truth: an imperative `brew install` is
-# reverted on the next `darwin-rebuild switch`. Deliberately not "zap", which deletes
-# application data and configuration along with the app.
+# cleanup = "none": activation installs what is listed here but removes nothing, so an
+# imperative `brew install` persists until it is uninstalled by hand. Removing an entry
+# from these lists does not uninstall it either.
 #
 # The lists are `brew leaves`, not `brew list`: a kept formula's own dependencies stay
-# with Homebrew's resolver, so cleanup never removes something still needed.
+# with Homebrew's resolver.
 #
 # RTK is intentionally excluded; agents use native tools without its command-rewriting proxy.
 {

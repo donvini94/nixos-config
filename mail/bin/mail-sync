@@ -1,6 +1,6 @@
 #!/bin/sh
 # Mail hub pipeline. Runs on alucard only, every 5 minutes, from the systemd user
-# timer in hm-modules/mail-hub.nix. The Mac and dracula never talk IMAP: they are
+# timer in mail/home/mail-hub.nix. The Mac and dracula never talk IMAP: they are
 # muchsync replicas of this host's Maildir + notmuch database (mail-replica-sync).
 #
 # Pipeline:
@@ -40,7 +40,7 @@ log "mbsync"
 mbsync -a || exit $?
 
 log "notmuch new"
-notmuch new
+notmuch new || exit $?
 
 log "tagging"
 

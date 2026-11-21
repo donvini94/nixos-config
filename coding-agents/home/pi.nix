@@ -107,6 +107,7 @@ let
     name = "bootstrap-pi";
     runtimeInputs = [
       pkgs.coreutils
+      pkgs.diffutils
       pkgs.jq
       pkgs.nodejs
     ];

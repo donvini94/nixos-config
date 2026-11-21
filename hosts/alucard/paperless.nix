@@ -15,8 +15,10 @@ in
     key = "paperless/password";
   };
 
-  # The WebDAV share in reverse-proxy.nix writes into the consumption directory.
-  services.paperless.consumptionDirIsPublic = true;
+  # The WebDAV share in reverse-proxy.nix writes into the consumption directory as
+  # nginx. The setgid paperless group keeps uploads between nginx and Paperless.
+  users.users.nginx.extraGroups = [ paperless.group ];
+  systemd.tmpfiles.settings."10-paperless".${paperless.consumptionDir}.d.mode = "2770";
 
   # Paperless' date parser takes the first plausible date in a document, so
   # "geboren am 14.07.1994" wins over the actual letter date. Those values are

@@ -27,6 +27,8 @@
         proxy-headers = "xforwarded";
         hostname-strict-https = false;
         hostname-strict = true;
+        # Single node: no Infinispan cluster listeners.
+        cache = "local";
       };
     };
   };

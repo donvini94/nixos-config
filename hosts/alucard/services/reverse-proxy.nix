@@ -180,7 +180,7 @@ in
               dav_methods PUT MKCOL;
               dav_ext_methods PROPFIND OPTIONS;
               create_full_put_path on;
-              dav_access user:rw group:rw all:r;
+              dav_access user:rw group:rw;
               client_max_body_size 100m;
 
               limit_except PUT MKCOL PROPFIND OPTIONS {
@@ -196,9 +196,13 @@ in
     };
   };
 
-  # WebDAV uploads are written into the paperless consume dir.
-  systemd.services.nginx.serviceConfig = {
-    ReadWritePaths = [ (config.services.paperless.dataDir + "/consume") ];
-    UMask = lib.mkForce "0022";
+  # WebDAV uploads are written into the paperless consume dir; 0007 keeps uploaded
+  # files and MKCOL directories group-writable for Paperless, private otherwise.
+  systemd.services.nginx = {
+    serviceConfig = {
+      ReadWritePaths = [ config.services.paperless.consumptionDir ];
+      UMask = lib.mkForce "0007";
+    };
+    restartTriggers = [ (builtins.toJSON config.users.users.nginx.extraGroups) ];
   };
 }
