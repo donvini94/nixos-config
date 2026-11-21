@@ -480,6 +480,15 @@
     (when (and (null org-indent-agentized-buffers) (timerp org-indent-agent-timer))
       (cancel-timer org-indent-agent-timer))))
 
+;; `org-id-uuid' formats `(recent-keys)' with %s. Mouse and wheel events embed the
+;; object under the pointer, so one propertized string there makes `format' print
+;; gigabytes: Emacs froze in `org-persist-register' (every org-mode call) at 100% CPU
+;; with a 48 GB footprint. org-persist only needs a random file name.
+(defadvice! my/org-id-uuid-a ()
+  :override #'org-id-uuid
+  (format "%08x-%04x-4%03x-%04x-%012x" (random #x100000000) (random #x10000)
+          (random #x1000) (logior #x8000 (random #x4000)) (random #x1000000000000)))
+
 (after! org-download
   (setq org-download-method 'directory
         org-download-image-org-width 600
