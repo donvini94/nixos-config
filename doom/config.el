@@ -1167,13 +1167,11 @@ rg finds them, so the agenda only visits those files instead of all of ~/org."
 ;; Ansible:1 ends here
 
 ;; [[file:config.org::*Nix LSP][Nix LSP:1]]
-;;; NOTE: Requires nixd installed. On NixOS add to environment.systemPackages or devShell.
-;;; nixd provides completions, diagnostics, goto-def, and flake option evaluation.
+;;; nil: fast and static, no per-project setup. lsp-mode ranks it above nixd, so no client switching needed.
 (after! lsp-mode
-  ;; lsp-mode ranks nil above nixd (priority 0 vs -1); only nixd reads the flake options.
-  (setq lsp-disabled-clients '((nix-mode . nix-nil) (nix-ts-mode . nix-nil)))
-  (setq lsp-nix-nixd-server-path "nixd"
-        lsp-nix-nixd-formatting-command ["nixfmt"])
+  (setq lsp-nix-nil-formatter ["nixfmt"]
+        ;; lsp-mode's default cap for nil's flake-input evaluation is 10000 MB.
+        lsp-nix-nil-max-mem 2048)
   ;; Build outputs and the store are huge symlink trees, not project content.
   (dolist (re '("[/\\\\]result\\(-[^/\\\\]+\\)?\\'" "[/\\\\]\\.direnv\\'" "\\`/nix/store"))
     (add-to-list 'lsp-file-watch-ignored-directories re)))

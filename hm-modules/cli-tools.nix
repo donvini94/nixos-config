@@ -31,7 +31,7 @@
     devbox
     devenv
 
-    # The nixd language server lives in lsp.nix.
+    # The nil language server lives in lsp.nix.
     nix-output-monitor
     nixfmt
 

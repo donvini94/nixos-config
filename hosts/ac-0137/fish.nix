@@ -3,7 +3,7 @@
 #     programs.zoxide.enableFishIntegration and hm-modules/fish.nix has the `cd = "z"` abbr.
 #   * `source ~/.cargo/env.fish` — hm-modules/fish.nix puts ~/.cargo/bin on
 #     home.sessionPath.
-#   * `fish_add_path ~/.nix-profile/bin` — hm-modules/lsp.nix owns nixd and
+#   * `fish_add_path ~/.nix-profile/bin` — hm-modules/lsp.nix owns nil and
 #     home-manager routes it through /etc/profiles/per-user/$USER via useUserPackages.
 #   * the abbreviations already in hm-modules/fish.nix (vim, e, nano, bereit, arr, dr,
 #     py, lg, cheat, c, ccs, cct) and `y`, which programs.yazi's shellWrapperName provides.

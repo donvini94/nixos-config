@@ -8,7 +8,7 @@
     ty
     ruff
 
-    nixd
+    nil
     statix
     deadnix
 
