@@ -11,6 +11,8 @@
     rustup
     cargo-watch
     dioxus-cli
+    binaryen # wasm-opt; nixpkgs dx is built with no-downloads
+    tailwindcss_4
 
     lldb
     gdb

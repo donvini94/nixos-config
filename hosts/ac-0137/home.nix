@@ -62,6 +62,9 @@
     (lib.lowPrio rustup) # its rust-analyzer proxy yields to the pinned one from lsp.nix
     uv
     cargo-watch
+    dioxus-cli
+    binaryen
+    tailwindcss_4
     nodejs_22
     jdk21
     editorconfig-core-c
