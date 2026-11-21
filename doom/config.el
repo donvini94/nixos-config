@@ -1207,8 +1207,13 @@ rg finds them, so the agenda only visits those files instead of all of ~/org."
 
   (add-to-list 'flycheck-checkers 'nix-statix t)
   (add-to-list 'flycheck-checkers 'nix-deadnix t)
-  (flycheck-add-next-checker 'lsp 'nix-statix)
-  (flycheck-add-next-checker 'nix-statix 'nix-deadnix))
+  (flycheck-add-next-checker 'nix-statix 'nix-deadnix)
+  ;; The `lsp' checker only exists once lsp-mode enables flycheck in a buffer.
+  (advice-add 'lsp-diagnostics--flycheck-enable :after
+              (lambda (&rest _)
+                (when (and (flycheck-valid-checker-p 'lsp)
+                           (not (memq 'nix-statix (flycheck-checker-get 'lsp 'next-checkers))))
+                  (flycheck-add-next-checker 'lsp 'nix-statix)))))
 
 (after! projectile
   (dolist (dir '(".direnv" "result"))
