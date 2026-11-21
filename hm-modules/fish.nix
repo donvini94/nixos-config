@@ -42,6 +42,9 @@
       bind \ee edit_command_buffer
 
       bind \es 'fish_commandline_prepend sudo'
+
+      # Auto-activates `devenv allow`ed projects on cd; devenv comes from cli-tools.nix.
+      devenv hook fish | source
     '';
   };
 }
