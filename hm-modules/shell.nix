@@ -1,10 +1,6 @@
-{ pkgs, ... }:
+{ ... }:
 
 {
-  # Gives `use devenv` in .envrc; devenv ships its own nix-direnv-derived direnvrc.
-  xdg.configFile."direnv/lib/devenv.sh".source =
-    pkgs.runCommand "devenv-direnvrc" { } "HOME=$TMPDIR ${pkgs.devenv}/bin/devenv direnvrc > $out";
-
   programs = {
     bash = {
       enable = true;
