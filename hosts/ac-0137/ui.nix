@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, username, ... }:
 
 let
   # sketchybarrc is Lua and SbarLua must be importable as `require("sketchybar")`.
@@ -26,6 +26,14 @@ in
       pkgs.switchaudio-osx # items/widgets/volume.lua
     ];
   };
+
+  # nix-darwin restarts launchd agents before it installs fonts, so a switch that changes
+  # both sketchybar and sketchybar-app-font starts the bar with the app font missing
+  # (⍰ icons, overlapping widgets). Restart it once fonts are in place; `|| true` covers
+  # switching without a GUI session, where the agent is not loaded.
+  system.activationScripts.postActivation.text = ''
+    /bin/launchctl kickstart -k "gui/$(/usr/bin/id -u ${username})/org.nixos.sketchybar" || true
+  '';
 
   services.jankyborders = {
     enable = true;
