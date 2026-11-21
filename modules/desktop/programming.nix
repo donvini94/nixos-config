@@ -1,4 +1,4 @@
-{ pkgs, inputs, ... }:
+{ pkgs, ... }:
 
 {
   environment.systemPackages = with pkgs; [
@@ -28,7 +28,6 @@
     bash-language-server
     shellcheck
 
-    inputs.nil.packages.${pkgs.stdenv.hostPlatform.system}.default
     claude-code
     codex
   ];

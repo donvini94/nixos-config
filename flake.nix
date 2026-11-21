@@ -22,7 +22,6 @@
 
     # Keep hyprlang until Home Manager supports Hyprland's Lua configuration.
     hyprland.url = "git+https://github.com/hyprwm/Hyprland?submodules=1&ref=refs/tags/v0.54.3";
-    nil.url = "github:oxalica/nil";
     lsfg-vk-flake = {
       url = "github:pabloaul/lsfg-vk-flake/main";
       inputs.nixpkgs.follows = "nixpkgs";

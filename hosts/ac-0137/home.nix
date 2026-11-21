@@ -1,4 +1,4 @@
-{ pkgs, inputs, username, ... }:
+{ pkgs, username, ... }:
 
 {
   imports = [
@@ -68,7 +68,6 @@
     nodejs_22
     jdk21
     editorconfig-core-c
-    inputs.nil.packages.${pkgs.stdenv.hostPlatform.system}.default
     claude-code
     codex
 
