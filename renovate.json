@@ -74,17 +74,13 @@
       "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)_v(?<compatibility>\\d+)\\.\\d+\\.\\d+-ls(?<build>\\d+)$"
     },
     {
-      "description": "Merge on green CI after a soak period; alucard's nightly auto-deploy picks the result up. gluetun, qbittorrent (VPN path), flake inputs and the nix action stay manual.",
-      "matchDatasources": [
-        "docker",
-        "github-tags"
-      ],
-      "matchPackageNames": [
-        "lscr.io/linuxserver/sonarr",
-        "lscr.io/linuxserver/radarr",
-        "lscr.io/linuxserver/prowlarr",
-        "lscr.io/linuxserver/bazarr",
-        "lscr.io/linuxserver/sabnzbd"
+      "description": "Merge non-major updates after three days on green CI. Merging does not deploy; hosts take them at their next rebuild.",
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "digest",
+        "pin",
+        "pinDigest"
       ],
       "minimumReleaseAge": "3 days",
       "automerge": true
@@ -96,6 +92,19 @@
       ],
       "minimumReleaseAge": "3 days",
       "automerge": true
+    },
+    {
+      "description": "Stay manual: the VPN path and database engines.",
+      "matchPackageNames": [
+        "qmcgaw/gluetun",
+        "lscr.io/linuxserver/qbittorrent",
+        "/postgres/",
+        "/mariadb/",
+        "/mysql/",
+        "/redis/",
+        "/valkey/"
+      ],
+      "automerge": false
     }
   ]
 }
