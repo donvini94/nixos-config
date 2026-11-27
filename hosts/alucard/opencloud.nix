@@ -40,6 +40,8 @@ in
       OC_EXCLUDE_RUN_SERVICES = "idp";
       PROXY_OIDC_REWRITE_WELLKNOWN = "true";
       PROXY_CSP_CONFIG_FILE_LOCATION = "${csp}";
+      # The default 9119 is the Hermes dashboard's.
+      WEBDAV_DEBUG_ADDR = "127.0.0.1:9118";
       PROXY_AUTOPROVISION_ACCOUNTS = "true";
       # Keycloak's `sub` is stable across username changes.
       PROXY_USER_OIDC_CLAIM = "sub";
