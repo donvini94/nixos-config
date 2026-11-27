@@ -46,6 +46,7 @@
       oidcIssuerUrl = "https://auth.${site.domains.primary}/realms/Abschleppdienst";
       email.domains = [ "*" ];
       reverseProxy = true;
+      trustedProxyIP = [ "127.0.0.1/32" ];
       setXauthrequest = true;
       extraConfig = {
         oidc-email-claim = "preferred_username";
