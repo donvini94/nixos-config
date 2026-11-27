@@ -255,6 +255,9 @@ services:
     volumes:
       # Any directory on the Storage Box share reports the share's usage.
       - /mnt/hetzner/comics:/mnt/storagebox:ro
+    configs:
+      - source: glances
+        target: /etc/glances/glances.conf
     restart: unless-stopped
     networks:
       - media-network
@@ -262,3 +265,12 @@ services:
 networks:
   media-network:
     driver: bridge
+
+configs:
+  # Only the host root and the Storage Box, not Docker's per-container bind mounts;
+  # the share is CIFS, which Glances skips unless allowed.
+  glances:
+    content: |
+      [fs]
+      show=^/$$,^/mnt/storagebox$$
+      allow=cifs
