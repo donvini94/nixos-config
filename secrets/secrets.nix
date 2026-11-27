@@ -20,6 +20,8 @@
       "mullvad/private_key" = { };
       "mullvad/addresses" = { };
       "komga/oidc_secret" = { };
+      "homarr/oidc_secret" = { };
+      "homarr/encryption_key" = { };
       # Read by the nginx master before it forks; the descriptor survives into workers.
       "nginx/htpasswd" = {
         owner = config.services.nginx.user;
@@ -40,6 +42,8 @@
       MULLVAD_PRIVATE_KEY=${config.sops.placeholder."mullvad/private_key"}
       MULLVAD_ADDRESSES=${config.sops.placeholder."mullvad/addresses"}
       KOMGA_OIDC_SECRET=${config.sops.placeholder."komga/oidc_secret"}
+      HOMARR_OIDC_SECRET=${config.sops.placeholder."homarr/oidc_secret"}
+      HOMARR_ENCRYPTION_KEY=${config.sops.placeholder."homarr/encryption_key"}
     '';
     templates."mullvad.env".mode = "0640";
     templates."mullvad.env".owner = "root";

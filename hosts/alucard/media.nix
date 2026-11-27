@@ -36,6 +36,8 @@ in
     "kapowarr"
     "komga"
   ]
+  # Sessions and the encrypted integration credentials live here.
+  ++ [ "d /var/lib/media-stack/homarr 0700 jellyfin jellyfin" ]
   ++ map mediaDir [
     "/mnt/hetzner/downloads"
     "/mnt/hetzner/downloads/usenet"

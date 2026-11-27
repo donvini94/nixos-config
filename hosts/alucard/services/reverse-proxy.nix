@@ -63,6 +63,7 @@ in
           8083
           8096
           8920
+          7575
         ] config.networking.firewall.allowedTCPPorts == [ ];
       message = "Alucard web backends must remain behind nginx instead of being globally firewalled";
     }
@@ -84,9 +85,8 @@ in
       recommendedProxySettings = true;
       recommendedTlsSettings = true;
       virtualHosts = harden {
-        # bereit. website mockup; content is rsynced by the website repo's scripts/deploy.sh.
-        "${domain}" = tls // {
-          root = "/var/www/${domain}";
+        # Homarr dashboard (media-stack); sign-in is Keycloak, boards follow its groups.
+        "${domain}" = proxyWs 7575 // {
           extraConfig = ''add_header X-Robots-Tag "noindex, nofollow" always;'';
         };
         # CRS scores the admin REST API's writes (`PUT

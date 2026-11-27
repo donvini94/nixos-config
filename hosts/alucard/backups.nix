@@ -73,6 +73,15 @@
         '';
       };
 
+      # Homarr: boards, groups and encrypted integration credentials are UI state.
+      homarr = {
+        runtimeInputs = [ pkgs.sqlite ];
+        prepare = ''
+          sqlite3 /var/lib/media-stack/homarr/db/db.sqlite ".backup '$stage/db.sqlite'"
+          test -s "$stage/db.sqlite"
+        '';
+      };
+
       # Predates the shared key; repointing it would orphan the existing snapshots.
       paperless.passwordFile = config.sops.secrets."paperless/restic_password".path;
     };
