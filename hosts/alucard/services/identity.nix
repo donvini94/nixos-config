@@ -20,16 +20,24 @@
         passwordFile = config.sops.secrets."keycloak/password".path;
       };
       settings = {
-        hostname = "auth.${site.domains.primary}";
+        hostname = "https://auth.${site.domains.primary}";
         http-port = 38080;
         http-host = "127.0.0.1";
         http-enabled = true;
         proxy-headers = "xforwarded";
         hostname-strict-https = false;
         hostname-strict = true;
+        # The admin console and API live on the tailnet only (reverse-proxy.nix
+        # keeps /admin/ off the public host).
+        hostname-admin = "https://${site.server}.${site.tailnet}:28080";
         # Single node: no Infinispan cluster listeners.
         cache = "local";
       };
+    };
+
+    aiStack.tailnet.https.keycloak-admin = {
+      listen = 28080;
+      target = 38080;
     };
 
     # Keycloak sign-in for apps that only trust a login header (Navidrome,

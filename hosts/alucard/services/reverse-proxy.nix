@@ -155,26 +155,31 @@ in
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#96e01c"/></svg>
           '';
         };
-        # CRS scores the admin REST API's writes (`PUT
-        # /admin/realms/{realm}/clients/{id}` with a full client
-        # representation) as attacks and answers with nginx's HTML 403, which
-        # the admin console renders as an error with no message. Exempt only
-        # that API, which already demands a bearer token with
-        # realm-management rights; the unauthenticated login, token and
-        # account endpoints keep the WAF.
-        "auth.${domain}" = wafOffExcept {
-          exempt."^~ /admin/realms/" = {
-            proxyPass = "http://127.0.0.1:38080";
-            proxyWebsockets = true;
-          };
-          catchAll = {
-            proxyPass = "http://127.0.0.1:38080/";
-            proxyWebsockets = true;
-            # An SSO redirect to Homarr carries a long encrypted `state` next to
-            # Keycloak's session cookies, beyond nginx's default 4k header buffer.
-            extraConfig = "proxy_buffer_size 32k;\nproxy_buffers 8 32k;\nproxy_busy_buffers_size 64k;";
-          };
-        };
+        # The admin console is served on the tailnet (identity.nix). Publicly, only
+        # mailcow's user sync reaches the admin REST API, from its Docker network,
+        # still without CRS, which scored the API's full representations as attacks.
+        "auth.${domain}" =
+          lib.recursiveUpdate
+            (wafOffExcept {
+              exempt."^~ /admin/realms/".proxyPass = "http://127.0.0.1:38080";
+              catchAll = {
+                proxyPass = "http://127.0.0.1:38080/";
+                proxyWebsockets = true;
+                # An SSO redirect to Homarr carries a long encrypted `state` next to
+                # Keycloak's session cookies, beyond nginx's default 4k header buffer.
+                extraConfig = "proxy_buffer_size 32k;\nproxy_buffers 8 32k;\nproxy_busy_buffers_size 64k;";
+              };
+            })
+            {
+              locations = {
+                "^~ /admin/realms/".extraConfig = ''
+                  modsecurity off;
+                  allow 172.22.1.0/24;
+                  deny all;
+                '';
+                "^~ /admin/".return = "404";
+              };
+            };
         "git.${domain}" = gone;
         "registry.${domain}" = gone;
         "stream.${domain}" = wafOffExcept {
