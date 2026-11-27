@@ -86,14 +86,10 @@ in
       recommendedTlsSettings = true;
       virtualHosts = harden {
         # Homarr dashboard (media-stack); sign-in is Keycloak, boards follow its groups.
-        # Next.js serves its route chunks under literal `[locale]` paths, which CRS
-        # scores into a 403; only those immutable static files skip the WAF.
-        "${domain}" = wafOffExcept {
-          exempt."^~ /_next/static/".proxyPass = "http://127.0.0.1:7575";
-          catchAll = {
-            proxyPass = "http://127.0.0.1:7575";
-            proxyWebsockets = true;
-          };
+        # CRS blocks both Next.js's literal `[locale]` chunk paths and its server-action
+        # posts, so the app runs without the WAF; every page sits behind the login.
+        "${domain}" = proxyWs 7575 // {
+          extraConfig = "modsecurity off;";
         };
         # CRS scores the admin REST API's writes (`PUT
         # /admin/realms/{realm}/clients/{id}` with a full client
