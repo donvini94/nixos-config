@@ -128,6 +128,34 @@ in
     };
   };
 
+  # Grafana signs in through Keycloak and admits only the `Admin` group. The local
+  # admin stays reachable at /login?disableAutoLogin as break-glass.
+  sops.secrets."grafana/oidc_secret".owner = "grafana";
+  services.grafana.settings =
+    let
+      oidc = "https://auth.${site.domains.primary}/realms/Abschleppdienst/protocol/openid-connect";
+    in
+    {
+      server.root_url = "https://${config.networking.hostName}.${config.services.aiStack.tailnet.domain}:${
+        toString (10000 + config.services.observability.server.grafanaPort)
+      }/";
+      auth.oauth_auto_login = true;
+      "auth.generic_oauth" = {
+        enabled = true;
+        name = "Keycloak";
+        client_id = "grafana";
+        client_secret = "$__file{${config.sops.secrets."grafana/oidc_secret".path}}";
+        scopes = "openid email profile";
+        auth_url = "${oidc}/auth";
+        token_url = "${oidc}/token";
+        api_url = "${oidc}/userinfo";
+        use_pkce = true;
+        login_attribute_path = "preferred_username";
+        role_attribute_path = "contains(groups[*], 'Admin') && 'Admin'";
+        role_attribute_strict = true;
+      };
+    };
+
   # Keep the identity existing files and the Org ACL already use.
   services.hermesAgent = {
     uid = 985;

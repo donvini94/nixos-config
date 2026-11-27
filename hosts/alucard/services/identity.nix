@@ -31,6 +31,33 @@
         cache = "local";
       };
     };
+
+    # Keycloak sign-in for apps that only trust a login header (Navidrome,
+    # Calibre-Web); nginx asks it on every request (reverse-proxy.nix). The identity
+    # is the Keycloak username: several accounts have no or an unverified email, so
+    # the email claim carries the username and email is never an access criterion.
+    oauth2-proxy = {
+      enable = true;
+      provider = "keycloak-oidc";
+      clientID = "oauth2-proxy";
+      approvalPrompt = "auto";
+      clientSecretFile = config.sops.secrets."oauth2_proxy/client_secret".path;
+      cookie.secretFile = config.sops.secrets."oauth2_proxy/cookie_secret".path;
+      oidcIssuerUrl = "https://auth.${site.domains.primary}/realms/Abschleppdienst";
+      email.domains = [ "*" ];
+      reverseProxy = true;
+      setXauthrequest = true;
+      extraConfig = {
+        oidc-email-claim = "preferred_username";
+        insecure-oidc-allow-unverified-email = true;
+        code-challenge-method = "S256";
+      };
+    };
+  };
+
+  sops.secrets = {
+    "oauth2_proxy/client_secret" = { };
+    "oauth2_proxy/cookie_secret" = { };
   };
 
   systemd.services.keycloak.serviceConfig = {

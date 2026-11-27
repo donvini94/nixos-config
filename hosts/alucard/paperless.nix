@@ -30,9 +30,26 @@ in
     owner = paperless.user;
     mode = "0400";
   };
+  sops.secrets."paperless/oidc_secret" = { };
   sops.templates."paperless.env" = {
     content = ''
       PAPERLESS_IGNORE_DATES=${config.sops.placeholder."paperless/ignore_dates"}
+      PAPERLESS_SOCIALACCOUNT_PROVIDERS='${
+        builtins.toJSON {
+          openid_connect = {
+            OAUTH_PKCE_ENABLED = true;
+            APPS = [
+              {
+                provider_id = "keycloak";
+                name = "Keycloak";
+                client_id = "paperless";
+                secret = config.sops.placeholder."paperless/oidc_secret";
+                settings.server_url = "https://auth.${site.domains.primary}/realms/Abschleppdienst";
+              }
+            ];
+          };
+        }
+      }'
     '';
     owner = paperless.user;
     mode = "0400";
@@ -44,6 +61,14 @@ in
     ];
   };
   services.paperless.environmentFile = config.sops.templates."paperless.env".path;
+
+  # Keycloak sign-in for existing accounts: each user links Keycloak once under
+  # Profile → Connect, after which the Keycloak button signs them in. Realm members
+  # without a Paperless account are not admitted.
+  services.paperless.settings = {
+    PAPERLESS_APPS = "allauth.socialaccount.providers.openid_connect";
+    PAPERLESS_SOCIALACCOUNT_ALLOW_SIGNUPS = false;
+  };
 
   # The data directory is a separate mount.
   systemd.services = {

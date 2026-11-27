@@ -42,7 +42,12 @@ in
     navidrome = {
       enable = true;
       openFirewall = false;
-      settings.MusicFolder = "/mnt/music";
+      settings = {
+        MusicFolder = "/mnt/music";
+        # nginx passes the Keycloak username (reverse-proxy.nix); unknown names get
+        # a new regular account.
+        ExtAuth.TrustedSources = "127.0.0.1/32";
+      };
     };
 
     calibre-web = {
@@ -54,6 +59,12 @@ in
       options = {
         enableBookUploading = true;
         enableBookConversion = true;
+        # nginx passes the Keycloak username; Calibre-Web trusts it only from
+        # loopback and only for existing accounts of the same name.
+        reverseProxyAuth = {
+          enable = true;
+          header = "Remote-User";
+        };
       };
     };
   };

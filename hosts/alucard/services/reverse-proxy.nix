@@ -52,6 +52,60 @@ let
         };
       };
     };
+  # Keycloak sign-in through oauth2-proxy (identity.nix) for apps that trust a
+  # username header. `open` paths are client APIs with their own passwords: they
+  # skip sign-in, and the header is blanked there so a client cannot forge it.
+  sso =
+    {
+      port,
+      open,
+      extraConfig ? "",
+    }:
+    let
+      backend = "http://127.0.0.1:${toString port}";
+      oauth2 = config.services.oauth2-proxy.httpAddress;
+    in
+    tls
+    // {
+      extraConfig = ''
+        auth_request /oauth2/auth;
+        error_page 401 = @signin;
+      ''
+      + extraConfig;
+      locations =
+        lib.genAttrs open (_: {
+          proxyPass = backend;
+          extraConfig = ''
+            auth_request off;
+            proxy_set_header Remote-User "";
+          '';
+        })
+        // {
+          "/" = {
+            proxyPass = backend;
+            extraConfig = ''
+              auth_request_set $sso_user $upstream_http_x_auth_request_preferred_username;
+              proxy_set_header Remote-User $sso_user;
+            '';
+          };
+          "/oauth2/" = {
+            proxyPass = oauth2;
+            extraConfig = "auth_request off;";
+          };
+          "= /oauth2/auth" = {
+            proxyPass = oauth2;
+            extraConfig = ''
+              auth_request off;
+              proxy_pass_request_body off;
+              proxy_set_header Content-Length "";
+            '';
+          };
+          "@signin".extraConfig = ''
+            auth_request off;
+            return 302 /oauth2/start?rd=$request_uri;
+          '';
+        };
+    };
 in
 {
   assertions = [
@@ -135,7 +189,14 @@ in
           };
           catchAll.proxyPass = "http://127.0.0.1:8096";
         };
-        "music.${domain}" = proxy 4533;
+        # Subsonic apps and public share links keep Navidrome's own credentials.
+        "music.${domain}" = sso {
+          port = 4533;
+          open = [
+            "/rest/"
+            "/share/"
+          ];
+        };
         "docs.${domain}" = gone;
         "files.${domain}" = proxy 53842 // {
           extraConfig = ''
@@ -143,7 +204,13 @@ in
             client_max_body_size 10g;
           '';
         };
-        "read.${domain2}" = proxy 8083 // {
+        # OPDS readers and Kobo sync keep Calibre-Web's own credentials.
+        "read.${domain2}" = sso {
+          port = 8083;
+          open = [
+            "/opds"
+            "/kobo/"
+          ];
           extraConfig = "client_max_body_size 2g;";
         };
         # CRS treats CalDAV verbs (PROPFIND/REPORT/PUT) as attacks. Exempt only
