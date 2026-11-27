@@ -238,6 +238,9 @@ services:
     ports:
       - "127.0.0.1:7575:7575"
     restart: unless-stopped
+    # Readable with `journalctl CONTAINER_NAME=homarr` without Docker access.
+    logging:
+      driver: journald
     networks:
       - media-network
 
