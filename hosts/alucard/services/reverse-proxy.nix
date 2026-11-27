@@ -163,6 +163,19 @@ in
             extraConfig = "modsecurity_rules 'SecRuleRemoveById 911100';";
           };
         };
+        # CRS blocks the WebDAV verbs and Graph PATCH/DELETE the clients live on, so
+        # OpenCloud's own authentication is the only gate. Streaming keeps large
+        # uploads off nginx's disk and the notification event stream open.
+        "cloud.${domain2}" = proxy config.services.opencloud.port // {
+          extraConfig = ''
+            modsecurity off;
+            client_max_body_size 0;
+            proxy_buffering off;
+            proxy_request_buffering off;
+            proxy_read_timeout 1h;
+            proxy_send_timeout 1h;
+          '';
+        };
         "comics.${domain2}" = proxyWs 25600;
         # Client demo (hewitech-demo.nix): version 1 at /, version 2 at /v2/. Synthetic
         # figures, kept out of search engines.

@@ -27,6 +27,7 @@
     ./artex.nix
     ../../modules/packages.nix
     ./paperless.nix
+    ./opencloud.nix
     ../../mail/nixos/mailcow-tls.nix
     ../../mail/nixos/credentials.nix
     ../../modules/container-updates.nix
