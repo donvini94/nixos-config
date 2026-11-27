@@ -51,6 +51,8 @@
       extraConfig = {
         oidc-email-claim = "preferred_username";
         insecure-oidc-allow-unverified-email = true;
+        # nginx only needs the username; Keycloak's tokens overflow its header buffer.
+        session-cookie-minimal = true;
         code-challenge-method = "S256";
       };
     };
