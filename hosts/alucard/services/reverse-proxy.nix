@@ -106,6 +106,9 @@ in
           catchAll = {
             proxyPass = "http://127.0.0.1:38080/";
             proxyWebsockets = true;
+            # An SSO redirect to Homarr carries a long encrypted `state` next to
+            # Keycloak's session cookies, beyond nginx's default 4k header buffer.
+            extraConfig = "proxy_buffer_size 32k;\nproxy_buffers 8 32k;\nproxy_busy_buffers_size 64k;";
           };
         };
         "git.${domain}" = gone;
