@@ -12,8 +12,9 @@ in
 {
   networking.firewall.interfaces.br-dashboard.allowedTCPPorts = [ port ];
 
-  # Bound to all addresses because the bridge only exists once the media stack is up;
-  # the firewall opens the port on br-dashboard alone, and nginx admits only its subnet.
+  # Bound to all addresses because the bridge only exists once the media stack is up.
+  # The firewall opens the port on br-dashboard only, but Tailscale accepts tailnet
+  # traffic before it, so nginx's subnet allow list is the gate.
   services.nginx.virtualHosts.dashboard-gateway = {
     listen = [
       {
