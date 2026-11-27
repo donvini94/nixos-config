@@ -47,6 +47,16 @@ let
       backup = "04:05";
       check = "05:42";
     }
+    {
+      name = "homarr";
+      backup = "04:10";
+      check = "05:48";
+    }
+    {
+      name = "opencloud";
+      backup = "04:15";
+      check = "05:54";
+    }
   ];
   timers = {
     nix-gc = "*-*-* 01:00:00";
