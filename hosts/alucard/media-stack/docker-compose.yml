@@ -243,6 +243,7 @@ services:
       driver: journald
     networks:
       - media-network
+      - dashboard
 
   # Glances - host CPU, memory and disk for Homarr's health widget. API only, no
   # published port; /proc is host-wide, and the btrfs container root reports the host's.
@@ -260,11 +261,21 @@ services:
         target: /etc/glances/glances.conf
     restart: unless-stopped
     networks:
-      - media-network
+      - dashboard
 
 networks:
   media-network:
     driver: bridge
+  # Homarr and Glances only. A fixed bridge name and subnet let the host firewall and
+  # nginx admit this network alone to the dashboard gateway (services/dashboard.nix).
+  dashboard:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-dashboard
+    ipam:
+      config:
+        - subnet: 172.31.250.0/24
+          gateway: 172.31.250.1
 
 configs:
   # Only the host root and the Storage Box, not Docker's per-container bind mounts;
