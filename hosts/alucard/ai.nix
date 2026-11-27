@@ -136,8 +136,7 @@ in
       oidc = "https://auth.${site.domains.primary}/realms/Abschleppdienst/protocol/openid-connect";
     in
     {
-      # Tailscale Serve forwards Grafana as plain TCP; WireGuard encrypts the hop.
-      server.root_url = "http://${config.networking.hostName}.${config.services.aiStack.tailnet.domain}:${
+      server.root_url = "https://${config.networking.hostName}.${config.services.aiStack.tailnet.domain}:${
         toString (10000 + config.services.observability.server.grafanaPort)
       }/";
       auth.oauth_auto_login = true;
