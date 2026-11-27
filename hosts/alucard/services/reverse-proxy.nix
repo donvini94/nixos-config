@@ -96,6 +96,10 @@ in
             proxyPass = "http://127.0.0.1:7575";
             extraConfig = "limit_conn public_connections 200;";
           };
+          # Bereit's mark (the website's green dot) for Homarr's favicon setting.
+          locations."= /brand/favicon.svg".alias = pkgs.writeText "bereit-favicon.svg" ''
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="#96e01c"/></svg>
+          '';
         };
         # CRS scores the admin REST API's writes (`PUT
         # /admin/realms/{realm}/clients/{id}` with a full client
