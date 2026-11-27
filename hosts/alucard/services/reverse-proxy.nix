@@ -88,8 +88,14 @@ in
         # Homarr dashboard (media-stack); sign-in is Keycloak, boards follow its groups.
         # CRS blocks both Next.js's literal `[locale]` chunk paths and its server-action
         # posts, so the app runs without the WAF; every page sits behind the login.
-        "${domain}" = proxyWs 7575 // {
+        "${domain}" = lib.recursiveUpdate (proxyWs 7575) {
           extraConfig = "modsecurity off;";
+          # A cold first load fetches ~50 Next.js chunks at once over HTTP/2; the server-wide
+          # cap of 50 concurrent requests answered the rest with 503 and the page failed.
+          locations."^~ /_next/static/" = {
+            proxyPass = "http://127.0.0.1:7575";
+            extraConfig = "limit_conn public_connections 200;";
+          };
         };
         # CRS scores the admin REST API's writes (`PUT
         # /admin/realms/{realm}/clients/{id}` with a full client
