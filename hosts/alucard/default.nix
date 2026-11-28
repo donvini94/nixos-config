@@ -24,6 +24,7 @@
     ./yt-pipeline.nix
     ./hewitech-demo.nix
     ./twenty.nix
+    ./infisical.nix
     ./artex.nix
     ../../modules/packages.nix
     ./paperless.nix
