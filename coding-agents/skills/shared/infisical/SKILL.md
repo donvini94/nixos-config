@@ -13,7 +13,7 @@ Project secrets live in the self-hosted Infisical on the tailnet. The `infisical
 infisical run --projectId <id> --env dev -- <command>
 ```
 
-- The project ID is in the repository's `.infisical.yaml` (or legacy `.infisical.json`, key `workspaceId`); with a machine identity the CLI ignores those files, so pass it as `--projectId` (or export `INFISICAL_PROJECT_ID`). Without such a file, ask the user for the ID.
+- The project ID is in the repository's `.infisical.yaml` (or legacy `.infisical.json`, key `workspaceId`); with a machine identity the CLI ignores those files, so pass it as `--projectId` (or export `INFISICAL_PROJECT_ID`). `infisical secrets-manager projects get` lists the projects this machine can reach.
 - Environments are `dev`, `staging` and `prod` unless the project defines others (`infisical secrets --projectId <id> --env <env>` fails on an unknown slug).
 - Use `--path /sub/folder` for secrets kept below the root folder.
 - A `403` or "project not found" means this machine's identity has no access to that project: tell the user which project, and they add the identity in Infisical.

@@ -49,6 +49,13 @@ in
           iptables -w -C "$chain" -j mining-egress 2>/dev/null \
             || iptables -w -I "$chain" -j mining-egress
         done
+        # Containers on other bridges (including egress-less ones) may reach mailcow's
+        # submission port, which the internet reaches anyway; Docker's inter-bridge
+        # isolation otherwise drops the DNAT'd connection.
+        iptables -w -C DOCKER-USER -i br-+ -o br-mailcow -p tcp --dport 587 -j ACCEPT 2>/dev/null \
+          || iptables -w -I DOCKER-USER -i br-+ -o br-mailcow -p tcp --dport 587 -j ACCEPT
+        iptables -w -C DOCKER-USER -i br-mailcow -o br-+ -p tcp --sport 587 -m conntrack --ctstate ESTABLISHED -j ACCEPT 2>/dev/null \
+          || iptables -w -I DOCKER-USER -i br-mailcow -o br-+ -p tcp --sport 587 -m conntrack --ctstate ESTABLISHED -j ACCEPT
       '';
     };
   };
