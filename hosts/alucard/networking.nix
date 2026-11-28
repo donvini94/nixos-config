@@ -49,12 +49,13 @@ in
           iptables -w -C "$chain" -j mining-egress 2>/dev/null \
             || iptables -w -I "$chain" -j mining-egress
         done
-        # Egress-less Docker networks (masquerade off) reach mailcow's submission port through
-        # the published DNAT, but mailcow's reply to a foreign container address is dropped by
-        # Docker's raw-table direct-routing guard. Masquerade only that hop, only for local
-        # bridge sources: masquerading internet clients would put them in mailcow's mynetworks.
-        iptables -w -t nat -C POSTROUTING -s 172.16.0.0/12 -o br-mailcow -p tcp --dport 587 -m conntrack --ctstate DNAT -j MASQUERADE 2>/dev/null \
-          || iptables -w -t nat -I POSTROUTING -s 172.16.0.0/12 -o br-mailcow -p tcp --dport 587 -m conntrack --ctstate DNAT -j MASQUERADE
+        # Egress-less Docker networks (masquerade off) reach mailcow's submission and IMAPS
+        # ports through the published DNAT, but mailcow's reply to a foreign container address
+        # is dropped by Docker's raw-table direct-routing guard. Masquerade only that hop, only
+        # for local bridge sources: masquerading internet clients would put them in mailcow's
+        # mynetworks. CalDAV needs nothing: SOGo sits behind the host's own nginx.
+        iptables -w -t nat -C POSTROUTING -s 172.16.0.0/12 -o br-mailcow -p tcp -m multiport --dports 587,993 -m conntrack --ctstate DNAT -j MASQUERADE 2>/dev/null \
+          || iptables -w -t nat -I POSTROUTING -s 172.16.0.0/12 -o br-mailcow -p tcp -m multiport --dports 587,993 -m conntrack --ctstate DNAT -j MASQUERADE
       '';
     };
   };
