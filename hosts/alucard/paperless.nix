@@ -68,6 +68,10 @@ in
   services.paperless.settings = {
     PAPERLESS_APPS = "allauth.socialaccount.providers.openid_connect";
     PAPERLESS_SOCIALACCOUNT_ALLOW_SIGNUPS = false;
+    # Mailcow trusts loopback senders; same transport as Mattermost.
+    PAPERLESS_EMAIL_HOST = "127.0.0.1";
+    PAPERLESS_EMAIL_PORT = 25;
+    PAPERLESS_EMAIL_FROM = "noreply@${site.domains.secondary}";
   };
 
   # The data directory is a separate mount.

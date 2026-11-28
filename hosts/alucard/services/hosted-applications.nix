@@ -57,4 +57,11 @@
     };
   };
 
+  # Docker services cannot reach mailcow's trusted loopback, so they submit on 587 as the
+  # noreply mailbox. Consumed through sops templates, so root-only.
+  sops.secrets."mail/noreply_password" = {
+    sopsFile = ../../../secrets/mail.yaml;
+    key = "noreply_password";
+    mode = "0400";
+  };
 }

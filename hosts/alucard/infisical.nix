@@ -1,5 +1,6 @@
 # Upstream compose: Infisical/infisical docker-compose.prod.yml. Tailnet-only; the backend
-# has no egress, so SMTP, app connections and secret syncs to outside services are unavailable.
+# has no internet egress (only this host's mailcow), so app connections and secret syncs to
+# outside services are unavailable.
 {
   config,
   lib,
@@ -44,6 +45,7 @@ in
       }@infisical-db:5432/infisical
       ENCRYPTION_KEY=${config.sops.placeholder."infisical/encryption_key"}
       AUTH_SECRET=${config.sops.placeholder."infisical/auth_secret"}
+      SMTP_PASSWORD=${config.sops.placeholder."mail/noreply_password"}
     '';
   };
   sops.templates."infisical-db.env" = {
@@ -64,6 +66,10 @@ in
         SITE_URL = "https://${site.server}.${site.tailnet}:28200";
         REDIS_URL = "redis://infisical-redis:6379";
         TELEMETRY_ENABLED = "false";
+        SMTP_HOST = "mail.${site.domains.secondary}";
+        SMTP_PORT = "587";
+        SMTP_USERNAME = "noreply@${site.domains.secondary}";
+        SMTP_FROM_ADDRESS = "noreply@${site.domains.secondary}";
       };
       ports = [ "127.0.0.1:18200:8080" ];
       # NAT-less ingress network: the published port works, the container gets no egress.

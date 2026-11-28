@@ -54,6 +54,12 @@ in
       # No local admin: administrators are Keycloak users with the opencloudAdmin role.
       OC_ADMIN_USER_ID = "";
       WEB_OPTION_ACCOUNT_EDIT_LINK_HREF = "${realm}/account";
+      # Mailcow trusts loopback senders; plain SMTP since its certificate names mail.<domain>.
+      NOTIFICATIONS_SMTP_HOST = "127.0.0.1";
+      NOTIFICATIONS_SMTP_PORT = "25";
+      NOTIFICATIONS_SMTP_SENDER = "OpenCloud <noreply@${site.domains.secondary}>";
+      NOTIFICATIONS_SMTP_AUTHENTICATION = "none";
+      NOTIFICATIONS_SMTP_ENCRYPTION = "none";
     };
   };
 

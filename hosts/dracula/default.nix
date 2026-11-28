@@ -100,11 +100,14 @@ in
   };
   environment.systemPackages = [ (pkgs.writeShellScriptBin "gaming-mode" "exec ai-stack-stop") ];
 
-  sops.secrets."requesty/api_key" = {
-    sopsFile = ../../secrets/dracula-ai.yaml;
-    owner = username;
-    mode = "0400";
-  };
+  # The Infisical machine identity sits at the default /run/secrets paths hm-modules/cli-tools.nix reads.
+  sops.secrets =
+    lib.genAttrs [ "requesty/api_key" "infisical/client_id" "infisical/client_secret" ]
+      (_: {
+        sopsFile = ../../secrets/dracula-ai.yaml;
+        owner = username;
+        mode = "0400";
+      });
   services.requesty.apiKeyFile = config.sops.secrets."requesty/api_key".path;
 
   determinate.enable = true;

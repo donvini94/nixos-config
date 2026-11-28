@@ -24,6 +24,7 @@ let
     "zotero-cli"
     "tutor"
     "examiner"
+    "infisical"
   ];
   updateSkills = pkgs.writeShellApplication {
     name = "update-skills";

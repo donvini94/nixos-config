@@ -28,6 +28,12 @@ let
       MESSAGING_PROVIDER_MICROSOFT_ENABLED = "false";
       CALENDAR_PROVIDER_GOOGLE_ENABLED = "false";
       CALENDAR_PROVIDER_MICROSOFT_ENABLED = "false";
+      EMAIL_DRIVER = "SMTP";
+      EMAIL_SMTP_HOST = "mail.${site.domains.secondary}";
+      EMAIL_SMTP_PORT = "587";
+      EMAIL_SMTP_USER = "noreply@${site.domains.secondary}";
+      EMAIL_FROM_ADDRESS = "noreply@${site.domains.secondary}";
+      EMAIL_FROM_NAME = "Twenty";
     };
     volumes = [ "twenty-files:${storage}" ];
     extraOptions = [
@@ -64,6 +70,7 @@ in
       }@twenty-db:5432/twenty
       APP_SECRET=${config.sops.placeholder."twenty/app_secret"}
       ENCRYPTION_KEY=${config.sops.placeholder."twenty/encryption_key"}
+      EMAIL_SMTP_PASSWORD=${config.sops.placeholder."mail/noreply_password"}
     '';
   };
   sops.templates."twenty-db.env" = {

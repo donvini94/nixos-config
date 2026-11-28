@@ -149,6 +149,7 @@ in
       # AGENTS.md and MEMORY.md are agent-owned writable files, not Nix resources.
       ".pi/agent/skills/tutor".source = link "${repo}/skills/shared/tutor";
       ".pi/agent/skills/examiner".source = link "${repo}/skills/shared/examiner";
+      ".pi/agent/skills/infisical".source = link "${repo}/skills/shared/infisical";
       ".pi/agent/skills/meeting-minutes".source = link "${repo}/skills/managed/meeting-minutes";
       ".pi/agent/upstream/amos-ask-user-question.ts".source = amosAskUserQuestion;
     };
