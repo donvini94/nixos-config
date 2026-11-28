@@ -15,6 +15,7 @@
     ./private-access.nix
     ./security.nix
     ./services/default.nix
+    ./forgejo.nix
     ./media.nix
     ./maintenance.nix
     ./auto-deploy.nix
