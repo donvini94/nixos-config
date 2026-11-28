@@ -49,13 +49,12 @@ in
           iptables -w -C "$chain" -j mining-egress 2>/dev/null \
             || iptables -w -I "$chain" -j mining-egress
         done
-        # Containers on other bridges (including egress-less ones) may reach mailcow's
-        # submission port, which the internet reaches anyway; Docker's inter-bridge
-        # isolation otherwise drops the DNAT'd connection.
-        iptables -w -C DOCKER-USER -i br-+ -o br-mailcow -p tcp --dport 587 -j ACCEPT 2>/dev/null \
-          || iptables -w -I DOCKER-USER -i br-+ -o br-mailcow -p tcp --dport 587 -j ACCEPT
-        iptables -w -C DOCKER-USER -i br-mailcow -o br-+ -p tcp --sport 587 -m conntrack --ctstate ESTABLISHED -j ACCEPT 2>/dev/null \
-          || iptables -w -I DOCKER-USER -i br-mailcow -o br-+ -p tcp --sport 587 -m conntrack --ctstate ESTABLISHED -j ACCEPT
+        # Egress-less Docker networks (masquerade off) reach mailcow's submission port through
+        # the published DNAT, but mailcow's reply to a foreign container address is dropped by
+        # Docker's raw-table direct-routing guard. Masquerade only that hop, only for local
+        # bridge sources: masquerading internet clients would put them in mailcow's mynetworks.
+        iptables -w -t nat -C POSTROUTING -s 172.16.0.0/12 -o br-mailcow -p tcp --dport 587 -m conntrack --ctstate DNAT -j MASQUERADE 2>/dev/null \
+          || iptables -w -t nat -I POSTROUTING -s 172.16.0.0/12 -o br-mailcow -p tcp --dport 587 -m conntrack --ctstate DNAT -j MASQUERADE
       '';
     };
   };
